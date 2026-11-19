@@ -198,10 +198,20 @@ def persian_proxy_for_english(text, en, *, mark_weak=False):
         converted.append(value[0] if value else None)
     # Keep each safe consonant-bearing word independently. One unsupported
     # word must not make every neighbouring word use a neutral m-vowel proxy.
-    shown = (_TAG.findall(en._phonemes_for_probe(' '.join(converted)))
-             if all(converted) else ())
-    batch_ok = len(shown) == len(converted) and all(
-        compatible(tag, item) for tag, item in zip(converted, shown))
+    candidates = [(index, tag) for index, tag in enumerate(converted) if tag is not None]
+    shown = _TAG.findall(en._phonemes_for_probe(' '.join(tag for _, tag in candidates))) if candidates else ()
+    batch_ok = (len(candidates) == len(converted) and len(shown) == len(candidates) and
+                all(compatible(tag, item) for (_, tag), item in zip(candidates, shown)))
+    # A single incompatible word previously caused an additional native
+    # phoneme probe for *every* word. An exact, primary-stressed result in
+    # the batch is already an unambiguous independent proxy: retain it and
+    # recheck only weak, transformed or otherwise uncertain cases. If the
+    # displayed word count is unreliable, use the original per-word path.
+    batch_exact = set()
+    if len(shown) == len(candidates):
+        for (index, tag), displayed in zip(candidates, shown):
+            if '.1' in tag and displayed == tag[2:-1]:
+                batch_exact.add(index)
     vowels = {'A': 'A', 'a': 'a', 'e': 'E', 'i': 'i', 'o': 'o', 'u': 'u'}
     result, weak_fallback = [], []
     for index, match in enumerate(matches):
@@ -209,7 +219,7 @@ def persian_proxy_for_english(text, en, *, mark_weak=False):
         if not syllables:
             raise ValueError('Persian proxy has no syllables')
         tag = converted[index]
-        if tag is not None and not batch_ok:
+        if tag is not None and not batch_ok and index not in batch_exact:
             display = _TAG.findall(en._phonemes_for_probe(tag))
             if len(display) != 1 or not compatible(tag, display[0]):
                 tag = None

@@ -476,6 +476,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                ('fa_IR', 'ایران', 'issue50_r_after_i_vowel'),
                                ('fa_IR', 'سیری', 'issue50_r_after_i_vowel'),
                                ('fa_IR', 'زیرخط', 'issue50_r_after_i_x_speed38'),
+                               ('fa_IR', 'بختیاری‌زاده', 'issue49_native_new_compound'),
+                               ('fa_IR', 'بختیارزاده', 'issue49_native_new_compound'),
+                               ('fa_IR', 'فوتبال', 'issue49_native_new_compound'),
+                               ('fa_IR', 'فوتبالیست', 'issue49_native_new_compound'),
+                               ('fa_IR', 'معرفی', 'issue49_native_new_compound'),
                                ('fa_IR', 'سلام دنیا؟', 'issue50_question_some'),
                                ('fa_IR', 'سلام دنیا?', 'issue50_question_ascii_some'),
                                ('fa_IR', 'سلام دنیا؟', 'issue50_question_split'),
@@ -824,7 +829,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = [text, 'کادرِ علامت‌زدنی', status]
             elif isinstance(spelling, str) and spelling.startswith('tags_'):
                 sequence = [text]
-            elif self.sample_case or (isinstance(spelling, str) and spelling.startswith(('issue49_weak_', 'issue50_'))) or spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'issue49_quotes', 'issue49_numeric', 'issue49_version_some', 'issue49_emoji_some', 'issue49_heading', 'issue49_korean', 'issue49_korean_word', 'issue49_persian_unicode', 'issue49_persian_unicode_none', 'issue49_persian_unicode_all', 'issue49_korean_english', 'issue49_hamza_line', 'issue49_hamza_line_none', 'issue49_own_vowel', 'issue49_nominal_compound'):
+            elif self.sample_case or (isinstance(spelling, str) and spelling.startswith(('issue49_weak_', 'issue50_'))) or spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'issue49_quotes', 'issue49_numeric', 'issue49_version_some', 'issue49_emoji_some', 'issue49_heading', 'issue49_korean', 'issue49_korean_word', 'issue49_persian_unicode', 'issue49_persian_unicode_none', 'issue49_persian_unicode_all', 'issue49_korean_english', 'issue49_hamza_line', 'issue49_hamza_line_none', 'issue49_own_vowel', 'issue49_nominal_compound', 'issue49_native_new_compound'):
                 sequence = [text]
             else:
                 sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
@@ -835,7 +840,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.pipeline = self.pipeline or self.sample_case or (isinstance(spelling, str) and spelling.startswith('tags_'))
             self.pipeline = self.pipeline or (isinstance(spelling, str) and spelling.startswith('issue49_weak_'))
             self.pipeline = self.pipeline or (isinstance(spelling, str) and spelling.startswith('issue50_'))
-            self.pipeline = self.pipeline or spelling in ('issue49_quotes', 'issue49_numeric', 'issue49_own_vowel', 'issue49_nominal_compound')
+            self.pipeline = self.pipeline or spelling in ('issue49_quotes', 'issue49_numeric', 'issue49_own_vowel', 'issue49_nominal_compound', 'issue49_native_new_compound')
             self.pipeline = self.pipeline or spelling in ('issue49_preposition', 'issue49_final_accent',
                                                           'issue49_character_navigation')
             self.pipeline = self.pipeline or spelling in ('issue49_version_some', 'issue49_version_split',
@@ -1016,6 +1021,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 tags = ' '.join(self.projected[self.before_projected:])
                 if self.synth.rate != 38 or '`[.1zir.0GAt]' not in tags or not any(self.us_fits[self.before_us_fits:]):
                     raise AssertionError('NVDA lost zirkhat or its US contour at speed 38: ' + ascii(tags))
+            if spelling == 'issue49_native_new_compound':
+                expected={'بختیاری‌زاده':"`[.0bAG.0ti.0j'a:'.0ri.0za.1d'e:']",
+                          'بختیارزاده':"`[.0bAG.0ti.0j'a:'r.0za.1d'e:']",
+                          'فوتبال':"`[.0f'u:'t.1bal]", 'فوتبالیست':"`[.0f'u:'t.0ba.1list]",
+                          'معرفی':'`[.0mo.0wAr.0re.1fi]'}[text]
+                tags=' '.join(self.projected[self.before_projected:])
+                if expected not in tags or not any(self.us_fits[self.before_us_fits:]):
+                    raise AssertionError('NVDA lost native word rules or US contour: '+ascii((text,tags)))
             if spelling in ('tags_slow', 'tags_fast', 'tags_pitch', 'tags_phonemes'):
                 expected = text.split(' ', 1)[0]
                 if expected not in self.user_controls[self.before_user_controls:]:

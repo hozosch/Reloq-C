@@ -1048,6 +1048,55 @@ static int append_phone_tags(const char *left,const char *right,char *output,siz
     return 1;
 }
 
+/* A classified -یار / -یاری derivative after an independently known -خت
+ * stem can syllabify as /...x.ti.ja:r(i)/. Preserve existing full-word
+ * pronunciations first; require lexical class evidence and the matching
+ * native stem phones so unrelated ambiguous unmarked spellings are not
+ * invented by the rule. */
+static int derived_kht_yar(const char *word,size_t bytes,char *output,size_t capacity,unsigned depth)
+{
+    size_t stem=0;
+    int yary=ends_with(word,bytes,"یاری",&stem);
+    if(!yary && !ends_with(word,bytes,"یار",&stem))return 0;
+    if(stem<4 || memcmp(word+stem-4,"خت",4) || stress_class(word,bytes)!=1u ||
+       stress_class(word,stem)!=1u)return 0;
+    char root[2048];
+    int result=direct_context_depth(word,stem,0,root,sizeof root,depth+1);
+    if(result!=1)return result;
+    size_t n=strlen(root);
+    if(n<6 || memcmp(root+n-3,"Gt]",3) || !single_phone_tag(root))return 0;
+    const char *tail=yary ? ".0ti.0j'a:'.1ri]" : ".0ti.1j'a:'r]";
+    size_t suffix=strlen(tail);
+    if(n-2>capacity || suffix+1>capacity-(n-2))return -2;
+    memcpy(output,root,n-2);
+    memcpy(output+n-2,tail,suffix+1);
+    size_t count=stress_syllables(output);
+    if(!count)return 0;
+    stress_primary(output,count-1);
+    return 1;
+}
+
+/* A classified written surname ending in -زاده can be formed from a known
+ * native first part. This complements the general half-space compound rule;
+ * without a classified full spelling, leave a fused word unresolved. */
+static int derived_zade_word(const char *word,size_t bytes,char *output,size_t capacity,unsigned depth)
+{
+    size_t stem=0;
+    if(!ends_with(word,bytes,"زاده",&stem) || stress_class(word,bytes)!=1u ||
+       stress_class(word,stem)!=1u)return 0;
+    char left[2048],right[2048];
+    int a=direct_context_depth(word,stem,0,left,sizeof left,depth+1);
+    int b=direct_context_depth(word+stem,bytes-stem,0,right,sizeof right,depth+1);
+    if(a<0 || b<0)return a<0?a:b;
+    if(a!=1 || b!=1)return 0;
+    (void)shorten_written_final_e(word,stem,left);
+    int result=append_phone_tags(left,right,output,capacity);
+    if(result!=1)return result;
+    size_t count=stress_syllables(output);
+    if(count)stress_primary(output,count-1);
+    return 1;
+}
+
 static int same_phones(const char *a,const char *b)
 {
     size_t n=strlen(a);
@@ -1325,6 +1374,10 @@ static int direct_context_depth(const char *word,size_t bytes,int follows_word,
     }
     if(result)return result;
     result=marked_known_initial_vowel(word,bytes,follows_word,output,capacity);
+    if(result)return result;
+    result=derived_kht_yar(word,bytes,output,capacity,depth);
+    if(result)return result;
+    result=derived_zade_word(word,bytes,output,capacity,depth);
     if(result)return result;
     result=joined_compound_word(word,bytes,output,capacity,depth);
     if(result)return result;

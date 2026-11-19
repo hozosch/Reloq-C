@@ -113,6 +113,10 @@ DEV166_BASE = '2b20c1c385f9412a1c22e32a18efe9308d82401c'
 DEV166_KEY = ('persian-windows-provider-gcc14-v2-'
               'f67c1d2ffe98915df1e66caa287666526b8a4547bbb0dd70135ef814bfb61d72')
 DEV166_ALLOWED = {'experiments/persian/build_native_probe.py'}
+DEV168_BASE = '629f88e138a2189e65bfb4c167db94853b43e106'
+DEV168_KEY = ('persian-windows-provider-gcc14-v2-'
+              '0c10a06526b641297356b228a95a40bad91c9e8b9b7e613eed1188ac96286aa9')
+DEV168_ALLOWED = {'experiments/persian/build_native_probe.py'}
 DEV161_ALLOWED = {
     'experiments/persian/build_native_probe.py',
     'include/reloq_eci.h', 'include/reloq_syllable_trace.h',
@@ -219,6 +223,12 @@ def main():
                 if path.is_file():
                     os.utime(path, None)
             print('Reused verified provider cache for the additive public API change.')
+            return
+        if key == DEV168_KEY:
+            changed = set(git('diff', '--name-only', DEV168_BASE, 'HEAD', '--', *INPUTS).splitlines())
+            if changed != DEV168_ALLOWED:
+                raise ValueError('Persian contextual articulation inputs differ from the verified scope')
+            reuse_dev156_generated(frozenset({'delta_rules_c02_fifi.c','delta_rules_c08_fifi.c'}))
             return
         if key == DEV166_KEY:
             changed = set(git('diff', '--name-only', DEV166_BASE, 'HEAD', '--', *INPUTS).splitlines())

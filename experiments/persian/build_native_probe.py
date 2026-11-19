@@ -1972,7 +1972,7 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
                 int64_t scaled=((int64_t)STATE(int32_t,f33)*9+5)/10;
                 STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
             }
-            int short_yek=0;
+            int short_yek=0,short_u_cluster=0;
             if (us_timing && node && cls==1 && STATE(int32_t,f33)>0 &&
                 !persian_probe_vowel_word_final(state,STATE_AT(w26,-4),(unsigned)phone)) {
                 int32_t next_ref=EVV_AT(int32_t *,node)[1]&~3;
@@ -2000,6 +2000,20 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
                     short_yek=previous_phone==22 &&
                         persian_probe_next_phone_word_final(state,next_ref,3);
                 }
+                /* A long /u/ remains long, but its unstressed nucleus may
+                   be shortened modestly before /t/ + a voiced stop in the
+                   same word (e.g. فوتبال). Do not use the short-U phone. */
+                if (phone==32 && length==0 && stress==0 && next_phone==2 &&
+                    !persian_probe_next_phone_word_final(state,next_ref,2)) {
+                    int32_t after_ref=EVV_AT(int32_t *,next)[1]&~3;
+                    int32_t *after_point=after_ref ? vmover(d,EVV_AT(int32_t *,after_ref),2) : NULL;
+                    int32_t after=after_point ? vgetsc(d,0,0,EVV_REF(after_point),2) : 0;
+                    if(after && !(*EVV_AT(int32_t *,after)&2)) {
+                        unsigned following=*(const unsigned char *)delta_record_field(
+                            &vstmtbl[2],0,TFLDS(EVV_AT(void *,after)));
+                        short_u_cluster=following>=4 && following<=6;
+                    }
+                }
                 int factor=100;
                 if (ordinary && length==1 && phone==31) factor=130;
                 else if (ordinary && length==1 && phone==29) factor=118;
@@ -2017,6 +2031,7 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
                 int64_t extra=short_yek ? (duration+10)/20 : (duration+2)/5;
                 if (extra>150000) extra=150000;
                 int64_t scaled=duration+extra;
+                if(short_u_cluster)scaled=(scaled*9+5)/10;
                 STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
             }
             if (tracing)
@@ -3141,6 +3156,15 @@ static void persian_r_less_retroflex(void *state)
         }
         return;
     }
+    /* After the back /a/ and before /i/, the former 2700-Hz target can
+       make the third resonance conspicuous in names such as Bakhtiari.
+       Keep the user's R-before-I level filter and the vowel's own targets. */
+    if (previous==34 && following==27 &&
+        !persian_articulation_word_initial(state,STATE_AT(w60,-4))) {
+        if (STATE(int16_t,s452)>0 && STATE(int16_t,s452)<2525) STATE(int16_t,s452)=2525;
+        if (STATE(int16_t,s453)>0 && STATE(int16_t,s453)<2525) STATE(int16_t,s453)=2525;
+        return;
+    }
     /* The low F3 of Finnish R can sound retroflex near /i/. Before I,
        bring the R targets to 2700 Hz; after I, retain the accepted gentler
        adjustment. The vowels' own targets, F4, source and timing stay intact. */
@@ -3183,17 +3207,29 @@ static void persian_articulation_nasal(void *state,int second_formant)
     final_r = FINNISH_L_WORD_FINAL.replace('persian_probe_l_word_final',
                                            'persian_probe_r_word_final').replace(
                                                'testFldeq(d,2,0,21)', 'testFldeq(d,2,0,19)')
+    final_t = FINNISH_L_WORD_FINAL.replace('persian_probe_l_word_final',
+                                           'persian_probe_t_word_final').replace(
+                                               'testFldeq(d,2,0,21)', 'testFldeq(d,2,0,2)')
     text = text.replace(marker, us_consonant_rules() + '\n' + brazilian_r_rules() +
-                        '\n' + final_r + '\n' + helper + '\n' + marker, 1)
+                        '\n' + final_r + '\n' + final_t + '\n' + helper + '\n' + marker, 1)
     for phone in 'ptkbdgfvszSZ':
         call = f'    r0 = reloq_call_fifi_fin_ph_{phone}(state, (int32_t)(FIELD(0)));\n'
         if text.count(call) != 1:
             raise RuntimeError(f'Cannot locate Persian consonant dispatcher for {phone}')
         condition = (' && !persian_articulation_special_k(state)' if phone == 'k' else '')
         key = 'RELOQ_FA_US_STOPS' if phone in 'ptkbdg' else 'RELOQ_FA_US_FRICATIVES'
+        t_release = (r'''            if (!r0 && persian_articulation_following(state)>=4 &&
+                persian_articulation_following(state)<=6 &&
+                !persian_probe_t_word_final(state,STATE_AT(w60,-4)) &&
+                STATE(int16_t,s430)>0 && STATE(int16_t,s430)<60) {
+                int level=STATE(int16_t,s430)+8;
+                STATE(int16_t,s430)=(int16_t)(level<60?level:60);
+            }
+''' if phone == 't' else '')
         replacement = ('    {\n' + f'        const char *us=getenv("{key}");\n' +
                        f"        if (us && us[0]=='1' && !us[1]{condition})\n" +
-                       f'            r0=persian_us_eng_ph_{phone}(state,(int32_t)(FIELD(0)));\n' +
+                       '        {\n' + f'            r0=persian_us_eng_ph_{phone}(state,(int32_t)(FIELD(0)));\n' +
+                       t_release + '        }\n' +
                        '        else\n' + call + '    }\n')
         text = text.replace(call, replacement, 1)
     call = '    r0 = reloq_call_fifi_fin_ph_G(state, (int32_t)(FIELD(0)));\n'

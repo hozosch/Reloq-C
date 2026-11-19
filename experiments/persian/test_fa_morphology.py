@@ -64,6 +64,15 @@ def main():
     assert project('نیم‌فاصله').endswith(".0fa.0se.1l'e:']")
     assert project('نیم‌اتصال').endswith('.0et.0te.1sal]')
     assert project('بک‌اسلش')=='`[.0bAk.0es.1lAS]'
+    # Native composition covers classified -ختیار/-ختیاری derivatives and
+    # -زاده surnames using their own recognized stems, without asking eSpeak.
+    assert project('بختیار')=="`[.0bAG.0ti.1j'a:'r]"
+    assert project('بختیاری')=="`[.0bAG.0ti.0j'a:'.1ri]"
+    assert project('بختیاری‌زاده')=="`[.0bAG.0ti.0j'a:'.0ri.0za.1d'e:']"
+    assert project('بختیارزاده')=="`[.0bAG.0ti.0j'a:'r.0za.1d'e:']"
+    assert project('علی‌زاده')=="`[.0'A:'.0li.0za.1d'e:']"
+    project('کتابزاده',covered=False)
+    project('زختیار',covered=False)
     # NVDA's fa symbols.dic supplies slash names with vowel marks. Reuse a
     # known spelling only when every written vowel agrees with its phones.
     slash=project('اسلش')
