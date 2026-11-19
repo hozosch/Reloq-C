@@ -26,8 +26,20 @@ else:
 class _CaptureVoice:
     def __init__(self, engine, prefix, validate, cancelled):
         self.engine, self.prefix, self.validate, self.cancelled = engine, prefix, validate, cancelled
+        self._request_phones = {}
         raw = engine._voice if isinstance(engine, ScopedDirectPersianEngine) else engine
         self._dll, self._handle = raw._dll, raw._handle
+
+    def _phonemes_for_probe(self, text):
+        if self.cancelled.is_set():
+            raise InterruptedError('sentence planning was cancelled')
+        if text in self._request_phones:
+            return self._request_phones[text]
+        result = self.engine._phonemes_for_probe(text)
+        if self.cancelled.is_set():
+            raise InterruptedError('sentence planning was cancelled')
+        self._request_phones[text] = result
+        return result
 
     def speak(self, parts, on_pcm, on_index):
         if self.cancelled.is_set():
@@ -80,7 +92,15 @@ class ParallelPilot:
             return self._executor.submit(self._capture, tuple(parts), tuple(prefix), validate,
                                          dict(parameters), dictionary, cancelled, maximum, audio)
 
-    def _capture(self, parts, prefix, validate, parameters, dictionary, cancelled, maximum, audio):
+    def submit_proxy(self, *, tagged, marks, prefix, parameters, dictionary, cancelled, maximum):
+        """Build and capture a US pilot entirely on its independent handle."""
+        with self._guard:
+            if self._closed:
+                raise RuntimeError('Persian contour worker is closed')
+            return self._executor.submit(self._capture_proxy, tagged, tuple(marks), tuple(prefix),
+                                         dict(parameters), dictionary, cancelled, maximum)
+
+    def _prepare_engine(self, parameters, dictionary, cancelled):
         if cancelled.is_set():
             raise InterruptedError('sentence planning was cancelled')
         if self._engine is None:
@@ -100,6 +120,20 @@ class ParallelPilot:
                 self._parameters[parameter] = value
         if cancelled.is_set():
             raise InterruptedError('sentence planning was cancelled')
+        return engine
+
+    def _capture_proxy(self, tagged, marks, prefix, parameters, dictionary, cancelled, maximum):
+        engine = self._prepare_engine(parameters, dictionary, cancelled)
+        if __package__:
+            from .continuous_plan import indexed_us_proxy
+        else:
+            from continuous_plan import indexed_us_proxy
+        voice = _CaptureVoice(engine, (), False, cancelled)
+        proxy = indexed_us_proxy(tagged, voice, marks)
+        return self._capture(proxy, prefix, False, parameters, dictionary, cancelled, maximum, False)
+
+    def _capture(self, parts, prefix, validate, parameters, dictionary, cancelled, maximum, audio):
+        engine = self._prepare_engine(parameters, dictionary, cancelled)
         voice = _CaptureVoice(engine, prefix, validate, cancelled)
         result = FrameCapture(voice._dll).capture(voice, parts, maximum=maximum, audio=audio)
         if cancelled.is_set() or result is None:

@@ -174,7 +174,10 @@ def main():
                 assert render((text,))[0]
                 assert any(count and 4 in (counts or ()) for count, counts in observed), (text, observed)
                 if text == 'سلام: 96':
-                    assert any(count >= 2 and counts == (2, 4) for count, counts in observed), (text, observed)
+                    # A prose colon is a complete sentence boundary. Both
+                    # sides are independently fitted when streamed early.
+                    assert any(count and counts == (2,) for count, counts in observed), (text, observed)
+                    assert any(count and counts == (4,) for count, counts in observed), (text, observed)
     finally:
         voice.close()
     print('Passed Persian sentence-colon boundaries, number-96 donor timing and safe number proxies.')

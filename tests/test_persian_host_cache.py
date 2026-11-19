@@ -14,7 +14,8 @@ from reuse_persian_host_cache import (ALLOWED, EXPECTED_KEY, RECENT_ALLOWED, REC
                                       DEV162_ALLOWED, DEV162_KEY, DEV163_ALLOWED, DEV163_KEY,
                                       DEV164_ALLOWED, DEV164_KEY, DEV165_ALLOWED,
                                       DEV166_ALLOWED, DEV166_KEY, DEV168_ALLOWED, DEV168_KEY,
-                                      DEV169_ALLOWED, DEV169_KEY, DEV170_ALLOWED, DEV170_KEY, eligible)
+                                      DEV169_ALLOWED, DEV169_KEY, DEV170_ALLOWED, DEV170_KEY,
+                                      DEV171_ALLOWED, DEV171_KEY, eligible)
 
 assert eligible(EXPECTED_KEY, ALLOWED)
 assert not eligible(EXPECTED_KEY, ())
@@ -112,4 +113,7 @@ assert eligible(DEV170_KEY, DEV170_ALLOWED)
 assert not eligible(DEV170_KEY, ())
 assert not eligible(DEV170_KEY, DEV170_ALLOWED | {'src/reloq_core.c'})
 assert not eligible(DEV170_KEY, DEV170_ALLOWED - {'experiments/persian/direct_fa_lexicon.c'})
+assert eligible(DEV171_KEY, DEV171_ALLOWED)
+assert not eligible(DEV171_KEY, ())
+assert not eligible(DEV171_KEY, DEV171_ALLOWED | {'src/reloq_core.c'})
 print('Passed verified Windows host cache safeguards.')

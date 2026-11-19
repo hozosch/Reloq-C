@@ -665,6 +665,8 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
     engine._cancelled.clear()
     if owner._cancelled.is_set():
         return False
+    pending_pilot = None
+    pilot_worker = None
     try:
         try:
             prepared = project(items, engine._frontend, allow_fallback=engine._allow_fallback,
@@ -732,8 +734,41 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
         voice.raw._cancelled.clear()
         if owner._cancelled.is_set():
             return False
-        captured = FrameCapture(voice._dll).capture(voice, sequence, maximum=30000, audio=False)
-        item = CapturedRows.from_capture(captured)
+        english = proxy = None
+        previous_tags = 1
+        word_marks = tuple(words[word] for word in range(1, len(matches)))
+        tagged_donor = _sentence_colons_as_periods(prepared.tagged, prepared.source)
+        if us_available:
+            english_key = owner._key(US_ENGLISH.id, key[1])
+            english_engine = owner._activate(english_key)
+            english = _PlanningVoice(owner, english_key, english_engine, prefix=donor_prefix)
+            # A cancelled navigation request may have stopped this handle.
+            # Clear only the stale stop while holding the owner's guard.
+            with owner._guard:
+                if owner._cancelled.is_set():
+                    return False
+                english.raw._cancelled.clear()
+            previous_tags = english._dll.eciGetParam(english._handle, PROCESS_TAGS)
+            if previous_tags < 0:
+                raise RuntimeError('cannot read US tag setting')
+            # The US pilot owns a separate handle. Begin its full capture
+            # while the Persian handle captures the very same request; the
+            # result is still fitted before any audio or index is emitted.
+            # Short labels stay serial to avoid thread scheduling overhead.
+            if len(matches) >= 4 and (os.cpu_count() or 1) > 1:
+                pilot_worker = getattr(owner, '_persian_contour_worker', None)
+                if pilot_worker is not None:
+                    try:
+                        pending_pilot = pilot_worker.submit_proxy(
+                            tagged=tagged_donor, marks=word_marks, prefix=donor_prefix,
+                            parameters=owner._engine_parameters[english_key[0]],
+                            dictionary=owner._dictionary_path, cancelled=owner._cancelled,
+                            maximum=30000)
+                    except (RuntimeError, OSError):
+                        pending_pilot = None
+        capture_api = FrameCapture(voice._dll)
+        captured = capture_api.capture(voice, sequence, maximum=30000, audio=False)
+        item = CapturedRows.from_capture(captured, native=capture_api.frame_ticks)
         sentence_item = item
         if sentence_words and (glide_boundaries - sentence_words or
                                any(0 < offset < len(prepared.tagged) for _, offset, _ in source)):
@@ -750,9 +785,9 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
                                        EciIndex(event) if isinstance(event, int) else event))
                 position = at
             clean_sequence.append(prepared.tagged[position:])
-            clean_capture = FrameCapture(voice._dll).capture(voice, clean_sequence, maximum=30000, audio=False)
-            sentence_item = CapturedRows.from_capture(clean_capture)
-            if sentence_item.ticks != item.ticks:
+            clean_capture = capture_api.capture(voice, clean_sequence, maximum=30000, audio=False)
+            sentence_item = CapturedRows.from_capture(clean_capture, native=capture_api.frame_ticks)
+            if tuple(sentence_item.ticks) != tuple(item.ticks):
                 raise ValueError('sentence-only capture changed the native frame clock')
         pitch_ratios = None
         if internal_pitch and (korean_available or us_available):
@@ -760,11 +795,11 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
             # With those commands removed, the same phonemes must have an
             # identical frame clock; their pitch ratio can then be applied
             # to the Korean contour without restoring the Finnish melody.
-            plain = FrameCapture(voice._dll).capture(
+            plain = capture_api.capture(
                 voice, tuple(part for part in sequence if not isinstance(part, EciPitch)),
                 maximum=30000, audio=False)
-            reference = CapturedRows.from_capture(plain)
-            if item.ticks != reference.ticks:
+            reference = CapturedRows.from_capture(plain, native=capture_api.frame_ticks)
+            if tuple(item.ticks) != tuple(reference.ticks):
                 raise ValueError('inline pitch changed the native frame clock')
             pitch_ratios = tuple(a.controls[1] / b.controls[1]
                                  if a.controls[1] > 0 and b.controls[1] > 0 else 1.0
@@ -775,42 +810,40 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
         boundaries = {word: round(item.indexes[mark] * 1000 / rate) for word, mark in words.items()}
         sentence_boundaries = {word: round(sentence_item.indexes[words[word]] * 1000 / rate)
                                for word in starts[1:]}
-        controls = [row.controls for row in item.frames]
-        glides = plan_u_a_glides(controls, item.ticks, tags, separators, boundaries)
+        glides = ()
+        if has_glide:
+            controls = [row.controls for row in item.frames]
+            glides = plan_u_a_glides(controls, item.ticks, tags, separators, boundaries)
+            apply_u_a_glides(controls, item.ticks, glides)
         if not glides and not korean_available and not us_available:
             return engine._speak_prepared(replace(prepared, parts=(*prefix, *prepared.parts)), on_pcm, on_index)
-        apply_u_a_glides(controls, item.ticks, glides)
         transferred = False
         if us_available:
-            english_key = owner._key(US_ENGLISH.id, key[1])
-            english_engine = owner._activate(english_key)
-            english = _PlanningVoice(owner, english_key, english_engine, prefix=donor_prefix)
-            # A previous navigation request may have been cancelled while
-            # its US handle was active. Phoneme probes run before speak(),
-            # so they do not reset that stale stop themselves. Synchronize
-            # with cancellation and never clear a new stop for this request.
-            with owner._guard:
-                if owner._cancelled.is_set():
-                    return False
-                english.raw._cancelled.clear()
-            previous_tags = english._dll.eciGetParam(english._handle, PROCESS_TAGS)
-            if previous_tags < 0:
-                raise RuntimeError('cannot read US tag setting')
-            if previous_tags != 1:
-                english.raw.set_parameter(PROCESS_TAGS, 1)
-            try:
-                word_marks = tuple(words[word] for word in range(1, len(matches)))
-                proxy = indexed_us_proxy(_sentence_colons_as_periods(prepared.tagged, prepared.source),
-                                         english, word_marks)
-                donor = CapturedRows.from_capture(
-                    FrameCapture(english._dll).capture(english, proxy, maximum=30000, audio=False))
-            finally:
+            donor_capture = None
+            if pending_pilot is not None:
+                future, pending_pilot = pending_pilot, None
+                try:
+                    donor_capture = future.result()
+                except InterruptedError:
+                    raise
+                except (ValueError, RuntimeError, OSError):
+                    if owner._cancelled.is_set():
+                        raise InterruptedError('sentence planning was cancelled')
+            if donor_capture is None:
                 if previous_tags != 1:
-                    english.raw.set_parameter(PROCESS_TAGS, previous_tags)
+                    english.raw.set_parameter(PROCESS_TAGS, 1)
+                try:
+                    proxy = indexed_us_proxy(tagged_donor, english, word_marks)
+                    donor_capture = FrameCapture(english._dll).capture(
+                        english, proxy, maximum=30000, audio=False)
+                finally:
+                    if previous_tags != 1:
+                        english.raw.set_parameter(PROCESS_TAGS, previous_tags)
+            donor = CapturedRows.from_capture(donor_capture, native=capture_api.frame_ticks)
             target = reference if pitch_ratios is not None else item
             transferred = fit_us_word_pitch(
                 target, (0, len(target.pcm) // 2), donor, (0, len(donor.pcm) // 2),
-                word_marks, word_marks, rate, FrameCapture(voice._dll),
+                word_marks, word_marks, rate, capture_api,
                 check=lambda: (_ for _ in ()).throw(InterruptedError()) if owner._cancelled.is_set() else None,
                 syllable_counts=tuple(len(re.findall(r'\.[012]', tag)) for tag in tags))
             if not transferred and word_marks:
@@ -819,7 +852,7 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
                 # phrase if its per-word alignment cannot be trusted.
                 transferred = fit_us_word_pitch(
                     target, (0, len(target.pcm) // 2), donor, (0, len(donor.pcm) // 2),
-                    (), (), rate, FrameCapture(voice._dll),
+                    (), (), rate, capture_api,
                     check=lambda: (_ for _ in ()).throw(InterruptedError()) if owner._cancelled.is_set() else None)
             if not transferred and not any(row.controls[2] > 0 and row.controls[1] > 0
                                            for row in target.frames):
@@ -842,7 +875,7 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
                         english.raw.set_parameter(PROCESS_TAGS, previous_tags)
                 transferred = fit_us_word_pitch(
                     target, (0, len(target.pcm) // 2), rescue, (0, len(rescue.pcm) // 2),
-                    (), (), rate, FrameCapture(voice._dll),
+                    (), (), rate, capture_api,
                     check=lambda: (_ for _ in ()).throw(InterruptedError()) if owner._cancelled.is_set() else None)
             if transferred and pitch_ratios is not None:
                 for frame in range(len(item.frames)):
@@ -886,6 +919,14 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
             return False
         _log.debug('Persian vowel glide unavailable: %s', error)
         return None
+    finally:
+        if pending_pilot is not None:
+            if not pending_pilot.cancel():
+                pilot_worker.cancel()
+            try:
+                pending_pilot.result()
+            except BaseException:
+                pass
     if owner._cancelled.is_set():
         return False
     owner._activate(key)
@@ -893,14 +934,22 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
                                          cancelled=owner._cancelled)
 
 
-def sentence_jobs(parts, home):
-    """Split mixed speech at unambiguous native phrase punctuation."""
+def sentence_jobs(parts, home, *, hard_only=False):
+    """Split speech at unambiguous native phrase punctuation.
+
+    For a single Persian language, split only complete sentences. This lets
+    NVDA start a long passage without planning every later sentence, while
+    keeping commas and other clause boundaries in their original context.
+    """
     if any(not isinstance(p, (str, EciText, EciIndex, EciLanguage, EciCapitalWord)) or
            isinstance(p, EciText) and (p.character_mode or p.is_control) for p in parts):
         return ()
     full = ''.join(p if isinstance(p, str) else p.text if isinstance(p, EciText) else
                    p.original if isinstance(p, EciCapitalWord) else '' for p in parts)
-    if not any(c in full for c in '.!?؟,;:،؛\n'):
+    if hard_only and '`' in full:
+        return ()
+    punctuation = '.!?؟:\n' if hard_only else '.!?؟,;:،؛\n'
+    if not any(c in full for c in punctuation):
         return ()
     jobs, pending, key, offset = [], [], home, 0
     for part in parts:
@@ -919,9 +968,11 @@ def sentence_jobs(parts, home):
         begin = 0
         for i, char in enumerate(value):
             absolute = offset + i
-            if char not in '.!?؟,;:،؛\n':
+            if char not in punctuation:
                 continue
             after = full[absolute + 1:absolute + 2]
+            if hard_only and char != '\n' and after and not after.isspace():
+                continue
             if char == ':' and not _colon_ends_sentence(full, absolute):
                 continue
             if char in '.,;،؛' and after and not after.isspace():

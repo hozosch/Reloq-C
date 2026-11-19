@@ -1901,26 +1901,31 @@ def prepare_z_noise(work: Path) -> None:
     destination.write_text(text[:begin] + section + text[end:], encoding='utf8')
 
 
+def pre_stressed_hiatus_helper() -> str:
+    """Find an unstressed vowel between a vowel and a stressed vowel in one word."""
+    medial_helper = FINNISH_L_WORD_FINAL.replace('persian_probe_l_word_final',
+                                                 'persian_probe_before_stressed_hiatus')
+    original_scan = ('    int final=!setscan_r(d,2) && !testFldeq(d,2,0,21) &&\n'
+                     '              !advance_tok(d) && advance_tok(d);')
+    if medial_helper.count(original_scan) != 1:
+        raise RuntimeError('Cannot locate medial vowel word-fence scan')
+    return medial_helper.replace(original_scan, r'''    int left_vowel=!setscan_l(d,2) && !testFldeq(d,2,1,1) && !advance_tok(d);
+    memset(EVV_AT(void *,d->fence_marks),0,d->nstmts);
+    lpta_loadp(d,EVV_AT(const delta_token *,token_ref));
+    int right_vowel=!setscan_r(d,2) && !advance_tok(d) && !testFldeq(d,2,1,1) &&
+                    !testFldeq(d,2,7,1) && !advance_tok(d);
+    int final=left_vowel && right_vowel;''', 1)
+
+
 def prepare_short_initial_timing(work: Path, first_helper: str, next_helper: str) -> Path:
     """Use short nucleus timing in selected contexts without replacing its sound."""
     name = 'delta_rules_c04_fifi.c'
     text = (PROVIDER / 'lang' / 'fifi' / name).read_text(encoding='utf8')
     marker = 'int32_t reloq_fifi_assign_fin_nuc_durs(void *state, int32_t p0)\n{\n'
-    medial_helper = FINNISH_L_WORD_FINAL.replace('persian_probe_l_word_final',
-                                                 'persian_probe_between_e_and_stressed_a')
-    original_scan = ('    int final=!setscan_r(d,2) && !testFldeq(d,2,0,21) &&\n'
-                     '              !advance_tok(d) && advance_tok(d);')
-    if medial_helper.count(original_scan) != 1:
-        raise RuntimeError('Cannot locate medial vowel word-fence scan')
-    medial_helper = medial_helper.replace(original_scan, r'''    int left_e=!setscan_l(d,2) && !testFldeq(d,2,0,29) && !advance_tok(d);
-    memset(EVV_AT(void *,d->fence_marks),0,d->nstmts);
-    lpta_loadp(d,EVV_AT(const delta_token *,token_ref));
-    int right_a=!setscan_r(d,2) && !advance_tok(d) && !testFldeq(d,2,0,34) &&
-                !testFldeq(d,2,7,1) && !advance_tok(d);
-    int final=left_e && right_a;''', 1)
+    medial_helper = pre_stressed_hiatus_helper()
     helper = r'''
 /* A long marker can require short timing at an unstressed word onset, or
-   between /e/ and a stressed /a/ as in names ending in -e-i-an. Change
+   between vowels before stress. Change
    only the duration-planning record, then restore the phonetic target. */
 static int32_t persian_short_initial_begin(void *state)
 {
@@ -1941,7 +1946,7 @@ static int32_t persian_short_initial_begin(void *state)
     int selected=(phone==31 || phone==32) &&
         persian_probe_first_of_multiple_vowels(state,STATE_AT(w26,-4));
     if (phone==27)
-        selected=persian_probe_between_e_and_stressed_a(state,STATE_AT(w26,-4));
+        selected=persian_probe_before_stressed_hiatus(state,STATE_AT(w26,-4));
     if (!selected) return 0;
     if (phone==32) {
         int32_t next_ref=EVV_AT(int32_t *,node)[1]&~3;
@@ -2132,6 +2137,16 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
                 if(short_u_cluster)scaled=(scaled*9+5)/10;
                 STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
             }
+            /* A weak /i/ in vowel hiatus before a stressed vowel must not
+               carry a second long nucleus. Give both long- and short-tagged
+               /i/ the same compact timing; keep their acoustic targets and
+               all consonant and word-boundary timings unchanged. */
+            if (us_timing && node && cls==1 && phone==27 && stress==0 &&
+                STATE(int32_t,f33)>0 &&
+                persian_probe_before_stressed_hiatus(state,STATE_AT(w26,-4))) {
+                int64_t scaled=((int64_t)STATE(int32_t,f33)*3+2)/5;
+                STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
+            }
             if (tracing)
                 fprintf(stderr,"FA_NUC phone=%d class=%d stress=%d length=%d before=%d duration=%d final=%d yek=%d\n",
                         phone,cls,stress,length,(int)before,(int)STATE(int32_t,f33),final,short_yek);
@@ -2181,7 +2196,7 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
     }
     int final=first && later;''', 1)
     prepare_short_initial_timing(work, first_helper, next_helper)
-    text = text[:begin] + helper + '\n' + next_helper + '\n' + section + text[end:]
+    text = text[:begin] + helper + '\n' + next_helper + '\n' + pre_stressed_hiatus_helper() + '\n' + section + text[end:]
     include = '#include "reloq61_rule_calls_fifi.h"\n'
     if text.count(include) != 1:
         raise RuntimeError('Cannot locate duration probe includes')

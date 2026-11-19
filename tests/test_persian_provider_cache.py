@@ -16,6 +16,23 @@ import reuse_persian_provider_cache as cache
 
 
 class CacheReuseTests(unittest.TestCase):
+    def test_dev171_checks_scope_and_rebuilds_both_hiatus_units(self):
+        for changed, accepted in ((cache.DEV171_ALLOWED, True),
+                                  (cache.DEV171_ALLOWED | {'include/reloq_eci.h'}, False),
+                                  (set(), False)):
+            with self.subTest(changed=changed), tempfile.TemporaryDirectory() as tmp:
+                build = Path(tmp) / 'windows-release'; build.mkdir()
+                with patch.object(cache, 'BUILD', build), patch.object(cache, 'git', return_value='\n'.join(changed)), \
+                     patch.object(cache, 'reuse_dev156_generated') as reuse, \
+                     patch.dict(os.environ, {'PERSIAN_PROVIDER_CACHE_KEY': cache.DEV171_KEY}), \
+                     contextlib.redirect_stdout(io.StringIO()):
+                    cache.main()
+                self.assertEqual(reuse.called, accepted)
+                self.assertEqual(build.exists(), accepted)
+                if accepted:
+                    reuse.assert_called_once_with(frozenset({'delta_rules_c04_fifi.c', 'delta_rules_c08_fifi.c'}),
+                                                  original_count=22)
+
     def test_dev170_checks_build_instructions_and_rebuilds_duration_dispatcher(self):
         old_make='PERSIAN_NAMES := delta_rules_c02_fifi.c delta_rules_c05_dede61.c'
         new_make=old_make.replace('delta_rules_c02_fifi.c delta_rules_c05_dede61.c',

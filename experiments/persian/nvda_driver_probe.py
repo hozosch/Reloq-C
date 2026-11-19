@@ -539,7 +539,15 @@ class PersianProbeLanguageEngine(LanguageEngine):
                 self._uppercase_cache = type(prior_uppercase)()
             mixed = (spoken <= allowed and US_ENGLISH.id in spoken and
                      bool(spoken & {PERSIAN_PROBE.id, PINGLISH_PROBE.id}))
-            jobs = sentence_jobs(output, self._home) if mixed else ()
+            if mixed:
+                jobs = sentence_jobs(output, self._home)
+            elif len(spoken) == 1 and spoken <= {PERSIAN_PROBE.id, PINGLISH_PROBE.id}:
+                # A full stop, question or exclamation ends a Persian
+                # sentence too. Plan later sentences after the first has
+                # started, without cutting the intervening clause contours.
+                jobs = sentence_jobs(output, self._home, hard_only=True)
+            else:
+                jobs = ()
             if not jobs:
                 jobs = (tuple(output),)
             split = tuple(piece for job in jobs for piece in bracket_jobs(

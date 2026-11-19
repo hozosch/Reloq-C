@@ -36,6 +36,12 @@ def main():
                 reference = capture(acoustic, scope, short)
                 a,b=observed.syllables[5]; c,d=reference.syllables[5]
                 assert b-a == d-c, (word, b-a, d-c)
+                # The old short tag was itself too long in this hiatus.
+                # Compare against a short /i/ before the same stressed vowel
+                # after an ordinary consonant, not just against that tag.
+                consonant_context = capture(acoustic, scope, '`[.1Ga.0Ji.1an]')
+                x,y=consonant_context.syllables[4]
+                assert b-a <= y-x, (word, b-a, y-x)
     finally:
         acoustic.close()
         owner.close()

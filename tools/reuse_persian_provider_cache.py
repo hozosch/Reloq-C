@@ -124,6 +124,10 @@ DEV169_ALLOWED = {'experiments/persian/build_native_probe.py'}
 DEV170_BASE = '6e717f8702d4fc273fb0745027c06f9edaa3dd67'
 DEV170_KEY = ('persian-windows-provider-gcc14-v2-'
               '782694288976480b757bf5220770ab738c651bf3e9222a0c071b2a7198289a63')
+DEV171_BASE = '47556f94145392ee16adf706b40ebab347ba1df6'
+DEV171_KEY = ('persian-windows-provider-gcc14-v2-'
+              '02eff3929fd30e8fdebed50f38e28587951afe693dc8f0aa800f0512c3cf5f6b')
+DEV171_ALLOWED = {'experiments/persian/build_native_probe.py'}
 DEV170_ALLOWED = {'experiments/persian/build_native_probe.py',
                   'vendor/openevv61/Makefile.native', 'tools/prepare_persian_provider.py'}
 DEV161_ALLOWED = {
@@ -179,11 +183,12 @@ def eligible_recent(key, changed, blobs):
             blobs == RECENT_HEADERS)
 
 
-def reuse_dev156_generated(expected=frozenset({'delta_rules_c02_fifi.c'}), added=frozenset()):
+def reuse_dev156_generated(expected=frozenset({'delta_rules_c02_fifi.c'}), added=frozenset(),
+                           original_count=21):
     """Regenerate and byte-check every source, rebuilding only expected units."""
     cached = BUILD / 'persian-provider'
     old = {path.name: path for path in cached.glob('*.c')}
-    if len(old) != 21 or not (cached / '.stamp').is_file():
+    if len(old) != original_count or not (cached / '.stamp').is_file():
         raise ValueError('cached Persian source set is incomplete')
     with tempfile.TemporaryDirectory(prefix='persian-recheck-', dir=BUILD.parent) as temp:
         regenerated = Path(temp) / 'generated'
@@ -218,6 +223,13 @@ def reuse_dev156_generated(expected=frozenset({'delta_rules_c02_fifi.c'}), added
 def main():
     try:
         key = os.environ.get('PERSIAN_PROVIDER_CACHE_KEY', '')
+        if key == DEV171_KEY:
+            changed = set(git('diff', '--name-only', DEV171_BASE, 'HEAD', '--', *INPUTS).splitlines())
+            if changed != DEV171_ALLOWED:
+                raise ValueError('Persian hiatus timing inputs differ from the verified scope')
+            reuse_dev156_generated(frozenset({'delta_rules_c04_fifi.c', 'delta_rules_c08_fifi.c'}),
+                                   original_count=22)
+            return
         if key == DEV170_KEY:
             changed = set(git('diff', '--name-only', DEV170_BASE, 'HEAD', '--', *INPUTS).splitlines())
             if changed != DEV170_ALLOWED:
