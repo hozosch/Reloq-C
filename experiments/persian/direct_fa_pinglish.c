@@ -81,7 +81,7 @@ static int persian_dictionary_pinglish(const char *key,char *output,size_t capac
      * policy as Persian script. Do not guess an unrecognized base. */
     static const struct {const char *roman,*persian;} endings[]={
         {"ash","ش"},{"tar","تر"},{"am","م"},{"at","ت"},
-        {"ha","ها"},{"ye","ی"}
+        {"ha","ها"},{"ye","ی"},{"an","ان"}
     };
     for(size_t i=0;i<sizeof endings/sizeof endings[0];++i) {
         size_t suffix=strlen(endings[i].roman);

@@ -1245,7 +1245,7 @@ struct rule_span {
 };
 struct quiet_cut { int64_t from,to,after; };
 struct rule_control { int64_t tick;size_t ordinal;int parameter,value; };
-struct rule_fa_phone {int32_t from,to;unsigned phone;};
+struct rule_fa_phone {int32_t from,to,articulation_end;unsigned phone;};
 extern int reloq61_generate_with_pauses(const struct reloq61_request *,struct reloq61_result *,
     int,void (*)(void *,int64_t,int64_t,int64_t),void *);
 struct rule_playback;
@@ -1270,7 +1270,7 @@ static void take_fa_phone(void *context,int32_t from,int32_t to,unsigned phone)
 {
     struct rule_plan *s=context;
     if(s->fa_phone_failed)return;
-    if(from<0 || to<=from || phone>RELOQ_FA_TUNE_R_BEFORE_I ||
+    if(from<0 || to<=from || phone>RELOQ_FA_TUNE_BEFORE_FINAL_H ||
        (s->fa_phone_count && from<s->fa_phones[s->fa_phone_count-1].from)) {
         s->fa_phone_failed=1;return;
     }
@@ -1282,7 +1282,7 @@ static void take_fa_phone(void *context,int32_t from,int32_t to,unsigned phone)
         s->fa_phones=next;s->fa_phone_capacity=cap;
     }
     if(s->fa_phone_count)s->fa_phones[s->fa_phone_count-1].to=from;
-    s->fa_phones[s->fa_phone_count++]=(struct rule_fa_phone){from,to,phone};
+    s->fa_phones[s->fa_phone_count++]=(struct rule_fa_phone){from,to,to,phone};
 }
 static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],float duration)
 {
@@ -1296,9 +1296,30 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
      * established it; otherwise a transient fade would colour the middle of
      * a vowel. The next event usually arrives ahead of its acoustic start. */
     int32_t to=s->fa_phone_next+1<s->fa_phone_count?p->to:INT32_MAX;
-    if(p->phone && native>=p->from && native<to)
-        reloq_fa_tuning_targets(controls,p->phone,p->from/10000.0,to/10000.0,
-                                (double)tick,duration,reloq_session_sample_rate(s->session));
+    if(p->phone && native>=p->from && native<to) {
+        int rate=reloq_session_sample_rate(s->session);
+        if(p->phone==RELOQ_FA_TUNE_BEFORE_FINAL_H && native>=p->articulation_end) {
+            /* A following final-H carrier already schedules the usual AH
+               breath. A voiced sonorant must release its source into it;
+               otherwise H becomes an unwanted vowel-like extra syllable. */
+            double elapsed=(native-p->articulation_end)/10000.0;
+            double weight=elapsed>=4?0:1-elapsed/4.0;
+            if(controls[2]>0)controls[2]=(float)floor(controls[2]*weight+0.5);
+        } else if(p->phone==RELOQ_FA_TUNE_R_BEFORE_BACK_A &&
+           s->fa_phone_next+1<s->fa_phone_count &&
+           s->fa_phones[s->fa_phone_next+1].phone==RELOQ_FA_TUNE_BACK_A)
+            reloq_fa_tuning_r_to_back_a(controls,p->articulation_end/10000.0,
+                                        to/10000.0,(double)tick,rate);
+        else {
+            unsigned phone=p->phone;
+            if(phone==RELOQ_FA_TUNE_BACK_A && s->fa_phone_next &&
+               s->fa_phones[s->fa_phone_next-1].phone==RELOQ_FA_TUNE_R_BEFORE_BACK_A &&
+               s->fa_phones[s->fa_phone_next-1].articulation_end<p->from)
+                phone=RELOQ_FA_TUNE_BACK_A_AFTER_R;
+            reloq_fa_tuning_targets(controls,phone,p->from/10000.0,to/10000.0,
+                                    (double)tick,duration,rate);
+        }
+    }
 }
 static struct rule_span *new_span(struct rule_plan *s)
 {

@@ -1,0 +1,53 @@
+"""Verify that final H keeps a breath impulse without a voiced extra syllable."""
+from __future__ import annotations
+import argparse
+from pathlib import Path
+import statistics
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
+from _reloq_eci_direct import GENDER, HEAD_SIZE, NATIVE_SPEED, SAMPLE_RATE
+from _reloq_persian_frames import FrameCapture
+from test_us_articulation import voice
+
+
+def capture(engine, scope, tag, selected=True):
+    previous = scope(int(selected))
+    try:
+        result = FrameCapture(engine._dll).capture(engine, (tag,), phone_segments=True)
+        assert result and result.pcm and len(result.syllables) >= 4, tag
+        return result
+    finally:
+        assert scope(previous) == int(selected)
+
+
+def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--library', required=True, type=Path)
+    args=parser.parse_args()
+    engine,scope=voice(args.library,0x90000)
+    checks=0
+    try:
+        for rate in (1,3,6):
+            for gender,head in ((0,50),(1,50),(1,20)):
+                for speed in (40,65,100):
+                    for key,value in ((SAMPLE_RATE,rate),(GENDER,gender),(HEAD_SIZE,head),(NATIVE_SPEED,speed)):
+                        engine.set_parameter(key,value)
+                    for tag in ('`[.1solhw]', '`[.1sAlhw]', '`[.1sAthw]', '`[.1tArhw]',
+                                '`[.1solhw] `[.1mAn]'):
+                        result=capture(engine,scope,tag)
+                        # In this finite set the first final-H carrier is the
+                        # fourth phone, just after /l/, /t/ or /r/.
+                        lo=result.syllables[2][1]/10000
+                        hi=result.syllables[3][0]/10000
+                        assert 10<=hi-lo<=130,(tag,rate,gender,speed,lo,hi)
+                        rows=[row for row in result.frames() if lo+(hi-lo)*.35<=row.tick<=lo+(hi-lo)*.7]
+                        assert rows,(tag,rate,gender,speed)
+                        av=statistics.median(row.controls[2] for row in rows)
+                        ah=statistics.median(row.controls[7] for row in rows)
+                        assert av<=5 and ah>=20,(tag,rate,gender,head,speed,'AV/AH',av,ah)
+                        checks+=1
+    finally:engine.close()
+    print(f'Passed {checks} final-H impulse checks after consonants across voices and rates.')
+
+
+if __name__=='__main__':main()

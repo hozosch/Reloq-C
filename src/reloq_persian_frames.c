@@ -29,8 +29,11 @@ void reloq_fa_tuning_targets(float c[62],unsigned phone,double from,double to,
         {0,0,0,0},{25,-50,25,75},{0,-25,50,25},{0,0,-25,75},
         {0,0,50,425},{0,0,0,0}};
     static const unsigned columns[4]={9,13,15,17};
+    int after_r=phone==RELOQ_FA_TUNE_BACK_A_AFTER_R && fa_tuning_on==1;
+    if(phone==RELOQ_FA_TUNE_BACK_A_AFTER_R)phone=RELOQ_FA_TUNE_BACK_A;
     if(!fa_tuning_on || !c || phone<1 || phone>5 || from<0 || to<=from || at<from || at>=to || rate<8000)return;
-    double w=fmin(1.0,fmin(fmax(0.0,(at-from)/3.0),fmax(0.0,(to-at)/3.0)));
+    double fade_in=after_r?1.0:fmax(0.0,(at-from)/3.0);
+    double w=fmin(1.0,fmin(fade_in,fmax(0.0,(to-at)/3.0)));
     for(unsigned i=0;i<4;++i)if(shifts[phone][i] && c[columns[i]]>0 && w>0) {
         double v=c[columns[i]]+shifts[phone][i]*w;
         c[columns[i]]=(float)fmax(40.0,fmin(rate*.475,v));
@@ -47,6 +50,24 @@ void reloq_fa_tuning_targets(float c[62],unsigned phone,double from,double to,
     if(from>0)gain=fmin(gain,fmax(0.0,(centre-from)/8.0));
     gain=fmin(gain,fmax(0.0,(to-centre)/8.0));
     if(gain>0){c[11]=(float)(RELOQ_FA_TUNING_MARKER+phone);c[12]=(float)gain;}
+}
+
+/* The revised back-A targets used to appear only after the vowel edge,
+ * producing an abrupt formant step in an already voiced R-to-A transition.
+ * Bring those exact targets in smoothly after the R's articulation ends.
+ * The other vowel edits, the previous project and the steady vowel are not
+ * changed. Work in the same transformed control domain as the saved edit. */
+void reloq_fa_tuning_r_to_back_a(float c[62],double from,double to,double at,int rate)
+{
+    static const int shift[4]={100,125,-25,-25};
+    static const unsigned columns[4]={9,13,15,17};
+    if(fa_tuning_on!=1 || !c || rate<8000 || from<0 || to<=from || at<from || at>=to)return;
+    double w=fmax(0.0,fmin(1.0,(at-from)/(to-from)));
+    w=w*w*(3.0-2.0*w);
+    for(unsigned i=0;i<4;++i)if(c[columns[i]]>0) {
+        double value=c[columns[i]]+shift[i]*w;
+        c[columns[i]]=(float)fmax(40.0,fmin(rate*.475,value));
+    }
 }
 
 static void tuning_prepare(struct reloq_fa_tuning_filter *f,const float c[62],int rate,int revision)

@@ -2,7 +2,7 @@ name: Persian NVDA direct test
 on:
   workflow_dispatch:
   push:
-    branches: [codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117, codex/persian-us-contour-20261117, codex/persian-adjectives-20261117, codex/persian-ra-pinglish-20261119]
+    branches: [codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117, codex/persian-us-contour-20261117, codex/persian-adjectives-20261117, codex/persian-ra-pinglish-20261119, codex/persian-core-20261119]
     paths:
       - .github/workflows/persian-nvda-direct-test.yml
       - .github/workflows/persian-windows-acoustic-probe.yml
@@ -147,6 +147,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Mixed Unicode name routing failed' }
           python -B experiments/persian/test_us_contour_runtime.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Persian US contour, weak words or final vowels failed' }
+          python -B experiments/persian/test_native_us_word_contour.py --library "$dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Native US word contour failed' }
           python -B experiments/persian/test_persian_acoustic_clock.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Persian and Pinglish acoustic clock failed' }
           python -B experiments/persian/test_lautlabor_project.py --library "$dll"
@@ -179,6 +181,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian hundred-group timing failed' }
           python -B experiments/persian/test_persian_h_after_l.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Persian h after l is not audible' }
+          python -B experiments/persian/test_persian_final_h_after_consonant.py --library "$dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Persian final h impulse failed' }
           python -B experiments/persian/test_persian_r_after_i_contexts.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Persian medial r after i failed' }
           python -B experiments/persian/test_bakhtiari_football.py --library "$dll"
@@ -205,7 +209,7 @@ jobs:
         shell: bash
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
-          if [ "$GITHUB_REF_NAME" = "codex/persian-ra-pinglish-20261119" ]; then version=1.5.0-dev173; elif [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev172; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; elif [ "$GITHUB_REF_NAME" = "codex/persian-vowels-20261117" ]; then version=1.5.0-dev142; else version=1.5.0-dev141; fi
+          if [ "$GITHUB_REF_NAME" = "codex/persian-core-20261119" ]; then version=1.5.0-dev174; elif [ "$GITHUB_REF_NAME" = "codex/persian-ra-pinglish-20261119" ]; then version=1.5.0-dev173; elif [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev172; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; elif [ "$GITHUB_REF_NAME" = "codex/persian-vowels-20261117" ]; then version=1.5.0-dev142; else version=1.5.0-dev141; fi
           dll=$(find candidate -name eci.dll -print -quit)
           python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version "$version" --output "dist/reloq-c-persian-pinglish-$version.nvda-addon"
           python -B experiments/persian/build_soundlab_nvda.py --output dist/reloq-c-lautlabor-0.2.0.nvda-addon

@@ -36,6 +36,17 @@ class ObservedApi:
             self.anchored += 1
         return result
 
+    @property
+    def transfer_us_words(self):
+        return self._transfer_us_words if getattr(self.wrapped, 'transfer_us_words', None) is not None else None
+
+    def _transfer_us_words(self, *args):
+        transfer = self.wrapped.transfer_us_words
+        result = transfer(*args)
+        if result == 0 and args[-1] is not None and any(args[-1][i] > 1 for i in range(args[6])):
+            self.anchored += 1
+        return result
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)

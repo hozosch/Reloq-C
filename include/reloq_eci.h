@@ -374,6 +374,14 @@ ECIAPI int ECICALL eciPersianFitPitch(struct reloq_fa_frame *rows,size_t count,
 ECIAPI int ECICALL eciPersianFitPitchAnchors(struct reloq_fa_frame *rows,size_t count,
     const float *pilot,size_t length,int64_t start,int64_t end,int64_t a,int64_t b,
     const int64_t *target,const int64_t *source,size_t anchors);
+/* Fit a captured US contour to Persian word and syllable boundaries. This
+ * transfers only pitch and leaves frame timing and other controls untouched.
+ * Returns 0 on success, 1 if alignment is unavailable, -1 on invalid input. */
+ECIAPI int ECICALL eciPersianTransferUsWords(struct reloq_fa_frame *target,size_t target_count,
+    const struct reloq_fa_frame *donor,size_t donor_count,const int64_t *target_bounds,
+    const int64_t *donor_bounds,size_t word_count,const struct reloq_fa_syllable *target_syllables,
+    size_t target_syllable_count,const struct reloq_fa_syllable *donor_syllables,
+    size_t donor_syllable_count,const uint32_t *syllables_per_word);
 /* Keep the original pitch except near language-switch edges. Bit 0 selects
  * the beginning and bit 1 the end; window is in the frame clock's ms. */
 ECIAPI int ECICALL eciPersianFitPitchEdges(struct reloq_fa_frame *rows,size_t count,

@@ -846,6 +846,37 @@ static void apply_persian_stress(const char *word,size_t bytes,char *tag,int dir
         }
     unsigned kind=stress_class(word,bytes);
 
+    /* A productive nominal -an plural bears the accent. Require a known
+     * non-verbal stem, one additional syllable, and the corresponding /an/
+     * ending; independently classified words and verbs keep their own rules. */
+    size_t stem_an=0;
+    if(!kind && ends_with(word,bytes,"ان",&stem_an) && stress_class(word,stem_an)==1u) {
+        char base[2048];size_t n=strlen(tag);
+        if(n>=3 && !memcmp(tag+n-3,"an]",3) &&
+           direct_context_word_exact(word,stem_an,0,base,sizeof base)==1 &&
+           stress_syllables(base)+1==syllables) {
+            stress_primary(tag,syllables-1);return;
+        }
+    }
+
+    /* A final written -y after a vowel can represent the unstressed /ye/
+     * ezafe. The independent noun and its additional /ye/ syllable provide
+     * the evidence; an independently classified spelling is left alone. */
+    size_t stem_y=0,vowel_stem=0;
+    if(!kind && ends_with(word,bytes,"ی",&stem_y) &&
+       (ends_with(word,stem_y,"ا",&vowel_stem) || ends_with(word,stem_y,"و",&vowel_stem)) &&
+       stress_class(word,stem_y)==1u) {
+        const char *last=NULL;
+        for(size_t i=2;tag[i] && tag[i]!=']';++i)
+            if(tag[i]=='.' && tag[i+1]>='0' && tag[i+1]<='2')last=tag+i+2;
+        char base[2048];
+        if(last && (!strcmp(last,"je]") || !strcmp(last,"j'e:']")) &&
+           direct_context_word_exact(word,stem_y,0,base,sizeof base)==1) {
+            size_t count=stress_syllables(base);
+            if(count && count+1==syllables){stress_primary(tag,count-1);return;}
+        }
+    }
+
     /* The written plural -یان is accented when its independently known
      * base already ends in ی and the generated last syllable is /jan/.
      * Keep verbal homographs and unrelated spellings on their old path. */

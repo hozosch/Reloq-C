@@ -2,7 +2,7 @@ name: Persian Windows acoustic probe
 on:
   workflow_dispatch:
   push:
-    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116, codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117, codex/persian-us-contour-20261117, codex/persian-adjectives-20261117, codex/persian-ra-pinglish-20261119]
+    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116, codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117, codex/persian-us-contour-20261117, codex/persian-adjectives-20261117, codex/persian-ra-pinglish-20261119, codex/persian-core-20261119]
     paths:
       - experiments/persian/build_native_probe.py
       - experiments/persian/build_windows_probe.py
@@ -13,6 +13,10 @@ on:
       - src/reloq_noise_profile.c
       - src/reloq_persian_acoustics.h
       - src/reloq_persian_frames.c
+      - src/reloq_persian_prosody.c
+      - experiments/persian/test_native_us_word_contour.py
+      - experiments/persian/test_persian_final_h_after_consonant.py
+      - experiments/persian/test_persian_worker_reuse.py
       - src/reloq_persian_frame_internal.h
       - src/reloq_eci.c
       - src/reloq_rules61.c
@@ -217,6 +221,12 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian hundred-group timing failed' }
           python -B experiments/persian/test_persian_h_after_l.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian h after l is not audible' }
+          python -B experiments/persian/test_persian_final_h_after_consonant.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Persian final h impulse failed' }
+          python -B experiments/persian/test_native_us_word_contour.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Native Persian US contour differed from the established planner' }
+          python -B experiments/persian/test_persian_worker_reuse.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Persian provider reuse isolation failed' }
           python -B experiments/persian/test_persian_r_after_i_contexts.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian medial r after i failed' }
           python -B experiments/persian/test_bakhtiari_football.py --library eci/eci.dll

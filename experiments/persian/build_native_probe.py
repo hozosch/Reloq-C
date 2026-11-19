@@ -127,6 +127,17 @@ static unsigned persian_probe_front_a_neighbour(void *state,int32_t position,int
     if(!node || (*EVV_AT(int32_t *,node)&2))return 0;
     return *(const unsigned char *)delta_record_field(&vstmtbl[2],0,TFLDS(EVV_AT(void *,node)));
 }
+static int persian_probe_following_final_h(void *state,int32_t position)
+{
+    delta_state *d=state;
+    if(!d || !position)return 0;
+    void *point=vmover(d,EVV_AT(int32_t *,position),2);
+    int32_t node=point?vgetsc(d,0,0,EVV_REF(point),2):0;
+    if(!node || (*EVV_AT(int32_t *,node)&2))return 0;
+    void *fields=TFLDS(EVV_AT(void *,node));
+    return *(const unsigned char *)delta_record_field(&vstmtbl[2],0,fields)==3 &&
+           *(const unsigned char *)delta_record_field(&vstmtbl[2],12,fields)==5;
+}
 '''
 
 FRONT_A_PATCH = r'''
@@ -3160,9 +3171,12 @@ static void persian_open_vowel(void *state,int phone)
         if (selected && selected[0]=='1' && !selected[1]) {
             unsigned current=persian_probe_front_a_neighbour(state,STATE(int32_t,w61),1);
             unsigned following=persian_probe_front_a_neighbour(state,STATE(int32_t,w61),0);
-            unsigned target=current==31?RELOQ_FA_TUNE_FRONT_A:current==34?RELOQ_FA_TUNE_BACK_A:
+            unsigned target=current>0 && current<27 &&
+                persian_probe_following_final_h(state,STATE(int32_t,w61))?RELOQ_FA_TUNE_BEFORE_FINAL_H:
+                current==31?RELOQ_FA_TUNE_FRONT_A:current==34?RELOQ_FA_TUNE_BACK_A:
                 current==29?RELOQ_FA_TUNE_E:current==33?RELOQ_FA_TUNE_O:
-                current==19 && following==27?RELOQ_FA_TUNE_R_BEFORE_I:RELOQ_FA_TUNE_OTHER;
+                current==19 && following==27?RELOQ_FA_TUNE_R_BEFORE_I:
+                current==19 && following==34?RELOQ_FA_TUNE_R_BEFORE_BACK_A:RELOQ_FA_TUNE_OTHER;
             reloq61_fa_phone_emit(state,STATE(int32_t,f10),STATE(int32_t,f11),target);
         }
     }

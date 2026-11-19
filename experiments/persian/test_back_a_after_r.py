@@ -51,21 +51,29 @@ def main():
                             new, nr = phones(current, scope, tag)
                             old, br = phones(previous, old_scope, tag)
                             assert new.syllables == old.syllables and len(new.pcm) == len(old.pcm), tag
-                            r_new, r_old = edge(nr, new.syllables[r_index], False), edge(br, old.syllables[r_index], False)
-                            a_new, a_old = edge(nr, new.syllables[a_index], True), edge(br, old.syllables[a_index], True)
+                            # The target sound in the middle of A must stay
+                            # unchanged; its former 3-ms onset step is now
+                            # distributed over the preceding R-to-A interval.
+                            a, b = (x / 10000 for x in new.syllables[a_index])
+                            middle = (a + b) / 2
+                            a_new = min(nr, key=lambda row: abs(row.tick-middle))
+                            a_old = min(br, key=lambda row: abs(row.tick-middle))
                             assert all(abs(a_new.controls[c]-a_old.controls[c]) < 0.01 for c in (9, 13, 15, 17)), tag
-                            for column in (15, 17):
-                                before = abs(r_old.controls[column] - a_old.controls[column])
-                                after = abs(r_new.controls[column] - a_new.controls[column])
-                                assert after <= before + 1, (gender, head, rate, speed, tag, column, before, after)
-                                improved += after + 50 < before
+                            for column in (9, 13):
+                                def onset_step(rows):
+                                    window = [row for row in rows if a-4 <= row.tick <= a+4]
+                                    return max((abs(y.controls[column]-x.controls[column])
+                                                for x, y in zip(window, window[1:])), default=0)
+                                before, after = onset_step(br), onset_step(nr)
+                                assert after <= before + 2, (gender, head, rate, speed, tag, column, before, after)
+                                improved += after + 8 < before
                             checks += 1
                         for tag in controls:
                             assert capture(current, scope, tag, True)[0].pcm == \
                                    capture(previous, old_scope, tag, True)[0].pcm, (gender, head, rate, speed, tag)
                             checks += 1
         assert improved >= 100, improved
-        print(f'Passed {checks} R-to-back-A and unaffected-vowel comparisons; {improved} upper-formant gaps narrowed.')
+        print(f'Passed {checks} R-to-back-A and unaffected-vowel comparisons; {improved} onset steps reduced.')
     finally:
         current.close()
         previous.close()

@@ -16,12 +16,12 @@ import threading
 
 if __package__:
     from .._reloq_eci_direct import EciIndex, EciText, SAMPLE_RATE, SAMPLE_RATES
-    from .._reloq_persian_frames import FrameCapture, NativeFrame
+    from .._reloq_persian_frames import FrameCapture, NativeFrame, NativeSyllable
     from .._reloq_persian_glide import TRACT, apply_u_a_glides, plan_u_a_glides
     from .text_frontend import native_sequence_accepted, native_tag_accepted
 else:
     from _reloq_eci_direct import EciIndex, EciText, SAMPLE_RATE, SAMPLE_RATES
-    from _reloq_persian_frames import FrameCapture, NativeFrame
+    from _reloq_persian_frames import FrameCapture, NativeFrame, NativeSyllable
     from _reloq_persian_glide import TRACT, apply_u_a_glides, plan_u_a_glides
     from text_frontend import native_sequence_accepted, native_tag_accepted
 
@@ -652,6 +652,26 @@ def fit_us_word_pitch(item, bounds, donor, donor_bounds, target_markers, donor_m
     if (any(a >= b for a, b in zip(target, target[1:])) or
             any(a >= b for a, b in zip(source, source[1:]))):
         return False
+    native_transfer = getattr(capture_api, 'transfer_us_words', None)
+    if native_transfer is not None:
+        if check:
+            check()
+        targets = (ctypes.c_int64 * len(target))(*target)
+        sources = (ctypes.c_int64 * len(source))(*source)
+        target_syllables = (NativeSyllable * len(item.syllables))(
+            *(NativeSyllable(a, b) for a, b in item.syllables)) if item.syllables else None
+        donor_syllables = (NativeSyllable * len(donor.syllables))(
+            *(NativeSyllable(a, b) for a, b in donor.syllables)) if donor.syllables else None
+        counts = ((ctypes.c_uint32 * count)(*syllable_counts)
+                  if len(syllable_counts) == count else None)
+        status = native_transfer(item.frames, len(item.frames), donor.frames, len(donor.frames),
+                                 targets, sources, count, target_syllables, len(item.syllables),
+                                 donor_syllables, len(donor.syllables), counts)
+        if check:
+            check()
+        if status < 0:
+            raise RuntimeError('invalid native US/Persian contour alignment')
+        return status == 0
     curve = _dense(donor, 1, check, native=capture_api.dense_curve)
     planned = []
     for i in range(count):

@@ -85,6 +85,7 @@ extern int32_t getEngsynError(delta_state *);
 extern THIS int32_t stl_stop_after_cancel(struct SynthThread *);
 extern void stb_staticWordCallback(int32_t,void *);
 extern void reloq61_array_reset(delta_state *);
+extern const char *reloq_fa_scoped_get(const char *);
 /* IndexManager is an original C++-style object: on 32-bit builds its first
  * argument is passed in ECX, just as in eci_synthidx.c. */
 extern THIS Index *sti_getIndex(void *,uint32_t);
@@ -1081,14 +1082,22 @@ static int generate_core_impl(const struct reloq61_request *q,struct reloq61_res
     if(q->phonemes && q->phonemes_capacity)q->phonemes[0]=0;
     struct provider_worker *worker=owner_worker&&owner_worker->language==q->language?owner_worker:NULL;
     int annotated=strchr(q->text,'`')!=NULL;
-    int reusable_text=!annotated||(q->language==0x120000&&greek_closed_spr_only(q->text));
+    /* Persian's closed pronunciation groups cannot change the provider's
+       annotation or spelling mode. While Persian acoustics are explicitly
+       scoped, prepare the next worker after the current audio instead of
+       resetting it on the critical path of every short utterance. Arbitrary
+       user control tags and ordinary Finnish keep the full-reset path. */
+    int persian_closed=annotated && q->language==0x90000 &&
+        reloq_fa_scoped_get("RELOQ_FA_US_ARTICULATION") && greek_closed_spr_only(q->text);
+    int reusable_text=!annotated||persian_closed||
+        (q->language==0x120000&&greek_closed_spr_only(q->text));
     int controls_changed=worker&&(worker->last_phonemes!=q->phonemes_only||
         worker->last_annotations!=q->annotations||worker->last_sample_rate!=q->sample_rate||
         worker->last_text_options.dictionary_disabled!=text_options.dictionary_disabled||
         worker->last_text_options.phrase_prediction!=text_options.phrase_prediction||
         worker->last_text_options.original_questions!=text_options.original_questions||
         memcmp(worker->last_voice,q->voice,sizeof worker->last_voice));
-    int reset=worker&&(!worker->prepared||annotated||controls_changed);
+    int reset=worker&&(!worker->prepared||(annotated&&!persian_closed)||controls_changed);
     int recover=worker&&worker->recoverable_cancel&&reusable_text&&!controls_changed;
     int prepared=worker&&worker->handle&&!reset;
     initialize();h=worker?worker->handle:NULL;
@@ -1266,7 +1275,7 @@ static int generate_core_impl(const struct reloq61_request *q,struct reloq61_res
         if(worker->recoverable_cancel)remember_controls(worker,q);
     } else if(!worker || !ok || r->error || r->unsupported) {
         release_handle(worker,h);
-    } else if(!annotated&&metadata&&!prepare_next(worker,q)) {
+    } else if((!annotated||persian_closed)&&metadata&&!prepare_next(worker,q)) {
         release_handle(worker,h);
     }
     reloq61_inline_scope(previous_inline);

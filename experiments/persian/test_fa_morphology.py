@@ -97,6 +97,19 @@ def main():
     assert project('نمی‌روم')=='`[.1ne.0mi.0rA.0vAm]'
     assert project('نمی‌خورم')=='`[.1ne.0mi.0Go.0rAm]'
 
+    # Productive nominal -an is accented, whereas ezafe /ye/ after a vowel
+    # leaves the accent on the independently known noun. Independently listed
+    # words and the previous decision on this surname remain unchanged.
+    assert project('پیمانکاران')=='`[.0pej.0man.0ka.1ran]'
+    assert project('صدای')=="`[.0se.1da.0j'e:']"
+    assert project('هوای')=='`[.0hA.1va.0je]'
+    assert project('بابای')=='`[.0ba.1ba.0je]'
+    assert project('دنیای')=='`[.0do.1nja.0je]'
+    assert project('پای')=='`[.1paj]'
+    assert project('تهران')=='`[.0teh.1ran]'
+    assert project('آسمان')=='`[.0a.0se.1man]'
+    assert project('خواجه‌ئیان')=="`[.1Ga.0J'e:'.0'i:'.1an]"
+
     # Apply productive accent patterns, but protect possessives, verbs,
     # independent pronouns and a known indefinite -i form.
     expected={

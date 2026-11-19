@@ -46,7 +46,7 @@ def main():
         if key in known or (key.endswith('eh') and key[:-1] in known):
             return True
         return any(key.endswith(suffix) and key[:-len(suffix)] in known
-                   for suffix in ('ash', 'tar', 'am', 'at', 'ha', 'ye'))
+                   for suffix in ('ash', 'tar', 'am', 'at', 'ha', 'ye', 'an'))
     checked = 0
     with EspeakPhonemeProbe(args.espeak_library, args.data_parent) as reference:
         for word in words:
@@ -81,6 +81,9 @@ def main():
     assert run('zooon')[0] == 0
     assert run('khane\0')[0] == -1
     assert run('world')[0] == 1  # /w/ uses the closest available Persian /v/.
+    assert run('peymankaran') == (1, '`[.0pej.0man.0ka.1ran]')
+    assert run('sedaye') == (1, "`[.0se.1da.0j'e:']")
+    assert run('havaye') == (1, '`[.0hA.1va.0je]')
     print(f'Passed {checked} direct Pinglish words, English exceptions and output bounds.')
 
 
