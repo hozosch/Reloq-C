@@ -58,7 +58,7 @@ static const struct fa_character_name fa_symbol_names[] = {
     {0x00a9u, "`[.1hAR] `[.1nos.0G'e:'.0bAr.1da.0ri]"},
     {0x00abu, "`[.0gi.0ju.1m'e:'] `[.1baz]"},
     {0x00acu, "`[.0nA.1Riz]"},
-    {0x00aeu, "`[.0ne.1San] `[.0te.0Ja.1ri] `[.1sAbt.1So.0d'e:']"},
+    {0x00aeu, "`[.0ne.1San] `[.0te.0Ja.1ri] `[.0sAbt.0So.1d'e:']"},
     {0x00b0u, "`[.0dA.0rA.1J'e:']"},
     {0x00b1u, "`[.0mos.1bAt] `[.0mAn.1fi]"},
     {0x00b2u, "`[.0A.1dAd] `[.1do] `[.1ba.1lan.1ga.0SAt]"},

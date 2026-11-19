@@ -1010,7 +1010,21 @@ void reloq_fa_direct_stress_after_word(const char *previous,size_t previous_byte
         previous_bytes-=sizeof kasra-1;
     for(size_t i=0;i<sizeof numerals/sizeof numerals[0];++i)
         if(stress_word_is(previous,previous_bytes,numerals[i]))return;
-    if(stress_class(previous,previous_bytes)!=1u || stress_class(word,bytes))return;
+    unsigned previous_kind=stress_class(previous,previous_bytes);
+    /* Explicit short-vowel marks on an initial alef do not change the
+     * lexical class of the already recognized preceding word. This lets
+     * an ezafe-marked phrase such as اِختیاراتِ مدیریتی reach the same
+     * adjective rule as its unmarked spelling. */
+    if(!previous_kind && previous_bytes>4 && previous_bytes<2048 &&
+       !memcmp(previous,"ا",2) && (unsigned char)previous[2]==0xd9 &&
+       ((unsigned char)previous[3]==0x8e || (unsigned char)previous[3]==0x8f ||
+        (unsigned char)previous[3]==0x90)) {
+        char bare[2048];
+        memcpy(bare,previous,2);
+        memcpy(bare+2,previous+4,previous_bytes-4);
+        previous_kind=stress_class(bare,previous_bytes-2);
+    }
+    if(previous_kind!=1u || stress_class(word,bytes))return;
     size_t stem=0,n=strlen(tag),syllables=stress_syllables(tag);
     if(!ends_with(word,bytes,"ی",&stem) || stress_class(word,stem)!=1u ||
        !syllables || n<3 || tag[n-1]!=']' || tag[n-2]!='i')return;
@@ -1255,6 +1269,33 @@ static int joined_suffix_word(const char *word,size_t bytes,int follows_word,
     return 0;
 }
 
+/* Productive resultative adjectives, e.g. ذخیره‌شده‌ی. A half-space
+ * joins the recognizable first component to the participle; the written
+ * ezafe after final ه is an unaccented /ye/, not another content word.
+ * Resolve the stem with the existing native rules rather than guessing an
+ * unknown stem, and keep a single accent on the participle itself. */
+static int joined_participle_word(const char *word,size_t bytes,
+                                  char *output,size_t capacity,unsigned depth)
+{
+    static const struct {const char *written,*spoken;} endings[]={
+        {"‌شده‌ی", "`[.0So.1de.0je]"},
+        {"‌شدهٔ", "`[.0So.1de.0je]"},
+        {"‌شده", "`[.0So.1d'e:']"}
+    };
+    for(size_t i=0;i<sizeof endings/sizeof endings[0];++i) {
+        size_t stem=0;
+        if(!ends_with(word,bytes,endings[i].written,&stem) || !stem)continue;
+        char left[2048];
+        int result=direct_context_depth(word,stem,0,left,sizeof left,depth+1);
+        if(result!=1)return result<0?result:0;
+        if(!single_phone_tag(left))return 0;
+        (void)shorten_written_final_e(word,stem,left);
+        stress_unaccent(left);
+        return append_phone_tags(left,endings[i].spoken,output,capacity);
+    }
+    return 0;
+}
+
 /* The plural of a known -گر agent noun is also commonly written without
  * a half-space. Reuse the established joined suffix analysis so both
  * spellings have the same phones and suffix stress. Restrict this to a
@@ -1414,6 +1455,8 @@ static int direct_context_depth(const char *word,size_t bytes,int follows_word,
     result=joined_ham_word(word,bytes,output,capacity,depth);
     if(result)return result;
     result=joined_suffix_word(word,bytes,follows_word,output,capacity,depth);
+    if(result)return result;
+    result=joined_participle_word(word,bytes,output,capacity,depth);
     if(result)return result;
     result=unspaced_agent_plural(word,bytes,follows_word,output,capacity,depth);
     if(result)return result;

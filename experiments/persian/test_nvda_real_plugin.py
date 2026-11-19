@@ -388,6 +388,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_Latn', 'salam-e', 'pipeline'),
                           ('fa_Latn', 'salam-e', 'pipeline_most'),
                           ('fa_IR', 'استفاده از NVDA هنگامِ ورود به ویندوز (به اِختیاراتِ مدیریتی نیاز دارد)', 'pipeline'),
+                          ('fa_IR', 'استفاده از تنظیماتِ ذخیره‌شده‌ی فعلی هنگامِ ورود به ویندوز و دیگر صفحاتِ امن (به اِختیاراتِ مدیریتی نیاز دارد)', 'pipeline'),
                           ('fa_IR', 'استفاده از NVDA هنگامِ ورود به ویندوز (به اِختیاراتِ مدیریتی نیاز دارد)', 'pipeline_most'),
                           ('fa_IR', 'استفاده از NVDA هنگامِ ورود به ویندوز (به اِختیاراتِ مدیریتی نیاز دارد)', 'checkbox_unchecked'),
                           ('fa_IR', 'استفاده از NVDA هنگامِ ورود به ویندوز (به اِختیاراتِ مدیریتی نیاز دارد)', 'checkbox_checked'),
@@ -476,6 +477,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                ('fa_IR', 'ایران', 'issue50_r_after_i_vowel'),
                                ('fa_IR', 'سیری', 'issue50_r_after_i_vowel'),
                                ('fa_IR', 'زیرخط', 'issue50_r_after_i_x_speed38'),
+                               ('fa_Latn', 'zirkhat', 'issue50_r_after_i_x_speed38'),
                                ('fa_IR', 'بختیاری‌زاده', 'issue49_native_new_compound'),
                                ('fa_IR', 'بختیارزاده', 'issue49_native_new_compound'),
                                ('fa_IR', 'فوتبال', 'issue49_native_new_compound'),
@@ -1108,8 +1110,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 if spelling == 'pipeline_stop' and '`[.0mo.0te.0vAR.1Ref]' not in tags:
                     raise AssertionError('NVDA spelled the Persian word for stopped: ' + ascii(tags))
                 if spelling == 'pipeline_log' and ("`[.1'e:'t.0te.1fa.0Ra.2te]" not in tags or
-                        "`[.1sAbt.1So.0d'e:']" not in tags):
+                        "`[.0sAbt.0So.1d'e:']" not in tags):
                     raise AssertionError('NVDA spelled part of the normalized log label: ' + ascii(tags))
+                if 'تنظیماتِ ذخیره‌شده‌ی' in text and (
+                        '`[.0zA.0Gi.0re.0So.1de.0je]' not in tags or
+                        '`[.0mo.0di.0ri.0jA.1ti]' not in tags):
+                    raise AssertionError('NVDA lost reported sentence morphology or stress: ' + ascii(tags))
                 if spelling == 'pipeline_user_latency' and any(tag not in tags for tag in (
                         '`[.0ne.1San]', '`[.1da.0dA.2ne]', '`[.0hen.1ga.0me]', '`[.0Ga.1reJ]')):
                     raise AssertionError('NVDA spelled part of the reported latency example: ' + ascii(tags))

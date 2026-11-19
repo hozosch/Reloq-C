@@ -61,7 +61,8 @@ def main():
                     football = capture(current, scope, FOOTBALL)
                     short_u = capture(current, scope, SHORT_U)
                     unvoiced = capture(current, scope, UNVOICED_CLUSTER)
-                    assert duration(short_u, 1) < min(duration(football, 1), duration(unvoiced, 1)), (
+                    assert duration(short_u, 1) < duration(football, 1) and \
+                        duration(short_u, 1) == duration(unvoiced, 1), (
                         rate, gender, head, speed, 'u durations',
                         duration(short_u, 1), duration(football, 1), duration(unvoiced, 1))
                     assert 54 <= max_noise(football, 2) <= 60, (rate, gender, head, speed, 't burst')

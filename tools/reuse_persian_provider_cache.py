@@ -121,6 +121,11 @@ DEV169_BASE = 'f25d48db9d0192d95fa6cda79feecfabaee0ddb1'
 DEV169_KEY = ('persian-windows-provider-gcc14-v2-'
               '04cc9a755afeb7ef13a3aebfa7900e2fcef9ceaa6dec69c8d88257a01ecfdbac')
 DEV169_ALLOWED = {'experiments/persian/build_native_probe.py'}
+DEV170_BASE = '6e717f8702d4fc273fb0745027c06f9edaa3dd67'
+DEV170_KEY = ('persian-windows-provider-gcc14-v2-'
+              '782694288976480b757bf5220770ab738c651bf3e9222a0c071b2a7198289a63')
+DEV170_ALLOWED = {'experiments/persian/build_native_probe.py',
+                  'vendor/openevv61/Makefile.native', 'tools/prepare_persian_provider.py'}
 DEV161_ALLOWED = {
     'experiments/persian/build_native_probe.py',
     'include/reloq_eci.h', 'include/reloq_syllable_trace.h',
@@ -174,7 +179,7 @@ def eligible_recent(key, changed, blobs):
             blobs == RECENT_HEADERS)
 
 
-def reuse_dev156_generated(expected=frozenset({'delta_rules_c02_fifi.c'})):
+def reuse_dev156_generated(expected=frozenset({'delta_rules_c02_fifi.c'}), added=frozenset()):
     """Regenerate and byte-check every source, rebuilding only expected units."""
     cached = BUILD / 'persian-provider'
     old = {path.name: path for path in cached.glob('*.c')}
@@ -185,12 +190,15 @@ def reuse_dev156_generated(expected=frozenset({'delta_rules_c02_fifi.c'})):
         subprocess.run([sys.executable, str(ROOT / 'tools/prepare_persian_provider.py'),
                         str(regenerated)], check=True)
         new = {path.name: path for path in regenerated.glob('*.c')}
-        if old.keys() != new.keys():
+        if set(new) - set(old) != set(added) or set(old) - set(new):
             raise ValueError('generated Persian source set changed')
         differences = {name for name in old if old[name].read_bytes() != new[name].read_bytes()}
         if differences != set(expected):
             raise ValueError('unexpected generated provider source changes')
         for name in differences:
+            shutil.copyfile(new[name], old[name])
+        for name in added:
+            old[name] = cached / name
             shutil.copyfile(new[name], old[name])
     # The preparation stamp is newer than checkout inputs. Each generated
     # source is newer than the stamp, and every reusable object is newer than
@@ -201,7 +209,7 @@ def reuse_dev156_generated(expected=frozenset({'delta_rules_c02_fifi.c'})):
     for path in BUILD.rglob('*'):
         if path.is_file() and path.parent != cached:
             os.utime(path, None)
-    for path in (*(BUILD / 'lang/fifi' / (Path(name).stem + '.o') for name in expected),
+    for path in (*(BUILD / 'lang/fifi' / (Path(name).stem + '.o') for name in expected | added),
                  BUILD / 'reloq_persian_acoustics.o', BUILD / 'libreloq61.a'):
         path.unlink(missing_ok=True)
     print('Reused byte-verified generated rules; rebuilding changed provider and scope objects.')
@@ -210,6 +218,22 @@ def reuse_dev156_generated(expected=frozenset({'delta_rules_c02_fifi.c'})):
 def main():
     try:
         key = os.environ.get('PERSIAN_PROVIDER_CACHE_KEY', '')
+        if key == DEV170_KEY:
+            changed = set(git('diff', '--name-only', DEV170_BASE, 'HEAD', '--', *INPUTS).splitlines())
+            if changed != DEV170_ALLOWED:
+                raise ValueError('Persian duration dispatcher inputs differ from the verified scope')
+            old_make = git('show', DEV170_BASE + ':vendor/openevv61/Makefile.native')
+            new_make = git('show', 'HEAD:vendor/openevv61/Makefile.native')
+            if old_make.replace('delta_rules_c02_fifi.c delta_rules_c05_dede61.c',
+                                'delta_rules_c02_fifi.c delta_rules_c04_fifi.c delta_rules_c05_dede61.c') != new_make:
+                raise ValueError('unexpected provider makefile change')
+            old_prepare = git('show', DEV170_BASE + ':tools/prepare_persian_provider.py')
+            new_prepare = git('show', 'HEAD:tools/prepare_persian_provider.py')
+            if old_prepare.replace('len(sources) != 21', 'len(sources) != 22') != new_prepare:
+                raise ValueError('unexpected provider preparation change')
+            reuse_dev156_generated(frozenset({'delta_rules_c02_fifi.c','delta_rules_c08_fifi.c'}),
+                                   frozenset({'delta_rules_c04_fifi.c'}))
+            return
         if key == RECENT_KEY:
             changed = set(git('diff', '--name-only', RECENT_BASE, 'HEAD', '--', *INPUTS).splitlines())
             blobs = {path: git('rev-parse', 'HEAD:' + path) for path in RECENT_HEADERS}

@@ -105,6 +105,12 @@ def main():
         'آسیب‌یابی': '`[.0a.0si.0bja.1bi]',
         'آماده‌سازی': '`[.0a.0ma.0de.0sa.1zi]',
         'ذخیره‌سازیِ': '`[.0zA.0Gi.0re.0sa.1zi.0e]',
+        'ذخیره‌شده': "`[.0zA.0Gi.0re.0So.1d'e:']",
+        'ذخیره‌شده‌ی': '`[.0zA.0Gi.0re.0So.1de.0je]',
+        'ثبت‌شده': "`[.0sAbt.0So.1d'e:']",
+        'ثبت‌شده‌ی': '`[.0sAbt.0So.1de.0je]',
+        'نصب‌شده‌ی': '`[.0nAsb.0So.1de.0je]',
+        'معرفی': '`[.0mo.0wAr.0re.1fi]',
     }
     for word, expected in examples.items():
         assert project(word) == expected, (word, project(word), expected)
@@ -117,6 +123,8 @@ def main():
     assert project('به‌روزرسانی') == "`[.0b'e:'.2r'u:'z.0re.1sa.0ni]"
     assert project('به‌روزرسانی‌های') == "`[.0b'e:'.0r'u:'z.0re.0sa.0ni.1ha.0je]"
     assert project('گزینه زمستانی ما او بود.').find('`[.0ze.0mes.0ta.1ni]') >= 0
+    assert project('اِختیاراتِ مدیریتی').endswith('`[.0mo.0di.0ri.0jA.1ti]')
+    assert project('اختیاراتِ مدیریتی').endswith('`[.0mo.0di.0ri.0jA.1ti]')
 
     # Neutral prepositions and conjunctions attach to the next word, but
     # citation forms, punctuation, and independent pronouns keep an accent.

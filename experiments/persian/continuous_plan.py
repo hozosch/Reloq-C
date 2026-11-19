@@ -202,16 +202,17 @@ def persian_proxy_for_english(text, en, *, mark_weak=False):
     shown = _TAG.findall(en._phonemes_for_probe(' '.join(tag for _, tag in candidates))) if candidates else ()
     batch_ok = (len(candidates) == len(converted) and len(shown) == len(candidates) and
                 all(compatible(tag, item) for (_, tag), item in zip(candidates, shown)))
-    # A single incompatible word previously caused an additional native
-    # phoneme probe for *every* word. An exact, primary-stressed result in
-    # the batch is already an unambiguous independent proxy: retain it and
-    # recheck only weak, transformed or otherwise uncertain cases. If the
-    # displayed word count is unreliable, use the original per-word path.
-    batch_exact = set()
+    # Each aligned, compatible word is safe to keep even if a different
+    # word in the same batch needs a fallback. In particular the US pilot
+    # legitimately promotes weak stress and changes some /t/ or /d/ to a
+    # flap; rejecting those compatible results caused many redundant native
+    # probes in long Persian sentences. Never reuse a batch if its displayed
+    # word count has changed, and individually check incompatible words.
+    batch_safe = set()
     if len(shown) == len(candidates):
         for (index, tag), displayed in zip(candidates, shown):
-            if '.1' in tag and displayed == tag[2:-1]:
-                batch_exact.add(index)
+            if compatible(tag, displayed):
+                batch_safe.add(index)
     vowels = {'A': 'A', 'a': 'a', 'e': 'E', 'i': 'i', 'o': 'o', 'u': 'u'}
     result, weak_fallback = [], []
     for index, match in enumerate(matches):
@@ -219,7 +220,7 @@ def persian_proxy_for_english(text, en, *, mark_weak=False):
         if not syllables:
             raise ValueError('Persian proxy has no syllables')
         tag = converted[index]
-        if tag is not None and not batch_ok and index not in batch_exact:
+        if tag is not None and not batch_ok and index not in batch_safe:
             display = _TAG.findall(en._phonemes_for_probe(tag))
             if len(display) != 1 or not compatible(tag, display[0]):
                 tag = None

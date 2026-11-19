@@ -1901,6 +1901,88 @@ def prepare_z_noise(work: Path) -> None:
     destination.write_text(text[:begin] + section + text[end:], encoding='utf8')
 
 
+def prepare_short_initial_timing(work: Path, first_helper: str, next_helper: str) -> Path:
+    """Use the short nucleus timing while retaining the long phone's sound."""
+    name = 'delta_rules_c04_fifi.c'
+    text = (PROVIDER / 'lang' / 'fifi' / name).read_text(encoding='utf8')
+    marker = 'int32_t reloq_fifi_assign_fin_nuc_durs(void *state, int32_t p0)\n{\n'
+    helper = r'''
+/* A Persian first vowel marked long can nevertheless require the timing of
+   its short counterpart. Change only the duration-planning record and put
+   it back before the phonetic targets are generated. */
+static int32_t persian_short_initial_begin(void *state)
+{
+    const char *us=getenv("RELOQ_FA_US_ARTICULATION");
+    delta_state *d=state;
+    int32_t at=STATE(int32_t,w26),node=0;
+    if (!us || us[0]!='1' || us[1] || !d || !at) return 0;
+    int32_t *point=vmover(d,EVV_AT(int32_t *,at),2);
+    if (point) node=vgetsc(d,0,0,EVV_REF(point),2);
+    if (!node || (*EVV_AT(int32_t *,node)&2)) return 0;
+    void *fields=TFLDS(EVV_AT(void *,node));
+    unsigned phone=*(const unsigned char *)delta_record_field(&vstmtbl[2],0,fields);
+    unsigned cls=*(const unsigned char *)delta_record_field(&vstmtbl[2],1,fields);
+    unsigned char *length=(unsigned char *)delta_record_field(&vstmtbl[2],11,fields);
+    int16_t stress=0;
+    memcpy(&stress,delta_record_field(&vstmtbl[2],7,fields),sizeof stress);
+    if (cls!=1 || (phone!=31 && phone!=32) || *length!=0 || stress!=0 ||
+        !persian_probe_first_of_multiple_vowels(state,STATE_AT(w26,-4))) return 0;
+    if (phone==32) {
+        int32_t next_ref=EVV_AT(int32_t *,node)[1]&~3;
+        point=next_ref ? vmover(d,EVV_AT(int32_t *,next_ref),2) : NULL;
+        int32_t next=point ? vgetsc(d,0,0,EVV_REF(point),2) : 0;
+        if (next && !(*EVV_AT(int32_t *,next)&2)) {
+            unsigned next_phone=*(const unsigned char *)delta_record_field(
+                &vstmtbl[2],0,TFLDS(EVV_AT(void *,next)));
+            if (next_phone==2 && !persian_probe_next_phone_word_final(state,next_ref,2)) {
+                int32_t after_ref=EVV_AT(int32_t *,next)[1]&~3;
+                point=after_ref ? vmover(d,EVV_AT(int32_t *,after_ref),2) : NULL;
+                int32_t after=point ? vgetsc(d,0,0,EVV_REF(point),2) : 0;
+                if (after && !(*EVV_AT(int32_t *,after)&2)) {
+                    unsigned following=*(const unsigned char *)delta_record_field(
+                        &vstmtbl[2],0,TFLDS(EVV_AT(void *,after)));
+                    if (following>=4 && following<=6) return 0;
+                }
+            }
+        }
+    }
+    *length=1;
+    return node;
+}
+static void persian_short_initial_end(int32_t node)
+{
+    if (node && !(*EVV_AT(int32_t *,node)&2)) {
+        void *fields=TFLDS(EVV_AT(void *,node));
+        *(unsigned char *)delta_record_field(&vstmtbl[2],11,fields)=0;
+    }
+}
+'''
+    if text.count(marker) != 1:
+        raise RuntimeError('Cannot locate Finnish nucleus timing dispatcher')
+    text = text.replace(marker, first_helper + '\n' + next_helper + '\n' + helper + '\n' + marker, 1)
+    begin = text.index(marker)
+    end = text.index('\nstatic int32_t evv_assign_fin_nuc_durs(', begin)
+    section = text[begin:end]
+    declaration = '    int argn = 0;\n'
+    start = '    r0 = reloq_call_fifi_set_limits(state, (int32_t)(FIELD(0)));\n'
+    if section.count(declaration) != 1 or section.count(start) != 1:
+        raise RuntimeError('Cannot locate Finnish nucleus timing setup')
+    section = section.replace(declaration, declaration + '    int32_t persian_short_node=0;\n', 1)
+    section = section.replace(start, '    persian_short_node=persian_short_initial_begin(state);\n' + start, 1)
+    for label in ('L212:;\n', 'L231:;\n'):
+        if section.count(label) != 1:
+            raise RuntimeError('Cannot locate Finnish nucleus timing return')
+        section = section.replace(label, label + '    persian_short_initial_end(persian_short_node);\n', 1)
+    text = text[:begin] + section + text[end:]
+    include = '#include "reloq61_rule_calls_fifi.h"\n'
+    if text.count(include) != 1:
+        raise RuntimeError('Cannot locate Finnish timing includes')
+    text = text.replace(include, include + '#include <stdlib.h>\n#include <string.h>\n', 1)
+    dest = work / name
+    dest.write_text(text, encoding='utf8')
+    return dest
+
+
 def prepare_vowel_duration_probe(work: Path) -> Path:
     """Trace Finnish timing and try eSpeak's relative A base in this probe."""
     name = 'delta_rules_c08_fifi.c'
@@ -1972,7 +2054,7 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
                 int64_t scaled=((int64_t)STATE(int32_t,f33)*9+5)/10;
                 STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
             }
-            int short_yek=0,short_u_cluster=0,short_initial=0;
+            int short_yek=0,short_u_cluster=0;
             if (us_timing && node && cls==1 && STATE(int32_t,f33)>0 &&
                 !persian_probe_vowel_word_final(state,STATE_AT(w26,-4),(unsigned)phone)) {
                 int32_t next_ref=EVV_AT(int32_t *,node)[1]&~3;
@@ -2014,15 +2096,6 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
                         short_u_cluster=following>=4 && following<=6;
                     }
                 }
-                /* The inherited Finnish long-vowel marker can make an
-                   unstressed first /æ/ or /u/ stand out in multisyllabic
-                   Persian words. Adjust duration only, and keep the already
-                   tuned /u:t/ + voiced-stop timing unchanged. The scanner
-                   requires a later vowel in the same word. */
-                if ((phone==31 || phone==32) && length==0 && stress==0 &&
-                    !short_u_cluster &&
-                    persian_probe_first_of_multiple_vowels(state,STATE_AT(w26,-4)))
-                    short_initial=1;
                 int factor=100;
                 if (ordinary && length==1 && phone==31) factor=130;
                 else if (ordinary && length==1 && phone==29) factor=118;
@@ -2041,7 +2114,6 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
                 if (extra>150000) extra=150000;
                 int64_t scaled=duration+extra;
                 if(short_u_cluster)scaled=(scaled*9+5)/10;
-                else if(short_initial)scaled=(scaled*85+50)/100;
                 STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
             }
             if (tracing)
@@ -2092,7 +2164,8 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
         }
     }
     int final=first && later;''', 1)
-    text = text[:begin] + helper + '\n' + next_helper + '\n' + first_helper + '\n' + section + text[end:]
+    prepare_short_initial_timing(work, first_helper, next_helper)
+    text = text[:begin] + helper + '\n' + next_helper + '\n' + section + text[end:]
     include = '#include "reloq61_rule_calls_fifi.h"\n'
     if text.count(include) != 1:
         raise RuntimeError('Cannot locate duration probe includes')
@@ -3214,6 +3287,22 @@ static void persian_r_less_retroflex(void *state)
     if (STATE(int16_t,s453)>0 && STATE(int16_t,s453)<2700)
         STATE(int16_t,s453)=(following==27 || STATE(int16_t,s453)>2350)?2700:STATE(int16_t,s453)+350;
 }
+/* Only act if the third and fourth R resonances nearly collide at either
+   endpoint. This covers the same acoustic problem in different surrounding
+   phones and in both Persian text and Pinglish. Avoid changing final R and
+   the independent vowel targets. */
+static void persian_r_separate_upper_resonances(void *state)
+{
+    const char *mode=getenv("RELOQ_FA_R_AFTER_I");
+    if (!mode || mode[0]!='1' || mode[1] ||
+        persian_probe_r_word_final(state,STATE_AT(w60,-4))) return;
+    int f3=STATE(int16_t,s452),f3_end=STATE(int16_t,s453);
+    int f4=STATE(int16_t,s454),f4_end=STATE(int16_t,s455);
+    if (!((f3>0 && f4>0 && f4-f3<250) ||
+          (f3_end>0 && f4_end>0 && f4_end-f3_end<250))) return;
+    if (f3>0 && f4>0 && f4<f3+600) STATE(int16_t,s454)=(int16_t)(f3+600);
+    if (f3_end>0 && f4_end>0 && f4_end<f3_end+600) STATE(int16_t,s455)=(int16_t)(f3_end+600);
+}
 static int16_t persian_articulation_toward(int16_t value,int target)
 {
     /* Preserve native inheritance markers and two thirds of each contextual
@@ -3312,7 +3401,7 @@ static void persian_articulation_nasal(void *state,int second_formant)
                     STATE(int16_t,s412)=0; STATE(int16_t,s413)=0;
                     STATE(int16_t,s432)=0; STATE(int16_t,s433)=0;
                     STATE(int16_t,s434)=0; STATE(int16_t,s436)=0;
-                }
+                } else persian_r_separate_upper_resonances(state);
             }
         }
     }
@@ -3423,6 +3512,7 @@ def main() -> None:
     modified.append(prepare_auto_finnish_h(work))
     prepare_z_noise(work)
     modified.append(prepare_vowel_duration_probe(work))
+    modified.append(work / 'delta_rules_c04_fifi.c')
     for filename in ('delta_rules_c19_fifi.c', 'delta_rules_c21_fifi.c', 'delta_rules_c27_fifi.c'):
         dest = work / filename
         if not dest.exists():

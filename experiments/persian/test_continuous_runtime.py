@@ -58,6 +58,18 @@ def main():
     # the batch. This preserves the contextual safeguard without repeating
     # every native probe in a long sentence.
     assert contextual.calls == [proxy_source, '`[.1do]']
+    class FlapAndMismatchProbe:
+        def __init__(self):
+            self.calls = []
+        def _phonemes_for_probe(self, value):
+            self.calls.append(value)
+            if ' ' in value:
+                return value.replace('.1do', '.1Fo').replace('.1ka', '.1pa')
+            return value
+    mixed = FlapAndMismatchProbe()
+    mixed_source = '`[.1do] `[.1ka]'
+    assert persian_proxy_for_english(mixed_source, mixed) == mixed_source
+    assert mixed.calls == [mixed_source, '`[.1ka]']
     unmarked = '`[.0sA.0lam] `[.0do.0nja]'
     uniform_pilot = persian_proxy_for_english(unmarked, ProxyProbe())
     assert uniform_pilot == '`[.1sA.0lam] `[.1do.0nya]'
