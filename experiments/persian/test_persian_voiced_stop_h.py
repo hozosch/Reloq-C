@@ -57,6 +57,10 @@ def main():
                             assert a[2:] == b[2:] and abs(a[0] - b[0]) <= 1, (text, rate, speed, a, b)
                             assert a[2] - a[1] >= b[2] - b[1], (text, rate, speed, a, b)
                             assert len(new.pcm) == len(old.pcm), (text, rate, speed)
+                            source = lambda result: tuple(
+                                (row.tick, *(row.controls[column] for column in (2, 7, 8)))
+                                for row in result.frames() if a[2] <= row.tick < a[4])
+                            assert source(new) == source(old), (text, rate, speed, 'D/H source changed')
                             changed += new.frame_bytes != old.frame_bytes
                         checked += 1
                     if previous:

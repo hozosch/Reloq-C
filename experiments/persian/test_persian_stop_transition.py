@@ -124,9 +124,14 @@ def main():
                             preserved += 1; checked += 1
         observed.clear(); pcm = bytearray()
         assert engine.speak(('Persian test هوا txt',), pcm.extend, lambda _: None) and pcm
-        _, _, _, before, after, _, _ = observed[0]
+        _, old_counts, new_counts, before, after, _, _ = observed[0]
         assert any(row[1] > 0 and row[0] == 0 for row in before[0][:30])
-        assert before[0][:30] == after[0][:30]
+        removed = old_counts[1] - new_counts[1]
+        assert 0 <= removed <= 4
+        assert all(row[0] > 0 for row in before[0][:removed])
+        # A stale voiced frame may precede H after the English stop. The
+        # complete unvoiced H impulse itself must remain intact.
+        assert before[0][removed:30] == after[0][:30 - removed]
         assert adopted and preserved, (adopted, preserved)
     finally:
         continuous_driver.selected_sentence = original
