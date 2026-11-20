@@ -20,6 +20,13 @@ def main():
     stress = dll.eciPersianStressUtf8
     stress.argtypes = (ctypes.c_char_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t)
     stress.restype = ctypes.c_int
+    character = dll.eciPersianCharacterResolve
+    character.argtypes = (ctypes.c_uint32, ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int))
+    character.restype = ctypes.c_int
+    for codepoint, expected in ((0x064e, '`[.1A]'), (0x064f, '`[.1o]'), (0x0650, '`[.1e]')):
+        result, kind = ctypes.create_string_buffer(64), ctypes.c_int(-1)
+        assert character(codepoint, result, len(result), ctypes.byref(kind)) == 1
+        assert result.value.decode('ascii') == expected and kind.value == 0, (codepoint, result.value, kind.value)
 
     def project(source):
         raw = source.encode('utf8')

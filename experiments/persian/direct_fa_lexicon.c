@@ -243,8 +243,11 @@ static int fully_vowelled_word(const char *word,size_t bytes,char *output,size_t
         units[count++]=u;
     }
     if(!explicit_marks || !vowels)return 0;
-    for(size_t i=0;i<count;++i)if(!units[i].vowel && !units[i].sukun)
+    size_t unmarked_coda=0;
+    for(size_t i=0;i<count;++i)if(!units[i].vowel && !units[i].sukun) {
         for(size_t j=i+1;j<count;++j)if(units[j].vowel)return 0;
+        if(++unmarked_coda>1)return 0;
+    }
     if(count>(SIZE_MAX-4-3*vowels)/2)return -2;
     if(4+2*count+3*vowels>capacity)return -2;
     size_t used=0,nucleus=0;output[used++]='`';output[used++]='[';
@@ -1664,9 +1667,9 @@ static int direct_context_depth(const char *word,size_t bytes,int follows_word,
     if(result)return result;
     result=known_in_stem_plus_a(word,bytes,output,capacity);
     if(result)return result;
-    result=fully_vowelled_word(word,bytes,output,capacity);
-    if(result)return result;
     result=marked_known_initial_vowel(word,bytes,follows_word,output,capacity);
+    if(result)return result;
+    result=fully_vowelled_word(word,bytes,output,capacity);
     if(result)return result;
     result=derived_kht_yar(word,bytes,output,capacity,depth);
     if(result)return result;

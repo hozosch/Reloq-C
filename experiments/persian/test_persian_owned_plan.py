@@ -114,6 +114,9 @@ def main():
         sevina = [e for e in analyze('سوینا')[1] if e[0] == PHONE]
         assert [e[1] for e in sevina] == [17, 3, 16, 4, 26, 2], sevina
         assert {e[3] for e in sevina if e[4] == 1} == {2}, sevina
+        # A single written short vowel does not make the rest of a word
+        # fully vocalized; preserve a known stem's omitted vowels and stress.
+        assert analyze('اِسلش')[1] == analyze('اسلش')[1]
         # The independent plan carries the same timing decision as the
         # current audible backend without changing the vowel's identity.
         for fa, latin in [('ایتالیا', 'italia'), ('ایتالیایی', 'italiai')]:

@@ -46,6 +46,11 @@ def main():
                                 for col, tolerance in ((2, 12), (9, 90), (13, 250),
                                                        (15, 350), (27, 60), (29, 160)):
                                     assert abs(x[col]-y[col]) <= tolerance, (case, col, x[col], y[col])
+                                if onset:
+                                    # Persian retains the native source and timing while
+                                    # lifting F3 and softening nasal antiresonance.
+                                    assert x[15] - y[15] >= 45, (case, 'upper resonance', x[15], y[15])
+                                    assert (y[29]-y[27]) - (x[29]-x[27]) >= 4, (case, 'nasal zero', x[27], x[29], y[27], y[29])
                                 count += 1
     finally:
         fa.close()
