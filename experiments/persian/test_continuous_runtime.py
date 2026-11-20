@@ -30,7 +30,8 @@ def main():
     assert planned == [EciText('swap', segmentation_guarded=True), EciIndex(123),
                        EciText('file', segmentation_guarded=True), ' again']
     assert continuation_comma(('hello?', ')', EciIndex(1))) == ('hello?', ')', EciIndex(1))
-    assert continuation_comma(('hello', ')', EciIndex(1))) == ('hello', ')', ',', EciIndex(1))
+    assert continuation_comma(('hello', ')', EciIndex(1))) == (
+        'hello', ')', EciText(',', internal_punctuation=True), EciIndex(1))
     for text in ('version 3 - 5 ', 'version 3 – 5 ', 'well-known '):
         parts = (EciLanguage(US_ENGLISH.id, '1'), text,
                  EciLanguage(PERSIAN_PROBE.id, '1'), 'خوب')

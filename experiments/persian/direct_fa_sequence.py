@@ -151,6 +151,15 @@ def project(parts: Sequence[str | EciText | Command], frontend: DirectFirstPersi
     """Use direct analysis and, optionally, verified reference word anchors."""
     parts = tuple(parts)
     DirectEciEngine._prepare(parts, 'utf-8')
+    # A generated phrase comma next to a lone bracket is not a request to
+    # spell a comma. The normal character-only path has no word context, so
+    # preserve the marker through the resilient native-punctuation path.
+    if (any(isinstance(part, EciText) and part.internal_punctuation for part in parts) and
+            not any(char.isalpha() or char.isdecimal()
+                    for part in parts if isinstance(part, (str, EciText)) and
+                    not (isinstance(part, EciText) and (part.internal_punctuation or part.is_control))
+                    for char in (part if isinstance(part, str) else part.text))):
+        return project_resilient(parts, frontend, pinglish=pinglish)
     projected = _project_direct_native(parts, frontend, pinglish=pinglish)
     if projected is not None:
         return _safe_native_punctuation(projected)
@@ -275,7 +284,7 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
     unknown symbols use the existing Unicode names. Indexes inside one word
     map to its beginning, as in the normal word-level source projection.
     """
-    text, modes, events, length = [], [], [], 0
+    text, modes, internal, events, length = [], [], [], [], 0
     for part in parts:
         if isinstance(part, (str, EciText)):
             if isinstance(part, EciText) and part.is_control:
@@ -288,6 +297,7 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
                             for c in value)
             text.append(value)
             modes.extend([isinstance(part, EciText) and part.character_mode] * len(value))
+            internal.extend([isinstance(part, EciText) and part.internal_punctuation] * len(value))
             length += len(value)
         elif isinstance(part, (EciIndex, EciPitch, EciPitchHz, EciProsody)):
             events.append((length, part))
@@ -403,6 +413,12 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
         char = source[at]
         if modes[at]:
             emit(at, at + 1, names(char), speech=True)
+            at += 1
+            continue
+        if internal[at]:
+            if char not in ',.;:!?':
+                raise ValueError('invalid internal punctuation')
+            emit(at, at + 1, char, speech=False)
             at += 1
             continue
         if char in ('\ufe0e', '\ufe0f'):

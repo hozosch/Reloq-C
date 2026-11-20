@@ -79,6 +79,9 @@ class EciText:
     # An explicitly supplied ECI control, protected by the NVDA filter.
     # It is not ordinary source text and must never enter the FA translator.
     tag_control: str | None = None
+    # Internal sentence-planning punctuation supplies a contour rather than
+    # a user-requested character name. It is never set by source text.
+    internal_punctuation: bool = False
 
     @property
     def is_control(self) -> bool:

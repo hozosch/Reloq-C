@@ -1400,7 +1400,7 @@ def continuation_comma(parts):
             continue
         # Do not override an explicit sentence or question ending inside a
         # closing bracket. The comma is internal, not spoken text.
-        return parts[:index + 1] + (',',) + parts[index + 1:]
+        return parts[:index + 1] + (EciText(',', internal_punctuation=True),) + parts[index + 1:]
     return parts
 
 
