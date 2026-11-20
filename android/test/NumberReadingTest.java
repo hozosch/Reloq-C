@@ -245,8 +245,8 @@ public final class NumberReadingTest {
         require(NumberReading.prepare("abc@example.com",NumberReading.AUTO,0x60000)
             .equals("abc at example \u70B9 com"),"email at expands without joining words");
         require(NumberReading.prepare("@",NumberReading.AUTO,0x10000).equals("@"),"English symbol processing unchanged");
-        require(NumberReading.prepare("G:\\ReLoq C",NumberReading.AUTO,0x60000)
-            .equals("G: \u53cd\u659c\u6760 ReLoq C"),"Windows path backslash");
+        require(NumberReading.prepare("C:\\Program Files",NumberReading.AUTO,0x60000)
+            .equals("C: \u53cd\u659c\u6760 Program Files"),"Windows path backslash");
         require(NumberReading.prepare("\uFF3C",NumberReading.VALUE,0x60001)
             .equals(" \u53cd\u659c\u7dda "),"fullwidth Taiwanese backslash");
         require(NumberReading.prepare("G:\\path",NumberReading.VALUE,0x10000)
