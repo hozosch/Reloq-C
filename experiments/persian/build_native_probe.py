@@ -1943,7 +1943,7 @@ def pre_stressed_hiatus_helper() -> str:
     lpta_loadp(d,EVV_AT(const delta_token *,token_ref));
     int right_vowel=!setscan_r(d,2) && !advance_tok(d) && !testFldeq(d,2,1,1) &&
                     !testFldeq(d,2,7,1) && !advance_tok(d);
-    int final=reloq_fa_i_before_stressed_hiatus(left_vowel,right_vowel);''', 1)
+    int final=left_vowel && right_vowel;''', 1)
 
 
 def prepare_short_initial_timing(work: Path, first_helper: str, next_helper: str) -> Path:
@@ -2188,14 +2188,15 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
                 if(short_u_cluster)scaled=(scaled*9+5)/10;
                 STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
             }
-            /* A weak /i/ in vowel hiatus before a stressed vowel must not
-               carry a second long nucleus. Give both long- and short-tagged
-               /i/ the same compact timing; keep their acoustic targets and
-               all consonant and word-boundary timings unchanged. */
-            if (us_timing && node && cls==1 && phone==27 && stress==0 &&
+            /* Compact a weak /i/ in hiatus as before. A short unstressed
+               back /a/ in the same context gets a smaller listening-test
+               reduction. Keep both vowel targets and consonants unchanged. */
+            if (us_timing && node && cls==1 && (phone==27 || (phone==34 && length==1)) && stress==0 &&
                 STATE(int32_t,f33)>0 &&
                 persian_probe_before_stressed_hiatus(state,STATE_AT(w26,-4))) {
-                int64_t scaled=((int64_t)STATE(int32_t,f33)*3+2)/5;
+                unsigned kind=phone==27 ? RELOQ_FA_HIATUS_I : RELOQ_FA_HIATUS_SHORT_BACK_A;
+                unsigned factor=reloq_fa_hiatus_timing_percent(kind,length==0,1,1);
+                int64_t scaled=((int64_t)STATE(int32_t,f33)*factor+50)/100;
                 STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
             }
             if (tracing)

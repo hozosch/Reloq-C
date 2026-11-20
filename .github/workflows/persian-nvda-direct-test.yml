@@ -2,7 +2,7 @@ name: Persian NVDA direct test
 on:
   workflow_dispatch:
   push:
-    branches: [codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117, codex/persian-us-contour-20261117, codex/persian-adjectives-20261117, codex/persian-ra-pinglish-20261119, codex/persian-core-20261119, codex/persian-native-20261120, codex/persian-issue49-solh-20261120, codex/persian-native-transitions-20261120, codex/persian-native-fast-pilot-20261120, codex/persian-virgule-20261120, codex/persian-sentence-core-20261120, codex/persian-sentence-linear-20261120]
+    branches: [codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117, codex/persian-us-contour-20261117, codex/persian-adjectives-20261117, codex/persian-ra-pinglish-20261119, codex/persian-core-20261119, codex/persian-native-20261120, codex/persian-issue49-solh-20261120, codex/persian-native-transitions-20261120, codex/persian-native-fast-pilot-20261120, codex/persian-virgule-20261120, codex/persian-sentence-core-20261120, codex/persian-sentence-linear-20261120, codex/persian-context-native-20261120]
     paths:
       - .github/workflows/persian-nvda-direct-test.yml
       - .github/workflows/persian-windows-acoustic-probe.yml
@@ -57,6 +57,8 @@ on:
       - experiments/persian/test_initial_vowel_timing.py
       - experiments/persian/test_reported_name_reference.py
       - experiments/persian/test_persian_vowel_hiatus.py
+      - experiments/persian/test_persian_a_hiatus.py
+      - experiments/persian/test_unvoiced_switch.py
       - experiments/persian/test_pure_parallel_pilot.py
       - experiments/persian/test_pure_sentence_streaming.py
       - experiments/persian/test_prefix_streaming.py
@@ -219,6 +221,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian first-vowel timing failed' }
           python -B experiments/persian/test_persian_vowel_hiatus.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Persian unstressed hiatus timing failed' }
+          python -B experiments/persian/test_persian_a_hiatus.py --library "$dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Persian weak-A hiatus timing failed' }
           python -B experiments/persian/test_r_metallic_edge.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Persian metallic R transition failed' }
           python -B experiments/persian/test_fa_orthography.py --library "$dll"
@@ -235,6 +239,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian symbols or mixed speech failed' }
           python -B experiments/persian/test_persian_stop_transition.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Persian mixed-language stop transition failed' }
+          python -B experiments/persian/test_unvoiced_switch.py --native-library "$dll" --scope-probe "$dll" --worker "$data/fa-espeak-worker.exe" --espeak-library "$espeak" --data-parent "$data"
+          if ($LASTEXITCODE -ne 0) { throw 'Persian native voiceless-context transitions failed' }
           python -B nvda/test_eci_upper_number.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Uppercase words with attached numbers failed' }
           python -B experiments/persian/test_long_word_timing.py --library "$dll"
@@ -249,7 +255,7 @@ jobs:
         shell: bash
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
-          if [ "$GITHUB_REF_NAME" = "codex/persian-sentence-linear-20261120" ]; then version=1.5.0-dev184; elif [ "$GITHUB_REF_NAME" = "codex/persian-sentence-core-20261120" ]; then version=1.5.0-dev183; elif [ "$GITHUB_REF_NAME" = "codex/persian-virgule-20261120" ]; then version=1.5.0-dev182; elif [ "$GITHUB_REF_NAME" = "codex/persian-native-fast-pilot-20261120" ]; then version=1.5.0-dev181; elif [ "$GITHUB_REF_NAME" = "codex/persian-native-transitions-20261120" ]; then version=1.5.0-dev180; elif [ "$GITHUB_REF_NAME" = "codex/persian-issue49-solh-20261120" ]; then version=1.5.0-dev179; elif [ "$GITHUB_REF_NAME" = "codex/persian-native-20261120" ]; then version=1.5.0-dev175; elif [ "$GITHUB_REF_NAME" = "codex/persian-core-20261119" ]; then version=1.5.0-dev174; elif [ "$GITHUB_REF_NAME" = "codex/persian-ra-pinglish-20261119" ]; then version=1.5.0-dev173; elif [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev172; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; elif [ "$GITHUB_REF_NAME" = "codex/persian-vowels-20261117" ]; then version=1.5.0-dev142; else version=1.5.0-dev141; fi
+          if [ "$GITHUB_REF_NAME" = "codex/persian-context-native-20261120" ]; then version=1.5.0-dev185; elif [ "$GITHUB_REF_NAME" = "codex/persian-sentence-linear-20261120" ]; then version=1.5.0-dev184; elif [ "$GITHUB_REF_NAME" = "codex/persian-sentence-core-20261120" ]; then version=1.5.0-dev183; elif [ "$GITHUB_REF_NAME" = "codex/persian-virgule-20261120" ]; then version=1.5.0-dev182; elif [ "$GITHUB_REF_NAME" = "codex/persian-native-fast-pilot-20261120" ]; then version=1.5.0-dev181; elif [ "$GITHUB_REF_NAME" = "codex/persian-native-transitions-20261120" ]; then version=1.5.0-dev180; elif [ "$GITHUB_REF_NAME" = "codex/persian-issue49-solh-20261120" ]; then version=1.5.0-dev179; elif [ "$GITHUB_REF_NAME" = "codex/persian-native-20261120" ]; then version=1.5.0-dev175; elif [ "$GITHUB_REF_NAME" = "codex/persian-core-20261119" ]; then version=1.5.0-dev174; elif [ "$GITHUB_REF_NAME" = "codex/persian-ra-pinglish-20261119" ]; then version=1.5.0-dev173; elif [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev172; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; elif [ "$GITHUB_REF_NAME" = "codex/persian-vowels-20261117" ]; then version=1.5.0-dev142; else version=1.5.0-dev141; fi
           dll=$(find candidate -name eci.dll -print -quit)
           python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version "$version" --output "dist/reloq-c-persian-pinglish-$version.nvda-addon"
           python -B experiments/persian/build_soundlab_nvda.py --output dist/reloq-c-lautlabor-0.2.0.nvda-addon

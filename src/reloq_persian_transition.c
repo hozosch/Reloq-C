@@ -2,6 +2,123 @@
 #include <math.h>
 #include <string.h>
 
+struct unvoiced_lead {
+    size_t end;
+    double duration;
+    float initial_noise,onset_noise,release;
+};
+
+/* Identify the actual source transition, never relying on a spelling alone. */
+static int find_unvoiced_lead(const struct reloq_fa_frame *frames,size_t first,
+    size_t end,unsigned char phone,struct unvoiced_lead *lead)
+{
+    double elapsed=0;
+    float peak=0;
+    for(size_t i=first;i<end;++i) {
+        const float *c=frames[i].controls;
+        if(!isfinite(c[0]) || c[0]<=0 || c[0]>20 || !isfinite(c[2]) ||
+           !isfinite(c[7]) || !isfinite(c[8]))return -1;
+        if(c[2]<=0) {
+            int expected=(phone=='f' || phone=='s' || phone=='S') ? c[8]>=20 :
+                phone=='h' ? c[7]>0 : c[7]==0 && c[8]==0;
+            if(!expected || elapsed<8 || elapsed>120)return 0;
+            lead->end=i;lead->duration=elapsed;lead->initial_noise=peak;
+            lead->onset_noise=c[8];lead->release=-1;
+            if(phone=='t' || phone=='p' || phone=='k') {
+                double closure=0;
+                for(size_t j=i;j<end && closure<=110;++j) {
+                    const float *next=frames[j].controls;
+                    if(!isfinite(next[0]) || next[0]<=0 || next[0]>20 ||
+                       !isfinite(next[2]) || !isfinite(next[7]) || !isfinite(next[8]))return -1;
+                    if(next[8]>=20 && next[2]<=0 && next[7]==0){lead->release=next[8];break;}
+                    if(next[2]>0 || next[7]>0)break;
+                    closure+=next[0];
+                }
+            }
+            return 1;
+        }
+        if(c[8]>peak)peak=c[8];
+        elapsed+=c[0];
+        if(elapsed>120)return 0;
+    }
+    return 0;
+}
+
+static int same_unvoiced_context(const struct reloq_fa_frame *reference,
+    size_t first,size_t end,unsigned char phone,const struct unvoiced_lead *target)
+{
+    struct unvoiced_lead donor;
+    int found=find_unvoiced_lead(reference,first,end,phone,&donor);
+    if(found<=0)return found;
+    double tolerance=fmax(6.0,target->duration*0.4);
+    if(fabs(target->duration-donor.duration)>tolerance)return 0;
+    if(phone=='t' || phone=='p' || phone=='k')
+        return target->release>=20 && donor.release>=20 &&
+               fabs(target->release-donor.release)<=20;
+    if(phone=='f' || phone=='s' || phone=='S')
+        return target->initial_noise>=10 && donor.initial_noise>=10 &&
+               fabs(target->onset_noise-donor.onset_noise)<=20;
+    return 1;
+}
+
+int reloq_persian_plan_unvoiced_onsets(struct reloq_fa_frame *frames,size_t count,
+    const size_t *ends,size_t segments,const unsigned char *onsets,
+    const struct reloq_fa_frame *reference,size_t reference_count,
+    const size_t *reference_edges,size_t *counts,double *removed,size_t *new_count)
+{
+    if(!frames || !ends || !onsets || !counts || !removed || !new_count ||
+       !count || count>120000 || segments<2 || segments>32 ||
+       reference_count>120000 || (!!reference != !!reference_edges))return -1;
+    size_t previous=0;
+    for(size_t i=0;i<segments;++i) {
+        if(ends[i]<=previous || ends[i]>count)return -1;
+        unsigned char phone=onsets[i]&127;
+        if(phone && !strchr("fstpkSh",phone))return -1;
+        previous=ends[i];
+    }
+    if(previous!=count)return -1;
+    if(reference) {
+        for(size_t i=0;i<=segments;++i)
+            if(reference_edges[i]>reference_count ||
+               (i && reference_edges[i]<reference_edges[i-1]))return -1;
+    }
+    size_t cut_first[32]={0},cut_last[32]={0};
+    double widths[32]={0};
+    for(size_t edge=1;edge<segments;++edge) {
+        unsigned char phone=onsets[edge]&127;
+        if(!phone)continue;
+        size_t boundary=ends[edge-1],end=ends[edge];
+        if(frames[boundary-1].controls[2]<=0)continue;
+        struct unvoiced_lead target;
+        int found=find_unvoiced_lead(frames,boundary,end,phone,&target);
+        if(found<0)return -1;
+        if(!found)continue;
+        if((onsets[edge]&128) && reference && reference_edges[edge]<reference_edges[edge+1]) {
+            int same=same_unvoiced_context(reference,reference_edges[edge],
+                reference_edges[edge+1],phone,&target);
+            if(same<0)return -1;
+            if(same)continue;
+        }
+        cut_first[edge]=boundary;cut_last[edge]=target.end;widths[edge]=target.duration;
+    }
+    size_t write=0,read=0;
+    for(size_t edge=1;edge<segments;++edge) {
+        if(!cut_last[edge])continue;
+        size_t n=cut_first[edge]-read;
+        if(n && write!=read)memmove(frames+write,frames+read,n*sizeof *frames);
+        write+=n;read=cut_last[edge];
+    }
+    size_t tail=count-read;
+    if(tail && write!=read)memmove(frames+write,frames+read,tail*sizeof *frames);
+    write+=tail;previous=0;
+    for(size_t i=0;i<segments;++i) {
+        counts[i]=ends[i]-previous-(cut_last[i]-cut_first[i]);
+        removed[i]=widths[i];previous=ends[i];
+    }
+    *new_count=write;
+    return 0;
+}
+
 int reloq_persian_match_stop_nasal(struct reloq_fa_frame *frames,size_t count,
     size_t boundary,size_t end,const struct reloq_fa_frame *reference,
     size_t reference_count,size_t reference_boundary)
@@ -133,6 +250,118 @@ int reloq_persian_bridge_stop_onsets(const struct reloq_fa_frame *input,
             for(unsigned column=2;column<=7;column+=5) {
                 double original=input[i].controls[column];
                 if(original>0)output[i].controls[column]=(float)fmax(1.0,round(original-drop));
+            }
+        }
+        changed[edge]=1;
+    }
+    return 0;
+}
+
+static double ease(double x){return x*x*(3-2*x);}
+
+static size_t lower_time(const double *times,size_t count,double value,int right)
+{
+    size_t a=0,b=count;
+    while(a<b) {
+        size_t mid=a+(b-a)/2;
+        if(times[mid]<value || (right && times[mid]==value))a=mid+1;
+        else b=mid;
+    }
+    return a;
+}
+
+int reloq_persian_bridge_remaining(const struct reloq_fa_frame *input,
+    struct reloq_fa_frame *output,const double *times,const size_t *ends,
+    const unsigned char *skip,size_t frame_count,size_t segment_count,
+    double window_ms,unsigned char *changed)
+{
+    if(!input || !output || input==output || !times || !ends || !skip || !changed ||
+       !frame_count || frame_count>120000 || segment_count<2 || segment_count>32 ||
+       !isfinite(window_ms) || window_ms<=0 || window_ms>50 ||
+       frame_count>SIZE_MAX/sizeof *input)return -1;
+    size_t previous=0;
+    for(size_t i=0;i<segment_count;++i) {
+        if(ends[i]<=previous || ends[i]>frame_count)return -1;
+        previous=ends[i];
+    }
+    if(previous!=frame_count)return -1;
+    for(size_t i=0;i<=frame_count;++i)
+        if(!isfinite(times[i]) || (i && times[i]<times[i-1]))return -1;
+    memset(changed,0,segment_count);
+    int copied=0;
+    static const unsigned columns[]={9,13,15};
+    for(size_t edge=1;edge<segment_count;++edge) {
+        if(skip[edge])continue;
+        size_t boundary=ends[edge-1],left_limit=edge>1?ends[edge-2]:0,right_limit=ends[edge];
+        const float *left=input[boundary-1].controls,*right=input[boundary].controls;
+        if(left[2]<=0 || right[2]<=0)continue;
+        size_t short_end=boundary;
+        while(short_end<right_limit && input[short_end].controls[2]>0 &&
+              times[short_end]-times[boundary]<5)++short_end;
+        if(short_end>boundary && short_end<right_limit && input[short_end].controls[2]==0 &&
+           times[short_end]-times[boundary]<=5 && left[2]<=20 && left[7]>0 &&
+           input[short_end].controls[7]>0) {
+            if(!copied){memcpy(output,input,frame_count*sizeof *input);copied=1;}
+            const float *destination=input[short_end].controls;
+            size_t width=short_end-boundary;
+            for(size_t i=boundary;i<short_end;++i) {
+                double f=(double)(i-boundary+1)/(double)(width+1);
+                output[i].controls[2]=(float)nearbyint(left[2]*(1-f));
+                output[i].controls[7]=(float)nearbyint(left[7]+((double)destination[7]-left[7])*f);
+                for(size_t c=0;c<3;++c) {
+                    unsigned column=columns[c];
+                    output[i].controls[column]=(float)(left[column]+((double)destination[column]-left[column])*f);
+                }
+            }
+            changed[edge]=1;continue;
+        }
+        double amp=(double)right[2]-left[2],asp=(double)right[7]-left[7],maximum=0;
+        for(size_t c=0;c<3;++c) {
+            double difference=fabs((double)right[columns[c]]-left[columns[c]]);
+            if(difference>maximum)maximum=difference;
+        }
+        if(fabs(amp)<12 && fabs(asp)<12 && maximum<100)continue;
+        size_t first=lower_time(times,frame_count+1,times[boundary]-window_ms,0);
+        size_t last=lower_time(times,frame_count+1,times[boundary]+window_ms,1);
+        if(first<left_limit)first=left_limit;
+        if(last>right_limit)last=right_limit;
+        for(size_t i=first;i<boundary;++i)if(input[i].controls[2]<=0)first=i+1;
+        for(size_t i=boundary;i<last;++i)if(input[i].controls[2]<=0){last=i;break;}
+        if(boundary-first<3 || last-boundary<3 || times[last-1]<=times[first])continue;
+        double span=times[last-1]-times[first];
+        if(!copied){memcpy(output,input,frame_count*sizeof *input);copied=1;}
+        for(size_t c=0;c<3;++c) {
+            unsigned column=columns[c];
+            double a=input[first].controls[column],b=input[last-1].controls[column];
+            for(size_t i=first;i<last;++i) {
+                double weight=ease((times[i]-times[first])/span);
+                output[i].controls[column]=(float)(a+(b-a)*weight);
+            }
+        }
+        if(amp>=12 && times[boundary-1]>times[first]) {
+            double duration=times[boundary-1]-times[first];
+            for(size_t i=first;i<boundary;++i) {
+                double weight=ease((times[i]-times[first])/duration);
+                output[i].controls[2]=(float)fmin(80,nearbyint(input[i].controls[2]+amp*weight));
+            }
+        } else if(amp<=-12 && times[last-1]>times[boundary]) {
+            double duration=times[last-1]-times[boundary];
+            for(size_t i=boundary;i<last;++i) {
+                double weight=1-ease((times[i]-times[boundary])/duration);
+                output[i].controls[2]=(float)fmin(80,nearbyint(input[i].controls[2]-amp*weight));
+            }
+        }
+        if(left[7]>0 && right[7]==0 && times[boundary-1]>times[first]) {
+            double duration=times[boundary-1]-times[first];
+            for(size_t i=first;i<boundary;++i) {
+                double weight=ease((times[i]-times[first])/duration);
+                output[i].controls[7]=(float)nearbyint(input[i].controls[7]*(1-weight));
+            }
+        } else if(left[7]==0 && right[7]>0 && times[last-1]>times[boundary]) {
+            double duration=times[last-1]-times[boundary];
+            for(size_t i=boundary;i<last;++i) {
+                double weight=ease((times[i]-times[boundary])/duration);
+                output[i].controls[7]=(float)nearbyint(input[i].controls[7]*weight);
             }
         }
         changed[edge]=1;

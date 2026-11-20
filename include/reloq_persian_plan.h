@@ -31,8 +31,8 @@ enum reloq_fa_input_variant {
 /* The vowel keeps its acoustic identity and any LONG flag, while its
  * nucleus uses the contextual timing of the same vowel's short version. */
 #define RELOQ_FA_PLAN_SHORT_NUCLEUS 2u
-/* A weak /i/ between a preceding vowel and a stressed vowel also receives
- * the established compact-hiatus timing, for either vowel-length marker. */
+/* A weak /i/ (either marker) or short back /a/ between a preceding vowel and
+ * a stressed vowel receives the shared compact-hiatus timing candidate. */
 #define RELOQ_FA_PLAN_COMPACT_HIATUS 4u
 
 /* The ordinary Persian inventory has 29 identities. These optional extra

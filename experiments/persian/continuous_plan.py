@@ -728,7 +728,9 @@ class SentencePlan:
     _native_frication: object = None
     _native_bridge_continuation: object = None
     _native_bridge_stop_onsets: object = None
+    _native_bridge_remaining: object = None
     _native_match_stop_nasal: object = None
+    _native_plan_unvoiced_onsets: object = None
 
     def timeline(self):
         """Reuse frame times while only resonance or source values change."""
@@ -1078,7 +1080,9 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
                         _native_frication=capture_api.recompute_frication,
                         _native_bridge_continuation=capture_api.bridge_continuation,
                         _native_bridge_stop_onsets=getattr(capture_api, 'bridge_stop_onsets', None),
-                        _native_match_stop_nasal=getattr(capture_api, 'match_stop_nasal', None))
+                        _native_bridge_remaining=getattr(capture_api, 'bridge_remaining', None),
+                        _native_match_stop_nasal=getattr(capture_api, 'match_stop_nasal', None),
+                        _native_plan_unvoiced_onsets=getattr(capture_api, 'plan_unvoiced_onsets', None))
 
 
 def replay_marks(plan, original_counts):
@@ -1229,84 +1233,25 @@ def bridge_remaining_voiced(plan, parts, bridged, cuts, window_ms=15.0):
     excluded = set(bridged) | {edge for edge, _ in cuts}
     original, output = plan.frames, None
     starts, bounds = plan.timeline(), _edges_by_count(plan.counts)
-    changed = []
+    if plan._native_bridge_remaining is None:
+        raise RuntimeError('native voiced transition planner is unavailable')
+    skip = (ctypes.c_ubyte * len(parts))()
     for edge in range(1, len(parts)):
-        if edge in excluded or _bracket_boundary(parts, edge):
-            continue
-        boundary = bounds[edge - 1]
-        left_limit = 0 if edge == 1 else bounds[edge - 2]
-        right_limit = bounds[edge]
-        left, right = original[boundary - 1].controls, original[boundary].controls
-        if left[2] <= 0 or right[2] <= 0:
-            continue
-        # Some contexts contribute only 1–4 ms of artificial voicing before
-        # a voiceless /h/. Bridge the existing aspiration through those rows
-        # instead of introducing an isolated voiced click or a noise hole.
-        short = boundary
-        while (short < right_limit and original[short].controls[2] > 0 and
-               starts[short] - starts[boundary] < 5.0):
-            short += 1
-        if (short > boundary and short < right_limit and original[short].controls[2] == 0 and
-                starts[short] - starts[boundary] <= 5.0 and left[2] <= 20 and
-                left[7] > 0 and original[short].controls[7] > 0):
-            destination = original[short].controls
-            width = short - boundary
-            if output is None:
-                output = _copy_frames(original)
-            for i in range(boundary, short):
-                fraction = (i - boundary + 1) / (width + 1)
-                output[i].controls[2] = round(left[2] * (1 - fraction))
-                output[i].controls[7] = round(left[7] + (destination[7] - left[7]) * fraction)
-                for column in (9, 13, 15):
-                    output[i].controls[column] = left[column] + (destination[column] - left[column]) * fraction
-            changed.append(edge)
-            continue
-        amplitude_jump = right[2] - left[2]
-        aspiration_jump = right[7] - left[7]
-        frequencies = (9, 13, 15)
-        if (abs(amplitude_jump) < 12 and abs(aspiration_jump) < 12 and
-                max(abs(right[c] - left[c]) for c in frequencies) < 100):
-            continue
-        first = max(left_limit, bisect_left(starts, starts[boundary] - window_ms))
-        last = min(right_limit, bisect_right(starts, starts[boundary] + window_ms))
-        while first < boundary and any(original[j].controls[2] <= 0 for j in range(first, boundary)):
-            first += 1
-        while last > boundary and any(original[j].controls[2] <= 0 for j in range(boundary, last)):
-            last -= 1
-        if boundary - first < 3 or last - boundary < 3 or starts[last - 1] <= starts[first]:
-            continue
-        span = starts[last - 1] - starts[first]
-        if output is None:
-            output = _copy_frames(original)
-        for column in frequencies:
-            a, b = original[first].controls[column], original[last - 1].controls[column]
-            for i in range(first, last):
-                weight = _ease((starts[i] - starts[first]) / span)
-                output[i].controls[column] = a + (b - a) * weight
-        if amplitude_jump >= 12 and starts[boundary - 1] > starts[first]:
-            duration = starts[boundary - 1] - starts[first]
-            for i in range(first, boundary):
-                weight = _ease((starts[i] - starts[first]) / duration)
-                output[i].controls[2] = min(80, round(original[i].controls[2] + amplitude_jump * weight))
-        elif amplitude_jump <= -12 and starts[last - 1] > starts[boundary]:
-            duration = starts[last - 1] - starts[boundary]
-            for i in range(boundary, last):
-                weight = 1 - _ease((starts[i] - starts[boundary]) / duration)
-                output[i].controls[2] = min(80, round(original[i].controls[2] - amplitude_jump * weight))
-        if left[7] > 0 and right[7] == 0 and starts[boundary - 1] > starts[first]:
-            duration = starts[boundary - 1] - starts[first]
-            for i in range(first, boundary):
-                weight = _ease((starts[i] - starts[first]) / duration)
-                output[i].controls[7] = round(original[i].controls[7] * (1 - weight))
-        elif left[7] == 0 and right[7] > 0 and starts[last - 1] > starts[boundary]:
-            duration = starts[last - 1] - starts[boundary]
-            for i in range(boundary, last):
-                weight = _ease((starts[i] - starts[boundary]) / duration)
-                output[i].controls[7] = round(original[i].controls[7] * weight)
-        changed.append(edge)
-    if output is not None:
+        skip[edge] = int(edge in excluded or _bracket_boundary(parts, edge))
+    if all(skip[1:]):
+        return ()
+    times = ((ctypes.c_double * len(starts))(*starts)
+             if not isinstance(starts, ctypes.Array) else starts)
+    changed = (ctypes.c_ubyte * len(parts))()
+    output = (NativeFrame * len(original))()
+    if plan._native_bridge_remaining(original, output, times,
+                                     (ctypes.c_size_t * len(bounds))(*bounds), skip,
+                                     len(original), len(parts), window_ms, changed):
+        raise RuntimeError('invalid native voiced transition frames')
+    selected = tuple(edge for edge in range(1, len(parts)) if changed[edge])
+    if selected:
         plan.frames = output
-    return tuple(changed)
+    return selected
 
 
 def bridge_english_continuations(plan, parts, bridged, cuts, window_ms=30.0):
@@ -1426,22 +1371,29 @@ def direct_ach(plan, parts):
     return tuple(cuts)
 
 
-def direct_unvoiced_onsets(plan, parts, en):
-    """Remove inherited voiced carrier before a confirmed voiceless onset.
+def direct_unvoiced_onsets(plan, parts, en, rate):
+    """Ask the core to handle the native context of voiceless onsets.
 
     The two native context captures can carry the preceding language's vowel
     into the beginning of the next segment. Keep the preceding vowel intact
-    and remove only a bounded all-voiced lead-in when the following native
-    frames actually contain the expected frication, aspiration or closure.
+    and preserve it if a continuous reference contains the same transition.
+    Otherwise, only a bounded all-voiced lead-in before a confirmed
+    fricative, aspiration or stop closure is removed.
     The separately selected Ach transition and voiced consonants are left to
     their existing paths.
     """
     frames, boundaries = plan.frames, _edges_by_count(plan.counts)
-    ranges, counts, cuts = [], list(plan.counts), []
+    native = plan._native_plan_unvoiced_onsets
+    if native is None:
+        raise RuntimeError('native voiceless transition planner is unavailable')
+    onsets = (ctypes.c_ubyte * len(parts))()
     for edge in range(1, len(parts)):
         if _bracket_boundary(parts, edge):
             continue
         part = parts[edge]
+        if parts[edge - 1].language == 'fa' and part.language == 'en-us':
+            # Preserve the English core's own established transition.
+            continue
         if part.language == 'fa':
             source = part.text
         else:
@@ -1451,48 +1403,31 @@ def direct_unvoiced_onsets(plan, parts, en):
                 continue
         first_tag = _TAG.search(source)
         onset = re.match(r'\.[012]([fstpkSh])', first_tag.group(1)) if first_tag else None
-        if onset is None:
-            continue
-        phone = onset.group(1)
-        boundary, end = boundaries[edge - 1], boundaries[edge]
-        if boundary < 1 or boundary >= end or frames[boundary - 1].controls[2] <= 0:
-            continue
-        elapsed, cut = 0.0, None
-        for pos in range(boundary, end):
-            c = frames[pos].controls
-            if c[2] <= 0:
-                expected = (c[8] >= 20 if phone in 'fsS' else
-                            c[7] > 0 if phone == 'h' else c[7] == 0 and c[8] == 0)
-                if expected and 8.0 <= elapsed <= 120.0:
-                    cut = pos
-                break
-            elapsed += float(c[0])
-            if elapsed > 120.0:
-                break
-        if cut is None or cut == boundary:
-            continue
-        if parts[edge - 1].language == 'fa' and part.language == 'en-us':
-            # This is the English core's own context before the onset, not
-            # an extra foreign vowel. Keep it as in a continuous sentence;
-            # the native continuation bridge aligns it with the Persian end.
-            continue
-        ranges.append((boundary, cut))
-        counts[edge] -= cut - boundary
-        cuts.append((edge, elapsed))
-    if ranges:
-        output = (NativeFrame * (len(frames) - sum(b - a for a, b in ranges)))()
-        target, previous = 0, 0
-        for a, b in (*ranges, (len(frames), len(frames))):
-            count = a - previous
-            if count:
-                ctypes.memmove(ctypes.addressof(output) + target * ctypes.sizeof(NativeFrame),
-                               ctypes.addressof(frames) + previous * ctypes.sizeof(NativeFrame),
-                               count * ctypes.sizeof(NativeFrame))
-                target += count
-            previous = b
-        plan.frames, plan.counts, plan._timeline = output, tuple(counts), None
-    return tuple(cuts)
-
+        if onset:
+            onsets[edge] = ord(onset.group(1))
+            if parts[edge - 1].language == 'en-us' and part.language == 'fa':
+                onsets[edge] |= 128
+    if not any(onsets):
+        return ()
+    donor = plan.contexts.get('en-us')
+    refs = None
+    if donor is not None:
+        refs = (ctypes.c_size_t * (len(parts) + 1))(*(
+            bisect_left(donor.ticks, round(t * 1000 / rate))
+            for t in plan.edges['en-us']))
+    counts = (ctypes.c_size_t * len(parts))()
+    removed = (ctypes.c_double * len(parts))()
+    size = ctypes.c_size_t()
+    if native(frames, len(frames), (ctypes.c_size_t * len(parts))(*boundaries),
+              len(parts), onsets, donor.frames if donor else None,
+              len(donor.frames) if donor else 0, refs, counts, removed, ctypes.byref(size)):
+        raise RuntimeError('invalid native voiceless onset plan')
+    cuts = tuple((edge, removed[edge]) for edge in range(1, len(parts)) if removed[edge])
+    if cuts:
+        # Keep the allocation alive while exposing only the compacted rows.
+        plan.frames = (NativeFrame * size.value).from_buffer(frames)
+        plan.counts, plan._timeline = tuple(counts), None
+    return cuts
 
 @dataclass(frozen=True)
 class GermanAch:
@@ -1767,7 +1702,7 @@ def selected_sentence(plan, parts, en, german, rate, *, check=None):
     """Apply the user's selected sentence and A-to-Ach transition."""
     original_counts = plan.counts
     if check: check()
-    direct_unvoiced_onsets(plan, parts, en)
+    direct_unvoiced_onsets(plan, parts, en, rate)
     bridge_stop_onsets(plan, parts, en, rate)
     if check: check()
     bridged = bridge_sonorants(plan, parts, rate)

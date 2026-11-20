@@ -187,12 +187,27 @@ class FrameCapture:
                 ctypes.POINTER(ctypes.c_ubyte), ctypes.c_size_t, ctypes.c_size_t, ctypes.c_double,
                 ctypes.POINTER(ctypes.c_ubyte))
             self.bridge_stop_onsets.restype = ctypes.c_int
+        self.bridge_remaining = getattr(dll, 'eciPersianBridgeRemaining', None)
+        if self.bridge_remaining is not None:
+            self.bridge_remaining.argtypes = (ctypes.POINTER(NativeFrame), ctypes.POINTER(NativeFrame),
+                ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_size_t),
+                ctypes.POINTER(ctypes.c_ubyte), ctypes.c_size_t, ctypes.c_size_t, ctypes.c_double,
+                ctypes.POINTER(ctypes.c_ubyte))
+            self.bridge_remaining.restype = ctypes.c_int
         self.match_stop_nasal = getattr(dll, 'eciPersianMatchStopNasal', None)
         if self.match_stop_nasal is not None:
             self.match_stop_nasal.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,
                 ctypes.c_size_t, ctypes.c_size_t, ctypes.POINTER(NativeFrame),
                 ctypes.c_size_t, ctypes.c_size_t)
             self.match_stop_nasal.restype = ctypes.c_int
+        self.plan_unvoiced_onsets = getattr(dll, 'eciPersianPlanUnvoicedOnsets', None)
+        if self.plan_unvoiced_onsets is not None:
+            self.plan_unvoiced_onsets.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,
+                ctypes.POINTER(ctypes.c_size_t), ctypes.c_size_t, ctypes.POINTER(ctypes.c_ubyte),
+                ctypes.POINTER(NativeFrame), ctypes.c_size_t, ctypes.POINTER(ctypes.c_size_t),
+                ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_double),
+                ctypes.POINTER(ctypes.c_size_t))
+            self.plan_unvoiced_onsets.restype = ctypes.c_int
 
     def capture(self, voice, parts, *, maximum=60000, audio=True, phone_segments=False,
                 snapshot_at=None, on_snapshot=None):

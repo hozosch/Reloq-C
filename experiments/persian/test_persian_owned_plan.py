@@ -112,6 +112,8 @@ def main():
             vowels = [e for e in left[1] if e[0] == PHONE and e[1] == 4]
             assert vowels and vowels[0][2] == 3 and vowels[0][4] == 0, (fa, vowels)
             assert all(not e[2] & 2 for e in vowels[1:]), (fa, vowels)
+            back_a = [e for e in left[1] if e[0] == PHONE and e[1] == 2]
+            assert sum(bool(e[2] & 4) for e in back_a) == (fa == 'ایتالیایی'), (fa, back_a)
         for tag in ("`[.0'i:'.1r'a:']", "`[.1'i:'.0ta.0li.0a]",
                     "`[.0ba.0t'i:'.1a]", "`[.0'i:'.0ta.0li.0a]"):
             result, events, _, _ = analyze(tag, runs=[(len(tag), 2)])
@@ -128,6 +130,19 @@ def main():
             middle = [e for e in events if e[0] == PHONE and e[1] == 4]
             assert result == 0 and len(middle) == 1 and middle[0][2] & 4, (tag, events)
             assert bool(middle[0][2] & 2) == (marker != 'i'), (tag, events)
+        for tag, compact in (("`[.0mi.0a.1'i:']", True),
+                             ("`[.0mi.0'a:'.1'i:']", False),
+                             ("`[.0mi.1a.0'i:']", False),
+                             ("`[.0mi.0a.0'i:']", False),
+                             ("`[.0ma.1'i:']", False)):
+            result, events, _, _ = analyze(tag, runs=[(len(tag), 2)])
+            back_a = [e for e in events if e[0] == PHONE and e[1] == 2]
+            assert result == 0 and len(back_a) == 1 and bool(back_a[0][2] & 4) == compact, (tag, events)
+        first, second = '`[.0mi]', "`[.0a.1'i:']"
+        text = first + ' ' + second
+        result, events, _, _ = analyze(text, runs=[(len(first), 2), (len(first) + 1, 0), (len(text), 2)])
+        back_a = [e for e in events if e[0] == PHONE and e[1] == 2]
+        assert result == 0 and len(back_a) == 1 and not back_a[0][2] & 4, events
         # Large phonetic input must remain representable without repeatedly
         # scanning the rest of the word for every unstressed nucleus.
         long_input = '`[.0' + 'i' * 20000 + ']'

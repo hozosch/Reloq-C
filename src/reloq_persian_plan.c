@@ -76,14 +76,17 @@ static void mark_vowel_timing(struct plan *p,size_t first,size_t last)
             if(phone->stress==1 || phone->stress==2)stressed=1;
         }
         if(phone->stress==0) {
-            if(phone->value==RELOQ_FA_PHONE_I) {
+            if(phone->value==RELOQ_FA_PHONE_I || phone->value==RELOQ_FA_PHONE_BACK_A) {
                 int left=i>first && p->events[i-1].kind==RELOQ_FA_PLAN_PHONE &&
                          nucleus(p->events[i-1].value);
                 int right=i+1<last && p->events[i+1].kind==RELOQ_FA_PLAN_PHONE &&
                           nucleus(p->events[i+1].value) && p->events[i+1].stress==1;
-                int hiatus=reloq_fa_i_before_stressed_hiatus(left,right);
+                unsigned kind=phone->value==RELOQ_FA_PHONE_I ? RELOQ_FA_HIATUS_I :
+                    RELOQ_FA_HIATUS_SHORT_BACK_A;
+                int hiatus=reloq_fa_hiatus_timing_percent(kind,
+                    !!(phone->flags&RELOQ_FA_PHONE_LONG),left,right)<100;
                 if(hiatus)phone->flags|=RELOQ_FA_PLAN_COMPACT_HIATUS;
-                if((phone->flags&RELOQ_FA_PHONE_LONG) && hiatus)
+                if(phone->value==RELOQ_FA_PHONE_I && (phone->flags&RELOQ_FA_PHONE_LONG) && hiatus)
                     phone->flags|=RELOQ_FA_PLAN_SHORT_NUCLEUS;
             }
             if(!before_vowel && (phone->flags&RELOQ_FA_PHONE_LONG) &&

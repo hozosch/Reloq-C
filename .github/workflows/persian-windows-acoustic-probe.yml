@@ -2,7 +2,7 @@ name: Persian Windows acoustic probe
 on:
   workflow_dispatch:
   push:
-    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116, codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117, codex/persian-us-contour-20261117, codex/persian-adjectives-20261117, codex/persian-ra-pinglish-20261119, codex/persian-core-20261119, codex/persian-phones-20261119, codex/persian-native-20261120, codex/persian-issue49-solh-20261120, codex/persian-native-transitions-20261120, codex/persian-native-fast-pilot-20261120, codex/persian-sentence-core-20261120, codex/persian-sentence-linear-20261120]
+    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116, codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117, codex/persian-us-contour-20261117, codex/persian-adjectives-20261117, codex/persian-ra-pinglish-20261119, codex/persian-core-20261119, codex/persian-phones-20261119, codex/persian-native-20261120, codex/persian-issue49-solh-20261120, codex/persian-native-transitions-20261120, codex/persian-native-fast-pilot-20261120, codex/persian-sentence-core-20261120, codex/persian-sentence-linear-20261120, codex/persian-context-native-20261120]
     paths:
       - experiments/persian/build_native_probe.py
       - experiments/persian/build_windows_probe.py
@@ -91,6 +91,7 @@ on:
       - experiments/persian/test_bakhtiari_football.py
       - experiments/persian/test_initial_vowel_timing.py
       - experiments/persian/test_persian_vowel_hiatus.py
+      - experiments/persian/test_persian_a_hiatus.py
       - experiments/persian/test_r_metallic_edge.py
       - experiments/persian/test_persian_final_r_connected.py
       - experiments/persian/test_persian_r_liaison.py
@@ -259,6 +260,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian first-vowel timing failed' }
           python -B experiments/persian/test_persian_vowel_hiatus.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian unstressed hiatus timing failed' }
+          python -B experiments/persian/test_persian_a_hiatus.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Persian weak-A hiatus timing failed' }
           python -B experiments/persian/test_r_metallic_edge.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian metallic R transition failed' }
           python -B experiments/persian/test_mixed_pitch_edges.py --library eci/eci.dll

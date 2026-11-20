@@ -15,10 +15,20 @@ verwendet er eine persische Lesung des Unicode-Codes.
 
 Die sprachunabhängigen Lautereignisse tragen auch die bisherigen allgemeinen
 Regeln für kurze unbetonte Anfangsvokale und für ein schwaches i zwischen
-Vokalen. Der Klang des langen Vokals bleibt als eigene Eigenschaft erhalten.
+Vokalen. Für ein kurzes unbetontes A zwischen Vokalen vor einer betonten
+Silbe gibt es einen vorsichtigen Hörtest-Kandidaten. Der Klang des langen
+Vokals bleibt als eigene Eigenschaft erhalten.
 Der bisherige akustische Testpfad verwendet dieselben strukturellen Regeln.
 Die Ereignisplanung allein ist weiterhin keine Synthese und ersetzt den alten
 Pfad noch nicht.
+
+Die aktuelle Stimme übergibt die Entscheidung über stimmlose Lauteinsätze und
+die Glättung weiterer stimmhafter Sprachwechsel inzwischen an den gemeinsamen
+C-Kern. Der Referenzvergleich erhält bereits passende Übergänge und ihre
+H-Impulse; die bisherige Python-Berechnung ist dafür nicht mehr nötig. Die
+Vorbereitung der Sprachabschnitte und weitere Klangübergänge liegen dagegen
+noch im experimentellen Treiber. Auch dieser Fortschritt ist daher noch keine
+vollständig eigenständige persische Stimme.
 
 Die nächste freie Sprachnummer nach Aragonesisch (19) ist 20. Der neue
 Analysepfad erkennt deshalb `` `l20.0 `` und `` `l20.1 `` als Wechsel
