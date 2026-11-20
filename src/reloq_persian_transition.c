@@ -54,7 +54,14 @@ static int same_unvoiced_context(const struct reloq_fa_frame *reference,
     /* A neutral proxy is not evidence that the requested consonant has no
      * lead-in. Distinguish that from a real but incompatible onset. */
     if(found<0)return -1;
-    if(!found)return 2;
+    if(!found) {
+        const float *first_frame=reference[first].controls;
+        int direct=(phone=='f' || phone=='s' || phone=='S') ? first_frame[8]>=20 :
+            phone=='h' ? first_frame[7]>0 : first_frame[7]==0 && first_frame[8]==0;
+        /* A genuine unvoiced onset at the marked edge is a conflicting
+         * reference, not the neutral proxy's missing consonant. */
+        return first_frame[2]<=0 && direct ? 0 : 2;
+    }
     double tolerance=fmax(6.0,target->duration*0.4);
     if(fabs(target->duration-donor.duration)>tolerance)return 0;
     if(phone=='t' || phone=='p' || phone=='k')

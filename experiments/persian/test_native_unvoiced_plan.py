@@ -80,6 +80,8 @@ def main():
         # a bounded target with an actual burst or continuous frication.
         check('p', word('p'), word('h'), True)
         check('f', word('f'), word('h'), True)
+        check('p', word('p'), word('p', lead=0), False)
+        check('f', word('f'), word('f', lead=0), False)
         check('f', word('f', lead=50), word('h'), False)
         discontinuous = word('f')
         discontinuous[0].controls[2] = 20
