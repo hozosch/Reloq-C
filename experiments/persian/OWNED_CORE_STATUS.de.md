@@ -1,9 +1,10 @@
 # Eigenständiger persischer Sprachkern: Arbeitsstand
 
-Der neue Analysepfad ist ein Baustein und noch keine eigene Stimme. Er wird
-nicht von der vorhandenen NVDA-Stimme verwendet. Diese bleibt auf ihrem
-bisherigen experimentellen Pfad; der finnische Sprachkern und der englische
-Melodielauf sind dort also noch nicht entfernt.
+Der neue Ereignisplaner ist ein Baustein und noch keine eigene Stimme. Die
+NVDA-Teststimme verwendet für abgedeckte Eingaben bereits die native
+Textprojektion aus derselben Regelbasis, aber noch nicht den Ereignisplaner
+als vollständigen Syntheseweg. Der finnische Sprachkern und der englische
+Melodielauf sind aus dem experimentellen Stimmpfad noch nicht entfernt.
 
 `eciPersianAnalyzeRunsUtf8` überführt unterstützte persische Texte, Zahlen,
 Zeichennamen, Pinglish und Lautschrifteingaben in persische Laut- und
@@ -35,8 +36,9 @@ vollständig eigenständige persische Stimme.
 Die nächste freie Sprachnummer nach Aragonesisch (19) ist 20. Der neue
 Analysepfad erkennt deshalb `` `l20.0 `` und `` `l20.1 `` als Wechsel
 zwischen persischer Schrift und Pinglish. Intern entsprechen sie `0x140000`
-und `0x140001`. Die bisherigen Kennungen `0x7f0000` und `0x7f0001` gehören
-lediglich zum alten Testtreiber. Die neue Nummer ist noch nicht in der
+und `0x140001`. Der Testtreiber verwendet jetzt ebenfalls die Nummer 20; die
+alten Kennungen `0x7f0000` und `0x7f0001` werden dort für gespeicherte
+Einstellungen als Alias akzeptiert. Die neue Nummer ist noch nicht in der
 normalen ECI-Sprachauswahl registriert. Andere Sprachen muss später der
 gemeinsame ECI-Router behandeln.
 
@@ -47,9 +49,13 @@ Zeichennamen behandelt; sie werden keinem fremden Textparser übergeben.
 
 Noch offen für eine nutzbare eigene Stimme:
 
-* Die persischen Aussprache- und Morphologieregeln müssen auch Wörter
-  abdecken, die die bisherige direkte Lexik nicht erfasst. Der neue Planer
-  meldet solche Lücken derzeit, statt einen fremden Sprachkern aufzurufen.
+* Die persischen Aussprache- und Morphologieregeln müssen Wörter außerhalb
+  der bisherigen direkten Lexik besser abdecken. Der strenge Analysemodus
+  meldet solche Lücken; ein zusätzlicher Modus kann sie anhand allgemeiner
+  Schrift- und Kontextregeln aussprechen. Dessen ungeschriebene kurze Vokale
+  sind Näherungen und benötigen weitere sprachliche Prüfung. Ist eSpeak im
+  NVDA-Testpfad verfügbar, wird es für noch nicht abgedeckte Fälle weiterhin
+  als Referenz verwendet.
 * Die bereits abgestimmten Klänge müssen aus den Lautereignissen mit einer
   eigenen persischen Laut- und Übergangsplanung erzeugt werden. Dabei müssen
   unter anderem der H-Impuls und der R–A-Übergang hörbar geprüft werden.
