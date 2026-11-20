@@ -25,7 +25,9 @@ Pfad noch nicht.
 Die aktuelle Stimme übergibt die Entscheidung über stimmlose Lauteinsätze und
 die Glättung weiterer stimmhafter Sprachwechsel inzwischen an den gemeinsamen
 C-Kern. Der Referenzvergleich erhält bereits passende Übergänge und ihre
-H-Impulse; die bisherige Python-Berechnung ist dafür nicht mehr nötig. Die
+H-Impulse. Fehlt der Konsonant in einem neutralen Referenzlauf, wird ein kurzer
+stetiger Übergang mit nachgewiesenem Verschluss oder Reibegeräusch erhalten.
+Die bisherige Python-Berechnung ist dafür nicht mehr nötig. Die
 Vorbereitung der Sprachabschnitte und weitere Klangübergänge liegen dagegen
 noch im experimentellen Treiber. Auch dieser Fortschritt ist daher noch keine
 vollständig eigenständige persische Stimme.

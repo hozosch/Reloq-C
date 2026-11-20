@@ -41,20 +41,20 @@ def main():
         return cuts
     continuous_plan.direct_unvoiced_onsets = checked
     try:
-        for word in ('سلام', 'سبز', 'فایل', 'شماره', 'کتاب', 'تست', 'پر', 'خوب', 'زود'):
+        for word in ('سلام', 'سبز', 'فایل', 'شماره', 'کتاب', 'تست', 'پر', 'پشتیبانی', 'صلح', 'خوب', 'زود'):
             pcm = bytearray()
             assert engine.speak(('NVDA ' + word,), pcm.extend, lambda _: None) and pcm
             tag, cuts, before = observed[-1]
-            if word in ('خوب', 'زود', 'تست', 'کتاب', 'سلام'):
+            if word in ('خوب', 'زود', 'تست', 'کتاب', 'سلام', 'پر', 'پشتیبانی', 'فایل', 'صلح'):
                 assert not cuts, (word, tag, cuts)
-                if word in ('تست', 'کتاب', 'سلام'):
+                if word in ('تست', 'کتاب', 'سلام', 'پر', 'پشتیبانی', 'فایل', 'صلح'):
                     assert before[0][0] > 0 and any(row[0] == 0 for row in before), (word, before)
             elif cuts:
                 assert cuts and 8 <= cuts[0][1] <= 120, (word, tag, cuts)
     finally:
         continuous_plan.direct_unvoiced_onsets = original
         engine.close()
-    print('Passed real native T/K/S context joins, preceding vowel, voiced-Z and selected Ach checks.')
+    print('Passed real native T/K/P/S/F context joins, preceding vowel, voiced-Z and selected Ach checks.')
 
 
 if __name__ == '__main__':

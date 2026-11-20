@@ -1377,8 +1377,9 @@ def direct_unvoiced_onsets(plan, parts, en, rate):
     The two native context captures can carry the preceding language's vowel
     into the beginning of the next segment. Keep the preceding vowel intact
     and preserve it if a continuous reference contains the same transition.
-    Otherwise, only a bounded all-voiced lead-in before a confirmed
-    fricative, aspiration or stop closure is removed.
+    If a neutral reference has no consonant, a brief source-continuous lead
+    with a real stop burst or frication can also be retained. Otherwise, only
+    a bounded all-voiced lead-in before a confirmed onset is removed.
     The separately selected Ach transition and voiced consonants are left to
     their existing paths.
     """

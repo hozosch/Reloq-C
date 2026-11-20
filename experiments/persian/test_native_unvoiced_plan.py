@@ -66,17 +66,25 @@ def main():
                 assert counts[1] == len(target) and total.value == len(frames)
                 assert removed[1] == 0 and bytes(frames) == original
             else:
-                assert counts[1] == len(target) - 14 and total.value == len(frames) - 14
-                assert removed[1] == 14 and frames[10].controls[2] == 0
-                assert bytes(frames)[10 * ctypes.sizeof(NativeFrame):total.value * ctypes.sizeof(NativeFrame)] == original[24 * ctypes.sizeof(NativeFrame):]
+                lead = next(i for i, frame in enumerate(target) if frame.controls[2] <= 0)
+                assert counts[1] == len(target) - lead and total.value == len(frames) - lead
+                assert removed[1] == sum(frame.controls[0] for frame in target[:lead]) and frames[10].controls[2] == 0
+                assert bytes(frames)[10 * ctypes.sizeof(NativeFrame):total.value * ctypes.sizeof(NativeFrame)] == original[(10 + lead) * ctypes.sizeof(NativeFrame):]
 
         for phone in 'tpkfsSh':
             check(phone, word(phone), word(phone, 16), True)
             check(phone, word(phone), word(phone, 30), False)
         # A superficially timed match may not erase or invent a burst.
         check('t', word('t'), word('t', burst=5), False)
-        # An unrelated donor without the matching frication is not evidence.
-        check('f', word('f'), word('h'), False)
+        # A neutral donor supplies no contradictory consonant. Preserve only
+        # a bounded target with an actual burst or continuous frication.
+        check('p', word('p'), word('h'), True)
+        check('f', word('f'), word('h'), True)
+        check('f', word('f', lead=50), word('h'), False)
+        discontinuous = word('f')
+        discontinuous[0].controls[2] = 20
+        check('f', discontinuous, word('h'), False)
+        check('p', word('p', burst=5), word('h'), False)
         print('Passed native onset planning, matching/mismatched references and preserved source frames.')
 
 

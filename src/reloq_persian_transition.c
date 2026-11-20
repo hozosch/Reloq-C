@@ -5,6 +5,7 @@
 struct unvoiced_lead {
     size_t end;
     double duration;
+    double closure;
     float initial_noise,onset_noise,release;
 };
 
@@ -23,7 +24,7 @@ static int find_unvoiced_lead(const struct reloq_fa_frame *frames,size_t first,
                 phone=='h' ? c[7]>0 : c[7]==0 && c[8]==0;
             if(!expected || elapsed<8 || elapsed>120)return 0;
             lead->end=i;lead->duration=elapsed;lead->initial_noise=peak;
-            lead->onset_noise=c[8];lead->release=-1;
+            lead->onset_noise=c[8];lead->release=-1;lead->closure=0;
             if(phone=='t' || phone=='p' || phone=='k') {
                 double closure=0;
                 for(size_t j=i;j<end && closure<=110;++j) {
@@ -34,6 +35,7 @@ static int find_unvoiced_lead(const struct reloq_fa_frame *frames,size_t first,
                     if(next[2]>0 || next[7]>0)break;
                     closure+=next[0];
                 }
+                lead->closure=closure;
             }
             return 1;
         }
@@ -49,7 +51,10 @@ static int same_unvoiced_context(const struct reloq_fa_frame *reference,
 {
     struct unvoiced_lead donor;
     int found=find_unvoiced_lead(reference,first,end,phone,&donor);
-    if(found<=0)return found;
+    /* A neutral proxy is not evidence that the requested consonant has no
+     * lead-in. Distinguish that from a real but incompatible onset. */
+    if(found<0)return -1;
+    if(!found)return 2;
     double tolerance=fmax(6.0,target->duration*0.4);
     if(fabs(target->duration-donor.duration)>tolerance)return 0;
     if(phone=='t' || phone=='p' || phone=='k')
@@ -59,6 +64,24 @@ static int same_unvoiced_context(const struct reloq_fa_frame *reference,
         return target->initial_noise>=10 && donor.initial_noise>=10 &&
                fabs(target->onset_noise-donor.onset_noise)<=20;
     return 1;
+}
+
+/* A neutral-vowel proxy may omit the consonant entirely. In that case keep
+ * a short, continuous native-shaped lead only when the voice and aspiration
+ * begin at the preceding values and a genuine stop burst or a smoothly
+ * arriving fricative is present. H retains its separate established path. */
+static int native_shaped_lead(const struct reloq_fa_frame *frames,size_t boundary,
+    unsigned char phone,const struct unvoiced_lead *lead)
+{
+    if(boundary<2 || lead->duration>45 || phone=='h')return 0;
+    const float *left=frames[boundary-1].controls,*first=frames[boundary].controls;
+    if(frames[boundary-2].controls[2]<=0 || left[2]<20 || first[2]<20 || left[8]!=0 ||
+       first[8]>5 || fabs((double)left[2]-first[2])>8 ||
+       fabs((double)left[7]-first[7])>8)return 0;
+    if(phone=='t' || phone=='p' || phone=='k')
+        return lead->closure>=3 && lead->closure<=100 && lead->release>=20;
+    return lead->initial_noise>=10 && lead->onset_noise>=20 &&
+           fabs((double)lead->initial_noise-lead->onset_noise)<=15;
 }
 
 int reloq_persian_plan_unvoiced_onsets(struct reloq_fa_frame *frames,size_t count,
@@ -97,7 +120,7 @@ int reloq_persian_plan_unvoiced_onsets(struct reloq_fa_frame *frames,size_t coun
             int same=same_unvoiced_context(reference,reference_edges[edge],
                 reference_edges[edge+1],phone,&target);
             if(same<0)return -1;
-            if(same)continue;
+            if(same==1 || (same==2 && native_shaped_lead(frames,boundary,phone,&target)))continue;
         }
         cut_first[edge]=boundary;cut_last[edge]=target.end;widths[edge]=target.duration;
     }
