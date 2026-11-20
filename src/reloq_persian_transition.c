@@ -2,6 +2,56 @@
 #include <math.h>
 #include <string.h>
 
+int reloq_persian_bridge_stop_onsets(const struct reloq_fa_frame *input,
+    struct reloq_fa_frame *output,const double *times,const size_t *ends,
+    const unsigned char *skip,size_t frame_count,size_t segment_count,
+    double window_ms,unsigned char *changed)
+{
+    if(!input || !output || input==output || !times || !ends || !skip || !changed ||
+       !frame_count || frame_count>120000 || segment_count<2 || segment_count>32 ||
+       !isfinite(window_ms) || window_ms<4 || window_ms>20 ||
+       frame_count>SIZE_MAX/sizeof *input)return -1;
+    size_t previous=0;
+    for(size_t i=0;i<segment_count;++i) {
+        if(ends[i]<=previous || ends[i]>frame_count)return -1;
+        previous=ends[i];
+    }
+    if(previous!=frame_count)return -1;
+    for(size_t i=0;i<=frame_count;++i)
+        if(!isfinite(times[i]) || (i && times[i]<times[i-1]))return -1;
+    memset(changed,0,segment_count);
+    int copied=0;
+    for(size_t edge=1;edge<segment_count;++edge) {
+        if(skip[edge])continue;
+        size_t boundary=ends[edge-1],right=ends[edge];
+        size_t left=edge>1?ends[edge-2]:0,quiet=boundary;
+        const float *first=input[boundary].controls;
+        if(first[2]<20 || first[8]!=0)continue;
+        while(quiet>left) {
+            const float *c=input[quiet-1].controls;
+            if(c[2]!=0 || c[7]!=0 || c[8]!=0)break;
+            --quiet;
+        }
+        double closure=times[boundary]-times[quiet];
+        if(closure<3 || closure>100)continue;
+        size_t end=boundary;
+        while(end<right && times[end]-times[boundary]<window_ms &&
+              input[end].controls[2]>0 && input[end].controls[8]==0)++end;
+        if(end-boundary<3 || times[end]-times[boundary]<4)continue;
+        if(!copied){memcpy(output,input,frame_count*sizeof *input);copied=1;}
+        for(size_t i=boundary;i<end;++i) {
+            double x=(times[i]-times[boundary])/window_ms;
+            double smooth=x*x*(3-2*x),drop=24*(1-smooth);
+            for(unsigned column=2;column<=7;column+=5) {
+                double original=input[i].controls[column];
+                if(original>0)output[i].controls[column]=(float)fmax(1.0,round(original-drop));
+            }
+        }
+        changed[edge]=1;
+    }
+    return 0;
+}
+
 int reloq_persian_bridge_continuation(const struct reloq_fa_frame *input,
     struct reloq_fa_frame *output, const double *times, const size_t *ends,
     const unsigned char *skip, size_t frame_count, size_t segment_count,

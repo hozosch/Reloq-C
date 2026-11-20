@@ -112,8 +112,9 @@ def main():
         # patterns survive the transfer to independent Persian identities.
         solh = analyze('صلح')
         solh_phones = [e for e in solh[1] if e[0] == PHONE]
-        assert solh[0] == 0 and solh_phones[-1][1] == 22 and {e[3] for e in solh_phones} == {0}
-        for word, stressed_syllable in [('پیمانکاران', 3), ('صدای', 1)]:
+        assert solh[0] == 0 and [e[1] for e in solh_phones][-2:] == [27, 22]
+        assert {e[3] for e in solh_phones} == {0}
+        for word, stressed_syllable in [('پیمانکاران', 3), ('صدای', 1), ('مجازی', 2), ('الآن', 1)]:
             result, events, _, _ = analyze(word)
             primary = {e[3] for e in events if e[0] == PHONE and e[4] == 1}
             assert result == 0 and primary == {stressed_syllable}, (word, result, primary)

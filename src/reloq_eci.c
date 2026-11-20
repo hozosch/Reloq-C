@@ -22,6 +22,7 @@
 #include "reloq_equalizer.h"
 #include "reloq_wordseg.h"
 #include "reloq_persian_direct.h"
+#include "reloq_persian_transition.h"
 #include "reloq_persian_acoustics.h"
 #include "reloq_persian_frame_internal.h"
 #include "reloq_persian_tuning.h"
@@ -2104,6 +2105,11 @@ int ECICALL eciPersianBridgeContinuation(const struct reloq_fa_frame *input,
     const unsigned char *skip,size_t frame_count,size_t segment_count,
     double window_ms,unsigned char *changed)
 {return reloq_fa_bridge_continuation(input,output,times,ends,skip,frame_count,segment_count,window_ms,changed);}
+int ECICALL eciPersianBridgeStopOnsets(const struct reloq_fa_frame *input,
+    struct reloq_fa_frame *output,const double *times,const size_t *ends,
+    const unsigned char *skip,size_t frame_count,size_t segment_count,
+    double window_ms,unsigned char *changed)
+{return reloq_persian_bridge_stop_onsets(input,output,times,ends,skip,frame_count,segment_count,window_ms,changed);}
 int ECICALL eciPersianDenseCurve(const struct reloq_fa_frame *rows,size_t count,
     unsigned column,float *out,size_t length)
 {return reloq_fa_dense_curve(rows,count,column,out,length);}

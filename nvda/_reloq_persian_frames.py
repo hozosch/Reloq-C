@@ -180,6 +180,13 @@ class FrameCapture:
                 ctypes.POINTER(ctypes.c_ubyte), ctypes.c_size_t, ctypes.c_size_t, ctypes.c_double,
                 ctypes.POINTER(ctypes.c_ubyte))
             self.bridge_continuation.restype = ctypes.c_int
+        self.bridge_stop_onsets = getattr(dll, 'eciPersianBridgeStopOnsets', None)
+        if self.bridge_stop_onsets is not None:
+            self.bridge_stop_onsets.argtypes = (ctypes.POINTER(NativeFrame), ctypes.POINTER(NativeFrame),
+                ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_size_t),
+                ctypes.POINTER(ctypes.c_ubyte), ctypes.c_size_t, ctypes.c_size_t, ctypes.c_double,
+                ctypes.POINTER(ctypes.c_ubyte))
+            self.bridge_stop_onsets.restype = ctypes.c_int
 
     def capture(self, voice, parts, *, maximum=60000, audio=True, phone_segments=False,
                 snapshot_at=None, on_snapshot=None):

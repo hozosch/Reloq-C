@@ -53,11 +53,17 @@ def main():
                           ('nemiravam', 'نمی‌روم'), ('tehrani', 'تهرانی'),
                           ('futbal', 'فوتبال'), ('footbal', 'فوتبال'),
                           ('ketabam', 'کتابم'), ('ketabha', 'کتاب‌ها'),
-                          ('khubtar', 'خوبتر'), ('donyaye', 'دنیای')):
+                          ('khubtar', 'خوبتر'), ('donyaye', 'دنیای'), ('majazi', 'مجازی')):
         assert pinglish(roman) == (1, persian(script)), (roman, script, pinglish(roman), persian(script))
         assert pinglish(roman.upper()) == pinglish(roman), roman
     for word in ('phone', 'this', 'zooon'):
         assert pinglish(word)[0] == 0, word
+    # Unknown but pronounceable Pinglish defaults to the normal Persian
+    # final stress; recognized lexical exceptions continue to win above.
+    for word in ('alan', 'zavarexi', 'kavarejo'):
+        status,tag=pinglish(word)
+        stresses=re.findall(r'\.([012])',tag)
+        assert status==1 and stresses[-1]=='1' and stresses.count('1')==1,(word,tag)
     print(f'Passed {checked} native Pinglish/Persian word comparisons and morphology checks.')
 
 

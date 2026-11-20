@@ -825,10 +825,61 @@ static size_t plural_suffix_primary(const char *word,size_t bytes,const char *ta
     return syllables-2;
 }
 
+/* A dictionary-listed -i derivative can be an adjective rather than the
+ * unstressed indefinite suffix. For an otherwise unclassified full word,
+ * require an independently classified multisyllabic noun stem, one extra
+ * syllable, the same consonants, and a changed stem vowel. This preserves
+ * the indefinite reading when the stem's sounds are simply followed by i. */
+static int accent_lexical_i_derivative(const char *word,size_t bytes,const char *tag,size_t syllables)
+{
+    size_t stem=0;
+    if(!ends_with(word,bytes,"ی",&stem) || stress_class(word,stem)!=1u ||
+       direct_index(word,bytes)>=reloq_fa_direct_word_count())return 0;
+    char base[2048],a[2048],b[2048];size_t na=0,nb=0;
+    if(reloq_fa_direct_word(word,stem,base,sizeof base)!=1 ||
+       stress_syllables(base)<2 || stress_syllables(base)+1!=syllables)return 0;
+    const char *sources[]={base,tag};char *outputs[]={a,b};size_t *lengths[]={&na,&nb};
+    for(unsigned k=0;k<2;++k) {
+        const char *s=sources[k];size_t *n=lengths[k];
+        if(s[0]!='`' || s[1]!='[')return 0;
+        size_t i=2;
+        for(;s[i] && s[i]!=']';++i) {
+            if(s[i]=='.' && s[i+1]>='0' && s[i+1]<='2'){++i;continue;}
+            if(s[i]=='\'' || s[i]==':')continue;
+            if(!strchr("AaeiouOy bptdkgfsvzSZCJrmnRlGhwj",s[i]) || s[i]==' ' || *n>=2047)return 0;
+            outputs[k][(*n)++]=s[i];
+        }
+        if(s[i]!=']' || s[i+1])return 0;
+        outputs[k][*n]=0;
+    }
+    if(nb<2 || b[nb-1]!='i' || (na==nb-1 && !memcmp(a,b,na)))return 0;
+    size_t i=0,j=0;
+    while(i<na || j<nb-1) {
+        while(i<na && strchr("AaeiouOy",a[i]))++i;
+        while(j<nb-1 && strchr("AaeiouOy",b[j]))++j;
+        if(i==na || j==nb-1)return i==na && j==nb-1;
+        if(a[i++]!=b[j++])return 0;
+    }
+    return 1;
+}
+
+/* Initial alif + lam + alif is not a long first vowel where the verified
+ * phone sequence has a separately accented following /l/ syllable. Apply
+ * the same bounded orthographic rule to spelling variants and inflections. */
+static void shorten_initial_alif_lam(const char *word,size_t bytes,char *tag)
+{
+    const size_t prefix=sizeof "الا"-1;
+    if(bytes<prefix || (memcmp(word,"الا",prefix) && memcmp(word,"الآ",prefix)))return;
+    if(tag[0]!='`' || tag[1]!='[' || tag[2]!='.' ||
+       tag[3]<'0' || tag[3]>'2' || strncmp(tag+4,"'A:'.1l",7))return;
+    tag[3]='0';tag[4]='A';memmove(tag+5,tag+8,strlen(tag+8)+1);
+}
+
 static void apply_persian_stress(const char *word,size_t bytes,char *tag,int direct)
 {
     size_t syllables=stress_syllables(tag),stem=0;
     if(!syllables || syllables==1)return;
+    shorten_initial_alif_lam(word,bytes,tag);
     /* This common computer term is absent from the grammatical class list.
      * It is also used as NVDA's Persian name for slash and backslash. */
     if(stress_word_is(word,bytes,"اسلش")) {
@@ -845,6 +896,9 @@ static void apply_persian_stress(const char *word,size_t bytes,char *tag,int dir
             stress_primary(tag,syllables-1);return;
         }
     unsigned kind=stress_class(word,bytes);
+    if(direct && !kind && accent_lexical_i_derivative(word,bytes,tag,syllables)) {
+        stress_primary(tag,syllables-1);return;
+    }
 
     /* A productive nominal -an plural bears the accent. Require a known
      * non-verbal stem, one additional syllable, and the corresponding /an/

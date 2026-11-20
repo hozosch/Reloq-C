@@ -727,6 +727,7 @@ class SentencePlan:
     _native_timeline: object = None
     _native_frication: object = None
     _native_bridge_continuation: object = None
+    _native_bridge_stop_onsets: object = None
 
     def timeline(self):
         """Reuse frame times while only resonance or source values change."""
@@ -1050,7 +1051,8 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
                         tuple(pilot_bounds), tuple(replay_marks),
                         _native_timeline=capture_api.frame_timeline,
                         _native_frication=capture_api.recompute_frication,
-                        _native_bridge_continuation=capture_api.bridge_continuation)
+                        _native_bridge_continuation=capture_api.bridge_continuation,
+                        _native_bridge_stop_onsets=getattr(capture_api, 'bridge_stop_onsets', None))
 
 
 def replay_marks(plan, original_counts):
@@ -1091,6 +1093,49 @@ def _edges_by_count(counts):
 
 def _ease(x):
     return x * x * (3 - 2 * x)
+
+
+def bridge_stop_onsets(plan, parts, en, window_ms=8.0):
+    """Soften a voiced onset after an English stop without editing the stop."""
+    native = plan._native_bridge_stop_onsets
+    if native is None:
+        return ()
+    bounds = _edges_by_count(plan.counts)
+    skip = (ctypes.c_ubyte * len(parts))(*([1] * len(parts)))
+    for edge in range(1, len(parts)):
+        if (parts[edge-1].language != 'en-us' or parts[edge].language != 'fa' or
+                _bracket_boundary(parts, edge)):
+            continue
+        boundary = bounds[edge-1]
+        if not boundary or boundary >= len(plan.frames):
+            continue
+        left, right = plan.frames[boundary-1].controls, plan.frames[boundary].controls
+        if any(left[c] != 0 for c in (2, 7, 8)) or right[2] < 20 or right[8] != 0:
+            continue
+        incoming = _TAG.search(parts[edge].text)
+        if incoming is None or not re.match(r'\.[012][Aaeioumnrljv]', incoming.group(1)):
+            continue
+        try:
+            displayed = tuple(_TAG.finditer(en._phonemes_for_probe(parts[edge-1].text)))
+        except (ValueError, RuntimeError, OSError, UnicodeError):
+            continue
+        if displayed and re.search(r'[ptk]$', displayed[-1].group(1)):
+            skip[edge] = 0
+    if all(skip[1:]):
+        return ()
+    times = plan.timeline()
+    frame_times = ((ctypes.c_double * len(times))(*times)
+                   if not isinstance(times, ctypes.Array) else times)
+    ends = (ctypes.c_size_t * len(bounds))(*bounds)
+    changed = (ctypes.c_ubyte * len(parts))()
+    output = (NativeFrame * len(plan.frames))()
+    if native(plan.frames, output, frame_times, ends, skip, len(plan.frames), len(parts),
+              window_ms, changed):
+        raise RuntimeError('invalid native stop-onset transition')
+    selected = tuple(edge for edge in range(1, len(parts)) if changed[edge])
+    if selected:
+        plan.frames = output
+    return selected
 
 
 def bridge_sonorants(plan, parts, rate, half_window_ms=25.0):
@@ -1696,6 +1741,7 @@ def selected_sentence(plan, parts, en, german, rate, *, check=None):
     original_counts = plan.counts
     if check: check()
     direct_unvoiced_onsets(plan, parts, en)
+    bridge_stop_onsets(plan, parts, en)
     if check: check()
     bridged = bridge_sonorants(plan, parts, rate)
     if check: check()

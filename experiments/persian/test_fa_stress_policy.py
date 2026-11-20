@@ -50,6 +50,17 @@ def main():
         'انتخاب‌های': '`[.0en.0te.0Gab.1ha.0je]',
         'کتابم': '`[.0ke.1ta.0bAm]',
         'کتابی': '`[.0ke.1ta.0bi]',
+        # A dictionary-listed adjective with changed stem vowels is distinct
+        # from an unaccented indefinite suffix on an otherwise identical stem.
+        'مجازی': '`[.0mA.0Ja.1zi]',
+        'آنتی': '`[.1an.0ti]',
+        'نازلی': '`[.1naz.0li]',
+        # Alif-lam-alif forms with an accented /l/ syllable have a short,
+        # unstressed initial vowel, including attached possessives.
+        'الآن': '`[.0A.1lan]',
+        'الان': '`[.0A.1lan]',
+        'الآنش': '`[.0A.1la.0nAS]',
+        'الانم': '`[.0A.1la.0nAm]',
         'خانهٔ': "`[.0Ga.1n'e:'.0je]",
         'ولی': '`[.1vA.0li]',
         'می‌روم': '`[.1mi.0rA.0vAm]',

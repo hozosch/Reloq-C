@@ -383,6 +383,23 @@ static int persian_probe_l_next_has_h(void *state)
     return *(const unsigned char *)delta_record_field(&vstmtbl[2],1,fields)==1 &&
            *(const unsigned char *)delta_record_field(&vstmtbl[2],9,fields)==1;
 }
+/* The legacy representation attaches a marked, silent carrier to a final
+   H. It is not another articulated consonant and must not turn a preceding
+   L into a medial L. Accept both stages of the carrier's conversion. */
+static int persian_probe_l_next_is_final_h(void *state)
+{
+    delta_state *d=state;
+    int32_t at=STATE(int32_t,w63);
+    if (!d || !at) return 0;
+    int32_t *point=vmover(d,EVV_AT(int32_t *,at),2);
+    int32_t node=point?vgetsc(d,0,0,EVV_REF(point),2):0;
+    if (!node || (*EVV_AT(int32_t *,node)&2)) return 0;
+    void *fields=TFLDS(EVV_AT(void *,node));
+    unsigned name=*(const unsigned char *)delta_record_field(&vstmtbl[2],0,fields);
+    unsigned after=*(const unsigned char *)delta_record_field(&vstmtbl[2],9,fields);
+    unsigned marker=*(const unsigned char *)delta_record_field(&vstmtbl[2],12,fields);
+    return (name==3 && marker==5) || (name==23 && after==1);
+}
 '''
 
 
@@ -731,9 +748,10 @@ def prepare_french_l(work: Path) -> list[Path]:
     text = text.replace(old, old + '    if (fa_l && fa_l[0]==\'3\' && !fa_l[1])\n'
                         '        return persian_probe_fr_l(state,p0);\n'
                         '    if (fa_l && fa_l[0]==\'4\' && !fa_l[1]) {\n'
-                        '        int has_h=persian_probe_l_next_has_h(state);\n'
+                        '        int final_h=persian_probe_l_next_is_final_h(state);\n'
+                        '        int has_h=final_h || persian_probe_l_next_has_h(state);\n'
                         '        int16_t h_voicing=STATE(int16_t,s421);\n'
-                        '        int32_t result=persian_probe_l_word_final(state,STATE_AT(w60,-4)) ?\n'
+                        '        int32_t result=(final_h || persian_probe_l_word_final(state,STATE_AT(w60,-4))) ?\n'
                         '            persian_probe_fr_l(state,p0) : persian_probe_german_l(state,p0);\n'
                         '        /* Do not let the borrowed L overwrite the already planned H. */\n'
                         '        if (has_h && !result) STATE(int16_t,s421)=h_voicing;\n'

@@ -17,4 +17,11 @@ int reloq_persian_bridge_continuation(const struct reloq_fa_frame *input,
     const unsigned char *skip, size_t frame_count, size_t segment_count,
     double window_ms, unsigned char *changed);
 
+/* Smooth a voiced Persian onset after a verified English stop closure.
+ * Eligibility is selected by the caller from the actual phonemes. */
+int reloq_persian_bridge_stop_onsets(const struct reloq_fa_frame *input,
+    struct reloq_fa_frame *output,const double *times,const size_t *ends,
+    const unsigned char *skip,size_t frame_count,size_t segment_count,
+    double window_ms,unsigned char *changed);
+
 #endif

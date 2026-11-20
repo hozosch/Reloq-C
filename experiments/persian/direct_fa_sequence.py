@@ -54,6 +54,12 @@ def _safe_native_punctuation(job: ProjectedJob) -> ProjectedJob:
             elif char in '()[]{}':
                 before = index > 0 and not job.tagged[index - 1].isspace()
                 after = index + 1 < len(job.tagged) and not job.tagged[index + 1].isspace()
+                # Keep a following sentence mark attached to its closing
+                # bracket. Separating `),` can hide the comma in the native
+                # phoneme display and break validation of an otherwise valid
+                # reference word in the same utterance.
+                if char in ')]}' and index + 1 < len(job.tagged) and job.tagged[index + 1] in ',.:;?!':
+                    after = False
                 if before or after:
                     changes[index] = (' ' if before else '') + char + (' ' if after else '')
         if match is not None:

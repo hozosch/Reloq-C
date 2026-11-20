@@ -405,7 +405,13 @@ def native_sequence_accepted(tagged: str, native_phones: str) -> bool:
         # The native parser may coalesce repeated written commas. Preserve
         # whether the boundary exists, while leaving its normal punctuation
         # policy to the core.
-        if ((',' in tagged[left.end():right.start()]) !=
-                (',' in native_phones[observed_left.end():observed_right.start()])):
-            return False
+        source_gap = tagged[left.end():right.start()]
+        shown_gap = native_phones[observed_left.end():observed_right.start()]
+        if (',' in source_gap) != (',' in shown_gap):
+            # The provider can omit a comma from its phoneme display when a
+            # closing bracket already contributes the same phrase boundary.
+            # Keep the check for ordinary commas and for unexpected commas.
+            if not (',' in source_gap and ',' not in shown_gap and
+                    any(char in source_gap for char in ')]}')):
+                return False
     return True

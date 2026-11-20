@@ -6,6 +6,7 @@
 #include "reloq_german_lexicon.h"
 #include "reloq_german_spr.h"
 #include "reloq_inline_tags.h"
+#include "reloq_english_currency.h"
 #include "reloq_character.h"
 #include "reloq_cp1252.h"
 #include "reloq_utf8.h"
@@ -1171,6 +1172,7 @@ int reloq_rules61_phonemes(int language,const unsigned char *text,size_t length,
     int status=english_input(text,length,tags,
         family==6||family==8||family==10||family==18,&input,&map,&n);
     if(status)return status;
+    if(family==1)reloq_english_currency_case(input,n,tags);
     struct wordseg_marks wordseg_marks={.phoneme=indices,.phoneme_count=count};
     if(wordseg_input(&input,&map,&n,language,&wordseg_marks)) {
         free(input);free(map);return -2;
@@ -1257,6 +1259,7 @@ struct rule_plan {
     const size_t *control_sources;size_t pitch_source;
     struct rule_control *controls;size_t control_count,control_capacity;
     struct rule_fa_phone *fa_phones;size_t fa_phone_count,fa_phone_capacity,fa_phone_next;
+    size_t fa_h_level_phone;float fa_h_level;int fa_h_level_set;
     int fa_phone_failed;
     struct reloq_session *session;
     int memory,retracted_filter,retracted_st,word_volume,cjk_volume,managed_voice_controls,word_pitch,native_pitch,word_speed,german_af_markers,original_clock;
@@ -1298,13 +1301,26 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
     int32_t to=s->fa_phone_next+1<s->fa_phone_count?p->to:INT32_MAX;
     if(p->phone && native>=p->from && native<to) {
         int rate=reloq_session_sample_rate(s->session);
-        if(p->phone==RELOQ_FA_TUNE_BEFORE_FINAL_H && native>=p->articulation_end) {
-            /* A following final-H carrier already schedules the usual AH
-               breath. A voiced sonorant must release its source into it;
-               otherwise H becomes an unwanted vowel-like extra syllable. */
-            double elapsed=(native-p->articulation_end)/10000.0;
-            double weight=elapsed>=4?0:1-elapsed/4.0;
-            if(controls[2]>0)controls[2]=(float)floor(controls[2]*weight+0.5);
+        if(p->phone==RELOQ_FA_TUNE_BEFORE_FINAL_H) {
+            if(s->fa_h_level_phone!=s->fa_phone_next) {
+                s->fa_h_level_phone=s->fa_phone_next;s->fa_h_level_set=0;
+            }
+            if(native<p->articulation_end) {
+                s->fa_h_level=controls[2];s->fa_h_level_set=1;
+            } else if(s->fa_phone_next+1<s->fa_phone_count) {
+                /* Release the preceding consonant over its native transition
+                   into the existing H impulse, rather than cutting it off
+                   in 4 ms or introducing an additional voiced syllable. */
+                double elapsed=(native-p->articulation_end)/10000.0;
+                double available=(to-p->articulation_end)/10000.0;
+                double release=fmin(80.0,fmax(1.0,available*0.65));
+                double weight=elapsed>=release?0:1-elapsed/release;
+                /* A coda L can cause the following carrier to set AV to
+                   zero immediately. Continue the actual preceding voice
+                   level instead of allowing that reset to cut the L off. */
+                float level=s->fa_h_level_set?s->fa_h_level:controls[2];
+                if(level>0)controls[2]=(float)floor(level*weight+0.5);
+            }
         } else if(p->phone==RELOQ_FA_TUNE_R_BEFORE_BACK_A &&
            s->fa_phone_next+1<s->fa_phone_count &&
            s->fa_phones[s->fa_phone_next+1].phone==RELOQ_FA_TUNE_BACK_A)
@@ -1795,6 +1811,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     int input_status=english_input(text,length,tags,family==6||family==8||family==10||family==18,&a,&map,&n);
     if(input_status==-2)goto memory;
     if(input_status)goto done;
+    if(family==1)reloq_english_currency_case(a,n,tags);
     struct wordseg_marks wordseg_marks={.indices=indices,.index_count=index_count,
         .pitches=pitches,.pitch_count=pitch_count};
     if(wordseg_input(&a,&map,&n,language,&wordseg_marks))goto memory;

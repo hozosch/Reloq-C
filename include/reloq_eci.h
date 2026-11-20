@@ -438,6 +438,10 @@ ECIAPI int ECICALL eciPersianBridgeContinuation(const struct reloq_fa_frame *inp
     struct reloq_fa_frame *output,const double *times,const size_t *ends,
     const unsigned char *skip,size_t frame_count,size_t segment_count,
     double window_ms,unsigned char *changed);
+ECIAPI int ECICALL eciPersianBridgeStopOnsets(const struct reloq_fa_frame *input,
+    struct reloq_fa_frame *output,const double *times,const size_t *ends,
+    const unsigned char *skip,size_t frame_count,size_t segment_count,
+    double window_ms,unsigned char *changed);
 ECIAPI int ECICALL eciPersianDenseCurve(const struct reloq_fa_frame *rows,size_t count,
     unsigned column,float *out,size_t length);
 ECIAPI int ECICALL eciPersianFitPitch(struct reloq_fa_frame *rows,size_t count,
