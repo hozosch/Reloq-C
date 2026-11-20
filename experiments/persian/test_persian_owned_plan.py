@@ -101,7 +101,8 @@ def main():
         core = Analyzer(build(Path(temp), args.cc))
         analyze = core.analyze
         for fa, latin in [('سلام', 'salam'), ('دنیا', 'donya'), ('ایران', 'iran'),
-                          ('کتاب', 'ketab'), ('سلام دنیا', 'salam donya')]:
+                          ('کتاب', 'ketab'), ('سلام دنیا', 'salam donya'),
+                          ('زیرخط', 'zirkhat'), ('اتصال', 'ettesal')]:
             left, right = analyze(fa), analyze(latin, mode=1)
             assert left[0] == right[0] == 0 and left[1] == right[1], (fa, latin, left, right)
         # Previously unknown Roman words must pass through the same explicitly

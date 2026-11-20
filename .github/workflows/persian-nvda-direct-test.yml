@@ -67,6 +67,8 @@ on:
       - experiments/persian/test_prefix_streaming.py
       - experiments/persian/test_mixed_early_snapshot.py
       - experiments/persian/test_pinglish_native_words.py
+      - experiments/persian/compile_pinglish_extra.py
+      - experiments/persian/direct_fa_vocalized_rules.py
       - experiments/persian/test_pinglish_phrase_projection.py
       - experiments/persian/test_persian_text_modes.py
       - experiments/persian/test_persian_phonetic_input.py
@@ -192,6 +194,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Mixed incremental playback or cancellation failed' }
           python -B experiments/persian/test_pinglish_native_words.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Native Pinglish pronunciation mismatch' }
+          python -B experiments/persian/compile_pinglish_extra.py --library "$dll" --check
+          if ($LASTEXITCODE -ne 0) { throw 'Shared Pinglish symbol-name spellings are stale' }
           python -B experiments/persian/test_pinglish_phrase_projection.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Native Pinglish phrase or event projection differed' }
           python -B experiments/persian/test_persian_text_modes.py --library "$dll"

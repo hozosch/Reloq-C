@@ -8,21 +8,30 @@
 
 struct fa_pinglish_entry {const char *roman,*persian;};
 #include "direct_fa_pinglish_lexicon.inc"
+#include "direct_fa_pinglish_extra.inc"
 
 static char lower(char c)
 { return c>='A' && c<='Z' ? (char)(c+('a'-'A')) : c; }
 
-static const char *persian_for_roman(const char *key)
+static const char *find_roman(const struct fa_pinglish_entry *entries,size_t count,const char *key)
 {
-    size_t lo=0,hi=sizeof fa_pinglish_entries/sizeof fa_pinglish_entries[0];
+    size_t lo=0,hi=count;
     while(lo<hi) {
         size_t mid=lo+(hi-lo)/2;
-        int order=strcmp(key,fa_pinglish_entries[mid].roman);
+        int order=strcmp(key,entries[mid].roman);
         if(order<0)hi=mid;
         else if(order>0)lo=mid+1;
-        else return fa_pinglish_entries[mid].persian;
+        else return entries[mid].persian;
     }
     return NULL;
+}
+
+static const char *persian_for_roman(const char *key)
+{
+    const char *word=find_roman(fa_pinglish_entries,
+        sizeof fa_pinglish_entries/sizeof fa_pinglish_entries[0],key);
+    return word?word:find_roman(fa_pinglish_extra,
+        sizeof fa_pinglish_extra/sizeof fa_pinglish_extra[0],key);
 }
 
 /* Use the complete Persian word pipeline: it also recognizes productive

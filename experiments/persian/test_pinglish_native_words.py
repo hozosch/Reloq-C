@@ -64,6 +64,12 @@ def main():
                           ('parlap', 'پَرْلَپْ'), ('mergish', 'مِرْگِیشْ')):
         assert pinglish(roman) == (1, persian(script)), (roman, script, pinglish(roman), persian(script))
     assert persian('سوینا') == persian('سِوینا')
+    extra = Path(__file__).with_name('direct_fa_pinglish_extra.inc').read_text(encoding='utf8')
+    more = re.findall(r'^\s*\{"([a-z]+)", "([^"\\]+)"\},', extra, re.M)
+    assert len(more) >= 10
+    for roman, script in more:
+        assert pinglish(roman) == (1, persian(script)), (roman, script)
+    assert pinglish('zirkhat') == (1, persian('زیرخط'))
     print(f'Passed {checked} native Pinglish/Persian word comparisons and morphology checks.')
 
 

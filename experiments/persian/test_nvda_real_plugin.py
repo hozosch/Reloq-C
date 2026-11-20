@@ -1159,7 +1159,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     raise AssertionError('NVDA lost Pinglish version numbers or joined tags: ' + ascii(tags))
             if spelling is True and text in 'ًٌٍَُِّْٰ':
                 expected = {'ً':'`[.1An]', 'ٌ':'`[.1on]', 'ٍ':'`[.1en]',
-                            'َ':"`[.1'A:']", 'ُ':"`[.1'o:']", 'ِ':"`[.1'e:']",
+                            'َ':'`[.1A]', 'ُ':'`[.1o]', 'ِ':'`[.1e]',
                             'ّ':'`[.0tAS.1did]', 'ْ':'`[.0sa.1ken]',
                             'ٰ':"`[.0A.1lef] `[.0mAR.0s'u:'.1r'e:']"}[text]
                 tags = ' '.join(self.projected[self.before_projected:])
