@@ -138,6 +138,9 @@ def main():
         # Deliberately fail the second context only after the English prefix
         # has started. The remaining English and Persian text and all NVDA
         # indexes must still be delivered once through the fallback route.
+        # Short English-first sentences use a silent pilot and deliberately
+        # wait for the complete plan, so use a long Persian continuation to
+        # exercise the actual streaming path deterministically.
         clear()
         pcm, indexes, injected = bytearray(), [], []
         def fail_second(self, voice, parts, **kwargs):
@@ -147,7 +150,8 @@ def main():
                 raise RuntimeError('injected later-context failure')
             return original_capture(self, voice, parts, **kwargs)
         FrameCapture.capture = fail_second
-        parts = (EciIndex(30), 'NVDA ', EciIndex(31), 'سلام دنیا.', EciIndex(32))
+        continuation = ('سلام ' * 34) + 'دنیا.'
+        parts = (EciIndex(30), 'NVDA ', EciIndex(31), continuation, EciIndex(32))
         assert engine.speak(parts, pcm.extend, lambda value: indexes.append((value, len(pcm))))
         assert injected and len(pcm) > 5000
         assert [value for value, _ in indexes] == [30, 31, 32], indexes
@@ -164,7 +168,7 @@ def main():
                 engine.cancel()
             return original_capture(self, voice, parts, **kwargs)
         FrameCapture.capture = stop_second
-        assert not engine.speak(('NVDA سلام',), pcm.extend, lambda _: None)
+        assert not engine.speak(('NVDA ' + continuation,), pcm.extend, lambda _: None)
         assert cancelled and pcm
         FrameCapture.capture = original_capture
         assert render(('سلام.',))[0]
