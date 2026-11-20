@@ -3,6 +3,7 @@ package org.reloq.tts;
 /** Settings copied for one request; usable in host tests without Android. */
 final class VoiceSettings {
     boolean androidRate=true,androidPitch=true,rateBoost=false,tags=false,abbreviations=true,prediction=false,originalQuestions=false,mellowMode=false;
+    boolean volumeGain=false;
     boolean wordSegmentation=false,camelCase=false;
     int acousticClockMask=defaultClockMask();
     boolean pitchHertzMode=false,speedWpmMode=true;

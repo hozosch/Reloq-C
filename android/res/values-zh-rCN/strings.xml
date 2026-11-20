@@ -11,9 +11,11 @@
     <string name="browser_update">已打开下载。请使用浏览器和 Android 的正常安装流程。请保持 Play 保护机制开启。</string>
     <string name="engine_help">离线语音合成。选择一种语言和声音进行测试，或在 Android 的文字转语音设置中选择 ReLoq C。</string>
     <string name="language">语言</string>
+    <string name="auto_fallback">自动检测的基础语言（数字、符号、未知文字）</string>
     <string name="profile">声音</string>
     <string name="sample_rate">采样率</string>
     <string name="pause_mode">缩短停顿</string>
+    <string name="number_mode">数字读法</string>
     <string name="sample_text">要朗读的文本</string>
     <string name="speak">朗读测试文本</string>
     <string name="stop">停止</string>
@@ -26,10 +28,14 @@
         <item>仅末尾</item>
         <item>始终</item>
     </string-array>
+    <string-array name="number_modes">
+        <item>数值</item>
+        <item>数字串</item>
+        <item>自动判断</item>
+    </string-array>
     <string name="voice_settings">语言和声音</string>
     <string name="android_voice">通过 Android 控制语言和声音</string>
-    <string name="android_rate">通过 Android 控制语速</string>
-    <string name="android_pitch">通过 Android 控制音高</string>
+    <string name="android_controls">通过 Android 控制语速、音高</string>
     <string name="speed">手动语速，每分钟字词数</string>
     <string name="pitch">手动音高</string>
     <string name="rate_boost">语速增强</string>
@@ -41,8 +47,13 @@
     <string name="roughness">沙哑度</string>
     <string name="breathiness">气声程度</string>
     <string name="reset_profile">重置所选声音配置</string>
+    <string name="reset_done">已重置</string>
+    <string name="reset_not_needed">无需重置</string>
+    <string name="reset_equalizer">重置</string>
     <string name="output_settings">语音输出</string>
     <string name="eci_tags">处理 ECI 标签</string>
+    <string name="volume_gain">音量增益</string>
+    <string name="equalizer_settings">均衡器设置</string>
     <string name="dictionaries">发音词典</string>
     <string name="community_dictionaries">使用社区词典</string>
     <string name="update_dictionaries">从当前 master 分支更新社区词典</string>
@@ -107,7 +118,7 @@
     <string name="equalizer_mid">中音 (dB)</string>
     <string name="equalizer_high">高音 (dB)</string>
     <string-array name="equalizer_presets"><item>均衡</item><item>温暖</item><item>明亮</item><item>柔和</item><item>自定义</item></string-array>
-    <string name="equalizer_advanced">高级滤波器…</string>
+    <string name="equalizer_advanced">高级滤波器设置</string>
     <string name="filter_title">高级均衡器滤波器</string>
     <string name="filter_select">滤波器</string>
     <string name="filter_name">滤波器</string>
@@ -116,6 +127,8 @@
     <string name="filter_gain">增益 (dB)</string>
     <string name="filter_width" formatted="false">带宽（八度百分比）</string>
     <string name="filter_nyquist" formatted="false">100% 为一个八度。达到或超过采样率一半的频率不会生效。</string>
+    <string name="battery_check_normal">权限检测：正常</string>
+    <string name="battery_check_missing">权限检测：缺电池优化，点按申请</string>
     <string name="automatic_updates">自动检查应用更新</string>
     <string name="notification_settings">通知设置</string>
     <string name="notification_explanation">允许通知以了解 ReLoq C 的新版本。也可以手动检查更新。</string>

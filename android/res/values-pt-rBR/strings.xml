@@ -11,9 +11,11 @@
     <string name="browser_update">Download aberto. Use o navegador e a instalação normal do Android. Mantenha o Google Play Protect ativado.</string>
     <string name="engine_help">Síntese de voz offline. Escolha um idioma e uma voz para testar, ou selecione o ReLoq C nas configurações de conversão de texto em fala do Android.</string>
     <string name="language">Idioma</string>
+    <string name="auto_fallback">Idioma base para detecção automática (números, símbolos, scripts desconhecidos)</string>
     <string name="profile">Voz</string>
     <string name="sample_rate">Taxa de amostragem</string>
     <string name="pause_mode">Encurtar pausas</string>
+    <string name="number_mode">Leitura de números</string>
     <string name="sample_text">Texto para ler</string>
     <string name="speak">Ler texto de teste</string>
     <string name="stop">Parar</string>
@@ -26,10 +28,14 @@
         <item>No final</item>
         <item>Sempre</item>
     </string-array>
+    <string-array name="number_modes">
+        <item>Valor</item>
+        <item>Dígitos</item>
+        <item>Automático</item>
+    </string-array>
     <string name="voice_settings">Idioma e voz</string>
     <string name="android_voice">Controlar idioma e voz pelo Android</string>
-    <string name="android_rate">Controlar velocidade pelo Android</string>
-    <string name="android_pitch">Controlar tom pelo Android</string>
+    <string name="android_controls">Controlar velocidade e tom pelo Android</string>
     <string name="speed">Velocidade manual, palavras por minuto</string>
     <string name="pitch">Tom manual</string>
     <string name="rate_boost">Aumento de velocidade</string>
@@ -41,8 +47,13 @@
     <string name="roughness">Rouquidão</string>
     <string name="breathiness">Soprosidade</string>
     <string name="reset_profile">Redefinir a voz selecionada</string>
+    <string name="reset_done">Redefinido</string>
+    <string name="reset_not_needed">Nenhuma redefinição necessária</string>
+    <string name="reset_equalizer">Redefinir equalizador</string>
     <string name="output_settings">Saída de fala</string>
     <string name="eci_tags">Processar comandos ECI</string>
+    <string name="volume_gain">Ganho de volume</string>
+    <string name="equalizer_settings">Configurações do equalizador</string>
     <string name="dictionaries">Dicionários de pronúncia</string>
     <string name="community_dictionaries">Usar dicionários da comunidade</string>
     <string name="update_dictionaries">Atualizar dicionários da comunidade a partir do master atual</string>
@@ -107,7 +118,7 @@
     <string name="equalizer_mid">Médios (dB)</string>
     <string name="equalizer_high">Agudos (dB)</string>
     <string-array name="equalizer_presets"><item>Equilibrado</item><item>Quente</item><item>Brilhante</item><item>Suave</item><item>Personalizado</item></string-array>
-    <string name="equalizer_advanced">Filtros avançados…</string>
+    <string name="equalizer_advanced">Filtros avançados</string>
     <string name="filter_title">Filtros avançados do equalizador</string>
     <string name="filter_select">Filtro</string>
     <string name="filter_name">Filtro</string>
@@ -116,6 +127,8 @@
     <string name="filter_gain">Ganho (dB)</string>
     <string name="filter_width" formatted="false">Largura (% da oitava)</string>
     <string name="filter_nyquist" formatted="false">100% equivale a uma oitava. Frequências a partir da metade da taxa de amostragem ficam inativas.</string>
+    <string name="battery_check_normal">Verificação de permissões: normal</string>
+    <string name="battery_check_missing">Verificação de permissões: otimização de bateria ausente. Toque para solicitar.</string>
     <string name="automatic_updates">Buscar atualizações automaticamente</string>
     <string name="notification_settings">Configurações de notificações</string>
     <string name="notification_explanation">Permita notificações para saber quando houver novas versões do ReLoq C. Você também pode verificar manualmente.</string>

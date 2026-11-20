@@ -11,9 +11,11 @@
     <string name="browser_update">ダウンロードを開きました。ブラウザーと Android の通常のインストール手順を使用してください。Play プロテクトは有効にしておいてください。</string>
     <string name="engine_help">オフラインの音声合成です。テストする言語と音声を選ぶか、Android のテキスト読み上げ設定で ReLoq C を選んでください。</string>
     <string name="language">言語</string>
+    <string name="auto_fallback">自動検出の基本言語（数字、記号、未知の文字体系）</string>
     <string name="profile">音声</string>
     <string name="sample_rate">サンプリング周波数</string>
     <string name="pause_mode">間を短くする</string>
+    <string name="number_mode">数字の読み方</string>
     <string name="sample_text">読み上げるテキスト</string>
     <string name="speak">テストテキストを読み上げ</string>
     <string name="stop">停止</string>
@@ -26,10 +28,14 @@
         <item>末尾のみ</item>
         <item>常に</item>
     </string-array>
+    <string-array name="number_modes">
+        <item>数値</item>
+        <item>数字</item>
+        <item>自動</item>
+    </string-array>
     <string name="voice_settings">言語と音声</string>
     <string name="android_voice">言語と音声を Android で制御</string>
-    <string name="android_rate">速度を Android で制御</string>
-    <string name="android_pitch">高さを Android で制御</string>
+    <string name="android_controls">速度と高さを Android で制御</string>
     <string name="speed">手動の速度、1 分あたりの単語数</string>
     <string name="pitch">手動の高さ</string>
     <string name="rate_boost">速度ブースト</string>
@@ -41,8 +47,13 @@
     <string name="roughness">声のかすれ</string>
     <string name="breathiness">息の混ざり具合</string>
     <string name="reset_profile">選択した音声プロファイルをリセット</string>
+    <string name="reset_done">リセットしました</string>
+    <string name="reset_not_needed">リセットは不要です</string>
+    <string name="reset_equalizer">イコライザーをリセット</string>
     <string name="output_settings">音声出力</string>
     <string name="eci_tags">ECI タグを処理</string>
+    <string name="volume_gain">音量ブースト</string>
+    <string name="equalizer_settings">イコライザー設定</string>
     <string name="dictionaries">発音辞書</string>
     <string name="community_dictionaries">コミュニティ辞書を使用</string>
     <string name="update_dictionaries">現在の master からコミュニティ辞書を更新</string>
@@ -107,7 +118,7 @@
     <string name="equalizer_mid">中音 (dB)</string>
     <string name="equalizer_high">高音 (dB)</string>
     <string-array name="equalizer_presets"><item>バランス</item><item>暖かい</item><item>明るい</item><item>滑らか</item><item>カスタム</item></string-array>
-    <string name="equalizer_advanced">詳細フィルター…</string>
+    <string name="equalizer_advanced">詳細フィルター</string>
     <string name="filter_title">イコライザーの詳細フィルター</string>
     <string name="filter_select">フィルター</string>
     <string name="filter_name">フィルター</string>
@@ -116,6 +127,8 @@
     <string name="filter_gain">ゲイン (dB)</string>
     <string name="filter_width" formatted="false">帯域幅 (オクターブの%)</string>
     <string name="filter_nyquist" formatted="false">100%は1オクターブです。サンプルレートの半分以上の周波数は無効です。</string>
+    <string name="battery_check_normal">権限チェック：正常</string>
+    <string name="battery_check_missing">権限チェック：バッテリー最適化が未設定です。タップして申請します。</string>
     <string name="automatic_updates">アプリの更新を自動的に確認</string>
     <string name="notification_settings">通知の設定</string>
     <string name="notification_explanation">新しい ReLoq C のバージョンを知るには通知を許可してください。手動で確認することもできます。</string>
