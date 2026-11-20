@@ -745,7 +745,7 @@ class SentencePlan:
 def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarded_spans=(),
                  spelling_spans=(), check=None, trusted_fa=False, validate_in_capture=False,
                  start_prefix=None, parallel_pilot=None, fast_initial=False, fast_minimum_ms=300,
-                 us_pilot=False):
+                 us_pilot=False, control_only_pilot=True):
     parts = tuple(parts)
     if not parts or len(parts) > 32 or {p.language for p in parts} != {'fa', 'en-us'}:
         raise ValueError('expected a bounded mixed English/Persian clause')
@@ -756,6 +756,17 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
     capture_api = FrameCapture(fa._dll)
     native_pitch = capture_api.fit_pitch if capture_api.dense_curve is not None else None
     native_edges = capture_api.fit_pitch_edges if capture_api.dense_curve is not None else None
+    # For short English-first jobs ending in Persian, a verified word-level
+    # transfer overwrites the final phrase fit. Its native donor needs timing
+    # and F0 controls but no synthesized waveform. Wait for that verification
+    # before starting playback; the full audio pilot remains the fallback.
+    silent_pilot = bool(control_only_pilot and us_pilot and parallel_pilot is not None and
+                        parts[0].language == 'en-us' and parts[-1].language == 'fa' and
+                        sum(len(part.text) for part in parts) <= 160 and not spelling_spans and
+                        capture_api._controls_only is not None and capture_api._sample_count is not None)
+    if silent_pilot:
+        start_prefix = None
+        fast_initial = False
     def get(voice, planned, *, audio=True):
         if check:
             check()
@@ -825,8 +836,8 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
                 raise ValueError('invalid generated English proxy')
             pilot_parts.append(proxy)
         if parallel_pilot is None:
-            pilot = get(en if us_pilot else fa, pilot_parts)
-            pilot_pitch, pilot_bounds = contour(pilot)
+            pilot = get(en if us_pilot else fa, pilot_parts, audio=not silent_pilot)
+            pilot_pitch, pilot_bounds = contour(pilot, controls_only=silent_pilot)
     source_events = tuple(source_events)
     guarded_spans = tuple(guarded_spans)
     spelling_spans = tuple(spelling_spans)
@@ -898,7 +909,7 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
                 raise
             if check:
                 check()
-            return get(en if us_pilot else fa, pilot_parts), True
+            return get(en if us_pilot else fa, pilot_parts, audio=not silent_pilot), True
     snapshot_queue = queue.Queue() if fast_pilot else None
     snapshot_release = threading.Event() if fast_pilot else None
     def publish_snapshot(value):
@@ -923,12 +934,12 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
                     dictionary=fa.owner._dictionary_path, cancelled=fa.owner._cancelled,
                     maximum=maximum, snapshot_at=1, on_snapshot=publish_snapshot, audio=True)
             else:
-                pending = submit_pilot(audio=True)
+                pending = submit_pilot(audio=not silent_pilot)
         except (RuntimeError, OSError):
             if check:
                 check()
-            pilot = get(en if us_pilot else fa, pilot_parts)
-            pilot_pitch, pilot_bounds = contour(pilot)
+            pilot = get(en if us_pilot else fa, pilot_parts, audio=not silent_pilot)
+            pilot_pitch, pilot_bounds = contour(pilot, controls_only=silent_pilot)
             fast_pilot = False
     try:
         for language, voice in voices:
@@ -993,7 +1004,7 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
                     continue
             if pending is not None:
                 pilot, _fallback = collect_pilot(can_fallback=early is None)
-                pilot_pitch, pilot_bounds = contour(pilot)
+                pilot_pitch, pilot_bounds = contour(pilot, controls_only=silent_pilot)
                 if early is not None:
                     early_language, early_item, early_bounds = early
                     _fit_context_pitch(early_item, early_bounds, pilot_pitch, pilot_bounds, parts,
@@ -1008,7 +1019,20 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
                                native_edges=native_edges if item.ticks[-1] <= 60000 else None,
                                retain_brackets=not (us_pilot and language == 'fa'))
             if us_pilot and language == 'fa':
-                fit_us_segments(item, bounds, pilot)
+                fitted = fit_us_segments(item, bounds, pilot)
+                if silent_pilot and not fitted:
+                    # A failed word fit leaves the final phrase-level fit in
+                    # place. Recover the true audible endpoint before any
+                    # audio escapes and reapply that segment's contour.
+                    pilot = get(en, pilot_parts, audio=True)
+                    silent_pilot = False
+                    pilot_pitch, pilot_bounds = contour(pilot)
+                    _fit_context_pitch(item, bounds, pilot_pitch, pilot_bounds, parts, language,
+                                       rate, check,
+                                       native=native_pitch if item.ticks[-1] <= 60000 else None,
+                                       native_edges=native_edges if item.ticks[-1] <= 60000 else None,
+                                       only=(len(parts) - 1,), retain_brackets=False)
+                    fit_us_segments(item, bounds, pilot)
             contexts[language], edges[language] = item, bounds
             if start_prefix is not None and language == parts[0].language and early is None:
                 start_prefix(item, bounds, source_marks, capture_api)
