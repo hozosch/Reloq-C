@@ -60,6 +60,24 @@ def main():
         ]}))
         assert select() == '3', 'a cancelled build was accepted as fully verified'
         assert select('--include-cancelled') == '5', 'a compatible early artifact was not considered'
+        workflow = root / '.github/workflows/persian-windows-acoustic-probe.yml'
+        workflow.parent.mkdir(parents=True)
+        workflow.write_text('on:\n  push:\n    branches: [old]\nsteps:\n  - run: make\n')
+        git('add', '.')
+        git('commit', '-qm', 'workflow')
+        checked = git('rev-parse', 'HEAD')
+        workflow.write_text('on:\n  push:\n    branches: [old, new]\nsteps:\n  - run: make\n')
+        git('add', '.')
+        git('commit', '-qm', 'branch filter')
+        runs.write_text(json.dumps({'workflow_runs': [
+            {'id': 6, 'head_sha': checked, 'status': 'completed', 'conclusion': 'success'},
+        ]}))
+        assert select() == '', 'a changed workflow was accepted without an explicit policy'
+        assert select('--allow-branch-list-change') == '6', 'a branch-only change prevented safe reuse'
+        workflow.write_text('on:\n  push:\n    branches: [old, new]\nsteps:\n  - run: false\n')
+        git('add', '.')
+        git('commit', '-qm', 'changed build')
+        assert select('--allow-branch-list-change') == '', 'a changed build recipe was accepted'
     print('Passed verified acoustic reuse for text-only changes and acoustic-change rejection.')
 
 

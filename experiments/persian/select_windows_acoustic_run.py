@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import re
 import subprocess
 
 PATHS = ('eci/Makefile', 'src', 'include', 'vendor/openevv61',
@@ -35,12 +36,31 @@ def main():
                         help='ignore embedded text helpers when the package builds its own text DLL')
     parser.add_argument('--include-cancelled', action='store_true',
                         help='allow a source-matching cancelled run for its early artifact only')
+    parser.add_argument('--allow-branch-list-change', action='store_true',
+                        help='allow only the workflow push branch list to differ')
     args = parser.parse_args()
     # The NVDA package uses the probe's own text exports, so it must use the
     # default full-source match. Audio-only remains useful for comparisons
     # that explicitly supply a separate text library.
+    workflow = '.github/workflows/persian-windows-acoustic-probe.yml'
     paths = tuple(p for p in PATHS if not (args.audio_only and
-                                           p.startswith('experiments/persian/direct_fa_')))
+                                           p.startswith('experiments/persian/direct_fa_')) and
+                  not (args.allow_branch_list_change and p == workflow))
+    def matching_workflow(sha):
+        if not args.allow_branch_list_change:
+            return True
+        def read(ref):
+            result = subprocess.run(['git', 'show', f'{ref}:{workflow}'], check=False,
+                                    stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+            if result.returncode:
+                return None
+            # Branch filters change when a test branch is added. Require the
+            # rest of the build and validation workflow to match byte-for-byte.
+            value, count = re.subn(r'^[ \t]*branches:[ \t]*\[[^\r\n]*\][ \t]*\r?$', '    branches: []',
+                                   result.stdout, flags=re.MULTILINE)
+            return value if count == 1 else None
+        old, current = read(sha), read('HEAD')
+        return old is not None and old == current
     runs = json.loads(args.runs.read_text(encoding='utf8'))['workflow_runs']
     pending = None
     for run in runs:
@@ -54,7 +74,7 @@ def main():
             continue
         result = subprocess.run(['git', 'diff', '--quiet', sha, 'HEAD', '--', *paths],
                                 check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        if result.returncode == 0:
+        if result.returncode == 0 and matching_workflow(sha):
             if run.get('status') == 'completed':
                 print(int(run['id']))
                 return

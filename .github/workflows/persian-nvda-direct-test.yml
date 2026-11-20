@@ -106,12 +106,14 @@ jobs:
         run: |
           selected=""
           acoustic_branch="$GITHUB_REF_NAME"
+          selector_options=()
           if [ "$GITHUB_REF_NAME" = "codex/persian-virgule-20261120" ]; then
-            acoustic_branch="codex/persian-native-fast-pilot-20261120"
+            acoustic_branch="codex/persian-native-transitions-20261120"
+            selector_options=(--allow-branch-list-change)
           fi
           for attempt in $(seq 1 60); do
             gh api --method GET "repos/$GITHUB_REPOSITORY/actions/workflows/persian-windows-acoustic-probe.yml/runs" -f branch="$acoustic_branch" -F per_page=40 > windows-runs.json
-            selected=$(python -B experiments/persian/select_windows_acoustic_run.py windows-runs.json)
+            selected=$(python -B experiments/persian/select_windows_acoustic_run.py windows-runs.json "${selector_options[@]}")
             if [ -n "$selected" ]; then break; fi
             sleep 5
           done
@@ -119,7 +121,7 @@ jobs:
           # A cancelled source-matching run may already have uploaded its
           # baseline. Test that binary while the new full acoustic run
           # finishes; compare the two DLLs after the full run succeeds.
-          early_selected=$(python -B experiments/persian/select_windows_acoustic_run.py windows-runs.json --include-cancelled)
+          early_selected=$(python -B experiments/persian/select_windows_acoustic_run.py windows-runs.json "${selector_options[@]}" --include-cancelled)
           if [ -z "$early_selected" ]; then early_selected="$selected"; fi
           available=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$early_selected/artifacts?per_page=100" --jq '.artifacts[] | select(.name == "persian-windows-baseline-early" and .expired == false) | .id')
           if [ -z "$available" ]; then early_selected="$selected"; fi
