@@ -8,6 +8,10 @@ import shutil
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
+DEV188_TRANSITION_BASE = 'fcbefe922342b38ae7ad754fec9921dbb139712d'
+DEV188_TRANSITION_KEY = ('persian-windows-host-gcc14-v2-'
+                         '32260b50bc1d953680e539a8182b9a61260f2c7d5f7b4c09c02a681570c1c7ff')
+DEV188_TRANSITION_ALLOWED = {'src/reloq_persian_transition.c'}
 DEV188_BASE = '423d67d39fa8a6814865bf92d429430efb9ea83f'
 DEV188_KEY = ('persian-windows-host-gcc14-v2-'
               '919f203ba3281c47932aaa750f203a5cbbd8aeae140bfc7e107dc0c43482f76a')
@@ -194,6 +198,7 @@ INPUTS = ('eci/Makefile', 'eci/reloq_eci_fixed_math.c', 'src', 'include',
 
 def eligible(key, changed):
     return bool(changed) and ((key == EXPECTED_KEY and set(changed) <= ALLOWED) or
+                              (key == DEV188_TRANSITION_KEY and set(changed) == DEV188_TRANSITION_ALLOWED) or
                               (key == DEV188_KEY and set(changed) == DEV188_ALLOWED) or
                               (key == DEV187_KEY and set(changed) == DEV187_ALLOWED) or
                               (key == RECENT_KEY and set(changed) <= RECENT_ALLOWED) or
@@ -227,7 +232,7 @@ def main():
     build, dll = ROOT / 'eci/build/windows', ROOT / 'eci/eci.dll'
     try:
         key = os.environ.get('PERSIAN_HOST_CACHE_KEY', '')
-        base = DEV188_BASE if key == DEV188_KEY else DEV187_BASE if key == DEV187_KEY else DEV172_BASE if key == DEV172_KEY else DEV171_BASE if key == DEV171_KEY else DEV170_BASE if key == DEV170_KEY else DEV169_BASE if key == DEV169_KEY else DEV168_BASE if key == DEV168_KEY else DEV166_BASE if key == DEV166_KEY else DEV164_BASE if key == DEV164_KEY else DEV163_BASE if key == DEV163_KEY else DEV162_BASE if key == DEV162_KEY else DEV161_BASE if key == DEV161_KEY else DEV160_BASE if key == DEV160_KEY else DEV159_BASE if key == DEV159_KEY else DEV158_BASE if key == DEV158_KEY else DEV157_BASE if key == DEV157_KEY else DEV156_BASE if key == DEV156_KEY else DEV155_BASE if key == DEV155_KEY else DEV154_BASE if key == DEV154_KEY else DEV153_BASE if key == DEV153_KEY else DEV152_BASE if key == DEV152_KEY else DEV151_BASE if key == DEV151_KEY else DEV150_BASE if key == DEV150_KEY else DEV149_BASE if key == DEV149_KEY else TRACE_BASE if key == TRACE_KEY else NEWEST_BASE if key == NEWEST_KEY else RECENT_BASE if key == RECENT_KEY else BASE
+        base = DEV188_TRANSITION_BASE if key == DEV188_TRANSITION_KEY else DEV188_BASE if key == DEV188_KEY else DEV187_BASE if key == DEV187_KEY else DEV172_BASE if key == DEV172_KEY else DEV171_BASE if key == DEV171_KEY else DEV170_BASE if key == DEV170_KEY else DEV169_BASE if key == DEV169_KEY else DEV168_BASE if key == DEV168_KEY else DEV166_BASE if key == DEV166_KEY else DEV164_BASE if key == DEV164_KEY else DEV163_BASE if key == DEV163_KEY else DEV162_BASE if key == DEV162_KEY else DEV161_BASE if key == DEV161_KEY else DEV160_BASE if key == DEV160_KEY else DEV159_BASE if key == DEV159_KEY else DEV158_BASE if key == DEV158_KEY else DEV157_BASE if key == DEV157_KEY else DEV156_BASE if key == DEV156_KEY else DEV155_BASE if key == DEV155_KEY else DEV154_BASE if key == DEV154_KEY else DEV153_BASE if key == DEV153_KEY else DEV152_BASE if key == DEV152_KEY else DEV151_BASE if key == DEV151_KEY else DEV150_BASE if key == DEV150_KEY else DEV149_BASE if key == DEV149_KEY else TRACE_BASE if key == TRACE_KEY else NEWEST_BASE if key == NEWEST_KEY else RECENT_BASE if key == RECENT_KEY else BASE
         changed = subprocess.check_output(['git', 'diff', '--name-only', base, 'HEAD', '--', *INPUTS],
                                           cwd=ROOT, text=True).splitlines()
         if not eligible(key, changed):
@@ -246,7 +251,9 @@ def main():
         # All native Persian direct components depend on direct_fa_*.h.
         for obj in build.glob('reloq_fa_direct_*.o'):
             obj.unlink()
-        if key in (DEV187_KEY, DEV188_KEY):
+        if key == DEV188_TRANSITION_KEY:
+            (build / 'reloq_persian_transition.o').unlink(missing_ok=True)
+        if key in (DEV187_KEY, DEV188_KEY, DEV188_TRANSITION_KEY):
             dll.unlink()
         if key in (RECENT_KEY, TRACE_KEY, DEV149_KEY, DEV150_KEY, DEV151_KEY, DEV152_KEY, DEV153_KEY, DEV154_KEY, DEV155_KEY, DEV156_KEY, DEV157_KEY, DEV158_KEY, DEV159_KEY, DEV160_KEY, DEV161_KEY, DEV162_KEY, DEV163_KEY, DEV164_KEY, DEV166_KEY, DEV168_KEY, DEV169_KEY, DEV170_KEY, DEV171_KEY, DEV172_KEY):
             # These are the only host sources which include reloq_eci.h;

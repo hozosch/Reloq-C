@@ -222,12 +222,22 @@ int reloq_persian_match_stop_nasal(struct reloq_fa_frame *frames,size_t count,
        frames[first].controls[7]<=0 || frames[first].controls[8]!=0)return 0;
     size_t finish=first;
     double width=initial;
+    float inherited_aspiration=frames[first].controls[7];
+    float inherited_voicing=frames[first].controls[2];
+    int held_source=1;
     while(finish<end && width<50) {
         const float *c=frames[finish].controls;
         for(unsigned column=1;column<=15;++column)
             if(!isfinite(c[column]))return -1;
         if(c[2]<=0 || c[8]!=0)return 0;
-        if(c[7]==0)break;
+        /* Finnish /m,n/ can carry a nonzero aspiration of their own. After
+         * a held English source, its rising new target also marks the end
+         * of the inherited vowel. Do not treat a delayed or changing native
+         * nasal as that held source. */
+        if(c[7]==0 || (initial==0 && held_source && width>=3 &&
+                       c[7]>=inherited_aspiration+2.5f))break;
+        if(fabs((double)c[2]-inherited_voicing)>0.5 ||
+           fabs((double)c[7]-inherited_aspiration)>0.5)held_source=0;
         double step=c[0];
         if(!isfinite(step) || step<=0 || step>20)return -1;
         width+=step;++finish;
