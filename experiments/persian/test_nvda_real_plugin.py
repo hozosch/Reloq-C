@@ -1106,7 +1106,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     raise AssertionError('NVDA lost the medial r or US contour: ' + ascii((text, tags)))
             if spelling == 'issue50_r_after_i_x_speed38':
                 tags = ' '.join(self.projected[self.before_projected:])
-                if self.synth.rate != 38 or '`[.1zir.0GAt]' not in tags or not any(self.us_fits[self.before_us_fits:]):
+                if self.synth.rate != 38 or '`[.0zir.1GAt]' not in tags or not any(self.us_fits[self.before_us_fits:]):
                     raise AssertionError('NVDA lost zirkhat or its US contour at speed 38: ' + ascii(tags))
             if spelling == 'issue49_native_new_compound':
                 expected={'بختیاری‌زاده':"`[.0bAG.0ti.0j'a:'.0ri.0za.1d'e:']",
