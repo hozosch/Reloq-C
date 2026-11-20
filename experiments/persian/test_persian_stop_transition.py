@@ -155,9 +155,9 @@ def main():
                             assert any(row[0] > 0 for row in after[1][:10])
                             assert any(row == (0, 0, 0) for row in after[1][10:40])
                             preserved += 1; checked += 1
-        # The Finnish nasal body can itself contain aspiration. In actual
-        # English-to-Persian /m/ and /n/ contexts, repair the held English
-        # vowel only up to the new target, then preserve that native body.
+        # In actual English-to-Persian /m/ and /n/ contexts, repair the held
+        # English vowel only up to the new target, then preserve the body of
+        # whichever nasal the shared provider selects.
         repaired = {'m': 0, 'n': 0}
         for rate in (1, 3, 6):
             for gender in (0, 1):
@@ -175,8 +175,8 @@ def main():
                             if prior[0][0] == (0, 0, 0) and before[0][0][0] > 0 and before[0][0][1] > 0:
                                 start_ah = before[0][0][1]
                                 change = next((i for i, row in enumerate(before[0])
-                                               if row[1] >= start_ah + 2.5), None)
-                                assert change is not None and 3 <= change < 40
+                                               if row[1] == 0 or row[1] >= start_ah + 2.5), None)
+                                assert change is not None and 3 <= change < 40, (english, persian, rate, speed)
                                 assert after[0][0] == donor[0][0]
                                 assert all(row[1] == row[2] == 0 for row in after[0][:min(8, change)])
                                 assert after[0][change:] == before[0][change:], (english, persian, rate, speed)

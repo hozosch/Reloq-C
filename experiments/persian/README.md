@@ -141,6 +141,21 @@ from one shared Persian frame capture. Its `--check-runtime` option checks
 that the current proxy section matches the live language-engine PCM; an
 optional `--original` checks the original approved recording's Korean section.
 
+## Persian oral nasals and nearby vowels
+
+The current listening candidate runs the French /m/ and /n/ acoustic rules
+against Persian phone records, while retaining the US nasal durations and
+transition scheduling. Persian vowels next to those nasals keep their own
+vowel targets; the nasal remains free to form a normal transition into them.
+The vowel rule no longer selects Finnish nasal-specific formant or tilt
+allophones for /m/ and /n/. This is distinct from adding a nasal vowel.
+
+`test_us_nasals.py` checks the French nasal targets, US phone durations and
+the vowel's formants and tilt for both voices and multiple speeds. It also
+measures synthesized upper-frequency energy relative to the lower band in
+the reported `nun` and `mim` cases. Listening remains necessary to assess
+the transitions and perceived voice quality.
+
 ## Issue 49: earlier listening candidates
 
 The dev123 listening candidate restores the isolated Persian front /æ/ to

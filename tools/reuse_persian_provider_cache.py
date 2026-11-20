@@ -19,6 +19,13 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 PROVIDER = ROOT / 'vendor/openevv61'
 BUILD = PROVIDER / 'build/windows-release'
+DEV189_BASE = 'e864c70098f9d1ca1916210e7cbab3c11e0a0ac2'
+DEV189_KEY = ('persian-windows-provider-gcc14-v2-'
+              '4e6e2b0efe6a150a1ede3b8f1dd19922f4c0fedb3f31dbb2b9e705c3c4004460')
+DEV189_ALLOWED = {'experiments/persian/build_native_probe.py'}
+DEV189_GENERATED = frozenset({'delta_rules_c02_fifi.c', 'delta_rules_c15_fifi.c',
+                              'delta_rules_c17_fifi.c', 'delta_rules_c19_fifi.c',
+                              'delta_rules_c21_fifi.c', 'delta_rules_c27_fifi.c'})
 DEV188_BASE = '423d67d39fa8a6814865bf92d429430efb9ea83f'
 DEV188_KEY = ('persian-windows-provider-gcc14-v2-'
               '7c9a787e05fed4238c0f7780436689064c7eb6ee6ae6ab9082cf81231a9a109b')
@@ -231,6 +238,12 @@ def reuse_dev156_generated(expected=frozenset({'delta_rules_c02_fifi.c'}), added
 def main():
     try:
         key = os.environ.get('PERSIAN_PROVIDER_CACHE_KEY', '')
+        if key == DEV189_KEY:
+            changed = set(git('diff', '--name-only', DEV189_BASE, 'HEAD', '--', *INPUTS).splitlines())
+            if changed != DEV189_ALLOWED:
+                raise ValueError('French nasal and vowel inputs differ from the verified scope')
+            reuse_dev156_generated(DEV189_GENERATED, original_count=22)
+            return
         if key == DEV188_KEY:
             changed = set(git('diff', '--name-only', DEV188_BASE, 'HEAD', '--', *INPUTS).splitlines())
             if changed != DEV188_ALLOWED:

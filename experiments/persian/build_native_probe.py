@@ -762,6 +762,152 @@ def prepare_french_l(work: Path) -> list[Path]:
                      GERMAN_L_TRACE.replace('DE_L', 'FR_L'), '#include <stdio.h>\n', work)
     return [native]
 
+
+def prepare_french_nasals(work: Path) -> None:
+    """Run French /m,n/ acoustic rules on the Persian phone records.
+
+    The French and Finnish phone enums and record layouts differ. Keep the
+    French rule flow and map its phone tests to the local records explicitly;
+    the separately selected US duration and transition rules stay in charge.
+    """
+    root = PROVIDER / 'lang' / 'frfr61'
+    source = (root / 'delta_authored_frfr61.c').read_text(encoding='utf8')
+    source = source.split('uint8_t frfr61_evv_authored_data[] = {', 1)[1].split('};', 1)[0]
+    source = re.sub(r'/\*.*?\*/', '', source, flags=re.S)
+    raw = bytes(int(value, 0) for value in
+                re.findall(r'(?<![A-Za-z_])(?:0[xX][0-9a-fA-F]+|[0-9]+)', source))
+    table = (root / 'delta_rules_frfr61.c').read_text(encoding='utf8')
+    table = table.split('frfr61_delta_rule_sym[] = {', 1)[1].split('};', 1)[0]
+    offsets = [int(value) for value in re.findall(r'frfr61_evv_authored_data \+ (\d+)', table)]
+    names = ('addval', 'fren_labial_Fv', 'fren_dental_Fv', 'fren_ph_m', 'fren_ph_n')
+    blocks = []
+    for name in names:
+        matches = []
+        for path in root.glob('delta_rules_c*.c'):
+            text = path.read_text(encoding='utf8')
+            start = text.find('int32_t reloq_frfr61_' + name + '(')
+            if start >= 0:
+                end = text.index('\nstatic int32_t evv_' + name + '(', start)
+                matches.append(text[start:end])
+        if len(matches) != 1:
+            raise RuntimeError('Cannot locate French nasal donor ' + name)
+        blocks.append(matches[0])
+    indices = sorted({int(value) for block in blocks
+                      for value in re.findall(r'delta_sym_ref\[(\d+)\]', block)})
+    width = 32
+    if len(offsets) <= max(indices) or any(offsets[i] + width > len(raw) for i in indices):
+        raise RuntimeError('French nasal symbol storage changed')
+    fr_names, fr_values = phone_symbol_data('frfr61')
+    if (fr_names[2139], fr_names[2144], fr_names[2150], fr_values[2121]) != ('n', 'i', 'u', 0):
+        raise RuntimeError('French nasal phone symbols changed')
+    index_map = {value: index for index, value in enumerate(indices)}
+    constants = ',\n'.join('    {' + ','.join(str(x) for x in raw[offsets[i]:offsets[i]+width]) + '}'
+                           for i in indices)
+    helper = r'''
+static const unsigned char persian_fr_nasal_constants[][32]={
+__CONSTANTS__
+};
+static _Atomic int32_t persian_fr_nasal_constants_ref;
+static int32_t persian_fr_nasal_symbols(void)
+{
+    int32_t result=atomic_load_explicit(&persian_fr_nasal_constants_ref,memory_order_acquire);
+    if (result) return result;
+    void *copy=evv_arena_alloc(sizeof persian_fr_nasal_constants);
+    if (!copy) return 0;
+    memcpy(copy,persian_fr_nasal_constants,sizeof persian_fr_nasal_constants);
+    int32_t made=EVV_REF(copy),expected=0;
+    if (!atomic_compare_exchange_strong_explicit(&persian_fr_nasal_constants_ref,&expected,made,
+                                                  memory_order_release,memory_order_acquire)) {
+        evv_arena_free(copy);
+        return expected;
+    }
+    return made;
+}
+static int32_t persian_fr_nasal_field(void *state,uint8_t st,uint8_t field,uint8_t value)
+{
+    if (st==2 && field==11) /* stress */
+        return reloq61_typed_testFldeq(DELTA_ENTRY_testFldeq,state,2,7,value);
+    return persian_probe_fr_field(state,st,field,value);
+}
+static int32_t persian_fr_nasal_push(void *state,uint8_t st,uint8_t field)
+{
+    if (st==2 && field==11)
+        return reloq61_typed_npush_fld(DELTA_ENTRY_npush_fld,state,2,7);
+    return 1;
+}
+static int32_t persian_fr_nasal_string(void *state,uint8_t st,uint8_t count,const uint8_t *source)
+{
+    static const uint8_t phones[]={
+        0,4,1,5,2,3,6,255,255,8,7,10,9,12,13,14,11,15,16,17,
+        255,255,255,19,21,22,23,255,34,34,29,31,27,24,28,25,33,
+        33,32,26,30,30,255,255,255,255,255,18,36
+    };
+    if (st!=2 || !source || count>32) return 1;
+    uint8_t mapped[32];
+    for (unsigned i=0;i<count;++i)
+        mapped[i]=source[i]<sizeof phones ? phones[source[i]] : 255;
+    return test_string_s(state,st,count,mapped);
+}
+'''.replace('__CONSTANTS__', constants)
+    pieces = []
+    for name, block in zip(names, blocks):
+        block = block.replace('int32_t reloq_frfr61_' + name + '(',
+                              'static int32_t persian_fr_' + name + '(', 1)
+        if name == 'fren_labial_Fv':
+            # The French-only speaker setting has no equivalent in the local
+            # voice state; retain the ordinary donor branch.
+            extra = ('    r1 = ((int32_t)STATE(uint16_t, s326));\n'
+                     '    AT(int32_t, -20) = (r1);\n'
+                     '    if (AT(int16_t, -20) == (int16_t)(STATE(int16_t, s319))) goto L11765;\n'
+                     '    goto L16771;\n')
+            if block.count(extra) != 1:
+                raise RuntimeError('French nasal speaker branch changed')
+            block = block.replace(extra, '    goto L16771;\n', 1)
+        block = re.sub(r'delta_sym_ref\[(\d+)\]',
+                       lambda m: f'(persian_fr_refs + {index_map[int(m.group(1))]*width})', block)
+        block = re.sub(r'STATE\((u?int(?:16|32)_t), s(\d+)\)',
+                       lambda m: f'STATE({m.group(1)}, s{int(m.group(2))-1})', block)
+        block = re.sub(r'STATE_AT\(s(\d+),',
+                       lambda m: f'STATE_AT(s{int(m.group(1))-1},', block)
+        marker = '    unsigned char *frame = evv_frame_push('
+        if block.count(marker) != 1:
+            raise RuntimeError('Cannot locate French nasal workspace ' + name)
+        block = block.replace(marker, '    const int32_t persian_fr_refs=persian_fr_nasal_symbols();\n'
+                              '    if (!persian_fr_refs) return 94;\n' + marker, 1)
+        for typed, replacement in (('testFldeq', 'field'), ('npush_fld', 'push'),
+                                   ('test_string_s', 'string')):
+            block = block.replace('reloq61_typed_' + typed + '(DELTA_ENTRY_' + typed + ', state,',
+                                  'persian_fr_nasal_' + replacement + '(state,')
+        for local in ('addval', 'fren_labial_Fv', 'fren_dental_Fv'):
+            block = block.replace('reloq_call_frfr61_' + local + '(', 'persian_fr_' + local + '(')
+        for local in ('doAV', 'modulate_nas_AV', 'final_voiced_release'):
+            block = block.replace('reloq_call_frfr61_' + local + '(', 'reloq_call_fifi_' + local + '(')
+        if 'reloq_call_frfr61_' in block:
+            raise RuntimeError('Unmapped French nasal dependency: ' + name)
+        pieces.append(block)
+    destination = work / 'delta_rules_c02_fifi.c'
+    text = destination.read_text(encoding='utf8')
+    include = '#include "reloq61_rule_calls_fifi.h"\n'
+    if text.count(include) != 1:
+        raise RuntimeError('Cannot locate the French nasal declarations')
+    text = text.replace(include, include + '#include <stdatomic.h>\n'
+                        'static int32_t persian_fr_fren_ph_m(void *,int32_t);\n'
+                        'static int32_t persian_fr_fren_ph_n(void *,int32_t);\n', 1)
+    marker = 'int32_t reloq_fifi_fin_ph_l(void *state, int32_t p0)\n{\n'
+    if text.count(marker) != 1:
+        raise RuntimeError('Cannot locate the French nasal insertion point')
+    text = text.replace(marker, helper + '\n' + '\n'.join(pieces) + '\n' + marker, 1)
+    for phone in 'mn':
+        call = f'    r0 = reloq_call_fifi_fin_ph_{phone}(state, (int32_t)(FIELD(0)));\n'
+        if text.count(call) != 1:
+            raise RuntimeError('Cannot locate Persian nasal dispatch ' + phone)
+        replacement = ('    {\n        const char *selected=getenv("RELOQ_FA_US_NASALS");\n'
+                       "        if (selected && selected[0]=='1' && !selected[1])\n"
+                       f'            r0=persian_fr_fren_ph_{phone}(state,(int32_t)(FIELD(0)));\n'
+                       '        else\n' + call + '    }\n')
+        text = text.replace(call, replacement, 1)
+    destination.write_text(text, encoding='utf8')
+
 Q_PATCH = r'''
     {
         int variant = persian_probe_setting("RELOQ_FA_PROBE_Q");
@@ -2889,7 +3035,7 @@ static int32_t persian_pt_push_field(void *state,uint8_t st,uint8_t field)
 
 
 def prepare_uncolored_r_vowels(work: Path) -> None:
-    """Do not let Finnish /r/-specific vowel allophones color Persian vowels."""
+    """Keep Persian vowel targets independent of adjacent /r/, /m/ and /n/."""
     files = {'delta_rules_c17_fifi.c': ('a', 'e'),
              'delta_rules_c15_fifi.c': ('A',),
              'delta_rules_c27_fifi.c': ('o',),
@@ -2901,15 +3047,31 @@ static int32_t persian_uncolored_vowel_field(void *state,uint8_t st,uint8_t fiel
     const char *mode=getenv("RELOQ_FA_UNCOLORED_R");
     if (mode && mode[0]=='1' && !mode[1] && st==2 && field==0 && value==19)
         return 1;
+    const char *nasal=getenv("RELOQ_FA_US_NASALS");
+    if (nasal && nasal[0]=='1' && !nasal[1] && st==2 && field==0 && (value==16 || value==17))
+        return 1;
+    if (nasal && nasal[0]=='1' && !nasal[1] && st==2 && field==4 && value==4 &&
+        (reloq61_typed_testFldeq(DELTA_ENTRY_testFldeq,state,2,0,16)==0 ||
+         reloq61_typed_testFldeq(DELTA_ENTRY_testFldeq,state,2,0,17)==0))
+        return 1; /* vowel-only test of nasal manner, not the nasal itself */
+    if (nasal && nasal[0]=='1' && !nasal[1] && st==2 && field==5 &&
+        (reloq61_typed_testFldeq(DELTA_ENTRY_testFldeq,state,2,0,16)==0 ||
+         reloq61_typed_testFldeq(DELTA_ENTRY_testFldeq,state,2,0,17)==0))
+        return 1; /* do not substitute labial/alveolar vowel allophones */
     return reloq61_typed_testFldeq(DELTA_ENTRY_testFldeq,state,st,field,value);
 }
 static int32_t persian_uncolored_vowel_string(void *state,uint8_t st,uint8_t count,const uint8_t *source)
 {
     const char *mode=getenv("RELOQ_FA_UNCOLORED_R");
-    if (!mode || mode[0]!='1' || mode[1] || st!=2 || !source || count>32)
+    const char *nasal=getenv("RELOQ_FA_US_NASALS");
+    int neutral_r=mode && mode[0]=='1' && !mode[1];
+    int neutral_nasal=nasal && nasal[0]=='1' && !nasal[1];
+    if ((!neutral_r && !neutral_nasal) || st!=2 || !source || count>32)
         return reloq61_typed_test_string_s(DELTA_ENTRY_test_string_s,state,st,count,source);
     uint8_t mapped[32];
-    for (unsigned i=0;i<count;i++) mapped[i]=source[i]==19 ? 255 : source[i];
+    for (unsigned i=0;i<count;i++)
+        mapped[i]=(neutral_r && source[i]==19) ||
+                  (neutral_nasal && (source[i]==16 || source[i]==17)) ? 255 : source[i];
     return test_string_s(state,st,count,mapped);
 }
 '''
@@ -3718,6 +3880,7 @@ def main() -> None:
     prepare_e_context_probe(work)
     modified.extend(prepare_german_l(work))
     modified.extend(prepare_french_l(work))
+    prepare_french_nasals(work)
     modified.extend(prepare_x(work))
     modified.append(prepare_q_cluster(work))
     modified.append(prepare_q_phone(work))
