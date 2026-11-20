@@ -5,6 +5,7 @@ producer. This checks service lifecycle and routing, not Android discovery,
 native library loading or actual device playback.
 """
 import argparse
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -70,8 +71,9 @@ public class Context {
  public static final int QUALITY_NORMAL=300,LATENCY_VERY_LOW=100;
  public Voice(String n,Locale l,int q,int t,boolean net,Set<String> features){} }""",
 "android/speech/tts/SynthesisRequest.java": """package android.speech.tts; public class SynthesisRequest {
- public String getVoiceName(){return null;} public String getLanguage(){return "de";} public String getCountry(){return "DE";}
- public int getSpeechRate(){return 100;} public int getPitch(){return 100;} public CharSequence getCharSequenceText(){return "Test";} }""",
+ public static String voiceName,text;
+ public String getVoiceName(){return voiceName;} public String getLanguage(){return "de";} public String getCountry(){return "DE";}
+ public int getSpeechRate(){return 100;} public int getPitch(){return 100;} public CharSequence getCharSequenceText(){return text==null?"Test":text;} }""",
 "android/speech/tts/SynthesisCallback.java": """package android.speech.tts; public class SynthesisCallback {
  public int rate,bytes,errors,done; public int start(int r,int f,int c){rate=r;return 0;} public int getMaxBufferSize(){return 2;}
  public int audioAvailable(byte[] b,int o,int n){bytes+=n;return 0;} public void error(int e){++errors;} public int done(){++done;return 0;} }""",
@@ -92,16 +94,24 @@ final class DictionaryStore { static int starts,stops,acquires,closes;static jav
  static class Lease { final String path;Lease(String p){path=p;} void close(){++closes;} } }""",
 "org/reloq/tts/NativeEngine.java": """package org.reloq.tts;
 final class NativeEngine { static int created,synthesized;static int[] controls;static String path,text;static boolean guarded;
+ static final java.util.List<int[]> controlsList=new java.util.ArrayList<>();
+ static final java.util.List<Integer> dialects=new java.util.ArrayList<>();
+ static final java.util.List<String> texts=new java.util.ArrayList<>();
  static long create(){++created;return 42;} static void dictionary(long c,String p){path=p;}
- static boolean synthesize(long c,int d,int[] v,byte[] t,PcmQueue q,boolean g){++synthesized;controls=v;
-  text=new String(t,java.nio.charset.StandardCharsets.UTF_8);guarded=g;return q.write(new byte[]{1,2,3,4});}
+ static boolean synthesize(long c,int d,int[] v,byte[] t,Object sink,boolean g){++synthesized;controls=v;
+  text=new String(t,java.nio.charset.StandardCharsets.UTF_8);guarded=g;
+  if(!(sink instanceof PcmQueue))return true;
+  dialects.add(d);texts.add(text);
+  controlsList.add(v);
+  return ((PcmQueue)sink).write(new byte[]{1,2,3,4});}
  static void stop(long c,PcmQueue q){} static void destroy(long c){} }""",
 "org/reloq/tts/DirectBootTest.java": """package org.reloq.tts;
 import android.content.*;import android.speech.tts.*;import java.io.*;import java.nio.file.*;import java.util.concurrent.*;
 public class DirectBootTest {
  static void check(boolean b){if(!b)throw new AssertionError();}
- static void speak(ReLoqService s){SynthesisCallback c=new SynthesisCallback();s.onSynthesizeText(new SynthesisRequest(),c);
-  check(c.errors==0&&c.done==1&&c.bytes==4&&c.rate==16000);}
+ static void speak(ReLoqService s,int expectedBytes){SynthesisCallback c=new SynthesisCallback();s.onSynthesizeText(new SynthesisRequest(),c);
+  check(c.errors==0&&c.done==1&&c.bytes==expectedBytes&&c.rate==16000);}
+ static void speak(ReLoqService s){speak(s,4);}
  public static void main(String[] x) throws Exception {
   Context.ce.data.put("profile",5);Context.ce.data.put("language",1);Context.ce.data.put("androidVoice",false);
   Context.ce.data.put("rate",2);Context.ce.data.put("androidPitch",false);Context.ce.data.put("voice.5.pitch",48);
@@ -162,9 +172,83 @@ public class DirectBootTest {
   Context.locked=false;Context.ce.data.put("dictionarySnapshot",second.getAbsolutePath());DictionaryStore.syncBoot(new Context());
   Context.locked=true;BootDictionaries.Lease nativeCopy=BootDictionaries.acquire(new Context());
   check(nativeCopy.path!=null);System.out.println("BOOT_SNAPSHOT\\t"+nativeCopy.path);
+  Context.de.data.put("language",AutoLanguage.INDEX);
+  Context.de.data.put("androidVoice",false);
+  SynthesisRequest.voiceName=AutoLanguage.voice(0);
+  SynthesisRequest.text="正在接收ai响应";
+  NativeEngine.controlsList.clear();
+  int beforeAutomatic=NativeEngine.synthesized;
+  ReLoqService automatic=new ReLoqService();automatic.onCreate();
+  try {speak(automatic,12);
+   check(NativeEngine.synthesized-beforeAutomatic==3);
+   check(NativeEngine.controlsList.size()==3);
+   check(NativeEngine.controlsList.get(0)[9]==1&&NativeEngine.controlsList.get(1)[9]==1);
+   check(NativeEngine.controlsList.get(2)[9]==0);}
+  finally {automatic.onDestroy();}
+  Context.de.data.put("autoBase",2);
+  SynthesisRequest.text="2";
+  NativeEngine.dialects.clear();NativeEngine.texts.clear();
+  ReLoqService englishNumber=new ReLoqService();englishNumber.onCreate();
+  try {speak(englishNumber,4);
+   check(NativeEngine.dialects.equals(java.util.Arrays.asList(0x10001)));
+   check(NativeEngine.texts.equals(java.util.Arrays.asList("2")));}
+  finally {englishNumber.onDestroy();}
+  SynthesisRequest.text="这是一段没有标点的中文内容";
+  ReLoqService chineseWithOtherBase=new ReLoqService();chineseWithOtherBase.onCreate();
+  try {
+   for(int base=0;base<Catalog.LANGUAGES.length;++base) {
+    Context.de.data.put("autoBase",base);
+    int before=NativeEngine.synthesized;
+    NativeEngine.dialects.clear();NativeEngine.texts.clear();
+    speak(chineseWithOtherBase,4);
+    check(NativeEngine.synthesized-before==1);
+    check(NativeEngine.dialects.equals(java.util.Arrays.asList(0x60000)));
+    check(NativeEngine.texts.equals(java.util.Arrays.asList(SynthesisRequest.text)));
+   }
+  } finally {chineseWithOtherBase.onDestroy();}
+  Context.de.data.put("autoBase",0);
+  SynthesisRequest.text="你好A你好B你好";
+  NativeEngine.controlsList.clear();
+  ReLoqService alternating=new ReLoqService();alternating.onCreate();
+  try {speak(alternating,20);
+   check(NativeEngine.controlsList.size()==5);
+   for(int i=0;i<4;++i)check(NativeEngine.controlsList.get(i)[9]==1);
+   check(NativeEngine.controlsList.get(4)[9]==0);}
+  finally {alternating.onDestroy();}
+  SynthesisRequest.text="你好@世界";
+  NativeEngine.dialects.clear();NativeEngine.texts.clear();
+  ReLoqService atSymbol=new ReLoqService();atSymbol.onCreate();
+  try {speak(atSymbol,12);
+   check(NativeEngine.dialects.equals(java.util.Arrays.asList(0x60000,0x10000,0x60000)));
+   check(NativeEngine.texts.get(1).trim().equals("at"));
+   check(NativeEngine.texts.get(0).contains("你好")&&NativeEngine.texts.get(2).contains("世界"));}
+  finally {atSymbol.onDestroy();}
+  SynthesisRequest.text="Sample: Reading `@` in automatic language mode converts it to `at` for the English engine.\\n\\nThe package is ready for another test.";
+  NativeEngine.dialects.clear();NativeEngine.texts.clear();NativeEngine.controlsList.clear();
+  ReLoqService chat=new ReLoqService();chat.onCreate();
+  try {
+   SynthesisCallback callback=new SynthesisCallback();
+   chat.onSynthesizeText(new SynthesisRequest(),callback);
+   String spoken=String.join("",NativeEngine.texts);
+   check(callback.errors==0&&callback.done==1&&callback.bytes>0);
+   check(spoken.indexOf('`')<0&&spoken.indexOf(92)<0&&spoken.endsWith("test."));
+   check(spoken.contains("for the English engine.\\n\\nThe package"));
+   int backslashRun=NativeEngine.texts.indexOf("反斜杠 ");
+   check(backslashRun>=0&&NativeEngine.dialects.get(backslashRun)==0x60000);
+   int commaRun=NativeEngine.texts.indexOf("at，");
+   int periodRun=NativeEngine.texts.indexOf("package.");
+   check(commaRun>=0&&NativeEngine.dialects.get(commaRun)==0x10000&&NativeEngine.controlsList.get(commaRun)[9]==0);
+   check(periodRun>=0&&NativeEngine.controlsList.get(periodRun)[9]==0);
+  } finally {chat.onDestroy();}
   System.out.println("Direct Boot service: locked PCM and active dictionaries, no credential access, unlock, migration, replacement and removal passed");
  } }"""
 }
+
+def java_tool(java_home,name):
+    path=java_home/"bin"/name
+    if os.name=="nt" and not path.exists():
+        path=path.with_suffix(".exe")
+    return path
 
 def main():
     p=argparse.ArgumentParser();p.add_argument("--java-home",type=Path,required=True)
@@ -174,13 +258,28 @@ def main():
     service=manifest.find("application/service")
     assert service is not None and service.get(a+"name")==".ReLoqService"
     assert service.get(a+"directBootAware")=="true" and service.get(a+"exported")=="true"
+    activity=next(node for node in manifest.findall("application/activity")
+                  if node.get(a+"name")==".VoiceDataActivity")
+    assert activity.get(a+"directBootAware")=="true", "Voice data checks unavailable before unlock"
+    assert activity.get(a+"exported")=="true"
+    assert {node.get(a+"name") for node in activity.findall("intent-filter/action")}=={
+        "android.speech.tts.engine."+action for action in
+        ("CHECK_TTS_DATA","GET_SAMPLE_TEXT","INSTALL_TTS_DATA")}
     assert [node.get(a+"name") for node in manifest.findall("uses-permission")]==[
-        "android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE", "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.POST_NOTIFICATIONS"]
+        "android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.RECEIVE_BOOT_COMPLETED", "android.permission.POST_NOTIFICATIONS",
+        "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"]
     for namespace,value in (("android","(type 0x12)0xffffffff"),
                             ("http://schemas.android.com/apk/res/android","true")):
         tree=(f"    E: service (line=9)\n      A: {namespace}:name=\".ReLoqService\"\n"
               f"      A: {namespace}:directBootAware(0x01010505)={value}\n      E: intent-filter (line=10)\n")
+        data_tree=(f"    E: activity (line=20)\n      A: {namespace}:name=\".VoiceDataActivity\"\n"
+                   f"      A: {namespace}:directBootAware(0x01010505)={value}\n      E: intent-filter (line=21)\n")
+        for invalid in (tree, tree+data_tree.replace(value,"false")):
+            try:verify_direct_boot_manifest(invalid)
+            except ValueError:pass
+            else:raise AssertionError("Missing/disabled Direct Boot data entry accepted")
+        tree+=data_tree
         verify_direct_boot_manifest(tree)
     try:verify_direct_boot_manifest(tree.replace("=true","=false"))
     except ValueError:pass
@@ -190,12 +289,15 @@ def main():
         for path,content in STUBS.items():
             target=build/path;target.parent.mkdir(parents=True,exist_ok=True);target.write_text(content)
         folder=ROOT/"android/java/org/reloq/tts"
-        sources=[folder/(name+".java") for name in ("Catalog","VoiceSettings","Preferences","BootPreferences",
-            "DictionaryData","SpeechDictionary","BootDictionaries","UpgradeReceiver","PcmQueue","ReLoqService")]
+        sources=[folder/(name+".java") for name in ("Catalog","VoiceSettings","AutoLanguage","NumberReading","Preferences","BootPreferences",
+            "DictionaryData","SpeechDictionary","BootDictionaries","UpgradeReceiver","PcmQueue","VolumeGain","ReLoqService")]
         sources+=list(build.rglob("*.java"))
-        subprocess.run([str(args.java_home/"bin/javac"),"-encoding","UTF-8","-d",str(build),*map(str,sources)],check=True)
-        result=subprocess.run([str(args.java_home/"bin/java"),"-Djava.io.tmpdir="+str(build),"-cp",str(build),
-            "org.reloq.tts.DirectBootTest"],check=True,timeout=30,capture_output=True,text=True)
+        subprocess.run([str(java_tool(args.java_home,"javac")),"-encoding","UTF-8","-d",str(build),*map(str,sources)],check=True)
+        try:
+            result=subprocess.run([str(java_tool(args.java_home,"java")),"-Djava.io.tmpdir="+str(build),"-cp",str(build),
+                "org.reloq.tts.DirectBootTest"],check=True,timeout=30,capture_output=True,text=True)
+        except subprocess.CalledProcessError as error:
+            print(error.stdout,end="");print(error.stderr,end="");raise
         lines=result.stdout.splitlines();print(lines[-1])
         snapshot=Path(next(line.split("\t",1)[1] for line in lines if line.startswith("BOOT_SNAPSHOT\t")))
         assert build in snapshot.parents and "de" in snapshot.parts

@@ -11,9 +11,11 @@
     <string name="browser_update">Download geöffnet. Nutze deinen Browser und die normale Android-Installation. Lass Play Protect eingeschaltet.</string>
     <string name="engine_help">Offline-Sprachausgabe. Wähle eine Sprache und Stimme für die Sprachprobe oder ReLoq C in den Android-Einstellungen zur Text-in-Sprache-Ausgabe.</string>
     <string name="language">Sprache</string>
+    <string name="auto_fallback">Basissprache für automatische Erkennung (Zahlen, Symbole, unbekannte Schriften)</string>
     <string name="profile">Stimme</string>
     <string name="sample_rate">Abtastrate</string>
     <string name="pause_mode">Pausen verkürzen</string>
+    <string name="number_mode">Zahlenlesung</string>
     <string name="sample_text">Text zum Vorlesen</string>
     <string name="speak">Testtext vorlesen</string>
     <string name="stop">Stoppen</string>
@@ -26,10 +28,14 @@
         <item>Am Ende</item>
         <item>Immer</item>
     </string-array>
+    <string-array name="number_modes">
+        <item>Wert</item>
+        <item>Ziffern</item>
+        <item>Automatisch</item>
+    </string-array>
     <string name="voice_settings">Sprache und Stimme</string>
     <string name="android_voice">Sprache und Stimme über Android steuern</string>
-    <string name="android_rate">Geschwindigkeit über Android steuern</string>
-    <string name="android_pitch">Tonhöhe über Android steuern</string>
+    <string name="android_controls">Geschwindigkeit und Tonhöhe über Android steuern</string>
     <string name="speed">Eigene Geschwindigkeit, Wörter pro Minute</string>
     <string name="pitch">Eigene Tonhöhe</string>
     <string name="rate_boost">Schnellsprechmodus</string>
@@ -41,8 +47,13 @@
     <string name="roughness">Rauheit</string>
     <string name="breathiness">Behauchtheit</string>
     <string name="reset_profile">Gewähltes Stimmenprofil zurücksetzen</string>
+    <string name="reset_done">Zurückgesetzt</string>
+    <string name="reset_not_needed">Zurücksetzen nicht erforderlich</string>
+    <string name="reset_equalizer">Equalizer zurücksetzen</string>
     <string name="output_settings">Sprachausgabe</string>
     <string name="eci_tags">ECI-Tags verarbeiten</string>
+    <string name="volume_gain">Lautstärkeverstärkung</string>
+    <string name="equalizer_settings">Equalizer-Einstellungen</string>
     <string name="dictionaries">Aussprachewörterbücher</string>
     <string name="community_dictionaries">Gemeinschaftswörterbücher verwenden</string>
     <string name="update_dictionaries">Gemeinschaftswörterbücher aus aktuellem Master aktualisieren</string>
@@ -107,7 +118,7 @@
     <string name="equalizer_mid">Mitten (dB)</string>
     <string name="equalizer_high">Höhen (dB)</string>
     <string-array name="equalizer_presets"><item>Ausgewogen</item><item>Warm</item><item>Hell</item><item>Sanft</item><item>Benutzerdefiniert</item></string-array>
-    <string name="equalizer_advanced">Erweiterte Filter…</string>
+    <string name="equalizer_advanced">Erweiterte Filter</string>
     <string name="filter_title">Erweiterte Equalizer-Filter</string>
     <string name="filter_select">Filter</string>
     <string name="filter_name">Filter</string>
@@ -116,6 +127,8 @@
     <string name="filter_gain">Verstärkung (dB)</string>
     <string name="filter_width" formatted="false">Bandbreite (% Oktave)</string>
     <string name="filter_nyquist" formatted="false">100 % entspricht einer Oktave. Frequenzen ab der halben Abtastrate sind ohne Wirkung.</string>
+    <string name="battery_check_normal">Berechtigungsprüfung: normal</string>
+    <string name="battery_check_missing">Berechtigungsprüfung: Akkuoptimierung fehlt. Zum Anfordern tippen.</string>
     <string name="automatic_updates">Automatisch nach App-Updates suchen</string>
     <string name="notification_settings">Benachrichtigungseinstellungen</string>
     <string name="notification_explanation">Erlaube Benachrichtigungen, um über neue ReLoq-C-Versionen informiert zu werden. Ohne Benachrichtigungen kannst du weiterhin manuell suchen.</string>

@@ -11,9 +11,11 @@
     <string name="browser_update">Téléchargement ouvert. Utilisez le navigateur et la procédure d’installation habituelle d’Android. Gardez Play Protect activé.</string>
     <string name="engine_help">Synthèse vocale hors connexion. Choisissez une langue et une voix à tester, ou sélectionnez ReLoq C dans les paramètres de synthèse vocale d’Android.</string>
     <string name="language">Langue</string>
+    <string name="auto_fallback">Langue de base pour la détection automatique (nombres, symboles, écritures inconnues)</string>
     <string name="profile">Voix</string>
     <string name="sample_rate">Fréquence d’échantillonnage</string>
     <string name="pause_mode">Raccourcir les pauses</string>
+    <string name="number_mode">Lecture des nombres</string>
     <string name="sample_text">Texte à lire</string>
     <string name="speak">Lire le texte d’essai</string>
     <string name="stop">Arrêter</string>
@@ -26,10 +28,14 @@
         <item>À la fin</item>
         <item>Toujours</item>
     </string-array>
+    <string-array name="number_modes">
+        <item>Valeur</item>
+        <item>Chiffres</item>
+        <item>Automatique</item>
+    </string-array>
     <string name="voice_settings">Langue et voix</string>
     <string name="android_voice">Contrôler la langue et la voix via Android</string>
-    <string name="android_rate">Contrôler la vitesse via Android</string>
-    <string name="android_pitch">Contrôler la hauteur via Android</string>
+    <string name="android_controls">Contrôler vitesse et hauteur via Android</string>
     <string name="speed">Vitesse manuelle, en mots par minute</string>
     <string name="pitch">Hauteur manuelle</string>
     <string name="rate_boost">Vitesse accélérée</string>
@@ -41,8 +47,13 @@
     <string name="roughness">Raucité</string>
     <string name="breathiness">Souffle</string>
     <string name="reset_profile">Réinitialiser le profil vocal sélectionné</string>
+    <string name="reset_done">Réinitialisé</string>
+    <string name="reset_not_needed">Réinitialisation inutile</string>
+    <string name="reset_equalizer">Réinitialiser l’égaliseur</string>
     <string name="output_settings">Sortie vocale</string>
     <string name="eci_tags">Interpréter les balises ECI</string>
+    <string name="volume_gain">Gain de volume</string>
+    <string name="equalizer_settings">Réglages de l’égaliseur</string>
     <string name="dictionaries">Dictionnaires de prononciation</string>
     <string name="community_dictionaries">Utiliser les dictionnaires communautaires</string>
     <string name="update_dictionaries">Actualiser les dictionnaires communautaires depuis le master actuel</string>
@@ -107,7 +118,7 @@
     <string name="equalizer_mid">Médiums (dB)</string>
     <string name="equalizer_high">Aigus (dB)</string>
     <string-array name="equalizer_presets"><item>Équilibré</item><item>Chaud</item><item>Brillant</item><item>Doux</item><item>Personnalisé</item></string-array>
-    <string name="equalizer_advanced">Filtres avancés…</string>
+    <string name="equalizer_advanced">Filtres avancés</string>
     <string name="filter_title">Filtres avancés de l’égaliseur</string>
     <string name="filter_select">Filtre</string>
     <string name="filter_name">Filtre</string>
@@ -116,6 +127,8 @@
     <string name="filter_gain">Gain (dB)</string>
     <string name="filter_width" formatted="false">Largeur (% d’octave)</string>
     <string name="filter_nyquist" formatted="false">100 % correspond à une octave. Les fréquences à partir de la moitié du taux d’échantillonnage sont inactives.</string>
+    <string name="battery_check_normal">Vérification des autorisations : normal</string>
+    <string name="battery_check_missing">Vérification des autorisations : optimisation de la batterie manquante. Touchez pour demander.</string>
     <string name="automatic_updates">Rechercher automatiquement les mises à jour</string>
     <string name="notification_settings">Paramètres des notifications</string>
     <string name="notification_explanation">Autorisez les notifications pour connaître les nouvelles versions de ReLoq C. La recherche manuelle reste possible.</string>

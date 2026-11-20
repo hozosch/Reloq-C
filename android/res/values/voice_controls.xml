@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voice_settings_page">Voice settings</string>
+    <string name="voice_settings_back">Back to settings</string>
+    <string name="voice_increase">Increase %1$s by 1</string>
+    <string name="voice_decrease">Decrease %1$s by 1</string>
+</resources>

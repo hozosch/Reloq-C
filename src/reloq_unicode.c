@@ -428,6 +428,31 @@ static int unicode_admit(const unsigned char *text,size_t length,
                 if(!decode(text+p,length-p,&z,&next)&&next==0xfe0f)p+=z;
                 if(p<length&&!decode(text+p,length-p,&z,&next)&&next==0x20e3){end=p+z;c=' ';}
             }
+            const char *symbol=NULL;
+            if(!mode&&(language==0x60000||language==0x60001)) {
+                int traditional=language==0x60001;
+                switch(c) {
+                case '<': case 0xff1c:
+                    symbol=traditional?u8"小於":u8"小于";break;
+                case '>': case 0xff1e:
+                    symbol=traditional?u8"大於":u8"大于";break;
+                case '\\': case 0xff3c:
+                    symbol=traditional?u8"反斜線":u8"反斜杠";break;
+                case '/': case 0xff0f:
+                    symbol=traditional?u8"斜線":u8"斜杠";break;
+                case '_': case 0xff3f:
+                    symbol=traditional?u8"底線":u8"下划线";break;
+                case '|': case 0xff5c:
+                    symbol=traditional?u8"豎線":u8"竖线";break;
+                case '~': case 0xff5e:
+                    symbol=traditional?u8"波浪號":u8"波浪号";break;
+                }
+            }
+            if(symbol) {
+                old=b.n;
+                if(say(&b,symbol)){rc=-2;goto fail;}
+                offsets[begin]=old;offsets[end]=b.n;i=end;continue;
+            }
             int native=c>32&&!(c>=0x7f&&c<=0x9f)&&(cp1252(c)||language_owns(c,language));
             struct reloq_character_extension extension={0};int terminal=0;
             const struct unicode_latin *l=latin(c);
@@ -460,6 +485,12 @@ static int unicode_admit(const unsigned char *text,size_t length,
                     if(s?say(&b,s):language_unknown(&b,c,locale)){rc=-2;goto fail;}}
             } else {
                 int failed=0;
+                /* The original CJK symbol table calls @ a mail/address
+                   mark. Use the standard Chinese reading in prose. */
+                if(c=='@'&&(language==0x60000||language==0x60001)) {
+                    failed=add(&b,"at",2);
+                    if(!failed){offsets[begin]=old;offsets[end]=b.n;i=end;continue;}
+                }
                 if((c<32&&c!=9&&c!=10&&c!=13)||(c>=0x7f&&c<=0x9f)||
                    c==0x1680||(c>=0x2000&&c<=0x200a)||c==0x2028||c==0x2029||
                    c==0x202f||c==0x205f||c==0x3000)c=' ';

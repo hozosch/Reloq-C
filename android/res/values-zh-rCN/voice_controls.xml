@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="voice_settings_page">语音设置</string>
+    <string name="voice_settings_back">返回设置</string>
+    <string name="voice_increase">%1$s增加1</string>
+    <string name="voice_decrease">%1$s减少1</string>
+</resources>

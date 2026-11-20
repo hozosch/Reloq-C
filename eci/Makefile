@@ -16,7 +16,7 @@ ANDROID_CC ?= aarch64-linux-android26-clang
 ANDROID_AR ?= llvm-ar
 ANDROID_BUILD ?= build/android-arm64
 # NDK r30's complex.h expands the standard I macro to an imaginary literal.
-ANDROID_CFLAGS := $(CFLAGS) -fsigned-char -Wno-c2y-extensions
+ANDROID_CFLAGS := $(CFLAGS) -fsigned-char -Wno-c2x-extensions -Wno-gnu-imaginary-constant
 # Keep component-test archives inexpensive; optimize the shipped provider
 # across translation units, including its many small C rule primitives.
 PROVIDER_OPT ?= -O3
