@@ -300,6 +300,31 @@ ECIAPI void ECICALL eciPersianRelease(void *pointer);
 ECIAPI int ECICALL eciPersianProjectTextUtf8(const char *text,size_t bytes,int mode,
     const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
     char **output,size_t *target_offsets,size_t *error_offset);
+/* Project contiguous normal-text (run mode 0), explicit character-name
+ * (run mode 1) and phonetic-input (run mode 2) spans together. A malformed
+ * phonetic group is named as Persian characters, never passed as raw text to
+ * the acoustic backend. run_ends are exclusive UTF-8 byte offsets; adjacent
+ * text or character runs with the same mode are joined before analysis. The final
+ * run ends at bytes; empty input has no runs. Names requiring an English
+ * voice return 1 for the caller to route as a separate language event.
+ * Ownership, event mapping and status are as for eciPersianProjectUtf8. */
+ECIAPI int ECICALL eciPersianProjectRunsUtf8(const char *text,size_t bytes,int mode,
+    const size_t *run_ends,const unsigned char *run_modes,size_t run_count,
+    const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
+    char **output,size_t *target_offsets,size_t *error_offset);
+/* Analyze the same input into language-owned phone and boundary events.
+ * Normal text also accepts explicit phonetic groups and `l20.0 / `l20.1
+ * switches between the current experimental input variants. A malformed
+ * phonetic group is spelled with Persian character names; unfamiliar names
+ * use a Persian reading of the Unicode code. Source marks map to event
+ * boundaries; event storage is released with eciPersianRelease.
+ * This is experimental analysis only: it neither registers the dialects
+ * with standard ECI voice selection nor synthesizes audio. */
+#include "reloq_persian_plan.h"
+ECIAPI int ECICALL eciPersianAnalyzeRunsUtf8(const char *text,size_t bytes,int mode,
+    const size_t *run_ends,const unsigned char *run_modes,size_t run_count,
+    const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
+    struct reloq_fa_plan_event **events,size_t *count,size_t *target_events,size_t *error_offset);
 /* Backward-compatible Pinglish-mode entry point. */
 ECIAPI int ECICALL eciPersianPinglishProjectUtf8(const char *text,size_t bytes,
     const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
@@ -345,6 +370,10 @@ ECIAPI int ECICALL eciPersianPhonesToLegacy(const struct reloq_fa_phone *phones,
  * It preserves legacy input and the existing sound backend. Do not use for
  * ordinary punctuation or for another language. See reloq_persian_phones.h. */
 ECIAPI int ECICALL eciPersianInputToLegacy(const char *text,size_t bytes,char *output,
+    size_t capacity,size_t *written,size_t *error_offset);
+/* Validate one Persian phonetic group using Persian rules, then adapt it to
+ * the existing acoustics. Invalid or unsupported groups return 1. */
+ECIAPI int ECICALL eciPersianInputChecked(const char *text,size_t bytes,char *output,
     size_t capacity,size_t *written,size_t *error_offset);
 /* Convert one directly covered word to the same identities. pinglish must be
  * 0 (Persian script) or 1 (Latin transcription). No dictionary handle or

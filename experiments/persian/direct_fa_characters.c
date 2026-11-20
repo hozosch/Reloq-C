@@ -46,6 +46,26 @@ static int append(char *buffer,size_t capacity,size_t *used,const char *value)
     memcpy(buffer+*used,value,length+1);*used+=length;return 0;
 }
 
+int reloq_fa_character_code_name(uint32_t codepoint,char *output,size_t capacity)
+{
+    if(!codepoint || codepoint>0x10ffffu || (codepoint>=0xd800u && codepoint<=0xdfffu))return 0;
+    if(!output || !capacity)return -1;
+    char result[1024],digits[9];size_t used=0;
+    result[0]=0;
+    if(snprintf(digits,sizeof digits,"%X",(unsigned)codepoint)<1 ||
+       append(result,sizeof result,&used,fa_unicode_name) ||
+       append(result,sizeof result,&used," ") ||
+       append(result,sizeof result,&used,symbol_name('+')))return -1;
+    for(const char *digit=digits;*digit;++digit) {
+        const char *part=latin_name((unsigned char)*digit);
+        if(!part)part=symbol_name((unsigned char)*digit);
+        if(!part || append(result,sizeof result,&used," ") ||
+           append(result,sizeof result,&used,part))return -1;
+    }
+    if(used>=capacity)return -1;
+    memcpy(output,result,used+1);return 1;
+}
+
 static int character_resolve(uint32_t codepoint,char *output,size_t capacity,
                              int *kind,int legacy)
 {
@@ -71,17 +91,8 @@ static int character_resolve(uint32_t codepoint,char *output,size_t capacity,
                append(result,sizeof result,&used,english) ||
                (legacy && append(result,sizeof result,&used," `l9.0")))return -1;
         } else {
-            char digits[9];
-            if(snprintf(digits,sizeof digits,"%X",(unsigned)codepoint)<1)return -1;
-            if(append(result,sizeof result,&used,fa_unicode_name) ||
-               append(result,sizeof result,&used," ") ||
-               append(result,sizeof result,&used,symbol_name('+')))return -1;
-            for(const char *digit=digits;*digit;++digit) {
-                const char *part=latin_name((unsigned char)*digit);
-                if(!part)part=symbol_name((unsigned char)*digit);
-                if(!part || append(result,sizeof result,&used," ") ||
-                   append(result,sizeof result,&used,part))return -1;
-            }
+            if(reloq_fa_character_code_name(codepoint,result,sizeof result)!=1)return -1;
+            used=strlen(result);
         }
     }
     if(used>=capacity)return -1;

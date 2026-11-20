@@ -15,4 +15,8 @@ int reloq_fa_direct_character(uint32_t codepoint, char *output, size_t capacity)
  * Unicode name. Output and kind are unchanged on failure. */
 int reloq_fa_character_resolve(uint32_t codepoint, char *output, size_t capacity, int *kind);
 
+/* Name a scalar by its Unicode code using Persian names. This also works
+ * when the normal character resolver would choose an English name. */
+int reloq_fa_character_code_name(uint32_t codepoint, char *output, size_t capacity);
+
 #endif

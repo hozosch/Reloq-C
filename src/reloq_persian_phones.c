@@ -225,3 +225,53 @@ int reloq_fa_input_to_legacy(const char *text,size_t bytes,char *output,
     output[bytes-1+carrier]=']';output[bytes+carrier]=0;
     return 0;
 }
+
+/* The input grammar is owned by the Persian frontend. In addition to its
+ * 29 phones, retain the already supported O/y and diphthong offglides. A
+ * dot introduces a stress-marked syllable; every such syllable has a vowel.
+ * The acoustic adapter only receives a group after the whole input is valid. */
+int reloq_fa_input_checked(const char *text,size_t bytes,char *output,
+    size_t capacity,size_t *written,size_t *error_offset)
+{
+    if(written)*written=0;
+    if(error_offset)*error_offset=0;
+    if(!text || !written || (!output && capacity))return -1;
+    char adapted[8194];size_t needed=0,error=0;
+    int status=reloq_fa_input_to_legacy(text,bytes,adapted,sizeof adapted,&needed,&error);
+    if(status) {if(error_offset)*error_offset=error;return status==-2?-1:1;}
+    size_t end=needed-1,at=2;unsigned vowels=0;
+    int have_syllable=0,base_vowel=0,last_nucleus=0,implicit_split=0,primary=0;
+    while(at<end) {
+        char c=adapted[at];
+        if(c=='.') {
+            if((have_syllable && !vowels) || at+1>=end || adapted[at+1]<'0' || adapted[at+1]>'2')
+                {if(error_offset)*error_offset=at;return 1;}
+            primary|=adapted[at+1]=='1';
+            have_syllable=1;vowels=0;base_vowel=0;last_nucleus=0;at+=2;continue;
+        }
+        if(c=='\'') {
+            if(at+3>=end || !strchr("AaeiouOy",adapted[at+1]) ||
+               adapted[at+2]!=':' || adapted[at+3]!='\'')
+                {if(error_offset)*error_offset=at;return 1;}
+            implicit_split|=last_nucleus;
+            ++vowels;have_syllable=1;base_vowel=1;last_nucleus=1;at+=4;continue;
+        }
+        if(strchr("AaeiouOy",c)) {
+            implicit_split|=last_nucleus;
+            ++vowels;have_syllable=1;base_vowel=1;last_nucleus=1;++at;continue;
+        }
+        if(strchr("IUY",c)) {
+            if(!base_vowel){if(error_offset)*error_offset=at;return 1;}
+            base_vowel=0;last_nucleus=1;++at;continue;
+        }
+        if(!strchr("bdfghjklmnprstvzSZGRCJw",c))
+            {if(error_offset)*error_offset=at;return 1;}
+        have_syllable=1;base_vowel=0;last_nucleus=0;++at;
+    }
+    if(!have_syllable || !vowels || (implicit_split && !primary))
+        {if(error_offset)*error_offset=end;return 1;}
+    *written=needed;
+    if(!output)return 0;
+    if(capacity<=needed)return -2;
+    memcpy(output,adapted,needed+1);return 0;
+}

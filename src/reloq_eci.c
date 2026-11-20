@@ -880,6 +880,24 @@ int ECICALL eciPersianProjectTextUtf8(const char *text,size_t bytes,int mode,
     return -1;
 }
 
+int ECICALL eciPersianProjectRunsUtf8(const char *text,size_t bytes,int mode,
+    const size_t *run_ends,const unsigned char *run_modes,size_t run_count,
+    const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
+    char **output,size_t *target_offsets,size_t *error_offset)
+{
+    return reloq_fa_project_runs(text,bytes,mode,run_ends,run_modes,run_count,
+                                source_offsets,is_index,event_count,output,target_offsets,error_offset);
+}
+
+int ECICALL eciPersianAnalyzeRunsUtf8(const char *text,size_t bytes,int mode,
+    const size_t *run_ends,const unsigned char *run_modes,size_t run_count,
+    const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
+    struct reloq_fa_plan_event **events,size_t *count,size_t *target_events,size_t *error_offset)
+{
+    return reloq_fa_analyze_runs(text,bytes,mode,run_ends,run_modes,run_count,
+                                source_offsets,is_index,event_count,events,count,target_events,error_offset);
+}
+
 int ECICALL eciPersianProjectUtf8(const char *text,size_t bytes,
     const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
     char **output,size_t *target_offsets,size_t *error_offset)
@@ -977,6 +995,10 @@ int ECICALL eciPersianPhonesToLegacy(const struct reloq_fa_phone *phones,size_t 
 int ECICALL eciPersianInputToLegacy(const char *text,size_t bytes,char *output,
     size_t capacity,size_t *written,size_t *error_offset)
 {return reloq_fa_input_to_legacy(text,bytes,output,capacity,written,error_offset);}
+
+int ECICALL eciPersianInputChecked(const char *text,size_t bytes,char *output,
+    size_t capacity,size_t *written,size_t *error_offset)
+{return reloq_fa_input_checked(text,bytes,output,capacity,written,error_offset);}
 
 int ECICALL eciPersianWordPhonesUtf8(const char *word,size_t bytes,int pinglish,
     struct reloq_fa_phone *phones,size_t capacity,size_t *count,size_t *error_offset)

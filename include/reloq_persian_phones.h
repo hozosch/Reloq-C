@@ -85,6 +85,12 @@ int reloq_fa_phones_to_legacy(const struct reloq_fa_phone *phones,size_t count,
 int reloq_fa_input_to_legacy(const char *text,size_t bytes,char *output,
     size_t capacity,size_t *written,size_t *error_offset);
 
+/* Check an explicitly supplied Persian phonetic group with the Persian
+ * inventory and syllable grammar before adapting it to the acoustic backend.
+ * Unknown or malformed groups return 1 and never modify output. */
+int reloq_fa_input_checked(const char *text,size_t bytes,char *output,
+    size_t capacity,size_t *written,size_t *error_offset);
+
 #ifdef __cplusplus
 }
 #endif
