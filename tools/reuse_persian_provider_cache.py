@@ -19,6 +19,11 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 PROVIDER = ROOT / 'vendor/openevv61'
 BUILD = PROVIDER / 'build/windows-release'
+DEV190_BASE = '97233c25232049006f6b2198ded19eef0e8778ac'
+DEV190_KEY = ('persian-windows-provider-gcc14-v2-'
+              'ca576de950b66d8fbb873c89445a60993dddf2e0528e6da62ba39ba5d4d46999')
+DEV190_ALLOWED = {'experiments/persian/build_native_probe.py', 'include/reloq_persian_plan.h',
+                  'vendor/openevv61/lang/engb61/delta_rules_c24_engb61.c'}
 DEV189_BASE = 'e864c70098f9d1ca1916210e7cbab3c11e0a0ac2'
 DEV189_KEY = ('persian-windows-provider-gcc14-v2-'
               '4e6e2b0efe6a150a1ede3b8f1dd19922f4c0fedb3f31dbb2b9e705c3c4004460')
@@ -238,6 +243,16 @@ def reuse_dev156_generated(expected=frozenset({'delta_rules_c02_fifi.c'}), added
 def main():
     try:
         key = os.environ.get('PERSIAN_PROVIDER_CACHE_KEY', '')
+        if key == DEV190_KEY:
+            changed = set(git('diff', '--name-only', DEV190_BASE, 'HEAD', '--', *INPUTS).splitlines())
+            if changed != DEV190_ALLOWED:
+                raise ValueError('Persian N, planner and British phone tracing inputs differ')
+            reuse_dev156_generated(frozenset({'delta_rules_c02_fifi.c'}), original_count=22)
+            (BUILD / 'lang/engb61/delta_rules_c24_engb61.o').unlink(missing_ok=True)
+            for dep in BUILD.rglob('*.d'):
+                if 'reloq_persian_plan.h' in dep.read_text(encoding='utf8', errors='replace'):
+                    dep.with_suffix('.o').unlink(missing_ok=True)
+            return
         if key == DEV189_KEY:
             changed = set(git('diff', '--name-only', DEV189_BASE, 'HEAD', '--', *INPUTS).splitlines())
             if changed != DEV189_ALLOWED:

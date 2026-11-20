@@ -69,6 +69,14 @@ _ENGLISH = _generic_vowels() + _consonants(tuple((('y','J') if k=='j' else (k,v)
     Phone('C','Tsch vor A','`[.1Ca]',count=2),
     Phone('J','Dsch vor A','`[.1Ja]',count=2),
 )
+_BRITISH = tuple(Phone(key, label, '`[.1' + key + ']') for key,label in (
+    ('i','I wie in fleece'), ('I','kurzes I wie in kit'), ('E','E wie in dress'),
+    ('A','kurzes A wie in trap'), ('a','A wie in bath'), ('@','O wie in lot'),
+    ('c','O wie in thought'), ('U','U wie in foot'), ('u','U wie in goose'),
+    ('H','A wie in strut'), ('R','Vokal wie in nurse'), ('x','Schwa wie in comma'),
+    ('e','EI wie in face'), ('o','OU wie in goat'), ('Y','AI wie in price'),
+    ('W','AU wie in mouth'), ('O','OI wie in choice'),
+)) + _ENGLISH[len(_generic_vowels()):]
 _JAPANESE = tuple(p for p in _generic_vowels() if p.key!='A') + _consonants(tuple(
     (k,v) for k,v in _CONSONANTS if k in 'ptkbdgfszmn r'.replace(' ',''))) + (
     Phone('h','H vor A','`[.1ha]',onset=True),
@@ -76,7 +84,8 @@ _JAPANESE = tuple(p for p in _generic_vowels() if p.key!='A') + _consonants(tupl
 )
 
 PHONES = {'Persisch': _PERSIAN, 'Pinglish': _PERSIAN, 'Deutsch': _GERMAN,
-          'Englisch (USA)': _ENGLISH, 'Japanisch': _JAPANESE}
+          'Englisch (USA)': _ENGLISH, 'Englisch (Großbritannien)': _BRITISH,
+          'Japanisch': _JAPANESE}
 
 
 def find(language, key):

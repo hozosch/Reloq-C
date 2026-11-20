@@ -20,6 +20,8 @@ on:
       - src/reloq_persian_transition.c
       - src/reloq_persian_transition.h
       - src/reloq_persian_plan.c
+      - include/reloq_persian_plan.h
+      - experiments/persian/test_persian_owned_api.py
       - include/reloq_persian_timing.h
       - experiments/persian/test_native_us_word_contour.py
       - experiments/persian/test_persian_final_h_after_consonant.py
@@ -63,6 +65,7 @@ on:
       - vendor/openevv61/lang/fifi/delta_rules_c13_fifi.c
       - vendor/openevv61/lang/dede61/delta_rules_c24_dede61.c
       - vendor/openevv61/lang/enus61/delta_rules_c31_enus61.c
+      - vendor/openevv61/lang/engb61/delta_rules_c24_engb61.c
       - vendor/openevv61/lang/jajp61/delta_rules_c25_jajp61.c
       - vendor/openevv61/lang/fifi/delta_rules_c30_fifi.c
       - vendor/openevv61/lang/enus61/delta_rules_c29_enus61.c
@@ -133,6 +136,7 @@ jobs:
           path: vendor/openevv61/build/windows-release
           key: persian-windows-provider-gcc14-v2-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c', 'src/reloq_persian_acoustics.c', 'src/reloq_persian_acoustics.h', 'tools/prepare_persian_provider.py', 'experiments/persian/build_native_probe.py', 'experiments/aragonese/build_native_probe.py') }}
           restore-keys: |
+            persian-windows-provider-gcc14-v2-ca576de950b66d8fbb873c89445a60993dddf2e0528e6da62ba39ba5d4d46999
             persian-windows-provider-gcc14-v2-4e6e2b0efe6a150a1ede3b8f1dd19922f4c0fedb3f31dbb2b9e705c3c4004460
             persian-windows-provider-gcc14-v2-7c9a787e05fed4238c0f7780436689064c7eb6ee6ae6ab9082cf81231a9a109b
             persian-windows-provider-gcc14-v2-4edfcf5f09f279de3e60241a807f6da8ee0269a801e9ce9fa6db6de9eba9a7ea
@@ -141,7 +145,6 @@ jobs:
             persian-windows-provider-gcc14-v2-04cc9a755afeb7ef13a3aebfa7900e2fcef9ceaa6dec69c8d88257a01ecfdbac
             persian-windows-provider-gcc14-v2-0c10a06526b641297356b228a95a40bad91c9e8b9b7e613eed1188ac96286aa9
             persian-windows-provider-gcc14-v2-f67c1d2ffe98915df1e66caa287666526b8a4547bbb0dd70135ef814bfb61d72
-            persian-windows-provider-gcc14-v2-108f6310f0a376348d7bac35eaebf7a872b82a8ec8f60f00a8908c506f022e55
       - uses: actions/cache/restore@v4
         id: host
         with:
@@ -150,6 +153,7 @@ jobs:
             eci/eci.dll
           key: persian-windows-host-gcc14-v2-${{ hashFiles('eci/Makefile', 'eci/reloq_eci_fixed_math.c', 'src/**', 'include/**', 'vendor/openevv61/**', '!vendor/openevv61/build/**', 'experiments/persian/direct_fa_*.c', 'experiments/persian/direct_fa_*.h', 'experiments/persian/direct_fa_*.inc', 'tools/prepare_persian_provider.py', 'experiments/persian/build_native_probe.py', 'experiments/aragonese/build_native_probe.py') }}
           restore-keys: |
+            persian-windows-host-gcc14-v2-768d67b0405a722cb2963006a93c4bd82098b60f54ead2434822d7703f7cf858
             persian-windows-host-gcc14-v2-c9271a83e4aa463ba48644fd5727688aa3ce3fbf6b4452a211f99357010d4eb7
             persian-windows-host-gcc14-v2-32260b50bc1d953680e539a8182b9a61260f2c7d5f7b4c09c02a681570c1c7ff
             persian-windows-host-gcc14-v2-919f203ba3281c47932aaa750f203a5cbbd8aeae140bfc7e107dc0c43482f76a
@@ -158,7 +162,6 @@ jobs:
             persian-windows-host-gcc14-v2-12776d4d080ba6a3260e7a39aaf0c5364959c7e8e909bbb50ba87280ed821ef7
             persian-windows-host-gcc14-v2-7b91c4f5a30718c9fd1a3be2b4303da45bcb92864cdb940c236ce3f8f7a6e6b9
             persian-windows-host-gcc14-v2-268ffbca07ccee73cc8031e3e92a2c32769e571c090464467f75ceef0bd2da09
-            persian-windows-host-gcc14-v2-2d28d855a417923c98c03817e565440186fb9c17a0d6508a945bb3d8b3be9fc5
       - name: Restore cached provider timestamps
         if: steps.provider.outputs.cache-hit == 'true'
         shell: bash
@@ -229,6 +232,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Embedded Persian text rules are stale or missing' }
           python -B eci/test_persian_project.py --library persian-windows-probe/eci_persian_probe.dll
           if ($LASTEXITCODE -ne 0) { throw 'Native Persian text projection failed' }
+          python -B experiments/persian/test_persian_owned_api.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Shared Persian mixed-language analysis failed' }
           python -B eci/test_persian_frames.py --library eci/eci.dll --standard
           if ($LASTEXITCODE -ne 0) { throw 'Common ECI frame capture or replay failed' }
           python -B experiments/persian/test_persian_phone_inventory.py --library eci/eci.dll

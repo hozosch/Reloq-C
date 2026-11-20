@@ -143,18 +143,36 @@ optional `--original` checks the original approved recording's Korean section.
 
 ## Persian oral nasals and nearby vowels
 
-The current listening candidate runs the French /m/ and /n/ acoustic rules
-against Persian phone records, while retaining the US nasal durations and
-transition scheduling. Persian vowels next to those nasals keep their own
+The current listening candidate runs the French /m/ acoustic rules and a
+French/US /n/ resonance blend against Persian phone records. The /n/ voice
+source, F0 and lowest resonance remain French; higher contextual targets are
+blended with the English alveolar rule. US nasal durations and transition
+scheduling remain unchanged. Persian vowels next to those nasals keep their own
 vowel targets; the nasal remains free to form a normal transition into them.
 The vowel rule no longer selects Finnish nasal-specific formant or tilt
 allophones for /m/ and /n/. This is distinct from adding a nasal vowel.
 
-`test_us_nasals.py` checks the French nasal targets, US phone durations and
+`test_us_nasals.py` checks French /m/, blended /n/, US phone durations and
 the vowel's formants and tilt for both voices and multiple speeds. It also
 measures synthesized upper-frequency energy relative to the lower band in
 the reported `nun` and `mim` cases. Listening remains necessary to assess
 the transitions and perceived voice quality.
+
+## Persian-owned mixed-text analysis
+
+The independent Persian event planner now marks ordinary English words in
+Persian text and the English fallback cases in Pinglish as source-backed
+English-text events. The original UTF-8 byte offset and length are retained,
+and source indices continue to map to event boundaries. Persian/Pinglish
+words, numbers and explicit phonetic input still use the same Persian event
+inventory. `test_persian_owned_plan.py` builds this analyzer without any
+language provider, NVDA or eSpeak; `test_persian_owned_api.py` exercises the
+same exported API in the shared library.
+
+The existing production NVDA adapter does not yet consume this event plan for
+its complete mixed-language playback. Prosody, streaming and the fallback
+for words not covered by the direct analyzer still need to move before the
+voice can be described as independent of NVDA and eSpeak.
 
 ## Issue 49: earlier listening candidates
 

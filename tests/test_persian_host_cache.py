@@ -18,7 +18,11 @@ from reuse_persian_host_cache import (ALLOWED, EXPECTED_KEY, RECENT_ALLOWED, REC
                                       DEV171_ALLOWED, DEV171_KEY, DEV172_ALLOWED, DEV172_KEY,
                                       DEV187_ALLOWED, DEV187_KEY, DEV188_ALLOWED, DEV188_KEY,
                                       DEV188_TRANSITION_ALLOWED, DEV188_TRANSITION_KEY,
-                                      DEV189_ALLOWED, DEV189_KEY, eligible)
+                                      DEV189_ALLOWED, DEV189_KEY, DEV190_ALLOWED, DEV190_KEY, eligible)
+
+assert eligible(DEV190_KEY, DEV190_ALLOWED)
+assert not eligible(DEV190_KEY, ())
+assert not eligible(DEV190_KEY, DEV190_ALLOWED | {'src/reloq_core.c'})
 
 assert eligible(DEV189_KEY, DEV189_ALLOWED)
 assert not eligible(DEV189_KEY, ())

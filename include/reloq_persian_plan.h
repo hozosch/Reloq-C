@@ -15,7 +15,11 @@ enum reloq_fa_plan_event_kind {
     RELOQ_FA_PLAN_PUNCTUATION=4,
     RELOQ_FA_PLAN_WEAK_WORD=5,
     RELOQ_FA_PLAN_GLOTTAL_ONSET=6,
-    RELOQ_FA_PLAN_INPUT_VARIANT=7
+    RELOQ_FA_PLAN_INPUT_VARIANT=7,
+    /* A Latin run routed to English. value is its byte offset in the
+     * original input and flags is its byte length. The caller retains the
+     * original UTF-8 text until it has consumed the event. */
+    RELOQ_FA_PLAN_ENGLISH_TEXT=8
 };
 
 /* Persian follows Aragonese (19) with the next available language number.
@@ -47,8 +51,8 @@ enum reloq_fa_extra_phone_id {
 
 struct reloq_fa_plan_event {
     uint32_t kind;       /* enum reloq_fa_plan_event_kind */
-    uint32_t value;      /* phone, punctuation scalar, or input variant */
-    uint32_t flags;      /* LONG and/or Persian timing annotations */
+    uint32_t value;      /* phone, punctuation, variant, or English byte offset */
+    uint32_t flags;      /* phone timing annotations or English byte length */
     uint32_t syllable;   /* zero-based within the word */
     uint32_t stress;     /* 0 unstressed, 1 primary, 2 secondary */
 };

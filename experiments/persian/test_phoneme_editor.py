@@ -59,7 +59,7 @@ def main():
         # Tracing is opt-in: it changes neither PCM, frames, nor the normal
         # syllable capture. The selected mode resets with each request.
         direct=importlib.import_module('soundlab_test._reloq_eci_direct')
-        for language in ('Persisch','Deutsch','Englisch (USA)','Japanisch'):
+        for language in ('Persisch','Deutsch','Englisch (USA)','Englisch (Großbritannien)','Japanisch'):
             p=engine.defaults();p['language']=language
             voice,scope=engine._voice(a.dll,p)
             previous=scope(int(language=='Persisch'))

@@ -11,7 +11,8 @@ from ._reloq_persian_frames import FrameCapture, FrameReplay
 from ._persian.nvda_driver_probe import make_language_engine, PERSIAN_PROBE, PINGLISH_PROBE
 
 LANGUAGES = {'Persisch': None, 'Pinglish': None, 'Deutsch': 0x40000,
-             'Englisch (USA)': 0x10000, 'Japanisch': 0x80000}
+             'Englisch (USA)': 0x10000, 'Englisch (Großbritannien)': 0x10001,
+             'Japanisch': 0x80000}
 CENTRES = (9, 13, 15, 17, 19)
 WIDTHS = (10, 14, 16, 18, 20)
 NOISE_WIDTHS = (44, 45, 46, 47, 48)

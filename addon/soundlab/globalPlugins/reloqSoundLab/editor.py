@@ -13,7 +13,7 @@ import nvwave
 import ui
 import wx
 
-from . import lab, phoneme_engine as engine, phonemes
+from . import espeak_spectrum, lab, phoneme_engine as engine, phonemes
 
 RATES=(3,2,4,5,6,1,0)
 RATE_NAMES=('16000 Hz','22050 Hz','32000 Hz','44100 Hz','48000 Hz','11025 Hz','8000 Hz')
@@ -24,7 +24,7 @@ class PhonemeEditorDialog(wx.Dialog):
     def __init__(self,parent):
         super().__init__(parent,title='Eloquence-C-Lauteditor',style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER)
         self._closed=False;self._busy=False;self._loaded=None;self._changing=False
-        self._edits={};self.selected_formant=0
+        self._edits={};self.selected_formant=0;self._pending_import=None
         self._identity=('Persisch','i')
         self.frequencies=[0]*5;self.gains_db=[0]*5
         root=wx.BoxSizer(wx.VERTICAL)
@@ -59,13 +59,16 @@ class PhonemeEditorDialog(wx.Dialog):
         root.Add(area_label,0,wx.LEFT|wx.RIGHT,12);root.Add(self.area,1,wx.ALL|wx.EXPAND,8)
         note=wx.StaticText(self,label='Pegeländerungen sind zusätzliche Resonanzfilter für die Hörprobe.')
         root.Add(note,0,wx.LEFT|wx.RIGHT|wx.BOTTOM,12)
-        bar=wx.BoxSizer(wx.HORIZONTAL);self.buttons=[]
-        for label,handler in (('Laut laden',self.on_prepare),('Änderung hören (F2)',self.on_play),
-             ('Original hören (F3)',self.on_original),('Speichern...',self.on_save),('Projekt laden...',self.on_load),
-             ('Laut zurücksetzen',self.on_reset),('Textversuch...',self.on_text),('Schließen',self.on_close)):
-            button=wx.Button(self,label=label);button.Bind(wx.EVT_BUTTON,handler)
-            bar.Add(button,0,wx.ALL,3);self.buttons.append(button)
-        root.Add(bar,0,wx.ALL|wx.ALIGN_CENTER,5)
+        self.buttons=[]
+        for items in ((('Laut laden',self.on_prepare),('Änderung hören (F2)',self.on_play),
+                       ('Original hören (F3)',self.on_original),('eSpeak-Spektrum laden...',self.on_import)),
+                      (('Speichern...',self.on_save),('Projekt laden...',self.on_load),
+                       ('Laut zurücksetzen',self.on_reset),('Textversuch...',self.on_text),('Schließen',self.on_close))):
+            bar=wx.BoxSizer(wx.HORIZONTAL)
+            for label,handler in items:
+                button=wx.Button(self,label=label);button.Bind(wx.EVT_BUTTON,handler)
+                bar.Add(button,0,wx.ALL,3);self.buttons.append(button)
+            root.Add(bar,0,wx.ALL|wx.ALIGN_CENTER,5)
         self.SetSizerAndFit(root);self.SetMinSize((850,620))
         self.SetSize((max(850,self.GetSize().width),max(620,self.GetSize().height)));self.CentreOnScreen()
         self._set_phone_choices('i');self._refresh()
@@ -211,11 +214,19 @@ class PhonemeEditorDialog(wx.Dialog):
     def _completed(self,kind,p,result,normalized,error,loaded_now=False):
         if self._closed:return
         self._busy=False
+        pending=self._pending_import if kind=='import' else None
+        if kind=='import':self._pending_import=None
         if error:self.error(error);return
         if self._compatible(self.values(),result):
             self._loaded=result;self._refresh()
+            if kind=='import':
+                try:self._apply_spectrum(pending)
+                except Exception as exc:self.error(exc)
+                return
             if kind=='load' or loaded_now:
                 self.area.SetFocus();ui.message(self._name()+' geladen. '+self._status(self.selected_formant))
+        elif kind=='import':
+            self.error('Die Stimme oder der Laut wurde geändert. Bitte das Spektralbild erneut laden.')
         if normalized:ui.message('Die Hörprobe wurde gegen Übersteuerung abgesenkt.')
 
     def error(self,message):
@@ -224,6 +235,45 @@ class PhonemeEditorDialog(wx.Dialog):
     def on_prepare(self,event):self._start('load')
     def on_play(self,event):self._start('play',True)
     def on_original(self,event):self._start('play',False)
+
+    def _apply_spectrum(self,frame):
+        frequencies,imported,skipped=engine.import_frequencies(self.values(),self._loaded,frame)
+        self.frequencies=frequencies;self._remember();self._refresh()
+        self.area.SetFocus()
+        message=f'Frequenzen für {imported} Formanten übernommen.'
+        if skipped:message+=f' {skipped} nicht verfügbare Formanten blieben unverändert.'
+        ui.message(message+' '+self._status(self.selected_formant))
+
+    def on_import(self,event):
+        if self._busy:
+            ui.message('Bitte warten, die Hörprobe wird vorbereitet.');return
+        try:
+            with wx.FileDialog(self,'eSpeak-Spektraldatei öffnen',wildcard='Alle Dateien (*.*)|*.*',
+                               style=wx.FD_OPEN|wx.FD_FILE_MUST_EXIST) as dlg:
+                if dlg.ShowModal()!=wx.ID_OK:return
+                sequence=espeak_spectrum.load(Path(dlg.GetPath()))
+            frames=[frame for frame in sequence.frames if frame.active]
+            if not frames:raise ValueError('Die Spektraldatei enthält keine aktiven Spektralbilder.')
+            origin=sequence.frames[0].time
+            labels=[]
+            for frame in frames:
+                values=', '.join(f'F{i} {p.frequency} Hz' for i,p in enumerate(frame.peaks[1:6],1)
+                                 if p.height>0 and p.frequency>0)
+                labels.append(f'Bild {frame.index+1}, {round((frame.time-origin)*1000)} ms: '+
+                              (values or 'keine aktiven Formanten'))
+            with wx.SingleChoiceDialog(self,'Spektralbild für den ausgewählten Laut:',
+                                       'eSpeak-Spektralbild auswählen',labels) as dlg:
+                dlg.SetSelection(len(frames)//2)
+                if dlg.ShowModal()!=wx.ID_OK:return
+                frame=frames[dlg.GetSelection()]
+            p=self.values()
+            if self._compatible(p,self._loaded):self._apply_spectrum(frame)
+            else:
+                self._pending_import=frame
+                self._start('import')
+                if not self._busy:self._pending_import=None
+        except Exception as exc:
+            self._pending_import=None;self.error(exc)
 
     def on_reset(self,event):
         self.frequencies=[0]*5;self.gains_db=[0]*5;self._remember();self._refresh()

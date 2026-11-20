@@ -12,7 +12,7 @@ import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
-WORD_BEGIN, PHONE, WORD_END, PUNCTUATION, WEAK, GLOTTAL_ONSET, VARIANT = range(1, 8)
+WORD_BEGIN, PHONE, WORD_END, PUNCTUATION, WEAK, GLOTTAL_ONSET, VARIANT, ENGLISH = range(1, 9)
 
 
 class Event(ctypes.Structure):
@@ -187,6 +187,23 @@ def main():
         assert analyze('`l20.2 salam')[0] == 1
         assert analyze('`l127.1 salam')[0] == 1
         assert analyze('`l9.0 salam')[0] == 1
+        # Mixed-language classification belongs to the independent planner.
+        # The English event refers to the exact source bytes so another host
+        # can render it without NVDA, eSpeak or a Persian pronunciation guess.
+        for text, mode, expected in (('سلام NVDA دنیا', 0, ['NVDA']),
+                                     ('NVDAسلام', 0, ['NVDA']),
+                                     ('سلام txt دنیا', 0, ['txt']),
+                                     ('سلام v1.5.0 دنیا', 0, ['v1.5.0']),
+                                     ('salam phone donya', 1, ['phone']),
+                                     ('salam this donya', 1, ['this'])):
+            raw=text.encode('utf8')
+            result,events,positions,_=analyze(text,mode=mode,offsets=range(len(raw)+1))
+            assert result==0 and positions==sorted(positions), (text,result,events,positions)
+            actual=[raw[e[1]:e[1]+e[2]].decode('ascii') for e in events if e[0]==ENGLISH]
+            assert actual==expected,(text,actual,expected)
+            assert any(e[0]==PHONE for e in events),(text,events)
+        assert analyze('NVDA',offsets=[2],indexes=[0])[0]==3
+        assert analyze('NVDA',offsets=[0,2,4],indexes=[1,1,1])[2]==[0,0,1]
         for text, ids in [('`[.1qa]', [13, 2]), ('`[.1xa]', [21, 2]),
                           ('`[.1?a]', [14, 2]), ('`[.1h?a]', [22, 14, 2]),
                           ('`[.1h?]', [22, 14]), ('`[s]', [17])]:

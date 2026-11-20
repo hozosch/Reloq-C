@@ -1,4 +1,4 @@
-"""Verify French nasal acoustics, US timing and uncolored Persian vowels."""
+"""Verify French M, blended N, US timing and uncolored Persian vowels."""
 from __future__ import annotations
 
 import argparse
@@ -83,15 +83,26 @@ def main():
                         if engine:
                             for key, value in ((SAMPLE_RATE, rate), (GENDER, gender), (NATIVE_SPEED, speed)):
                                 engine.set_parameter(key, value)
-                    # Compare stable source and resonance controls to real
-                    # French words; contextual F2/F3 and timing may differ.
-                    columns = (2, 4, 7, 9, 10, 14, 16, 17, 19, 27)
+                    # M retains the French source and resonances. N retains
+                    # French F0, the low resonance and source while its upper
+                    # targets blend the contextual French and US rules.
                     for phone, word in (('m', 'mime'), ('n', 'niche')):
+                        columns = ((2, 4, 7, 9, 10, 14, 16, 17, 19, 27) if phone == 'm'
+                                   else (2, 4, 7, 9, 10, 14, 16, 27))
                         nasal = capture(fa, fa_scope, f'`[.1{phone}im]')
                         actual = middle(nasal, 0, columns)
                         original = french_onset(fr, fr_scope, word, columns)
                         assert all(abs(a-b) <= 1 for a, b in zip(actual, original)), (
                             rate, gender, speed, phone, actual, original)
+                        if phone == 'n':
+                            upper = (17, 19)
+                            mixed = middle(nasal, 0, upper)
+                            french = french_onset(fr, fr_scope, word, upper)
+                            english = middle(capture(us, us_scope, '`[.1nim]', False), 0, upper)
+                            for a, f, e in zip(mixed, french, english):
+                                assert min(f,e)-2 <= a <= max(f,e)+2, (rate,gender,speed,a,f,e)
+                                if abs(f-e)>4:
+                                    assert abs(a-(f+e)/2)<=2, (rate,gender,speed,a,f,e)
                     # Check both ends and six vowels. Preserve the adopted US
                     # phone timings while allowing the French sound targets.
                     for phone in 'mn':
@@ -115,6 +126,9 @@ def main():
                                     assert len(a) == len(b)
                                     assert all(x.tick == y.tick and x.controls[1] == y.controls[1]
                                                for x, y in zip(a, b)), (case, 'pitch')
+                                    if phone == 'm':
+                                        assert selected.pcm == prior.pcm and selected.frame_bytes == prior.frame_bytes, (
+                                            case, 'accepted French M changed')
                                 count += 1
                     # Compare every vowel between nasals to itself in
                     # isolation: no inherited tilt or shifted resonances in
@@ -158,7 +172,7 @@ def main():
         fa.close(); us.close(); fr.close()
         if previous:
             previous.close()
-    print(f'Passed {count} French nasal, US duration and uncolored-vowel cases.')
+    print(f'Passed {count} French M, blended N, US duration and uncolored-vowel cases.')
 
 
 if __name__ == '__main__':

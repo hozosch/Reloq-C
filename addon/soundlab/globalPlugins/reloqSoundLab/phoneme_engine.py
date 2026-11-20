@@ -51,6 +51,34 @@ def _parameters(p):
     return (p['gender'],p['head'],p['rate'],p['speed'],p['pitch'],p['clock'])
 
 
+def import_frequencies(settings, loaded, spectrum_frame):
+    """Map the selected eSpeak keyframe's F1–F5 to this loaded phone.
+
+    The editor stores offsets from the native midpoint, retaining the native
+    trajectory and transitions. Missing, inactive or out-of-range peaks leave
+    the existing edit untouched. eSpeak peak zero is not Eloquence's F1.
+    """
+    p = validate(settings)
+    if (p['language'],p['phone'],_parameters(p)) != (loaded.language,loaded.key,loaded.params):
+        raise ValueError('Der Laut muss vor dem Import neu geladen werden.')
+    if len(spectrum_frame.peaks) < 6:
+        raise ValueError('Das Spektralbild enthält zu wenige Formanten.')
+    frequencies = list(p['frequencies'])
+    nyquist = SAMPLE_RATES[p['rate']] * .475
+    imported, skipped = 0, 0
+    for i, peak in enumerate(spectrum_frame.peaks[1:6]):
+        base = loaded.frequencies[i]
+        delta = peak.frequency - base
+        if peak.height <= 0 or base <= 0 or not 40 <= peak.frequency <= nyquist or abs(delta) > 2000:
+            skipped += 1
+            continue
+        frequencies[i] = delta
+        imported += 1
+    if not imported:
+        raise ValueError('Dieses Spektralbild enthält keine übernehmbaren Formantfrequenzen.')
+    return frequencies, imported, skipped
+
+
 def _voice(dll, p):
     dialect=0x90000 if p['language'] in ('Persisch','Pinglish') else lab.LANGUAGES[p['language']]
     engine=DirectEciEngine(Path(dll).resolve(),dialect=dialect,encoding='utf8',native_voice=True)

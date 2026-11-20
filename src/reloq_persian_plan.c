@@ -278,6 +278,34 @@ static int selector(const char *s,size_t bytes,size_t *consumed,int *variant)
     *consumed=at;*variant=(int)minor;return 1;
 }
 
+static int ascii_letter(unsigned char c)
+{return (c>='A' && c<='Z') || (c>='a' && c<='z');}
+
+/* Latin words in Persian text belong to English; in Pinglish they stay in
+ * the Persian analyzer whenever its native word rules accept them. Keep the
+ * source slice rather than attempting to pronounce English here. */
+static int english_run(const char *text,size_t at,size_t end,int variant,size_t *last)
+{
+    if(at>=end || !ascii_letter((unsigned char)text[at]))return 0;
+    size_t p=at;
+    while(p<end && ascii_letter((unsigned char)text[p]))++p;
+    size_t letters=p-at;
+    int numeric=0;
+    while(p<end && ((text[p]>='0' && text[p]<='9') ||
+          (text[p]=='.' && p+1<end && text[p+1]>='0' && text[p+1]<='9'))) {
+        numeric=1;++p;
+    }
+    *last=p;
+    if(variant && !numeric) {
+        if(letters==1)return 0; /* the shared Pinglish letter-name rule */
+        char phone[8193];
+        int found=reloq_fa_pinglish_word(text+at,letters,phone,sizeof phone);
+        if(found<0)return found;
+        if(found==1)return 0;
+    }
+    return 1;
+}
+
 int reloq_fa_analyze_runs(const char *text,size_t bytes,int mode,
     const size_t *run_ends,const unsigned char *run_modes,size_t run_count,
     const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
@@ -325,7 +353,20 @@ int reloq_fa_analyze_runs(const char *text,size_t bytes,int mode,
                 }
                 size_t used=0;int next=mode;
                 int parsed=selector(text+at,end-at,&used,&next);
-                if(!parsed){++at;continue;}
+                if(!parsed) {
+                    size_t last=at;
+                    int foreign=english_run(text,at,end,mode,&last);
+                    if(foreign<0){*error_offset=at;result=foreign;break;}
+                    if(!foreign){at=last>at?last:at+1;continue;}
+                    size_t err=0;
+                    result=segment(&p,text+from,at-from,mode,0,map+from,&err);
+                    if(result){*error_offset=from+err;break;}
+                    if(at>UINT32_MAX || last-at>UINT32_MAX){result=-1;*error_offset=at;break;}
+                    size_t before=p.n;
+                    result=push(&p,RELOQ_FA_PLAN_ENGLISH_TEXT,(uint32_t)at,(uint32_t)(last-at),0,0);
+                    for(size_t j=at;j<last;++j)map[j]=before;
+                    at=last;map[at]=p.n;from=at;continue;
+                }
                 if(parsed<0){*error_offset=at;result=1;break;}
                 size_t err=0;
                 result=segment(&p,text+from,at-from,mode,0,map+from,&err);

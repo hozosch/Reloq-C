@@ -2,6 +2,7 @@
 import json
 import os
 from pathlib import Path
+import struct
 import time
 import traceback
 import ctypes
@@ -96,6 +97,37 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     wx.YieldIfNeeded()
                 require(self.dialog.selected_formant==1,'formant selection failed')
                 require(self.dialog.frequencies[1]==25 and self.dialog.gains_db[1]==1,'arrow edits failed')
+                # Exercise the real import handler and frame choice in NVDA,
+                # including the normal Windows file-dialog path. Only the
+                # modal selections are stubbed to keep this automated.
+                bases=self.dialog._loaded.frequencies
+                data=bytearray(b'SPECTSEQ'+struct.pack('<I',4)+b'test'+struct.pack('<hhhh',2,100,0,0))
+                for frame in range(2):
+                    data.extend(b'\0'*40+struct.pack('<Hhh',0,0,100))
+                    for i in range(9):
+                        frequency=(200 if i==0 else bases[i-1]+(frame+1)*25 if i<=5 else 6000+i*100)
+                        data.extend(struct.pack('<hhhhhh',0,0,frequency,1000,400,400))
+                sample=RESULT.with_name('test-espeak-spectrum')
+                sample.write_bytes(data)
+                class FileSelection:
+                    def __init__(self,*a,**kw):pass
+                    def __enter__(self):return self
+                    def __exit__(self,*a):pass
+                    def ShowModal(self):return wx.ID_OK
+                    def GetPath(self):return str(sample)
+                class FrameSelection(FileSelection):
+                    def SetSelection(self,value):self.selection=value
+                    def GetSelection(self):return 1
+                file_dialog,choice_dialog=wx.FileDialog,wx.SingleChoiceDialog
+                try:
+                    wx.FileDialog,wx.SingleChoiceDialog=FileSelection,FrameSelection
+                    self.dialog.on_import(None)
+                finally:
+                    wx.FileDialog,wx.SingleChoiceDialog=file_dialog,choice_dialog
+                require(self.dialog.frequencies==[50]*5 and self.dialog.gains_db[1]==1,
+                        ('eSpeak import',self.dialog.frequencies,self.dialog.gains_db))
+                self.dialog.frequencies=[0,25,0,0,0];self.dialog.gains_db=[0,1,0,0,0]
+                self.dialog._remember();self.dialog._refresh()
                 from globalPlugins.reloqSoundLab import phonemes
                 options=phonemes.PHONES['Persisch']
                 def choose(key):
@@ -129,5 +161,5 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             require(event.skipped,'arrow was swallowed outside editor')
             self.dialog._closed=True;self.dialog.Destroy()
             RESULT.write_text(json.dumps({'ok':True,'labels':self.names,'f2_f3_audio':True,
-                                          'keyboard_formant_2':True,'project_roundtrip':True}),encoding='utf8')
+                'keyboard_formant_2':True,'project_roundtrip':True,'espeak_import':True}),encoding='utf8')
         except Exception:self.fail()

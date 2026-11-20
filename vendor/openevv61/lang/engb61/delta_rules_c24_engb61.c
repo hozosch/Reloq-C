@@ -18,6 +18,7 @@
    piece of that table and the first gathers the pieces. */
 
 #include <string.h>
+#include "reloq_syllable_trace.h"
 
 #include "delta_rules_engb61.h"
 #include "delta_rules_c.h"
@@ -946,6 +947,8 @@ static int32_t evv_run_filters(void *state, const int32_t *args, int nargs)
 /* insert_acoustic_vals, from f61_06.obj */
 int32_t reloq_engb61_insert_acoustic_vals(void *state, int32_t p0)
 {
+    /* Optional editor capture; ordinary synthesis retains the same path. */
+    reloq61_phone_trace_emit(state,STATE(int32_t,f10),STATE(int32_t,f11));
     const int32_t reloq_machine_ref=
         EVV_AT(void *,p0)==state?p0:REG_REF(state);
     const int reloq_landing_mark=evv_land_mark();

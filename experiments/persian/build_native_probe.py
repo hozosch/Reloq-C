@@ -901,10 +901,40 @@ static int32_t persian_fr_nasal_string(void *state,uint8_t st,uint8_t count,cons
         call = f'    r0 = reloq_call_fifi_fin_ph_{phone}(state, (int32_t)(FIELD(0)));\n'
         if text.count(call) != 1:
             raise RuntimeError('Cannot locate Persian nasal dispatch ' + phone)
+        if phone == 'm':
+            selected_call = '            r0=persian_fr_fren_ph_m(state,(int32_t)(FIELD(0)));\n'
+        else:
+            selected_call = r'''            {
+                /* Keep the French voice source, F0 and lowest resonance.
+                   Blend the higher articulatory targets with the contextual
+                   US alveolar rule, preserving the approved US timing. */
+                int16_t *formants[]={&STATE(int16_t,s450),&STATE(int16_t,s451),
+                    &STATE(int16_t,s452),&STATE(int16_t,s453),
+                    &STATE(int16_t,s454),&STATE(int16_t,s456)};
+                int16_t original[6],french[6];
+                for(int i=0;i<6;++i)original[i]=*formants[i];
+                r0=persian_fr_fren_ph_n(state,(int32_t)(FIELD(0)));
+                if(!r0) {
+                    for(int i=0;i<6;++i){french[i]=*formants[i];*formants[i]=original[i];}
+                    int16_t noise[]={STATE(int16_t,s410),STATE(int16_t,s411),STATE(int16_t,s412),
+                        STATE(int16_t,s439),STATE(int16_t,s440),STATE(int16_t,s441)};
+                    int16_t scratch=STATE_D(int16_t,c14,2);
+                    int32_t english=persian_us_eng_alv_Fv(state,(int32_t)(FIELD(0)));
+                    for(int i=0;i<6;++i) {
+                        int target=*formants[i],source=french[i];
+                        *formants[i]=(int16_t)(!english && source>0 && target>0 ?
+                                               (source+target+1)/2 : source);
+                    }
+                    STATE(int16_t,s410)=noise[0];STATE(int16_t,s411)=noise[1];
+                    STATE(int16_t,s412)=noise[2];STATE(int16_t,s439)=noise[3];
+                    STATE(int16_t,s440)=noise[4];STATE(int16_t,s441)=noise[5];
+                    STATE_D(int16_t,c14,2)=scratch;
+                }
+            }
+'''
         replacement = ('    {\n        const char *selected=getenv("RELOQ_FA_US_NASALS");\n'
-                       "        if (selected && selected[0]=='1' && !selected[1])\n"
-                       f'            r0=persian_fr_fren_ph_{phone}(state,(int32_t)(FIELD(0)));\n'
-                       '        else\n' + call + '    }\n')
+                       "        if (selected && selected[0]=='1' && !selected[1])\n" +
+                       selected_call + '        else\n' + call + '    }\n')
         text = text.replace(call, replacement, 1)
     destination.write_text(text, encoding='utf8')
 
