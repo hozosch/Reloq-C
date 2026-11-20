@@ -39,6 +39,8 @@ def vowel_start(item, syllable):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--library', required=True, type=Path)
+    parser.add_argument('--espeak-library', type=Path)
+    parser.add_argument('--data-parent', type=Path)
     args = parser.parse_args()
     for text, expected in (
             ('12:30', False), ('۱۲:۳۰', False), ('12: 30', True),
@@ -53,7 +55,8 @@ def main():
     assert [part.value for job in jobs for part in job if isinstance(part, EciIndex)] == [7, 8]
 
     voice = make_language_engine(args.library, args.library, None,
-                                 Path('/unavailable-espeak'), Path('/unavailable'))
+                                 args.espeak_library or Path('/unavailable-espeak'),
+                                 args.data_parent or Path('/unavailable'))
     voice.set_parameter(NATIVE_PITCH, 65)
     voice.set_parameter(NATIVE_INFLECTION, 30)
     fk, ek = voice._key(PERSIAN_PROBE.id, '1'), voice._key(US_ENGLISH.id, '1')
@@ -62,6 +65,36 @@ def main():
     en.raw.set_parameter(PROCESS_TAGS, 1)
     api = FrameCapture(fa._dll)
     try:
+        # A Persian in-word onset marker is for the Persian acoustic target,
+        # not for the English contour parser. In the old proxy the tilde
+        # caused the US parser to spell both tags and introduced false words.
+        for text in ('حداقل', 'حداقلش'):
+            tagged = project((text,), engine._frontend, allow_fallback=False).tagged
+            assert ']~`[' in tagged, (text, tagged)
+            parts = indexed_us_proxy(tagged, en, (1,))
+            proxy = ''.join(part for part in parts if isinstance(part, str))
+            assert '~' not in proxy, (text, proxy)
+            displayed = en._phonemes_for_probe(proxy)
+            words = re.findall(r'`\[([^]]+)\]', displayed)
+            assert len(words) == 2 and all(re.search(r'\.[012]', word) for word in words), (text, proxy, displayed)
+            assert [part.value for part in parts if isinstance(part, EciIndex)] == [1]
+
+        # Exercise the actual sentence path as well as its isolated proxy.
+        # The reported sentence has an unfamiliar proper name; use the real
+        # fallback only where the test environment supplies it explicitly.
+        sentences = ['حداقل', 'تو این فصل هروقت گلزنی کرده تیم با اختلاف حداقل بالای دوگل بازی رو برده.']
+        if args.espeak_library and args.data_parent:
+            sentences.append('بیفوما تو این فصل هروقت گلزنی کرده تیم با اختلاف حداقل بالای دوگل بازی رو برده.')
+        for sentence in sentences:
+            seen = []
+            def track(*parameters, **keywords):
+                result = fit_us_word_pitch(*parameters, **keywords)
+                seen.append((len(parameters[0].syllables), len(parameters[2].syllables), result))
+                return result
+            audio = bytearray()
+            with patch.object(continuous_driver, 'fit_us_word_pitch', side_effect=track):
+                assert voice.speak((sentence,), audio.extend, lambda _: None) and audio, sentence
+            assert any(target and target == donor and fitted for target, donor, fitted in seen), (sentence, seen)
         for sample_rate in (0, 3, 6):
             voice.set_parameter(SAMPLE_RATE, sample_rate)
             for speed in (45, 65, 90):

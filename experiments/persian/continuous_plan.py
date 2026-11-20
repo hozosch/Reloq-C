@@ -261,7 +261,13 @@ def persian_proxy_for_english(text, en, *, mark_weak=False):
         output.append(tag)
         cursor = match.end()
     output.append(text[cursor:])
-    return word_controls(''.join(output))
+    # The native Persian frontend uses this exact in-word marker between
+    # two generated tags to preserve the following vowel onset. It belongs
+    # to Persian acoustics, not to the silent English contour text: leaving
+    # it there makes the US parser spell the tilde and surrounding tags.
+    # Replace only the internal marker; the Persian target keeps its onset.
+    proxy = re.sub(r'(?<=\])~(?=`\[)', ' ', ''.join(output))
+    return word_controls(proxy)
 
 
 def _spelling_proxy(text, segment, spelling_spans):
