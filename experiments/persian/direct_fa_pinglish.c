@@ -209,10 +209,7 @@ int reloq_fa_pinglish_word(const char *word,size_t bytes,char *output,size_t cap
         starts[i]=vowels[i]-onset;
     }
     starts[nv]=count;
-    /* If no lexical or morphological entry is known, use Persian's usual
-     * final word accent. Known weak words, suffixes and exceptional stress
-     * have already gone through the shared Persian word pipeline above. */
-    size_t used=0,primary=nv-1;
+    size_t used=0,primary=nv>1?nv-2:0;
     if(put(output,capacity,&used,'`') || put(output,capacity,&used,'['))return -2;
     for(size_t i=0;i<nv;++i) {
         char stress=i==primary?'1':(i+1<primary && !(i%2))?'2':'0';
