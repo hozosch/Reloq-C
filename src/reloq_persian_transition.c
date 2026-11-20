@@ -11,7 +11,7 @@ struct unvoiced_lead {
 
 /* Identify the actual source transition, never relying on a spelling alone. */
 static int find_unvoiced_lead(const struct reloq_fa_frame *frames,size_t first,
-    size_t end,unsigned char phone,struct unvoiced_lead *lead)
+    size_t end,unsigned char phone,double minimum,struct unvoiced_lead *lead)
 {
     double elapsed=0;
     float peak=0;
@@ -20,9 +20,9 @@ static int find_unvoiced_lead(const struct reloq_fa_frame *frames,size_t first,
         if(!isfinite(c[0]) || c[0]<=0 || c[0]>20 || !isfinite(c[2]) ||
            !isfinite(c[7]) || !isfinite(c[8]))return -1;
         if(c[2]<=0) {
-            int expected=(phone=='f' || phone=='s' || phone=='S') ? c[8]>=20 :
+            int expected=(phone=='f' || phone=='s' || phone=='S' || phone=='G') ? c[8]>=20 :
                 phone=='h' ? c[7]>0 : c[7]==0 && c[8]==0;
-            if(!expected || elapsed<8 || elapsed>120)return 0;
+            if(!expected || elapsed<minimum || elapsed>120)return 0;
             lead->end=i;lead->duration=elapsed;lead->initial_noise=peak;
             lead->onset_noise=c[8];lead->release=-1;lead->closure=0;
             if(phone=='t' || phone=='p' || phone=='k') {
@@ -50,7 +50,7 @@ static int same_unvoiced_context(const struct reloq_fa_frame *reference,
     size_t first,size_t end,unsigned char phone,const struct unvoiced_lead *target)
 {
     struct unvoiced_lead donor;
-    int found=find_unvoiced_lead(reference,first,end,phone,&donor);
+    int found=find_unvoiced_lead(reference,first,end,phone,8,&donor);
     /* A neutral proxy is not evidence that the requested consonant has no
      * lead-in. Distinguish that from a real but incompatible onset. */
     if(found<0)return -1;
@@ -103,7 +103,7 @@ int reloq_persian_plan_unvoiced_onsets(struct reloq_fa_frame *frames,size_t coun
     for(size_t i=0;i<segments;++i) {
         if(ends[i]<=previous || ends[i]>count)return -1;
         unsigned char phone=onsets[i]&127;
-        if(phone && !strchr("fstpkSh",phone))return -1;
+        if(phone && !strchr("fstpkShG",phone))return -1;
         previous=ends[i];
     }
     if(previous!=count)return -1;
@@ -118,12 +118,18 @@ int reloq_persian_plan_unvoiced_onsets(struct reloq_fa_frame *frames,size_t coun
         unsigned char phone=onsets[edge]&127;
         if(!phone)continue;
         size_t boundary=ends[edge-1],end=ends[edge];
-        if(frames[boundary-1].controls[2]<=0)continue;
+        int voiced_before=frames[boundary-1].controls[2]>0;
+        /* A silent or noisy English stop cannot legitimately continue as a
+         * voiced vowel before a voiceless Persian onset. The target context
+         * can nevertheless contain such a stale vowel at the join. */
+        if(!voiced_before && !(onsets[edge]&128))continue;
+        if(phone=='G' && voiced_before)continue; /* keep the Ach path */
         struct unvoiced_lead target;
-        int found=find_unvoiced_lead(frames,boundary,end,phone,&target);
+        int found=find_unvoiced_lead(frames,boundary,end,phone,voiced_before?8:0.5,&target);
         if(found<0)return -1;
         if(!found)continue;
-        if((onsets[edge]&128) && reference && reference_edges[edge]<reference_edges[edge+1]) {
+        if(voiced_before && (onsets[edge]&128) && reference &&
+           reference_edges[edge]<reference_edges[edge+1]) {
             int same=same_unvoiced_context(reference,reference_edges[edge],
                 reference_edges[edge+1],phone,&target);
             if(same<0)return -1;

@@ -25,7 +25,7 @@ def word(phone, lead=14, burst=65):
         return ([row(52, 34, 0) for _ in range(lead)] +
                 [row(0, 0, 0) for _ in range(32)] +
                 [row(0, 0, burst)] + [row(0, 47, 50)] + [row(50, 34, 0)] * 4)
-    if phone in 'fsS':
+    if phone in 'fsSG':
         return ([row(52, 34, min(60, 4 * i)) for i in range(lead)] +
                 [row(0, 0, 60)] * 5 + [row(50, 34, 0)] * 4)
     return ([row(52, 34, 0) for _ in range(lead)] +
@@ -50,13 +50,14 @@ def main():
             ctypes.POINTER(ctypes.c_size_t))
         function.restype = ctypes.c_int
 
-        def check(phone, target, donor, keep):
-            left = [row(53, 34, 0) for _ in range(10)]
+        def check(phone, target, donor, keep, *, unvoiced_before=False, english_before=True):
+            left = [row(53, 34, 0) for _ in range(9)] + [
+                row(0, 0, 55) if unvoiced_before else row(53, 34, 0)]
             frames = (NativeFrame * (len(left) + len(target)))(*left, *target)
             reference = (NativeFrame * (len(left) + len(donor)))(*left, *donor)
             ends = (ctypes.c_size_t * 2)(len(left), len(frames))
             edges = (ctypes.c_size_t * 3)(0, len(left), len(reference))
-            onsets = (ctypes.c_ubyte * 2)(0, ord(phone) | 128)
+            onsets = (ctypes.c_ubyte * 2)(0, ord(phone) | (128 if english_before else 0))
             counts, removed, total = (ctypes.c_size_t * 2)(), (ctypes.c_double * 2)(), ctypes.c_size_t()
             original = bytes(frames)
             assert function(frames, len(frames), ends, 2, onsets, reference, len(reference),
@@ -87,6 +88,14 @@ def main():
         discontinuous[0].controls[2] = 20
         check('f', discontinuous, word('h'), False)
         check('p', word('p', burst=5), word('h'), False)
+        # After an actual voiceless English release, a stale voiced vowel is
+        # not a permissible lead-in to a voiceless Persian consonant, even
+        # if the separate donor also contains that stale material.
+        for phone in 'tpkfsShG':
+            check(phone, word(phone), word(phone), False, unvoiced_before=True)
+            check(phone, word(phone), word(phone), True,
+                  unvoiced_before=True, english_before=False)
+        check('h', word('h', lead=1), word('h'), False, unvoiced_before=True)
         print('Passed native onset planning, matching/mismatched references and preserved source frames.')
 
 

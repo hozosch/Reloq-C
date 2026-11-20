@@ -424,14 +424,14 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
         def check_cancel():
             if owner._cancelled.is_set():
                 raise InterruptedError('sentence planning was cancelled')
-        def start_prefix(item, bounds, source_marks, capture_api, *, minimum_ms=60):
+        def start_prefix(item, bounds, source_marks, capture_api, *, minimum_ms=60, first_word=False):
             # Only the selected English-to-Ach transition can reach as far
             # as 200 ms back into the first segment. Other switch edits stay
             # within 30 ms; keep a 60-ms safety margin for those and start
             # short labels without changing any frames near their boundary.
             ach_boundary = (sentence[0].language == 'en-us' and sentence[1].language == 'fa' and
                             re.match(r'^\s*`\[\.[012]G', sentence[1].text) is not None)
-            reserve = 250 if ach_boundary else 60
+            reserve = 25 if first_word else 250 if ach_boundary else 60
             boundary_ms = round(bounds[1] * 1000 / rate)
             first_end = bisect_left(item.ticks, boundary_ms)
             first = bisect_left(item.ticks, max(0, boundary_ms - reserve))
@@ -449,7 +449,10 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
             for segment, offset, _order, mark, value in source_marks:
                 if segment:
                     continue
-                source = bisect_left(item.ticks, round(item.indexes[mark] * 1000 / rate))
+                if first_word and offset == len(sentence[0].text):
+                    continue  # The actual segment end is captured later.
+                source = (0 if offset == 0 else
+                          bisect_left(item.ticks, round(item.indexes[mark] * 1000 / rate)))
                 local = (0 if offset == 0 else first_end if offset == len(sentence[0].text) else
                          max(0, min(first_end, source)))
                 positions.append((local, value))
@@ -482,6 +485,7 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
             stream = FrameStream(first_voice.raw, on_pcm, on_index, cancelled=owner._cancelled)
             stream_state.update(stream=stream, item=item, end=first_end, first=first,
                                 positions=positions, prefix_complete=False, finishing=False,
+                                partial=first_word,
                                 prefix_bytes=ctypes.string_at(item.frames, first * ctypes.sizeof(NativeFrame)))
             stream.append(item.frames, 0, first, tuple((at, value) for at, value in positions if at < first))
             flush_prefix = getattr(on_pcm, 'flush_prefix', None)
@@ -494,6 +498,23 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
             if item.ticks[first] - item.ticks[0] >= 250:
                 warm_parallel()
             return True
+        def start_first_word(item, bounds, source_marks, capture_api):
+            return start_prefix(item, bounds, source_marks, capture_api,
+                                minimum_ms=20, first_word=True)
+        def complete_first_word(item, bounds, source_marks, capture_api):
+            if not stream_state.get('partial'):
+                return
+            end = bisect_left(item.ticks, round(bounds[1] * 1000 / rate))
+            positions = []
+            for segment, offset, _order, mark, value in source_marks:
+                if segment:
+                    continue
+                source = (0 if offset == 0 else
+                          bisect_left(item.ticks, round(item.indexes[mark] * 1000 / rate)))
+                local = (0 if offset == 0 else end if offset == len(sentence[0].text) else
+                         max(0, min(end, source)))
+                positions.append((local, value))
+            stream_state.update(item=item, end=end, positions=positions, partial=False)
         tags = tuple(_TAG.finditer(sentence[0].text)) if sentence[0].language == 'fa' else ()
         first_has_glide = any(_FINAL_U.search(left.group()) and _INITIAL_A.match(right.group()) and
                               sentence[0].text[left.end():right.start()].isspace()
@@ -522,6 +543,9 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
                             guarded_spans=guarded, spelling_spans=spelling, check=check_cancel,
                             trusted_fa=not validate, validate_in_capture=validate,
                             start_prefix=start_prefix if can_stream else None, parallel_pilot=parallel_pilot,
+                            start_first_word=start_first_word if can_stream else None,
+                            complete_first_word=complete_first_word,
+                            parallel_target=getattr(owner, '_persian_capture_worker', None),
                             fast_initial=bool(os.environ.get('RELOQ_FA_STREAM_PREFIX', '1') == '1' and
                                               parallel_pilot and can_stream and
                                               (sentence[0].language == 'fa' or
@@ -595,6 +619,10 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
                 # A replay failure may already have emitted part of this
                 # slice. Never restart it or duplicate audible speech.
                 raise
+            if stream_state.get('partial'):
+                # A worker failed before providing the remaining first
+                # segment. Never report a silently truncated utterance.
+                return False
             # Once the initial audio has escaped, never repeat it by falling
             # back to the whole job. Complete the first native context, then
             # speak the remaining original text with its own language engine.
@@ -602,6 +630,11 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
             if stream.voice._callback_error is not None:
                 raise stream.voice._callback_error
             first = stream_state['first']
+            fallback_capture = FrameCapture(fa._dll)
+            if fallback_capture.recompute_frication is not None:
+                fallback_capture.recompute_frication(stream_state['item'].frames, stream_state['end'])
+            if original_fa_clock:
+                _hold_acoustic_clock(stream_state['item'].frames, 0, stream_state['end'])
             tail = tuple((at - first, value) for at, value in stream_state['positions'] if at >= first)
             stream.append(stream_state['item'].frames, first, stream_state['end'], tail)
             stream.close(flush=True)

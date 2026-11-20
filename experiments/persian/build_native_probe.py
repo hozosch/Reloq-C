@@ -1579,6 +1579,7 @@ static void persian_auto_h_insert(void *state)
         raise RuntimeError('Cannot locate the Finnish stop-transition duration')
     text = text.replace(include, include +
                         'extern int32_t persian_us_get_eng_stop_trans_dur(void *,int32_t,int32_t);\n'
+                        'extern int32_t persian_us_get_eng_vow_trans_dur(void *,int32_t,int32_t);\n'
                         'extern int32_t persian_us_get_eng_fric_trans_dur(void *,int32_t,int32_t);\n'
                         'extern int32_t persian_us_get_eng_nas_trans_dur(void *,int32_t,int32_t);\n'
                         'extern int32_t persian_us_eng_trans_features(void *,int32_t);\n', 1)
@@ -1612,6 +1613,23 @@ static void persian_auto_h_insert(void *state)
                       (int32_t)(RELOQ61_WORKSPACE_REF(frame,reloq_workspace_ref,192)));
         else
 ''' + stop_call + '    }\n', 1)
+    vow_call = ('    r0 = reloq_call_fifi_get_fin_vow_trans_dur(state, (int32_t)(FIELD(0)), '
+                '(int32_t)(RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 192)));\n')
+    if text.count(vow_call) != 1:
+        raise RuntimeError('Cannot locate the vowel-transition duration')
+    text = text.replace(vow_call, r'''    {
+        const char *us=getenv("RELOQ_FA_US_STOPS");
+        delta_state *d=state;
+        int32_t next=persian_auto_h_phone(d,STATE(int32_t,w63),0);
+        unsigned phone=next ? persian_auto_h_field(next,0) : 0;
+        /* Preserve the total vowel-plus-transition time while borrowing the
+           English vowel-to-D balance. This affects the transition, not the
+           stop release or the separate H impulse following it. */
+        if (us && us[0]=='1' && !us[1] && phone==5)
+            r0=persian_us_get_eng_vow_trans_dur(state,(int32_t)(FIELD(0)),
+                      (int32_t)(RELOQ61_WORKSPACE_REF(frame,reloq_workspace_ref,192)));
+        else
+''' + vow_call + '    }\n', 1)
     fric_call = ('    r0 = reloq_call_fifi_get_fin_fric_trans_dur(state, (int32_t)(FIELD(0)), '
                  '(int32_t)(RELOQ61_WORKSPACE_REF(frame, reloq_workspace_ref, 192)));\n')
     if text.count(fric_call) != 1:
@@ -2472,7 +2490,7 @@ static int32_t persian_us_mark(void *state,uint8_t st,uint8_t field,uint8_t valu
     nasal_formants = ('ga_ph_m', 'ga_ph_n', 'ga_ph_y')
     acoustic = tuple('eng_ph_' + phone for phone in 'ptkbdgfvszSZmny')
     durations = tuple('eng_ph_' + phone + '_dur' for phone in 'ptkbdgfvszSZmn')
-    exported = durations + ('get_eng_stop_trans_dur', 'get_eng_fric_trans_dur',
+    exported = durations + ('get_eng_stop_trans_dur', 'get_eng_vow_trans_dur', 'get_eng_fric_trans_dur',
                             'get_eng_nas_trans_dur', 'eng_trans_features')
     names = helpers + nasal_formants + acoustic + exported
     pieces = []

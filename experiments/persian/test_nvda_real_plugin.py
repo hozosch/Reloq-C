@@ -345,6 +345,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_IR', 'نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از NVDA', 'pipeline_user_latency'),
                           ('fa_IR', 'نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از NVDA', 'pipeline_user_latency'),
                           ('fa_IR', 'اکنون نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از NVDA', 'pipeline_user_latency'),
+                          ('fa_IR', 'پخش کردنِ صدا هنگامِ آغازِ کار و خروج از NVDA', 'pipeline_user_latency'),
+                          ('fa_IR', 'بررسیِ خودکارِ به‌روزرسانیها برای NVDA', 'pipeline_user_latency'),
+                          ('fa_IR', 'پخش کردنِ صدا هنگامِ آغازِ کار و خروج از NVDAبررسیِ خودکارِ به‌روزرسانیها برای NVDA', 'pipeline_user_latency'),
                           ('fa_IR', 'NVDA نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از', 'pipeline_mixed_latency'),
                           ('fa_IR', 'NVDA سلام دنیا', 'pipeline_mixed_latency'),
                           ('fa_IR', 'NVDA خوب', 'pipeline_mixed_latency'),
@@ -1190,9 +1193,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                         '`[.0zA.0Gi.0re.0So.1de.0je]' not in tags or
                         '`[.0mo.0di.0ri.0jA.1ti]' not in tags):
                     raise AssertionError('NVDA lost reported sentence morphology or stress: ' + ascii(tags))
-                if spelling == 'pipeline_user_latency' and any(tag not in tags for tag in (
+                if spelling == 'pipeline_user_latency' and 'نشان دادَنِ' in text and any(tag not in tags for tag in (
                         '`[.0ne.1San]', '`[.1da.0dA.2ne]', '`[.0hen.1ga.0me]', '`[.0Ga.1reJ]')):
                     raise AssertionError('NVDA spelled part of the reported latency example: ' + ascii(tags))
+                if spelling == 'pipeline_user_latency' and 'پخش کردنِ' in text and any(tag not in tags for tag in (
+                        '`[.1pAGS]', '`[.0kAr.1dA.0ne]', '`[.0hen.1ga.0me]')):
+                    raise AssertionError('NVDA spelled part of the playback label: ' + ascii(tags))
+                if spelling == 'pipeline_user_latency' and 'بررسیِ' in text and any(tag not in tags for tag in (
+                        '`[.0bAr.0rA.1si.0e]', '`[.0God.1ka.0re]')):
+                    raise AssertionError('NVDA spelled part of the update label: ' + ascii(tags))
                 if spelling == 'pipeline_symbols' and ('`[.0sA.1lam]' not in tags or
                         '`[.0do.1nja]' not in tags or '`[.1ta.0vu.2merk.0ki]' in tags):
                     raise AssertionError('NVDA punctuation damaged a Persian word: ' + ascii(tags))

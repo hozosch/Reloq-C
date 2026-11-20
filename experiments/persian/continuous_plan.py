@@ -754,7 +754,8 @@ class SentencePlan:
 def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarded_spans=(),
                  spelling_spans=(), check=None, trusted_fa=False, validate_in_capture=False,
                  start_prefix=None, parallel_pilot=None, fast_initial=False, fast_minimum_ms=300,
-                 us_pilot=False, control_only_pilot=True):
+                 us_pilot=False, control_only_pilot=True, parallel_target=None,
+                 start_first_word=None, complete_first_word=None):
     parts = tuple(parts)
     if not parts or len(parts) > 32 or {p.language for p in parts} != {'fa', 'en-us'}:
         raise ValueError('expected a bounded mixed English/Persian clause')
@@ -893,11 +894,24 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
                                        guarded_spans, spelling_spans)
                     for language in before_replay}
         voices = tuple(sorted(voices, key=lambda pair: pair[0] != parts[0].language))
-    pending, early = None, None
+    pending, pending_target, early = None, None, None
+    word_started = False
+    first_tags = tuple(_TAG.finditer(parts[0].text)) if parts[0].language == 'fa' else ()
+    first_word_snapshot = bool(
+        fast_initial and us_pilot and trusted_fa and start_first_word is not None and
+        complete_first_word is not None and parallel_pilot is not None and parallel_target is not None and
+        len(first_tags) >= 4 and not spelling_spans and not guarded_spans and not all_bracketed and
+        capture_api._current is not None and capture_api._store_pcm is not None and
+        capture_api._stored_pcm is not None and capture_api._sample_count is not None and
+        all(segment != 0 or offset in (0, len(parts[0].text))
+            for segment, offset, _order, _mark, _value in source_marks) and
+        all(re.fullmatch(r'\s*(?:`00\s*)?(?:[()\[\]{},،]\s*(?:`00\s*)?)*',
+                         parts[0].text[left.end():right.start()])
+            for left, right in zip(first_tags, first_tags[1:])))
     fast_pilot = bool(fast_initial and start_prefix is not None and parallel_pilot is not None and
                       capture_api._current is not None and capture_api._store_pcm is not None and
                       capture_api._stored_pcm is not None and capture_api._sample_count is not None and
-                      not all_bracketed)
+                      not all_bracketed and not first_word_snapshot)
     def submit_pilot(*, audio):
         pilot_voice = en if us_pilot else fa
         return parallel_pilot.submit(parts=pilot_parts, prefix=pilot_voice.prefix,
@@ -919,8 +933,8 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
             if check:
                 check()
             return get(en if us_pilot else fa, pilot_parts, audio=not silent_pilot), True
-    snapshot_queue = queue.Queue() if fast_pilot else None
-    snapshot_release = threading.Event() if fast_pilot else None
+    snapshot_queue = queue.Queue() if fast_pilot or first_word_snapshot else None
+    snapshot_release = threading.Event() if fast_pilot or first_word_snapshot else None
     def publish_snapshot(value):
         # Let the requesting thread replay the safe prefix before this
         # audio-producing worker continues and reacquires the GIL for PCM
@@ -930,7 +944,69 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
         while not snapshot_release.wait(.01):
             if fa.owner._cancelled.is_set():
                 break
-    if parallel_pilot is not None and not all_bracketed:
+    if first_word_snapshot:
+        # Capture the identical full contexts on independent handles. Both
+        # snapshots include the complete first word plus one word of lookahead;
+        # the unfinished captures are then reused for the rest of the plan.
+        def publish_word(kind):
+            def publish(value):
+                snapshot_queue.put((kind, value))
+                while not snapshot_release.wait(.01):
+                    if fa.owner._cancelled.is_set():
+                        break
+            return publish
+        try:
+            at = word_markers[0, 2]
+            pending_target = parallel_target.submit_snapshot(
+                parts=prepared['fa'], prefix=fa.prefix, validate=False, source='',
+                parameters=fa.owner._engine_parameters[fa.key[0]], dictionary=fa.owner._dictionary_path,
+                cancelled=fa.owner._cancelled, maximum=maximum, snapshot_at=at,
+                on_snapshot=publish_word('target'), audio=False)
+            pending = parallel_pilot.submit_snapshot(
+                parts=pilot_parts, prefix=en.prefix, validate=False, source='',
+                parameters=en.owner._engine_parameters[en.key[0]], dictionary=fa.owner._dictionary_path,
+                cancelled=fa.owner._cancelled, maximum=maximum, snapshot_at=at,
+                on_snapshot=publish_word('donor'), audio=True)
+            pending_target.add_done_callback(lambda _future: snapshot_queue.put(('target_done', None)))
+            pending.add_done_callback(lambda _future: snapshot_queue.put(('donor_done', None)))
+            snapshots, finished = {}, set()
+            while len(snapshots) < 2 and not any(name + '_done' in finished and name not in snapshots
+                                                 for name in ('target', 'donor')):
+                if check:
+                    check()
+                try:
+                    kind, value = snapshot_queue.get(timeout=.01)
+                except queue.Empty:
+                    continue
+                if value is None:
+                    finished.add(kind)
+                else:
+                    snapshots[kind] = value
+            if len(snapshots) == 2:
+                partial = CapturedRows.from_capture(snapshots['target'], native=capture_api.frame_ticks)
+                donor = CapturedRows.from_capture(snapshots['donor'], native=capture_api.frame_ticks)
+                mark = word_markers[0, 1]
+                if mark in partial.indexes and mark in donor.indexes:
+                    fitted = fit_us_word_pitch(
+                        partial, (0, partial.indexes[mark]), donor, (0, donor.indexes[mark]),
+                        (), (), rate, capture_api, check,
+                        syllable_counts=(len(_SYLLABLE.findall(first_tags[0].group(1))),))
+                    if fitted:
+                        word_started = bool(start_first_word(
+                            partial, (0, partial.indexes[mark]), source_marks, capture_api))
+        except BaseException:
+            snapshot_release.set()
+            for worker, future in ((parallel_target, pending_target), (parallel_pilot, pending)):
+                if future is not None:
+                    worker.cancel()
+                    try:
+                        future.result()
+                    except BaseException:
+                        pass
+            raise
+        finally:
+            snapshot_release.set()
+    elif parallel_pilot is not None and not all_bracketed:
         if check:
             check()
         try:
@@ -954,8 +1030,27 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
         for language, voice in voices:
             planned = prepared[language] if language in prepared else _context(
                 parts, language, en, fa, word_markers, source_marks, guarded_spans, spelling_spans)
-            item = get(voice, planned, audio=False)
+            if language == 'fa' and pending_target is not None:
+                future, pending_target = pending_target, None
+                try:
+                    item = CapturedRows.from_capture(future.result(), native=capture_api.frame_ticks)
+                except (ValueError, RuntimeError, OSError):
+                    if check:
+                        check()
+                    if word_started:
+                        retry = parallel_target.submit(
+                            parts=planned, prefix=fa.prefix, validate=False,
+                            parameters=fa.owner._engine_parameters[fa.key[0]],
+                            dictionary=fa.owner._dictionary_path, cancelled=fa.owner._cancelled,
+                            maximum=maximum, audio=False)
+                        item = CapturedRows.from_capture(retry.result(), native=capture_api.frame_ticks)
+                    else:
+                        item = get(voice, planned, audio=False)
+            else:
+                item = get(voice, planned, audio=False)
             bounds = _edges(item, len(parts))
+            if word_started and language == 'fa':
+                complete_first_word(item, bounds, source_marks, capture_api)
             if pending is not None and fast_pilot:
                 fast_pilot = False
                 snapshot = None
@@ -1043,7 +1138,7 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
                                        only=(len(parts) - 1,), retain_brackets=False)
                     fit_us_segments(item, bounds, pilot)
             contexts[language], edges[language] = item, bounds
-            if start_prefix is not None and language == parts[0].language and early is None:
+            if start_prefix is not None and language == parts[0].language and early is None and not word_started:
                 start_prefix(item, bounds, source_marks, capture_api)
     finally:
         if snapshot_release is not None:
@@ -1052,6 +1147,12 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
             parallel_pilot.cancel()
             try:
                 pending.result()
+            except BaseException:
+                pass
+        if pending_target is not None:
+            parallel_target.cancel()
+            try:
+                pending_target.result()
             except BaseException:
                 pass
     chunks, counts, firsts = [], [], []
@@ -1409,7 +1510,8 @@ def direct_unvoiced_onsets(plan, parts, en, rate):
             except (ValueError, RuntimeError, OSError, UnicodeError):
                 continue
         first_tag = _TAG.search(source)
-        onset = re.match(r'\.[012]([fstpkSh])', first_tag.group(1)) if first_tag else None
+        alphabet = 'fstpkShG' if parts[edge - 1].language == 'en-us' and part.language == 'fa' else 'fstpkSh'
+        onset = re.match(r'\.[012]([' + alphabet + '])', first_tag.group(1)) if first_tag else None
         if onset:
             onsets[edge] = ord(onset.group(1))
             if parts[edge - 1].language == 'en-us' and part.language == 'fa':
