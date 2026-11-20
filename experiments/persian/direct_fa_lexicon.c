@@ -191,6 +191,75 @@ static int explicit_vowelled_word(const char *word,size_t bytes,char *output,siz
     return 1;
 }
 
+/* Decode completely indicated Persian orthography, including long-vowel
+ * carriers and the consonantal و/ی/ه. The same rule is used for written
+ * Persian and for the explicitly marked spelling made by Pinglish. Reject an
+ * unmarked internal consonant that could hide an unknown short vowel. */
+static int fully_vowelled_word(const char *word,size_t bytes,char *output,size_t capacity)
+{
+    struct unit {char consonant,vowel;unsigned char sukun;} units[256];
+    const unsigned char *input=(const unsigned char *)word;
+    size_t at=0,count=0,vowels=0;int explicit_marks=0;
+    if(!word || !bytes || !output || !capacity)return -1;
+    while(at<bytes) {
+        if(count==sizeof units/sizeof units[0])return 0;
+        uint32_t cp=explicit_arabic_scalar(input,bytes,&at);
+        struct unit u={explicit_consonant(cp),0,0};
+        if(cp==0x0647)u.consonant='h';
+        else if(cp==0x0648)u.consonant='v';
+        else if(cp==0x06cc || cp==0x064a)u.consonant='j';
+        else if(cp==0x0627)u.consonant=0;
+        else if(cp==0x0622) {u.consonant=0;u.vowel='a';explicit_marks=1;}
+        else if(!u.consonant)return 0;
+        if(at<bytes && !u.vowel) {
+            size_t next=at;uint32_t mark=explicit_arabic_scalar(input,bytes,&next);
+            if(mark==0x064e || mark==0x064f || mark==0x0650) {
+                u.vowel=mark==0x064e?'A':mark==0x064f?'o':'e';
+                explicit_marks=1;at=next;
+                if(at<bytes) {
+                    size_t carrier_end=at;uint32_t carrier=explicit_arabic_scalar(input,bytes,&carrier_end);
+                    size_t after=carrier_end;uint32_t following=after<bytes?
+                        explicit_arabic_scalar(input,bytes,&after):0;
+                    int bare=following!=0x064e && following!=0x064f && following!=0x0650 &&
+                             following!=0x0651 && following!=0x0652;
+                    if(bare && ((mark==0x064e && carrier==0x0627) ||
+                                (mark==0x064f && carrier==0x0648) ||
+                                (mark==0x0650 && (carrier==0x06cc || carrier==0x064a)))) {
+                        u.vowel=mark==0x064e?'a':mark==0x064f?'u':'i';at=carrier_end;
+                    }
+                }
+            } else if(mark==0x0652) {u.sukun=1;explicit_marks=1;at=next;}
+            else if(u.consonant && (mark==0x0627 || mark==0x0648 || mark==0x06cc || mark==0x064a)) {
+                size_t after=next;uint32_t following=after<bytes?
+                    explicit_arabic_scalar(input,bytes,&after):0;
+                if(following!=0x064e && following!=0x064f && following!=0x0650 &&
+                   following!=0x0651 && following!=0x0652) {
+                    u.vowel=mark==0x0627?'a':mark==0x0648?'u':'i';at=next;
+                }
+            }
+        }
+        if(!u.consonant && !u.vowel)return 0;
+        if(u.vowel)++vowels;
+        units[count++]=u;
+    }
+    if(!explicit_marks || !vowels)return 0;
+    for(size_t i=0;i<count;++i)if(!units[i].vowel && !units[i].sukun)
+        for(size_t j=i+1;j<count;++j)if(units[j].vowel)return 0;
+    if(count>(SIZE_MAX-4-3*vowels)/2)return -2;
+    if(4+2*count+3*vowels>capacity)return -2;
+    size_t used=0,nucleus=0;output[used++]='`';output[used++]='[';
+    output[used++]='.';output[used++]=vowels==1?'1':'0';
+    for(size_t i=0;i<count;++i) {
+        if(units[i].vowel && nucleus) {
+            output[used++]='.';output[used++]=nucleus+1==vowels?'1':'0';
+        }
+        if(units[i].consonant)output[used++]=units[i].consonant;
+        if(units[i].vowel){output[used++]=units[i].vowel;++nucleus;}
+    }
+    if(count && units[count-1].consonant=='h' && !units[count-1].vowel)output[used++]='w';
+    output[used++]=']';output[used]=0;return 1;
+}
+
 /* This transform is enabled only by the generated per-stem admission bits.
  * It mirrors direct_fa_suffix_rules.candidate, preserving every native phone
  * and length marker while assigning the reference's syllable stresses. */
@@ -461,7 +530,7 @@ static int direct_context_word_exact(const char *word,size_t bytes,int follows_w
      * supplied the written label instead of the combining character. They
      * are complete labels here, never substitutions inside a longer word. */
     static const struct fa_direct_entry vowel_names[]={
-        {"اَ", "`[.1'A:']"}, {"اُ", "`[.1'o:']"}, {"اِ", "`[.1'e:']"},
+        {"اَ", "`[.1A]"}, {"اُ", "`[.1o]"}, {"اِ", "`[.1e]"},
         {"اَن", "`[.1An]"}, {"اُن", "`[.1on]"}, {"اِن", "`[.1en]"},
     };
     for(size_t i=0;i<sizeof vowel_names/sizeof vowel_names[0];++i) {
@@ -1539,6 +1608,27 @@ static int marked_known_initial_vowel(const char *word,size_t bytes,int follows_
     memcpy(output,tag,n+1);return 1;
 }
 
+/* A final written -ina can extend an already known -in stem. Preserve the
+ * stem's verified vowels, move its final n to the new syllable, and use the
+ * normal final stress. Exact dictionary entries take precedence. */
+static int known_in_stem_plus_a(const char *word,size_t bytes,char *output,size_t capacity)
+{
+    static const char ending[]="ینا",alef[]="ا";
+    if(bytes<=sizeof ending-1 || memcmp(word+bytes-(sizeof ending-1),ending,sizeof ending-1))return 0;
+    char tag[2048];size_t stem=bytes-(sizeof alef-1);
+    int result=direct_context_word_exact(word,stem,0,tag,sizeof tag);
+    if(result!=1)return result<0?result:0;
+    size_t n=strlen(tag);
+    if(n<6 || tag[0]!='`' || tag[1]!='[' || tag[n-1]!=']' || tag[n-2]!='n' ||
+       tag[n-3]!='i' || strchr(tag+2,'~'))return 0;
+    for(size_t i=2;i+1<n;++i)if(tag[i]==']' || tag[i]=='[' || tag[i]=='`')return 0;
+    if(n+4>sizeof tag || n+3>=capacity)return -2;
+    for(size_t i=2;i+1<n;++i)
+        if(tag[i]=='.' && tag[i+1]>='0' && tag[i+1]<='2')tag[i+1]='0';
+    memcpy(tag+n-2,".1na]",6);
+    memcpy(output,tag,n+4);return 1;
+}
+
 static int direct_context_depth(const char *word,size_t bytes,int follows_word,
                                 char *output,size_t capacity,unsigned depth)
 {
@@ -1571,6 +1661,10 @@ static int direct_context_depth(const char *word,size_t bytes,int follows_word,
         stress_fused_function_compound(word,bytes,output,depth);
         shorten_verified_compound(word,bytes,output,depth);
     }
+    if(result)return result;
+    result=known_in_stem_plus_a(word,bytes,output,capacity);
+    if(result)return result;
+    result=fully_vowelled_word(word,bytes,output,capacity);
     if(result)return result;
     result=marked_known_initial_vowel(word,bytes,follows_word,output,capacity);
     if(result)return result;

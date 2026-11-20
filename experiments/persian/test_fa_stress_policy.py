@@ -54,6 +54,7 @@ def main():
         # from an unaccented indefinite suffix on an otherwise identical stem.
         'مجازی': '`[.0mA.0Ja.1zi]',
         'آنتی': '`[.1an.0ti]',
+        'سوینا': '`[.0se.0vi.1na]',
         'نازلی': '`[.1naz.0li]',
         # Alif-lam-alif forms with an accented /l/ syllable have a short,
         # unstressed initial vowel, including attached possessives.
@@ -70,7 +71,7 @@ def main():
         'آمد': "`[.0'a:'.1mAd]",
         'می روم': '`[.1mi] `00 `[.0rA.0vAm]',
         'نمی روم': '`[.1ne.0mi] `00 `[.0rA.0vAm]',
-        'اَ': "`[.1'A:']", 'اُ': "`[.1'o:']", 'اِ': "`[.1'e:']",
+        'اَ': '`[.1A]', 'اُ': '`[.1o]', 'اِ': '`[.1e]',
         'اَن': '`[.1An]', 'اُن': '`[.1on]', 'اِن': '`[.1en]',
         'و': '`[.1vA]',
         'و کتاب': '`00 `[.0vA] `[.0ke.1tab]',

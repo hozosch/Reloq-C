@@ -58,6 +58,12 @@ def main():
         assert pinglish(roman.upper()) == pinglish(roman), roman
     for word in ('phone', 'this', 'zooon'):
         assert pinglish(word)[0] == 0, word
+    # Unknown spellings are represented with Persian letters and explicit
+    # vowel marks before the shared Persian text parser is called.
+    for roman, script in (('sevinaa', 'سِوینا'), ('zarakhi', 'زَرَخِی'),
+                          ('parlap', 'پَرْلَپْ'), ('mergish', 'مِرْگِیشْ')):
+        assert pinglish(roman) == (1, persian(script)), (roman, script, pinglish(roman), persian(script))
+    assert persian('سوینا') == persian('سِوینا')
     print(f'Passed {checked} native Pinglish/Persian word comparisons and morphology checks.')
 
 

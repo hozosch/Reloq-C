@@ -1510,7 +1510,7 @@ def direct_unvoiced_onsets(plan, parts, en, rate):
             except (ValueError, RuntimeError, OSError, UnicodeError):
                 continue
         first_tag = _TAG.search(source)
-        alphabet = 'fstpkShG' if parts[edge - 1].language == 'en-us' and part.language == 'fa' else 'fstpkSh'
+        alphabet = 'fstpkShGbdg' if parts[edge - 1].language == 'en-us' and part.language == 'fa' else 'fstpkSh'
         onset = re.match(r'\.[012]([' + alphabet + '])', first_tag.group(1)) if first_tag else None
         if onset:
             onsets[edge] = ord(onset.group(1))

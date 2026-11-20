@@ -1,6 +1,5 @@
-/* Direct Pinglish phoneme rules, derived from eSpeak NG fa_rules (GPL-3.0+).
- * English ph/th exceptions are routed by the caller. The returned sequence
- * uses the private Finnish-based Persian phonemes and needs no eSpeak state. */
+/* Pinglish spelling recognition and its shared Persian orthography path.
+ * English ph/th exceptions are routed by the caller. */
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -101,10 +100,70 @@ static int persian_dictionary_pinglish(const char *key,char *output,size_t capac
     return 0;
 }
 
-static int put(char *output,size_t capacity,size_t *used,char c)
+struct pinglish_unit {const char *letter;char vowel;};
+
+static int append_text(char *out,size_t capacity,size_t *used,const char *s)
 {
-    if(*used+1>=capacity)return -2;
-    output[(*used)++]=c;output[*used]=0;return 0;
+    size_t n=strlen(s);
+    if(n>=capacity-*used)return -2;
+    memcpy(out+*used,s,n);*used+=n;out[*used]=0;return 0;
+}
+
+/* Represent each unambiguous Latin sound by a Persian letter, adding short
+ * vowel and sukun marks where a bare Persian spelling would be ambiguous.
+ * This produces text for the same Persian word analyzer as native script. */
+static int spelled_persian(const char *word,size_t bytes,char *output,size_t capacity)
+{
+    struct pinglish_unit units[1024];size_t count=0,vowels=0;
+    for(size_t i=0;i<bytes;) {
+        char c=lower(word[i]),n=i+1<bytes?lower(word[i+1]):0;
+        char vowel=0;size_t advance=1;
+        if(c=='a' && n=='a'){vowel='a';advance=2;}
+        else if(c=='e' && n=='e'){vowel='i';advance=2;}
+        else if(c=='o' && (n=='o'||n=='u')){vowel='u';advance=2;}
+        else if(c=='a')vowel='A';
+        else if(c=='e')vowel='e';
+        else if(c=='i')vowel='i';
+        else if(c=='o')vowel='o';
+        else if(c=='u')vowel='u';
+        if(vowel) {
+            if(!count || units[count-1].vowel) {
+                if(count==sizeof units/sizeof units[0])return 0;
+                units[count++]=(struct pinglish_unit){"ا",0};
+            }
+            units[count-1].vowel=vowel;++vowels;i+=advance;continue;
+        }
+        const char *letter=NULL,*extra=NULL;
+        if(c=='c' && n=='h'){letter="چ";advance=2;}
+        else if(c=='g' && n=='h'){letter="غ";advance=2;}
+        else if(c=='j' && n=='h'){letter="ژ";advance=2;}
+        else if(c=='k' && n=='h'){letter="خ";advance=2;}
+        else if(c=='s' && n=='h'){letter="ش";advance=2;}
+        else switch(c) {
+        case 'b':letter="ب";break;case 'c':letter=(n=='e'||n=='i'||n=='y')?"س":"ک";break;
+        case 'd':letter="د";break;case 'f':letter="ف";break;case 'g':letter="گ";break;
+        case 'h':letter="ه";break;case 'j':letter="ج";break;case 'k':letter="ک";break;
+        case 'l':letter="ل";break;case 'm':letter="م";break;case 'n':letter="ن";break;
+        case 'p':letter="پ";break;case 'q':letter="ق";break;case 'r':letter="ر";break;
+        case 's':letter="س";break;case 't':letter="ت";break;case 'v':case 'w':letter="و";break;
+        case 'x':letter="ک";extra="س";break;case 'y':letter="ی";break;case 'z':letter="ز";break;
+        default:return 0;
+        }
+        if(count+(extra?2u:1u)>sizeof units/sizeof units[0])return 0;
+        units[count++]=(struct pinglish_unit){letter,0};
+        if(extra)units[count++]=(struct pinglish_unit){extra,0};
+        i+=advance;
+    }
+    if(!vowels)return 0;
+    size_t used=0;
+    for(size_t i=0;i<count;++i) {
+        if(append_text(output,capacity,&used,units[i].letter))return -2;
+        const char *mark=units[i].vowel=='A'?"َ":units[i].vowel=='e'?"ِ":
+            units[i].vowel=='o'?"ُ":units[i].vowel=='a'?"َا":
+            units[i].vowel=='i'?"ِی":units[i].vowel=='u'?"ُو":"ْ";
+        if(append_text(output,capacity,&used,mark))return -2;
+    }
+    return 1;
 }
 
 /* Fold common Latin letters without needing a platform-specific Unicode
@@ -164,60 +223,7 @@ int reloq_fa_pinglish_word(const char *word,size_t bytes,char *output,size_t cap
     pinglish_lookup_key(word,bytes,key);
     int known=persian_dictionary_pinglish(key,output,capacity);
     if(known!=0)return known;
-    char phones[1024],glides[1024]={0};size_t count=0;
-    for(size_t i=0;i<bytes;) {
-        char c=lower(word[i]),n=i+1<bytes?lower(word[i+1]):0;
-        char n2=i+2<bytes?lower(word[i+2]):0;
-        if(c<'a' || c>'z')return 0;
-        if((c=='p'||c=='t') && n=='h')return 0;
-        if(c=='o' && n=='o' && n2=='o')return 0;
-        char p=0;size_t advance=1;
-        if(c=='a' && n=='a'){p='a';advance=2;}
-        else if(c=='c' && n=='h'){p='C';advance=2;}
-        else if(c=='e' && n=='e'){p='i';advance=2;}
-        else if(c=='g' && n=='h'){p='R';advance=2;}
-        else if(c=='j' && n=='h'){p='Z';advance=2;}
-        else if(c=='k' && n=='h'){p='G';advance=2;}
-        else if(c=='o' && (n=='o'||n=='u')){p='u';advance=2;}
-        else if(c=='s' && n=='h'){p='S';advance=2;}
-        else if(c=='c')p=(n=='e'||n=='i'||n=='y')?'s':'k';
-        else if(c=='a')p='A';
-        else if(c=='j')p='J';
-        else if(c=='q')p='R';
-        else if(c=='y')p='j';
-        else if(c=='w')p='v'; /* Closest available Persian approximant. */
-        else if(c=='x') {
-            if(count+2>sizeof phones)return 0;
-            phones[count++]='k';phones[count++]='s';i+=advance;continue;
-        } else p=c;
-        if(count>=sizeof phones)return 0;
-        phones[count]=p;glides[count]=(c=='w');++count;i+=advance;
-    }
-    size_t vowels[512],starts[513],nv=0;
-    for(size_t i=0;i<count;++i) {
-        if(strchr("aAeiou",phones[i])) {
-            if(nv>=sizeof vowels/sizeof vowels[0])return 0;
-            vowels[nv++]=i;
-        }
-    }
-    if(!nv)return 0;
-    starts[0]=0;
-    for(size_t i=1;i<nv;++i) {
-        size_t between=vowels[i]-vowels[i-1]-1;
-        size_t onset=between?1:0;
-        if(between>=2 && (phones[vowels[i]-1]=='j' || glides[vowels[i]-1]))onset=2;
-        starts[i]=vowels[i]-onset;
-    }
-    starts[nv]=count;
-    size_t used=0,primary=nv>1?nv-2:0;
-    if(put(output,capacity,&used,'`') || put(output,capacity,&used,'['))return -2;
-    for(size_t i=0;i<nv;++i) {
-        char stress=i==primary?'1':(i+1<primary && !(i%2))?'2':'0';
-        if(put(output,capacity,&used,'.') || put(output,capacity,&used,stress))return -2;
-        for(size_t j=starts[i];j<starts[i+1];++j) {
-            if(put(output,capacity,&used,phones[j]))return -2;
-            if(phones[j]=='h' && j+1==count && put(output,capacity,&used,'w'))return -2;
-        }
-    }
-    return put(output,capacity,&used,']')?-2:1;
+    char spelling[4096];
+    int spelled=spelled_persian(word,bytes,spelling,sizeof spelling);
+    return spelled==1 ? persian_pinglish_word(spelling,output,capacity) : spelled;
 }

@@ -21,6 +21,10 @@ def row(voicing, aspiration, noise):
 
 
 def word(phone, lead=14, burst=65):
+    if phone in 'bdg':
+        return ([row(52, 34, 0) for _ in range(lead)] +
+                [row(20, 0, 0) for _ in range(25)] +
+                [row(0, 0, burst)] + [row(50, 34, 0)] * 4)
     if phone in 'tpk':
         return ([row(52, 34, 0) for _ in range(lead)] +
                 [row(0, 0, 0) for _ in range(32)] +
@@ -67,9 +71,12 @@ def main():
                 assert counts[1] == len(target) and total.value == len(frames)
                 assert removed[1] == 0 and bytes(frames) == original
             else:
-                lead = next(i for i, frame in enumerate(target) if frame.controls[2] <= 0)
+                lead = next(i for i, frame in enumerate(target) if (
+                    frame.controls[2] <= 30 and frame.controls[7] == 0 if phone in 'bdg'
+                    else frame.controls[2] <= 0))
                 assert counts[1] == len(target) - lead and total.value == len(frames) - lead
-                assert removed[1] == sum(frame.controls[0] for frame in target[:lead]) and frames[10].controls[2] == 0
+                assert removed[1] == sum(frame.controls[0] for frame in target[:lead])
+                assert frames[10].controls[2] == (20 if phone in 'bdg' else 0)
                 assert bytes(frames)[10 * ctypes.sizeof(NativeFrame):total.value * ctypes.sizeof(NativeFrame)] == original[(10 + lead) * ctypes.sizeof(NativeFrame):]
 
         for phone in 'tpkfsSh':
@@ -96,6 +103,12 @@ def main():
             check(phone, word(phone), word(phone), True,
                   unvoiced_before=True, english_before=False)
         check('h', word('h', lead=1), word('h'), False, unvoiced_before=True)
+        for phone in 'bdg':
+            check(phone, word(phone), word(phone), False, unvoiced_before=True)
+            check(phone, word(phone), word(phone), True)
+            check(phone, word(phone), word(phone), True,
+                  unvoiced_before=True, english_before=False)
+            check(phone, word(phone, burst=5), word(phone), True, unvoiced_before=True)
         print('Passed native onset planning, matching/mismatched references and preserved source frames.')
 
 

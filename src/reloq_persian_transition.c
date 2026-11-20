@@ -91,6 +91,41 @@ static int native_shaped_lead(const struct reloq_fa_frame *frames,size_t boundar
            fabs((double)lead->initial_noise-lead->onset_noise)<=15;
 }
 
+/* A target context can inherit an English vowel ahead of the actual voiced
+ * stop, even though the English side already ended in silence or a release.
+ * Recognize both the low-voice closure and its burst before removing only
+ * that inherited vowel; the stop's own voicing and release stay intact. */
+static int find_voiced_stop_lead(const struct reloq_fa_frame *frames,
+    size_t first,size_t end,struct unvoiced_lead *lead)
+{
+    double elapsed=0;
+    for(size_t i=first;i<end;++i) {
+        const float *c=frames[i].controls;
+        if(!isfinite(c[0]) || c[0]<=0 || c[0]>20 || !isfinite(c[2]) ||
+           !isfinite(c[7]) || !isfinite(c[8]))return -1;
+        if(c[2]<=30 && c[7]<=1 && c[8]<=1) {
+            if(elapsed<0.5 || elapsed>100)return 0;
+            double closure=0;
+            for(size_t j=i;j<end && closure<=110;++j) {
+                const float *next=frames[j].controls;
+                if(!isfinite(next[0]) || next[0]<=0 || next[0]>20 ||
+                   !isfinite(next[2]) || !isfinite(next[7]) || !isfinite(next[8]))return -1;
+                if(next[8]>=20 && next[2]<=5 && next[7]<=1) {
+                    if(closure<2)return 0;
+                    lead->end=i;lead->duration=elapsed;return 1;
+                }
+                if(next[2]>30 || next[7]>1 || next[8]>1)return 0;
+                closure+=next[0];
+            }
+            return 0;
+        }
+        if(c[2]<30 || c[7]<5 || c[8]>=20)return 0;
+        elapsed+=c[0];
+        if(elapsed>100)return 0;
+    }
+    return 0;
+}
+
 int reloq_persian_plan_unvoiced_onsets(struct reloq_fa_frame *frames,size_t count,
     const size_t *ends,size_t segments,const unsigned char *onsets,
     const struct reloq_fa_frame *reference,size_t reference_count,
@@ -103,7 +138,7 @@ int reloq_persian_plan_unvoiced_onsets(struct reloq_fa_frame *frames,size_t coun
     for(size_t i=0;i<segments;++i) {
         if(ends[i]<=previous || ends[i]>count)return -1;
         unsigned char phone=onsets[i]&127;
-        if(phone && !strchr("fstpkShG",phone))return -1;
+        if(phone && !strchr("fstpkShGbdg",phone))return -1;
         previous=ends[i];
     }
     if(previous!=count)return -1;
@@ -125,6 +160,13 @@ int reloq_persian_plan_unvoiced_onsets(struct reloq_fa_frame *frames,size_t coun
         if(!voiced_before && !(onsets[edge]&128))continue;
         if(phone=='G' && voiced_before)continue; /* keep the Ach path */
         struct unvoiced_lead target;
+        if(strchr("bdg",phone)) {
+            if(voiced_before || !(onsets[edge]&128))continue;
+            int found=find_voiced_stop_lead(frames,boundary,end,&target);
+            if(found<0)return -1;
+            if(found){cut_first[edge]=boundary;cut_last[edge]=target.end;widths[edge]=target.duration;}
+            continue;
+        }
         int found=find_unvoiced_lead(frames,boundary,end,phone,voiced_before?8:0.5,&target);
         if(found<0)return -1;
         if(!found)continue;

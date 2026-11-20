@@ -104,6 +104,16 @@ def main():
                           ('کتاب', 'ketab'), ('سلام دنیا', 'salam donya')]:
             left, right = analyze(fa), analyze(latin, mode=1)
             assert left[0] == right[0] == 0 and left[1] == right[1], (fa, latin, left, right)
+        # Previously unknown Roman words must pass through the same explicitly
+        # vowelled Persian spelling, not an unrelated Latin-to-phone path.
+        for fa, latin in [('سوینا', 'sevinaa'), ('سِوینا', 'sevinaa'),
+                          ('زَرَخِی', 'zarakhi'), ('پَرْلَپْ', 'parlap'),
+                          ('مِرْگِیشْ', 'mergish')]:
+            left, right = analyze(fa), analyze(latin, mode=1)
+            assert left[0] == right[0] == 0 and left[1] == right[1], (fa, latin, left, right)
+        sevina = [e for e in analyze('سوینا')[1] if e[0] == PHONE]
+        assert [e[1] for e in sevina] == [17, 3, 16, 4, 26, 2], sevina
+        assert {e[3] for e in sevina if e[4] == 1} == {2}, sevina
         # The independent plan carries the same timing decision as the
         # current audible backend without changing the vowel's identity.
         for fa, latin in [('ایتالیا', 'italia'), ('ایتالیایی', 'italiai')]:

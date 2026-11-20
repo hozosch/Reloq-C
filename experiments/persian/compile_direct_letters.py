@@ -21,8 +21,11 @@ def generate(worker, native, frontend) -> str:
         ' * See reference-espeak/persian and compile_direct_letters.py. */\n',
     ]
     for char in LETTERS:
-        tag = effective_name_tag(worker, char)
-        if char in NVDA_SPOKEN_NAMES:
+        # The three Persian short-vowel signs name short vowels even when
+        # the upstream reference pronounces them with a long nucleus.
+        short_vowels = {'\u064e': '`[.1A]', '\u064f': '`[.1o]', '\u0650': '`[.1e]'}
+        tag = short_vowels.get(char) or effective_name_tag(worker, char)
+        if char in NVDA_SPOKEN_NAMES and char not in short_vowels:
             expanded = frontend.analyze_direct(NVDA_SPOKEN_NAMES[char])
             if expanded is not None and len(expanded.parts) == 1:
                 tag = expanded.parts[0].text

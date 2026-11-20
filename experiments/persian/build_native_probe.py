@@ -3584,6 +3584,19 @@ static void persian_articulation_nasal(void *state,int second_formant)
     STATE(int16_t,s406)=persian_articulation_toward(STATE(int16_t,s406),200);
     STATE(int16_t,s407)=persian_articulation_toward(STATE(int16_t,s407),320);
 }
+static void persian_clear_nasal(void *state,int upper_shift)
+{
+    /* Keep the native nasal shape and timing, with a modestly brighter
+       third resonance and a smaller pole/zero distance. Never change pitch,
+       source strength or inherited negative endpoint markers. */
+    if (STATE(int16_t,s452)>0 && STATE(int16_t,s452)<6000-upper_shift)
+        STATE(int16_t,s452)+=upper_shift;
+    if (STATE(int16_t,s453)>0 && STATE(int16_t,s453)<6000-upper_shift)
+        STATE(int16_t,s453)+=upper_shift;
+    int pole=STATE(int16_t,s406),zero=STATE(int16_t,s407);
+    if (pole>0 && zero>pole)
+        STATE(int16_t,s407)=(int16_t)(pole+((zero-pole)*3+2)/4);
+}
 '''
     if text.count(include) != 1:
         raise RuntimeError('Cannot locate consonant dispatcher includes')
@@ -3684,10 +3697,12 @@ static void persian_articulation_nasal(void *state,int second_formant)
                 int shift=(next==29 || next==31 || next==33 || next==34) ? 0 : 50;
                 if (STATE(int16_t,s448)>150) STATE(int16_t,s448)-=shift;
                 if (STATE(int16_t,s449)>150) STATE(int16_t,s449)-=shift;
+                persian_clear_nasal(state,120);
             }
 ''' if phone == 'm' else r'''            if (!r0) {
                 if (STATE(int16_t,s448)>150) STATE(int16_t,s448)-=50;
                 if (STATE(int16_t,s449)>150) STATE(int16_t,s449)-=50;
+                persian_clear_nasal(state,100);
             }
 ''') + \
             '        } else {\n' + call + \
