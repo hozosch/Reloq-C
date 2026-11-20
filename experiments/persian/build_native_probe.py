@@ -3561,42 +3561,6 @@ static void persian_r_release_to_back_a(void *state)
     if (f3>0 && f3<2500) STATE(int16_t,s453)=(int16_t)((f3+2*2500+1)/3);
     if (f4>0 && f4<3400) STATE(int16_t,s455)=(int16_t)((f4+2*3400+1)/3);
 }
-static int16_t persian_articulation_toward(int16_t value,int target)
-{
-    /* Preserve native inheritance markers and two thirds of each contextual
-       target; this is an auditable listening candidate, not a rule that all
-       Persian allophones equal the English allophones. */
-    return value>0 ? (int16_t)((2*(int)value+target+1)/3) : value;
-}
-static void persian_articulation_nasal(void *state,int second_formant)
-{
-    const char *mode=getenv("RELOQ_FA_US_ARTICULATION");
-    if (!mode || mode[0]!='1' || mode[1]) return;
-    /* US ga_ph_m/n: F1 300, F2 1200/1600, B2 200 and nasal pole/zero
-       200/320. Blend only explicit positive values so Finnish's contextual
-       endpoints and inheritance remain meaningful. The separate back-A
-       nasal experiment is not enabled by this nasal-consonant adjustment. */
-    STATE(int16_t,s448)=persian_articulation_toward(STATE(int16_t,s448),300);
-    STATE(int16_t,s449)=persian_articulation_toward(STATE(int16_t,s449),300);
-    STATE(int16_t,s450)=persian_articulation_toward(STATE(int16_t,s450),second_formant);
-    STATE(int16_t,s451)=persian_articulation_toward(STATE(int16_t,s451),second_formant);
-    STATE(int16_t,s398)=persian_articulation_toward(STATE(int16_t,s398),200);
-    STATE(int16_t,s406)=persian_articulation_toward(STATE(int16_t,s406),200);
-    STATE(int16_t,s407)=persian_articulation_toward(STATE(int16_t,s407),320);
-}
-static void persian_clear_nasal(void *state,int upper_shift)
-{
-    /* Keep the native nasal shape and timing, with a modestly brighter
-       third resonance and a smaller pole/zero distance. Never change pitch,
-       source strength or inherited negative endpoint markers. */
-    if (STATE(int16_t,s452)>0 && STATE(int16_t,s452)<6000-upper_shift)
-        STATE(int16_t,s452)+=upper_shift;
-    if (STATE(int16_t,s453)>0 && STATE(int16_t,s453)<6000-upper_shift)
-        STATE(int16_t,s453)+=upper_shift;
-    int pole=STATE(int16_t,s406),zero=STATE(int16_t,s407);
-    if (pole>0 && zero>pole)
-        STATE(int16_t,s407)=(int16_t)(pole+((zero-pole)*3+2)/4);
-}
 '''
     if text.count(include) != 1:
         raise RuntimeError('Cannot locate consonant dispatcher includes')
@@ -3680,35 +3644,13 @@ static void persian_clear_nasal(void *state,int upper_shift)
         }
     }
 ''', 1)
-    for phone, target in (('m', 1200), ('n', 1600)):
+    # Leave both nasal acoustic targets to the native Finnish phone rules.
+    # Their US-derived phone and transition durations are selected separately
+    # by prepare_q_phone and prepare_auto_finnish_h above.
+    for phone in 'mn':
         call = f'    r0 = reloq_call_fifi_fin_ph_{phone}(state, (int32_t)(FIELD(0)));\n'
         if text.count(call) != 1:
             raise RuntimeError(f'Cannot locate Persian nasal dispatcher for {phone}')
-        replacement = r'''    {
-        const char *us=getenv("RELOQ_FA_US_NASALS");
-        if (us && us[0]=='1' && !us[1]) {
-''' + f'            r0=persian_us_ga_ph_{phone}(state,(int32_t)(FIELD(0)));\n' + \
-            f'            if (!r0) r0=persian_us_eng_ph_{phone}(state,(int32_t)(FIELD(0)));\n' + \
-            (r'''            if (!r0) {
-                /* The Finnish scheduler leaves the nasal F1 too high in
-                   these contexts. US /m/ before non-high vowels instead
-                   keeps its original higher F1. */
-                unsigned next=persian_articulation_following(state);
-                int shift=(next==29 || next==31 || next==33 || next==34) ? 0 : 50;
-                if (STATE(int16_t,s448)>150) STATE(int16_t,s448)-=shift;
-                if (STATE(int16_t,s449)>150) STATE(int16_t,s449)-=shift;
-                persian_clear_nasal(state,120);
-            }
-''' if phone == 'm' else r'''            if (!r0) {
-                if (STATE(int16_t,s448)>150) STATE(int16_t,s448)-=50;
-                if (STATE(int16_t,s449)>150) STATE(int16_t,s449)-=50;
-                persian_clear_nasal(state,100);
-            }
-''') + \
-            '        } else {\n' + call + \
-            f'            if (!r0) persian_articulation_nasal(state,{target});\n' + \
-            '        }\n    }\n'
-        text = text.replace(call, replacement, 1)
     consonant_file.write_text(text, encoding='utf8')
     scheduler_file = work / 'delta_rules_c13_fifi.c'
     text = scheduler_file.read_text(encoding='utf8')

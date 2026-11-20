@@ -19,6 +19,10 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 PROVIDER = ROOT / 'vendor/openevv61'
 BUILD = PROVIDER / 'build/windows-release'
+DEV188_BASE = '423d67d39fa8a6814865bf92d429430efb9ea83f'
+DEV188_KEY = ('persian-windows-provider-gcc14-v2-'
+              '7c9a787e05fed4238c0f7780436689064c7eb6ee6ae6ab9082cf81231a9a109b')
+DEV188_ALLOWED = {'experiments/persian/build_native_probe.py'}
 BASE = '0218903296e1828d468933fad04d7745779b5629'
 PREVIOUS_TREE = 'caf3eaa2e08ac9fbd58dfcc9c532aab19405911e'
 PREVIOUS_KEY = ('persian-windows-provider-gcc14-v2-'
@@ -227,6 +231,12 @@ def reuse_dev156_generated(expected=frozenset({'delta_rules_c02_fifi.c'}), added
 def main():
     try:
         key = os.environ.get('PERSIAN_PROVIDER_CACHE_KEY', '')
+        if key == DEV188_KEY:
+            changed = set(git('diff', '--name-only', DEV188_BASE, 'HEAD', '--', *INPUTS).splitlines())
+            if changed != DEV188_ALLOWED:
+                raise ValueError('Persian nasal provider inputs differ from the verified scope')
+            reuse_dev156_generated(frozenset({'delta_rules_c02_fifi.c'}), original_count=22)
+            return
         if key == DEV172_KEY:
             changed = set(git('diff', '--name-only', DEV172_BASE, 'HEAD', '--', *INPUTS).splitlines())
             if changed != DEV172_ALLOWED:

@@ -299,6 +299,23 @@ class CacheReuseTests(unittest.TestCase):
                 self.assertEqual(reuse.called, accepted)
                 self.assertEqual(build.exists(), accepted)
 
+    def test_dev188_reuse_requires_exact_nasal_generator_change(self):
+        for changed, accepted in ((cache.DEV188_ALLOWED, True),
+                                  (cache.DEV188_ALLOWED | {'include/reloq_eci.h'}, False),
+                                  (set(), False)):
+            with self.subTest(changed=changed), tempfile.TemporaryDirectory() as tmp:
+                build = Path(tmp) / 'windows-release'
+                build.mkdir()
+                with patch.object(cache, 'BUILD', build), patch.object(cache, 'git', return_value='\n'.join(changed)), \
+                        patch.object(cache, 'reuse_dev156_generated') as reuse, \
+                        patch.dict(os.environ, {'PERSIAN_PROVIDER_CACHE_KEY': cache.DEV188_KEY}), \
+                        contextlib.redirect_stdout(io.StringIO()):
+                    cache.main()
+                self.assertEqual(reuse.called, accepted)
+                if accepted:
+                    reuse.assert_called_once_with(frozenset({'delta_rules_c02_fifi.c'}), original_count=22)
+                self.assertEqual(build.exists(), accepted)
+
     def test_dev153_cache_rejects_modified_build_recipe(self):
         with tempfile.TemporaryDirectory() as tmp:
             build = Path(tmp) / 'windows-release'
