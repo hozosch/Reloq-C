@@ -128,6 +128,12 @@ def main():
             middle = [e for e in events if e[0] == PHONE and e[1] == 4]
             assert result == 0 and len(middle) == 1 and middle[0][2] & 4, (tag, events)
             assert bool(middle[0][2] & 2) == (marker != 'i'), (tag, events)
+        # Large phonetic input must remain representable without repeatedly
+        # scanning the rest of the word for every unstressed nucleus.
+        long_input = '`[.0' + 'i' * 20000 + ']'
+        result, events, _, _ = analyze(long_input, runs=[(len(long_input), 2)])
+        assert result == 0 and sum(e[0] == PHONE for e in events) == 20000
+        assert all(not e[2] for e in events if e[0] == PHONE)
         for number in ['0', '12', '66', '123', '3.14']:
             persian = number.translate(str.maketrans('0123456789.', '۰۱۲۳۴۵۶۷۸۹٫'))
             left, right = analyze(number), analyze(persian)

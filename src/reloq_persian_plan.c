@@ -65,19 +65,17 @@ static int offglide(uint32_t id)
  * backend. A long vowel retains its identity when its nucleus is shortened. */
 static void mark_vowel_timing(struct plan *p,size_t first,size_t last)
 {
-    int before_vowel=0;
+    int before_vowel=0,stressed=0;
+    unsigned later=0;
+    struct reloq_fa_plan_event *initial=NULL;
     for(size_t i=first;i<last;++i) {
         struct reloq_fa_plan_event *phone=p->events+i;
         if(phone->kind!=RELOQ_FA_PLAN_PHONE || !nucleus(phone->value))continue;
+        if(initial && before_vowel) {
+            if(later<UINT_MAX)++later;
+            if(phone->stress==1 || phone->stress==2)stressed=1;
+        }
         if(phone->stress==0) {
-            unsigned later=0;int stressed=0;
-            for(size_t j=i+1;j<last;++j) {
-                const struct reloq_fa_plan_event *next=p->events+j;
-                if(next->kind==RELOQ_FA_PLAN_PHONE && nucleus(next->value)) {
-                    if(later<UINT_MAX)++later;
-                    if(next->stress==1 || next->stress==2)stressed=1;
-                }
-            }
             if(phone->value==RELOQ_FA_PHONE_I) {
                 int left=i>first && p->events[i-1].kind==RELOQ_FA_PLAN_PHONE &&
                          nucleus(p->events[i-1].value);
@@ -85,12 +83,12 @@ static void mark_vowel_timing(struct plan *p,size_t first,size_t last)
                           nucleus(p->events[i+1].value) && p->events[i+1].stress==1;
                 int hiatus=reloq_fa_i_before_stressed_hiatus(left,right);
                 if(hiatus)phone->flags|=RELOQ_FA_PLAN_COMPACT_HIATUS;
-                if((phone->flags&RELOQ_FA_PHONE_LONG) &&
-                   (hiatus || reloq_fa_short_initial_i_context(!before_vowel,later,stressed)))
+                if((phone->flags&RELOQ_FA_PHONE_LONG) && hiatus)
                     phone->flags|=RELOQ_FA_PLAN_SHORT_NUCLEUS;
-            } else if((phone->flags&RELOQ_FA_PHONE_LONG) &&
-                      (phone->value==RELOQ_FA_PHONE_AE || phone->value==RELOQ_FA_PHONE_U) &&
-                      reloq_fa_short_initial_other_context(!before_vowel,later)) {
+            }
+            if(!before_vowel && (phone->flags&RELOQ_FA_PHONE_LONG) &&
+               (phone->value==RELOQ_FA_PHONE_I || phone->value==RELOQ_FA_PHONE_AE ||
+                phone->value==RELOQ_FA_PHONE_U)) {
                 /* The approved /u/ before /t/ plus a voiced stop keeps
                  * its separate, less aggressive cluster timing. */
                 int cluster=phone->value==RELOQ_FA_PHONE_U && i+2<last &&
@@ -98,11 +96,15 @@ static void mark_vowel_timing(struct plan *p,size_t first,size_t last)
                     p->events[i+2].kind==RELOQ_FA_PLAN_PHONE &&
                     (p->events[i+2].value==RELOQ_FA_PHONE_B || p->events[i+2].value==RELOQ_FA_PHONE_D ||
                      p->events[i+2].value==RELOQ_FA_PHONE_G);
-                if(!cluster)phone->flags|=RELOQ_FA_PLAN_SHORT_NUCLEUS;
+                if(!cluster)initial=phone;
             }
         }
         before_vowel=1;
     }
+    if(initial && (initial->value==RELOQ_FA_PHONE_I ?
+       reloq_fa_short_initial_i_context(1,later,stressed) :
+       reloq_fa_short_initial_other_context(1,later)))
+        initial->flags|=RELOQ_FA_PLAN_SHORT_NUCLEUS;
 }
 
 /* Parse a complete explicit group without the old acoustic backend. Each
