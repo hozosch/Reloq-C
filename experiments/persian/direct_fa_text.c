@@ -261,7 +261,7 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
             char tag[2048];
             int follows=joined_be || follows_word_in_phrase(text,length,end);
             int found=reloq_fa_direct_context_word(text+start,end-start,follows,tag,sizeof tag);
-            if(found==0 && complete && start==prefixed_verb)
+            if(found==0 && start==prefixed_verb)
                 found=reloq_fa_direct_guess_prefixed_verb(text+start,end-start,tag,sizeof tag);
             if(found==0 && complete)
                 found=reloq_fa_direct_guess_word(text+start,end-start,tag,sizeof tag);

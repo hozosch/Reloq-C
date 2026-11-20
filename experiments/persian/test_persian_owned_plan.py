@@ -141,6 +141,7 @@ def main():
         assert sum(e[0]==PHONE and e[1]==20 for e in inferred[1])==5
         joined='نمی‌پذیرد'
         result,events,_,_=analyze(joined,complete=True)
+        assert analyze(joined)[1]==events
         prefix=[e[1] for e in analyze('نمی')[1] if e[0]==PHONE]
         actual=[e[1] for e in events if e[0]==PHONE]
         assert result==0 and actual[:len(prefix)]==prefix and sum(e[0]==WORD_BEGIN for e in events)==1
@@ -157,6 +158,8 @@ def main():
             assert analyze(verb)[0]==1,verb
             joined=analyze('می‌'+verb,complete=True)
             spaced=analyze('می '+verb,complete=True)
+            assert analyze('می‌'+verb)[1]==joined[1]
+            assert analyze('می '+verb)[1]==spaced[1]
             jphones=[e[1] for e in joined[1] if e[0]==PHONE]
             sphones=[e[1] for e in spaced[1] if e[0]==PHONE]
             assert joined[0]==spaced[0]==0 and jphones==sphones and jphones[-len(ending):]==ending,(

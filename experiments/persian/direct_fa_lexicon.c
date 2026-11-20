@@ -1680,6 +1680,25 @@ int reloq_fa_direct_guess_prefixed_verb(const char *word,size_t bytes,char *outp
     return 0;
 }
 
+/* A recognized verbal prefix and classified finite form are contextual
+ * evidence. Only infer the inflection when its stem already has a native
+ * pronunciation; the same spelling without this context stays unchanged. */
+static int joined_context_verb(const char *word,size_t bytes,char *output,size_t capacity)
+{
+    size_t split=single_joiner(word,bytes);
+    if(split==SIZE_MAX || !split || split+3>=bytes ||
+       (!stress_word_is(word,split,"می") && !stress_word_is(word,split,"نمی")))return 0;
+    char left[2048],right[2048];
+    int a=reloq_fa_direct_context_word(word,split,0,left,sizeof left);
+    if(a!=1)return a<0?a:0;
+    int b=reloq_fa_direct_guess_prefixed_verb(word+split+3,bytes-split-3,right,sizeof right);
+    if(b!=1)return b;
+    int result=append_phone_tags(left,right,output,capacity);
+    if(result!=1)return result;
+    if(stress_syllables(output))stress_primary(output,0);
+    return 1;
+}
+
 static int guessed_joined_word(const char *word,size_t bytes,char *output,size_t capacity)
 {
     size_t split=single_joiner(word,bytes);
@@ -1830,6 +1849,8 @@ static int direct_context_depth(const char *word,size_t bytes,int follows_word,
     result=derived_agent_r_word(word,bytes,output,capacity,depth);
     if(result)return result;
     result=joined_compound_word(word,bytes,output,capacity,depth);
+    if(result)return result;
+    result=joined_context_verb(word,bytes,output,capacity);
     if(result)return result;
 
     /* NFC/NFKC places Arabic vowel marks before shadda, while the eSpeak

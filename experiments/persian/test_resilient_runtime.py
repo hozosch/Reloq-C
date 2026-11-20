@@ -193,7 +193,7 @@ def main():
         # about the cause of a particular user's intermittent report.
         # پدیده‌ای is now recognized by the productive compound rule; use a
         # different joined form whose verb still needs the reference path.
-        unknown_joined = 'نمی‌پذیرد'
+        unknown_joined = 'نمی‌آراست'
         assert frontend.analyze_direct(unknown_joined) is None
         reference = project_resilient((unknown_joined,), frontend,
             validate=engine._engines[PERSIAN_PROBE.id]._voice._phonemes_for_probe)

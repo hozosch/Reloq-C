@@ -139,9 +139,9 @@ def main():
                     assert frontend._worker is None
                     # This genuinely unadmitted form continues to exercise
                     # the in-process fallback and source-index routing.
-                    assert frontend.analyze_direct('نمی‌پذیرد') is None
+                    assert frontend.analyze_direct('نمی‌آراست') is None
                     pcm.clear()
-                    assert engine.speak(('NVDA نمی‌پذیرد سلام',), pcm.extend, lambda _: None)
+                    assert engine.speak(('NVDA نمی‌آراست سلام',), pcm.extend, lambda _: None)
                     assert pcm
                 inprocess = importlib.import_module('probe_driver._persian.inprocess_espeak')
                 assert isinstance(frontend._worker, inprocess.InProcessEspeak)

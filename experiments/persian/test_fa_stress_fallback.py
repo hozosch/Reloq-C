@@ -19,9 +19,10 @@ def main():
     args = parser.parse_args()
     reference = PersianAnalysis((SpeechPart('fa', '`[.0nA.0mi.1pA.0zi.0rAd]'),), None, True)
     with DirectFirstPersian(args.library, None, None, None) as frontend:
+        frontend._reference_available = True  # the reference is mocked below
         assert frontend.analyze_direct('نمی‌روم') is not None
-        assert frontend.analyze_direct('نمی‌پذیرد') is None
-        parts = ('کتاب ', EciIndex(7), 'نمی‌پذیرد سلام.')
+        assert frontend.analyze_direct('نمی‌آراست') is None
+        parts = ('کتاب ', EciIndex(7), 'نمی‌آراست سلام.')
         with patch.object(frontend, 'analyze', return_value=reference) as fallback:
             try:
                 project(parts, frontend, allow_fallback=True)
@@ -32,21 +33,21 @@ def main():
         assert result.tagged == '`[.0ke.1tab] `[.1nA.0mi.0pA.0zi.0rAd] `[.0sA.1lam].', result.tagged
         assert result.needs_native_validation
         assert [part.value for part in result.parts if isinstance(part, EciIndex)] == [7]
-        fallback.assert_called_once_with('نمی‌پذیرد')
+        fallback.assert_called_once_with('نمی‌آراست')
         # One unrelated fallback word must not lose a two-word verbal prefix
         # or the verified split form of علامت‌دار.
         with patch.object(frontend, 'analyze', return_value=reference):
-            prefix = project_resilient(('می ', EciIndex(8), 'روم نمی‌پذیرد'), frontend)
-            compound = project_resilient(('علامت ', EciIndex(9), 'دار نمی‌پذیرد'), frontend)
+            prefix = project_resilient(('می ', EciIndex(8), 'روم نمی‌آراست'), frontend)
+            compound = project_resilient(('علامت ', EciIndex(9), 'دار نمی‌آراست'), frontend)
         assert prefix.tagged.startswith('`[.1mi] `00 `[.0rA.0vAm] '), prefix.tagged
         assert compound.tagged.startswith('`00 `[.0A.0la.0mAt] `[.1dar] '), compound.tagged
         assert [part.value for part in prefix.parts if isinstance(part, EciIndex)] == [8]
         assert [part.value for part in compound.parts if isinstance(part, EciIndex)] == [9]
         with patch.object(frontend, 'analyze', return_value=reference):
-            object_marker = project_resilient(('نمی‌پذیرد ', EciIndex(10), 'را'), frontend)
-            copula_after_reference = project_resilient(('نمی‌پذیرد ', EciIndex(17), 'است'), frontend)
-            separated = project_resilient(('نمی‌پذیرد، ', EciIndex(11), 'را'), frontend)
-            conjunction = project_resilient(('کتاب و ', EciIndex(12), 'نمی‌پذیرد'), frontend)
+            object_marker = project_resilient(('نمی‌آراست ', EciIndex(10), 'را'), frontend)
+            copula_after_reference = project_resilient(('نمی‌آراست ', EciIndex(17), 'است'), frontend)
+            separated = project_resilient(('نمی‌آراست، ', EciIndex(11), 'را'), frontend)
+            conjunction = project_resilient(('کتاب و ', EciIndex(12), 'نمی‌آراست'), frontend)
         assert object_marker.tagged.endswith(' `00 `[.0ra]'), object_marker.tagged
         assert copula_after_reference.tagged.endswith(' `00 `[.0Ast]'), copula_after_reference.tagged
         assert separated.tagged.endswith(', `[.1ra]'), separated.tagged
@@ -78,7 +79,7 @@ def main():
         # A transient reference error gets one whole-word retry, while an
         # interrupted job must not start that retry.
         with patch.object(frontend, 'analyze', side_effect=(RuntimeError('transient'), reference)) as fallback:
-            recovered = project_resilient(('نمی‌پذیرد',), frontend)
+            recovered = project_resilient(('نمی‌آراست',), frontend)
         assert recovered.tagged == '`[.1nA.0mi.0pA.0zi.0rAd]' and fallback.call_count == 2
         cancelled = [False]
         def fail_and_cancel(_word):
@@ -86,7 +87,7 @@ def main():
             raise RuntimeError('cancelled reference')
         with patch.object(frontend, 'analyze', side_effect=fail_and_cancel) as fallback:
             try:
-                project_resilient(('نمی‌پذیرد',), frontend, cancelled=lambda: cancelled[0])
+                project_resilient(('نمی‌آراست',), frontend, cancelled=lambda: cancelled[0])
                 raise AssertionError('cancelled reference was retried')
             except InterruptedError:
                 pass
