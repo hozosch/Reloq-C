@@ -2,19 +2,33 @@
 from __future__ import annotations
 
 import argparse
+import ast
 from collections import defaultdict
 import ctypes
 import hashlib
 from pathlib import Path
 import re
 
-from compile_direct_symbols import NAMES
 from compile_pinglish_lexicon import latin_key
 from direct_fa_vocalized_rules import EXTRA
 
 HERE = Path(__file__).resolve().parent
 MAIN = HERE / 'direct_fa_pinglish_lexicon.inc'
 OUTPUT = HERE / 'direct_fa_pinglish_extra.inc'
+
+
+def symbol_names():
+    # Read the static source table without importing the acoustic comparison
+    # helpers used by its generator (which require optional NumPy).
+    tree = ast.parse((HERE / 'compile_direct_symbols.py').read_text(encoding='utf8'))
+    values = [node.value for node in tree.body if isinstance(node, ast.Assign) and
+              any(isinstance(target, ast.Name) and target.id == 'NAMES' for target in node.targets)]
+    if len(values) != 1:
+        raise RuntimeError('missing or ambiguous Persian symbol-name table')
+    names = ast.literal_eval(values[0])
+    if not isinstance(names, dict):
+        raise RuntimeError('invalid Persian symbol-name table')
+    return names
 
 
 def generate(library: Path) -> str:
@@ -26,7 +40,7 @@ def generate(library: Path) -> str:
     release.argtypes = (ctypes.c_void_p,)
     existing = set(re.findall(r'^\s*\{"([a-z]+)",', MAIN.read_text(encoding='utf8'), re.M))
     candidates = set(EXTRA)
-    candidates.update(part for label in NAMES.values() for part in label.split())
+    candidates.update(part for label in symbol_names().values() for part in label.split())
     groups = defaultdict(list)
     for word in sorted(candidates, key=lambda value: value.encode('utf8')):
         # A marked or joined form can have a different stress from its base.
