@@ -4,6 +4,7 @@
 #include "reloq_persian_plan.h"
 #include "reloq_persian_direct.h"
 #include "reloq_persian_phones.h"
+#include "reloq_persian_timing.h"
 #include "reloq_utf8.h"
 #include <ctype.h>
 #include <limits.h>
@@ -60,6 +61,50 @@ static int nucleus(uint32_t id)
 static int offglide(uint32_t id)
 {return id>=RELOQ_FA_PHONE_OFFGLIDE_I && id<=RELOQ_FA_PHONE_OFFGLIDE_FRONT_U;}
 
+/* Describe the approved timing independently of the temporary sound
+ * backend. A long vowel retains its identity when its nucleus is shortened. */
+static void mark_vowel_timing(struct plan *p,size_t first,size_t last)
+{
+    int before_vowel=0;
+    for(size_t i=first;i<last;++i) {
+        struct reloq_fa_plan_event *phone=p->events+i;
+        if(phone->kind!=RELOQ_FA_PLAN_PHONE || !nucleus(phone->value))continue;
+        if(phone->stress==0) {
+            unsigned later=0;int stressed=0;
+            for(size_t j=i+1;j<last;++j) {
+                const struct reloq_fa_plan_event *next=p->events+j;
+                if(next->kind==RELOQ_FA_PLAN_PHONE && nucleus(next->value)) {
+                    if(later<UINT_MAX)++later;
+                    if(next->stress==1 || next->stress==2)stressed=1;
+                }
+            }
+            if(phone->value==RELOQ_FA_PHONE_I) {
+                int left=i>first && p->events[i-1].kind==RELOQ_FA_PLAN_PHONE &&
+                         nucleus(p->events[i-1].value);
+                int right=i+1<last && p->events[i+1].kind==RELOQ_FA_PLAN_PHONE &&
+                          nucleus(p->events[i+1].value) && p->events[i+1].stress==1;
+                int hiatus=reloq_fa_i_before_stressed_hiatus(left,right);
+                if(hiatus)phone->flags|=RELOQ_FA_PLAN_COMPACT_HIATUS;
+                if((phone->flags&RELOQ_FA_PHONE_LONG) &&
+                   (hiatus || reloq_fa_short_initial_i_context(!before_vowel,later,stressed)))
+                    phone->flags|=RELOQ_FA_PLAN_SHORT_NUCLEUS;
+            } else if((phone->flags&RELOQ_FA_PHONE_LONG) &&
+                      (phone->value==RELOQ_FA_PHONE_AE || phone->value==RELOQ_FA_PHONE_U) &&
+                      reloq_fa_short_initial_other_context(!before_vowel,later)) {
+                /* The approved /u/ before /t/ plus a voiced stop keeps
+                 * its separate, less aggressive cluster timing. */
+                int cluster=phone->value==RELOQ_FA_PHONE_U && i+2<last &&
+                    p->events[i+1].kind==RELOQ_FA_PLAN_PHONE && p->events[i+1].value==RELOQ_FA_PHONE_T &&
+                    p->events[i+2].kind==RELOQ_FA_PLAN_PHONE &&
+                    (p->events[i+2].value==RELOQ_FA_PHONE_B || p->events[i+2].value==RELOQ_FA_PHONE_D ||
+                     p->events[i+2].value==RELOQ_FA_PHONE_G);
+                if(!cluster)phone->flags|=RELOQ_FA_PLAN_SHORT_NUCLEUS;
+            }
+        }
+        before_vowel=1;
+    }
+}
+
 /* Parse a complete explicit group without the old acoustic backend. Each
  * syllable has a nucleus. A final legacy H carrier is removed only when the
  * group came from the existing internal lexicon, never from user input. */
@@ -110,7 +155,10 @@ static int group(struct plan *p,const char *s,size_t n,int internal)
         if(offglide(id))last_nucleus=p->n-1;
     }
     if(!result && (!began || p->n==syllable_start || (internal && !segment_vowel)))result=1;
-    if(!result)result=push(p,RELOQ_FA_PLAN_WORD_END,0,0,0,0);
+    if(!result) {
+        mark_vowel_timing(p,mark+1,p->n);
+        result=push(p,RELOQ_FA_PLAN_WORD_END,0,0,0,0);
+    }
     if(result)p->n=mark;
     return result;
 }

@@ -1943,7 +1943,7 @@ def pre_stressed_hiatus_helper() -> str:
     lpta_loadp(d,EVV_AT(const delta_token *,token_ref));
     int right_vowel=!setscan_r(d,2) && !advance_tok(d) && !testFldeq(d,2,1,1) &&
                     !testFldeq(d,2,7,1) && !advance_tok(d);
-    int final=left_vowel && right_vowel;''', 1)
+    int final=reloq_fa_i_before_stressed_hiatus(left_vowel,right_vowel);''', 1)
 
 
 def prepare_short_initial_timing(work: Path, first_helper: str, next_helper: str) -> Path:
@@ -1966,11 +1966,13 @@ def prepare_short_initial_timing(work: Path, first_helper: str, next_helper: str
                     if (!testFldeq(d,2,7,1) || !testFldeq(d,2,7,2)) stressed=1;
                 }''', 1)
     long_word_helper = long_word_helper.replace('int final=first && later;',
-                                                 'int final=first && later>=2 && stressed;', 1)
+        'int final=reloq_fa_short_initial_i_context(first,(unsigned)later,stressed);', 1)
+    first_helper = first_helper.replace('int final=first && later;',
+        'int final=reloq_fa_short_initial_other_context(first,(unsigned)later);', 1)
     helper = r'''
-/* A long marker can require short timing at an unstressed word onset, or
-   between vowels before stress. Change
-   only the duration-planning record, then restore the phonetic target. */
+/* Use the native short-vowel timing for the selected unstressed nuclei.
+   Keep the long vowel's acoustic identity by restoring the marker before
+   the acoustic scheduler sees the record. */
 static int32_t persian_short_initial_begin(void *state)
 {
     const char *us=getenv("RELOQ_FA_US_ARTICULATION");
@@ -1990,7 +1992,8 @@ static int32_t persian_short_initial_begin(void *state)
     int selected=(phone==31 || phone==32) &&
         persian_probe_first_of_multiple_vowels(state,STATE_AT(w26,-4));
     if (phone==27)
-        selected=persian_probe_before_stressed_hiatus(state,STATE_AT(w26,-4));
+        selected=persian_probe_before_stressed_hiatus(state,STATE_AT(w26,-4)) ||
+            persian_probe_first_of_long_stressed_word(state,STATE_AT(w26,-4));
     if (!selected) return 0;
     if (phone==32) {
         int32_t next_ref=EVV_AT(int32_t *,node)[1]&~3;
@@ -2022,27 +2025,6 @@ static void persian_short_initial_end(int32_t node)
     }
 }
 
-/* Keep the long-I sound but reduce excessive initial nucleus duration in a
-   longer word whose primary/secondary stress is on a later syllable. Other
-   long vowels already have separate established timing rules above. */
-static int persian_long_initial_i(void *state)
-{
-    const char *us=getenv("RELOQ_FA_US_ARTICULATION");
-    delta_state *d=state;
-    int32_t at=STATE(int32_t,w26),node=0;
-    if (!us || us[0]!='1' || us[1] || !d || !at) return 0;
-    int32_t *point=vmover(d,EVV_AT(int32_t *,at),2);
-    if (point) node=vgetsc(d,0,0,EVV_REF(point),2);
-    if (!node || (*EVV_AT(int32_t *,node)&2)) return 0;
-    void *fields=TFLDS(EVV_AT(void *,node));
-    unsigned phone=*(const unsigned char *)delta_record_field(&vstmtbl[2],0,fields);
-    unsigned cls=*(const unsigned char *)delta_record_field(&vstmtbl[2],1,fields);
-    unsigned length=*(const unsigned char *)delta_record_field(&vstmtbl[2],11,fields);
-    int16_t stress=0;
-    memcpy(&stress,delta_record_field(&vstmtbl[2],7,fields),sizeof stress);
-    return cls==1 && phone==27 && length==0 && stress==0 &&
-        persian_probe_first_of_long_stressed_word(state,STATE_AT(w26,-4));
-}
 '''
     if text.count(marker) != 1:
         raise RuntimeError('Cannot locate Finnish nucleus timing dispatcher')
@@ -2056,15 +2038,8 @@ static int persian_long_initial_i(void *state)
     if section.count(declaration) != 1 or section.count(start) != 1:
         raise RuntimeError('Cannot locate Finnish nucleus timing setup')
     section = section.replace(declaration, declaration +
-                              '    int32_t persian_short_node=0; int persian_long_i=0;\n', 1)
-    section = section.replace(start, '    persian_short_node=persian_short_initial_begin(state);\n'
-                              '    if (!persian_short_node) persian_long_i=persian_long_initial_i(state);\n' + start, 1)
-    distribute = '    r0 = reloq_call_fifi_distribute_nucdur(state, (int32_t)(FIELD(0)));\n'
-    if section.count(distribute) != 1:
-        raise RuntimeError('Cannot locate Persian nucleus distribution')
-    section = section.replace(distribute, '    if (persian_long_i && STATE(int32_t,f33)>0)\n'
-                              '        STATE(int32_t,f33)=(int32_t)((int64_t)STATE(int32_t,f33)*85/100);\n' +
-                              distribute, 1)
+                              '    int32_t persian_short_node=0;\n', 1)
+    section = section.replace(start, '    persian_short_node=persian_short_initial_begin(state);\n' + start, 1)
     for label in ('L212:;\n', 'L231:;\n'):
         if section.count(label) != 1:
             raise RuntimeError('Cannot locate Finnish nucleus timing return')
@@ -2073,7 +2048,8 @@ static int persian_long_initial_i(void *state)
     include = '#include "reloq61_rule_calls_fifi.h"\n'
     if text.count(include) != 1:
         raise RuntimeError('Cannot locate Finnish timing includes')
-    text = text.replace(include, include + '#include <stdlib.h>\n#include <string.h>\n', 1)
+    text = text.replace(include, include + '#include <stdlib.h>\n#include <string.h>\n'
+                        '#include "reloq_persian_timing.h"\n', 1)
     dest = work / name
     dest.write_text(text, encoding='utf8')
     return dest
@@ -2275,7 +2251,8 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
     include = '#include "reloq61_rule_calls_fifi.h"\n'
     if text.count(include) != 1:
         raise RuntimeError('Cannot locate duration probe includes')
-    text = text.replace(include, include + '#include <stdlib.h>\n#include <stdio.h>\n#include <stdint.h>\n', 1)
+    text = text.replace(include, include + '#include <stdlib.h>\n#include <stdio.h>\n#include <stdint.h>\n'
+                        '#include "reloq_persian_timing.h"\n', 1)
     dest = work / name
     dest.write_text(text, encoding='utf8')
     return dest

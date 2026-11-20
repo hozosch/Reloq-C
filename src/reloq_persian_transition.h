@@ -24,4 +24,11 @@ int reloq_persian_bridge_stop_onsets(const struct reloq_fa_frame *input,
     const unsigned char *skip,size_t frame_count,size_t segment_count,
     double window_ms,unsigned char *changed);
 
+/* Replace an inherited vowel at a stop-to-nasal join with the same nasal
+ * onset from the continuous English context, then return to the Persian
+ * nasal. The previously spoken stop and its release are never modified. */
+int reloq_persian_match_stop_nasal(struct reloq_fa_frame *frames,size_t count,
+    size_t boundary,size_t end,const struct reloq_fa_frame *reference,
+    size_t reference_count,size_t reference_boundary);
+
 #endif

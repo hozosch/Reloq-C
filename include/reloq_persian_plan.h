@@ -28,6 +28,13 @@ enum reloq_fa_input_variant {
 #define RELOQ_FA_DIALECT_PERSIAN 0x140000u
 #define RELOQ_FA_DIALECT_PINGLISH 0x140001u
 
+/* The vowel keeps its acoustic identity and any LONG flag, while its
+ * nucleus uses the contextual timing of the same vowel's short version. */
+#define RELOQ_FA_PLAN_SHORT_NUCLEUS 2u
+/* A weak /i/ between a preceding vowel and a stressed vowel also receives
+ * the established compact-hiatus timing, for either vowel-length marker. */
+#define RELOQ_FA_PLAN_COMPACT_HIATUS 4u
+
 /* The ordinary Persian inventory has 29 identities. These optional extra
  * identities preserve previously available rounded vowels and glides. */
 enum reloq_fa_extra_phone_id {
@@ -41,7 +48,7 @@ enum reloq_fa_extra_phone_id {
 struct reloq_fa_plan_event {
     uint32_t kind;       /* enum reloq_fa_plan_event_kind */
     uint32_t value;      /* phone, punctuation scalar, or input variant */
-    uint32_t flags;      /* RELOQ_FA_PHONE_LONG for a phone */
+    uint32_t flags;      /* LONG and/or Persian timing annotations */
     uint32_t syllable;   /* zero-based within the word */
     uint32_t stress;     /* 0 unstressed, 1 primary, 2 secondary */
 };

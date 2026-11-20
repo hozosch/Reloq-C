@@ -728,6 +728,7 @@ class SentencePlan:
     _native_frication: object = None
     _native_bridge_continuation: object = None
     _native_bridge_stop_onsets: object = None
+    _native_match_stop_nasal: object = None
 
     def timeline(self):
         """Reuse frame times while only resonance or source values change."""
@@ -1076,7 +1077,8 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
                         _native_timeline=capture_api.frame_timeline,
                         _native_frication=capture_api.recompute_frication,
                         _native_bridge_continuation=capture_api.bridge_continuation,
-                        _native_bridge_stop_onsets=getattr(capture_api, 'bridge_stop_onsets', None))
+                        _native_bridge_stop_onsets=getattr(capture_api, 'bridge_stop_onsets', None),
+                        _native_match_stop_nasal=getattr(capture_api, 'match_stop_nasal', None))
 
 
 def replay_marks(plan, original_counts):
@@ -1119,49 +1121,45 @@ def _ease(x):
     return x * x * (3 - 2 * x)
 
 
-def bridge_stop_onsets(plan, parts, en, window_ms=8.0):
-    """Soften a voiced onset after a stop at either language boundary."""
-    native = plan._native_bridge_stop_onsets
-    if native is None:
+def bridge_stop_onsets(plan, parts, en, rate):
+    """Use the native sentence context for an inherited vowel before /m,n/."""
+    native = plan._native_match_stop_nasal
+    if native is None or 'en-us' not in plan.contexts:
         return ()
-    bounds = _edges_by_count(plan.counts)
-    skip = (ctypes.c_ubyte * len(parts))(*([1] * len(parts)))
+    bounds, times = _edges_by_count(plan.counts), plan.timeline()
+    donor = plan.contexts['en-us']
+    changed = []
     for edge in range(1, len(parts)):
-        if (parts[edge-1].language == parts[edge].language or _bracket_boundary(parts, edge)):
+        if (parts[edge-1].language != 'en-us' or parts[edge].language != 'fa' or
+                _bracket_boundary(parts, edge)):
             continue
         boundary = bounds[edge-1]
-        if not boundary or boundary >= len(plan.frames):
+        if not boundary or any(plan.frames[boundary-1].controls[c] != 0 for c in (2, 7, 8)):
             continue
-        left, right = plan.frames[boundary-1].controls, plan.frames[boundary].controls
-        if (any(left[c] != 0 for c in (2, 7, 8)) or right[8] != 0 or
-                right[2] < 20 and (right[2] != 0 or right[7] != 0)):
+        left_limit = 0 if edge == 1 else bounds[edge-2]
+        quiet = boundary
+        while quiet > left_limit and all(plan.frames[quiet-1].controls[c] == 0 for c in (2, 7, 8)):
+            quiet -= 1
+        if not 3 <= times[boundary] - times[quiet] <= 100:
             continue
         try:
-            outgoing = (en._phonemes_for_probe(parts[edge-1].text)
-                        if parts[edge-1].language == 'en-us' else parts[edge-1].text)
-            incoming = (en._phonemes_for_probe(parts[edge].text)
-                        if parts[edge].language == 'en-us' else parts[edge].text)
+            outgoing = en._phonemes_for_probe(parts[edge-1].text)
         except (ValueError, RuntimeError, OSError, UnicodeError):
             continue
-        left_tags, right_tags = tuple(_TAG.finditer(outgoing)), tuple(_TAG.finditer(incoming))
-        if (left_tags and right_tags and re.search(r'[ptk]$', left_tags[-1].group(1)) and
-                re.match(r"\.[012]'?[AaeiouAEIOU@XxyYwWmnrljv]", right_tags[0].group(1))):
-            skip[edge] = 0
-    if all(skip[1:]):
-        return ()
-    times = plan.timeline()
-    frame_times = ((ctypes.c_double * len(times))(*times)
-                   if not isinstance(times, ctypes.Array) else times)
-    ends = (ctypes.c_size_t * len(bounds))(*bounds)
-    changed = (ctypes.c_ubyte * len(parts))()
-    output = (NativeFrame * len(plan.frames))()
-    if native(plan.frames, output, frame_times, ends, skip, len(plan.frames), len(parts),
-              window_ms, changed):
-        raise RuntimeError('invalid native stop-onset transition')
-    selected = tuple(edge for edge in range(1, len(parts)) if changed[edge])
-    if selected:
-        plan.frames = output
-    return selected
+        left_tags, right_tags = tuple(_TAG.finditer(outgoing)), tuple(_TAG.finditer(parts[edge].text))
+        if not (left_tags and right_tags and re.search(r'[ptk]$', left_tags[-1].group(1)) and
+                re.match(r'\.[012][mn]', right_tags[0].group(1))):
+            continue
+        reference = bisect_left(donor.ticks, round(plan.edges['en-us'][edge] * 1000 / rate))
+        if reference >= len(donor.frames):
+            continue
+        result = native(plan.frames, len(plan.frames), boundary, bounds[edge], donor.frames,
+                        len(donor.frames), reference)
+        if result < 0:
+            raise RuntimeError('invalid native stop-to-nasal context')
+        if result:
+            changed.append(edge)
+    return tuple(changed)
 
 
 def bridge_sonorants(plan, parts, rate, half_window_ms=25.0):
@@ -1312,7 +1310,7 @@ def bridge_remaining_voiced(plan, parts, bridged, cuts, window_ms=15.0):
 
 
 def bridge_english_continuations(plan, parts, bridged, cuts, window_ms=30.0):
-    """Carry US vowel resonances into an unhandled Persian onset.
+    """Carry preceding vowel resonances into an unhandled language onset.
 
     Native US word transitions retain the previous resonance at the boundary
     and progress into the next sound. Keep the preceding word and all source
@@ -1327,8 +1325,7 @@ def bridge_english_continuations(plan, parts, bridged, cuts, window_ms=30.0):
     if plan._native_bridge_continuation is not None:
         skip = (ctypes.c_ubyte * len(parts))()
         for edge in range(1, len(parts)):
-            skip[edge] = int(edge in excluded or parts[edge - 1].language != 'en-us' or
-                parts[edge].language != 'fa' or
+            skip[edge] = int(edge in excluded or parts[edge - 1].language == parts[edge].language or
                 bool(re.search(r'[()\[\]{}]\s*$', parts[edge - 1].text)) or
                 bool(re.match(r'^\s*[()\[\]{}]', parts[edge].text)))
         if all(skip[1:]):
@@ -1347,8 +1344,7 @@ def bridge_english_continuations(plan, parts, bridged, cuts, window_ms=30.0):
         return selected
     changed = []
     for edge in range(1, len(parts)):
-        if (edge in excluded or parts[edge - 1].language != 'en-us' or
-                parts[edge].language != 'fa' or
+        if (edge in excluded or parts[edge - 1].language == parts[edge].language or
                 re.search(r'[()\[\]{}]\s*$', parts[edge - 1].text) or
                 re.match(r'^\s*[()\[\]{}]', parts[edge].text)):
             continue
@@ -1474,6 +1470,11 @@ def direct_unvoiced_onsets(plan, parts, en):
             if elapsed > 120.0:
                 break
         if cut is None or cut == boundary:
+            continue
+        if parts[edge - 1].language == 'fa' and part.language == 'en-us':
+            # This is the English core's own context before the onset, not
+            # an extra foreign vowel. Keep it as in a continuous sentence;
+            # the native continuation bridge aligns it with the Persian end.
             continue
         ranges.append((boundary, cut))
         counts[edge] -= cut - boundary
@@ -1767,7 +1768,7 @@ def selected_sentence(plan, parts, en, german, rate, *, check=None):
     original_counts = plan.counts
     if check: check()
     direct_unvoiced_onsets(plan, parts, en)
-    bridge_stop_onsets(plan, parts, en)
+    bridge_stop_onsets(plan, parts, en, rate)
     if check: check()
     bridged = bridge_sonorants(plan, parts, rate)
     if check: check()

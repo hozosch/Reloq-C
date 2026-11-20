@@ -104,6 +104,30 @@ def main():
                           ('کتاب', 'ketab'), ('سلام دنیا', 'salam donya')]:
             left, right = analyze(fa), analyze(latin, mode=1)
             assert left[0] == right[0] == 0 and left[1] == right[1], (fa, latin, left, right)
+        # The independent plan carries the same timing decision as the
+        # current audible backend without changing the vowel's identity.
+        for fa, latin in [('ایتالیا', 'italia'), ('ایتالیایی', 'italiai')]:
+            left, right = analyze(fa), analyze(latin, mode=1)
+            assert left[0] == right[0] == 0 and left[1] == right[1]
+            vowels = [e for e in left[1] if e[0] == PHONE and e[1] == 4]
+            assert vowels and vowels[0][2] == 3 and vowels[0][4] == 0, (fa, vowels)
+            assert all(not e[2] & 2 for e in vowels[1:]), (fa, vowels)
+        for tag in ("`[.0'i:'.1r'a:']", "`[.1'i:'.0ta.0li.0a]",
+                    "`[.0ba.0t'i:'.1a]", "`[.0'i:'.0ta.0li.0a]"):
+            result, events, _, _ = analyze(tag, runs=[(len(tag), 2)])
+            assert result == 0 and not any(e[2] & 2 for e in events if e[0] == PHONE), (tag, events)
+        for tag, target in (("`[.0k'u:'.1CAk]", 6), ("`[.0'A:'k.1bAr]", 1)):
+            result, events, _, _ = analyze(tag, runs=[(len(tag), 2)])
+            assert result == 0 and any(e[1] == target and e[2] == 3 for e in events if e[0] == PHONE), (tag, events)
+        cluster = "`[.0f'u:'t.1bal]"
+        result, events, _, _ = analyze(cluster, runs=[(len(cluster), 2)])
+        assert result == 0 and not any(e[2] & 2 for e in events if e[0] == PHONE), events
+        for marker in ("'i:'", 'i'):
+            tag = "`[.1Ga.0J'e:'.0" + marker + ".1an]"
+            result, events, _, _ = analyze(tag, runs=[(len(tag), 2)])
+            middle = [e for e in events if e[0] == PHONE and e[1] == 4]
+            assert result == 0 and len(middle) == 1 and middle[0][2] & 4, (tag, events)
+            assert bool(middle[0][2] & 2) == (marker != 'i'), (tag, events)
         for number in ['0', '12', '66', '123', '3.14']:
             persian = number.translate(str.maketrans('0123456789.', '۰۱۲۳۴۵۶۷۸۹٫'))
             left, right = analyze(number), analyze(persian)
@@ -178,7 +202,7 @@ def main():
                 buffer = (LegacyPhone * length.value)()
                 assert core.legacy(raw, len(raw), buffer, len(buffer), ctypes.byref(length)) == 0
                 expected_phones = [(p.id, p.flags, p.syllable, p.stress) for p in buffer]
-                actual_phones = [(e[1], e[2], e[3], e[4]) for e in events if e[0] == PHONE]
+                actual_phones = [(e[1], e[2] & 1, e[3], e[4]) for e in events if e[0] == PHONE]
                 # In stored internal data, final hw encodes H plus a silent
                 # backend carrier. Explicit input otherwise preserves w.
                 if tag.endswith('hw]') and actual_phones[-1][0] == 14:

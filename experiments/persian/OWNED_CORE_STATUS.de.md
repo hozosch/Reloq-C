@@ -13,6 +13,13 @@ Aussprachen noch in einem älteren internen Format; der neue Planer wandelt sie
 selbst in die persischen Lautidentitäten um. Für Zeichen ohne eigenen Namen
 verwendet er eine persische Lesung des Unicode-Codes.
 
+Die sprachunabhängigen Lautereignisse tragen auch die bisherigen allgemeinen
+Regeln für kurze unbetonte Anfangsvokale und für ein schwaches i zwischen
+Vokalen. Der Klang des langen Vokals bleibt als eigene Eigenschaft erhalten.
+Der bisherige akustische Testpfad verwendet dieselben strukturellen Regeln.
+Die Ereignisplanung allein ist weiterhin keine Synthese und ersetzt den alten
+Pfad noch nicht.
+
 Die nächste freie Sprachnummer nach Aragonesisch (19) ist 20. Der neue
 Analysepfad erkennt deshalb `` `l20.0 `` und `` `l20.1 `` als Wechsel
 zwischen persischer Schrift und Pinglish. Intern entsprechen sie `0x140000`

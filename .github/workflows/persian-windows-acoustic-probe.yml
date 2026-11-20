@@ -2,7 +2,7 @@ name: Persian Windows acoustic probe
 on:
   workflow_dispatch:
   push:
-    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116, codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117, codex/persian-us-contour-20261117, codex/persian-adjectives-20261117, codex/persian-ra-pinglish-20261119, codex/persian-core-20261119, codex/persian-phones-20261119, codex/persian-native-20261120, codex/persian-issue49-solh-20261120, codex/persian-native-transitions-20261120, codex/persian-native-fast-pilot-20261120]
+    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116, codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117, codex/persian-us-contour-20261117, codex/persian-adjectives-20261117, codex/persian-ra-pinglish-20261119, codex/persian-core-20261119, codex/persian-phones-20261119, codex/persian-native-20261120, codex/persian-issue49-solh-20261120, codex/persian-native-transitions-20261120, codex/persian-native-fast-pilot-20261120, codex/persian-sentence-core-20261120]
     paths:
       - experiments/persian/build_native_probe.py
       - experiments/persian/build_windows_probe.py
@@ -17,6 +17,10 @@ on:
       - src/reloq_persian_pinglish_phrase.c
       - src/reloq_persian_glides.c
       - src/reloq_persian_prosody.c
+      - src/reloq_persian_transition.c
+      - src/reloq_persian_transition.h
+      - src/reloq_persian_plan.c
+      - include/reloq_persian_timing.h
       - experiments/persian/test_native_us_word_contour.py
       - experiments/persian/test_persian_final_h_after_consonant.py
       - experiments/persian/test_fa_stress_policy.py

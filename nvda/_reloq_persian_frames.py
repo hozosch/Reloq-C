@@ -187,6 +187,12 @@ class FrameCapture:
                 ctypes.POINTER(ctypes.c_ubyte), ctypes.c_size_t, ctypes.c_size_t, ctypes.c_double,
                 ctypes.POINTER(ctypes.c_ubyte))
             self.bridge_stop_onsets.restype = ctypes.c_int
+        self.match_stop_nasal = getattr(dll, 'eciPersianMatchStopNasal', None)
+        if self.match_stop_nasal is not None:
+            self.match_stop_nasal.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,
+                ctypes.c_size_t, ctypes.c_size_t, ctypes.POINTER(NativeFrame),
+                ctypes.c_size_t, ctypes.c_size_t)
+            self.match_stop_nasal.restype = ctypes.c_int
 
     def capture(self, voice, parts, *, maximum=60000, audio=True, phone_segments=False,
                 snapshot_at=None, on_snapshot=None):
