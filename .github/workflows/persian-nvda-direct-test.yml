@@ -82,6 +82,8 @@ on:
       - experiments/persian/test_embedded_text_rules.py
       - experiments/persian/select_windows_acoustic_run.py
       - experiments/persian/test_acoustic_run_selection.py
+      - tools/inspect_linked_delta_pe.py
+      - tests/test_linked_delta_pe.py
       - experiments/persian/build_soundlab_nvda.py
       - experiments/persian/test_soundlab_nvda.py
       - experiments/persian/test_soundlab_real_plugin.py
@@ -105,6 +107,11 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Check linked Delta PE inspection
+        shell: pwsh
+        run: |
+          python -B tests/test_linked_delta_pe.py
+          if ($LASTEXITCODE -ne 0) { throw 'Linked Delta PE inspection failed' }
       - name: Select verified Windows acoustics
         id: acoustic
         shell: bash
