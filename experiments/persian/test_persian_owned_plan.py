@@ -117,6 +117,9 @@ def main():
         # A single written short vowel does not make the rest of a word
         # fully vocalized; preserve a known stem's omitted vowels and stress.
         assert analyze('اِسلش')[1] == analyze('اسلش')[1]
+        # Bare final heh is ambiguous; an explicit sukun permits /h/.
+        assert analyze('سِه')[0] == 1
+        assert analyze('سِهْ')[0] == 0
         # The independent plan carries the same timing decision as the
         # current audible backend without changing the vowel's identity.
         for fa, latin in [('ایتالیا', 'italia'), ('ایتالیایی', 'italiai')]:

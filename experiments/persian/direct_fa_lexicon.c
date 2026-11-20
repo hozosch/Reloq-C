@@ -243,6 +243,10 @@ static int fully_vowelled_word(const char *word,size_t bytes,char *output,size_t
         units[count++]=u;
     }
     if(!explicit_marks || !vowels)return 0;
+    /* Bare final heh often denotes the vowel /e/ in Persian. Only
+     * decode it as a pronounced /h/ when its consonant status is marked. */
+    if(count && units[count-1].consonant=='h' && !units[count-1].vowel &&
+       !units[count-1].sukun)return 0;
     size_t unmarked_coda=0;
     for(size_t i=0;i<count;++i)if(!units[i].vowel && !units[i].sukun) {
         for(size_t j=i+1;j<count;++j)if(units[j].vowel)return 0;
