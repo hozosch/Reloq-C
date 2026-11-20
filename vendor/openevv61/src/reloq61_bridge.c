@@ -5,6 +5,7 @@
 #include <string.h>
 #include "reloq61.h"
 #include "reloq_syllable_trace.h"
+#include "reloq_trace_clock.h"
 #include "reloq_persian_tuning.h"
 #include "reloq61_english_plan.h"
 #include "reloq61_english_bank.h"
@@ -39,9 +40,9 @@ void reloq61_syllable_trace_set(reloq_syllable_sink sink,void *context)
 void reloq61_syllable_trace_phone_mode(int enabled)
 {phone_trace_mode=enabled!=0;syllable_previous_to=-1;syllable_origin=0;}
 static int trace_absolute_on(void *state,int32_t from,int32_t to,int32_t *start,int32_t *end,
-                             int32_t *previous_to,int64_t *origin);
+                             int32_t *previous_to,int64_t *origin,int allow_overlap);
 static int trace_absolute(void *state,int32_t from,int32_t to,int32_t *start,int32_t *end)
-{return trace_absolute_on(state,from,to,start,end,&syllable_previous_to,&syllable_origin);}
+{return trace_absolute_on(state,from,to,start,end,&syllable_previous_to,&syllable_origin,0);}
 void reloq61_syllable_trace_emit(void *state,int32_t from,int32_t to)
 {
     if(!syllable_sink || phone_trace_mode)return;
@@ -53,7 +54,8 @@ void reloq61_phone_trace_emit(void *state,int32_t from,int32_t to)
 {
     if(!syllable_sink || !phone_trace_mode || from<0 || to<=from)return;
     int32_t start,end;
-    if(trace_absolute(state,from,to,&start,&end))syllable_sink(syllable_context,-1,-1);
+    if(trace_absolute_on(state,from,to,&start,&end,&syllable_previous_to,&syllable_origin,1))
+        syllable_sink(syllable_context,-1,-1);
     else syllable_sink(syllable_context,start,end);
 }
 void reloq61_fa_phone_emit(void *state,int32_t from,int32_t to,unsigned phone)
@@ -61,7 +63,7 @@ void reloq61_fa_phone_emit(void *state,int32_t from,int32_t to,unsigned phone)
     if(!fa_phone_trace.sink || from<0 || to<=from)return;
     int32_t start,end;
     if(trace_absolute_on(state,from,to,&start,&end,
-                         &fa_phone_trace.previous_to,&fa_phone_trace.origin))
+                         &fa_phone_trace.previous_to,&fa_phone_trace.origin,0))
         fa_phone_trace.sink(fa_phone_trace.context,-1,-1,0);
     else fa_phone_trace.sink(fa_phone_trace.context,start,end,phone);
 }
@@ -238,27 +240,15 @@ struct capture {
     size_t aragonese_elision_count,aragonese_elision_capacity;
 };
 
-/* The provider restarts its local syllable clock after a sentence pause.
- * At that reset, the synthesis result already holds the exact elapsed frame
- * clock. Normalize before handing timings to the shared host; ambiguous
- * overlaps or arithmetic overflow invalidate only the optional trace. */
+/* The provider restarts its local clock after a sentence pause. Phone
+ * intervals can overlap; syllable intervals retain the stricter contract. */
 static int trace_absolute_on(void *state,int32_t from,int32_t to,int32_t *start,int32_t *end,
-                             int32_t *previous_to,int64_t *origin)
+                             int32_t *previous_to,int64_t *origin,int allow_overlap)
 {
     delta_state *d=state;DeltaLang *dl=d?EVV_AT(DeltaLang *,d->dlang):NULL;
     struct capture *c=dl?dl->reloq_context:NULL;
-    if(!c || !c->r || from<0 || to<=from || c->r->ticks<0)return -1;
-    if(*previous_to<0 || from<*previous_to) {
-        if(*previous_to>=0 && (int64_t)*previous_to-from<=500000)return -1;
-        if(c->r->ticks>INT32_MAX/10000)return -1;
-        int64_t next_origin=c->r->ticks*10000;
-        if(*previous_to>=0 && next_origin+from<*origin+*previous_to)return -1;
-        *origin=next_origin;
-    }
-    if(*origin+to>INT32_MAX)return -1;
-    *previous_to=to;
-    *start=(int32_t)(*origin+from);*end=(int32_t)(*origin+to);
-    return 0;
+    if(!c || !c->r)return -1;
+    return reloq_trace_clock(from,to,c->r->ticks,start,end,previous_to,origin,allow_overlap);
 }
 
 int reloq61_an_note_elision(void *state,int32_t input_node)

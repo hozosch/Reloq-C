@@ -19,6 +19,13 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 PROVIDER = ROOT / 'vendor/openevv61'
 BUILD = PROVIDER / 'build/windows-release'
+DEV191_BASE = '4b2e6bfe7026b1c90e64b5421e102ed9f2df55ba'
+DEV191_KEY = ('persian-windows-provider-gcc14-v2-'
+              '5de40772759289fd47368c9f81b7a6276d78aba213423fcb60a098f9fd168b6a')
+DEV191_ALLOWED = {'experiments/persian/build_native_probe.py', 'include/reloq_eci.h',
+                  'include/reloq_persian_plan.h', 'include/reloq_trace_clock.h',
+                  'vendor/openevv61/src/reloq61_bridge.c',
+                  'vendor/openevv61/lang/engb61/delta_rules_c24_engb61.c'}
 DEV190_BASE = '97233c25232049006f6b2198ded19eef0e8778ac'
 DEV190_KEY = ('persian-windows-provider-gcc14-v2-'
               'ca576de950b66d8fbb873c89445a60993dddf2e0528e6da62ba39ba5d4d46999')
@@ -243,6 +250,18 @@ def reuse_dev156_generated(expected=frozenset({'delta_rules_c02_fifi.c'}), added
 def main():
     try:
         key = os.environ.get('PERSIAN_PROVIDER_CACHE_KEY', '')
+        if key == DEV191_KEY:
+            changed = set(git('diff', '--name-only', DEV191_BASE, 'HEAD', '--', *INPUTS).splitlines())
+            if changed != DEV191_ALLOWED:
+                raise ValueError('Persian N, trace and complete analyzer inputs differ')
+            reuse_dev156_generated(frozenset({'delta_rules_c02_fifi.c'}), original_count=22)
+            (BUILD / 'src/reloq61_bridge.o').unlink(missing_ok=True)
+            (BUILD / 'lang/engb61/delta_rules_c24_engb61.o').unlink(missing_ok=True)
+            for dep in BUILD.rglob('*.d'):
+                value=dep.read_text(encoding='utf8', errors='replace')
+                if 'reloq_eci.h' in value or 'reloq_persian_plan.h' in value:
+                    dep.with_suffix('.o').unlink(missing_ok=True)
+            return
         if key == DEV190_KEY:
             changed = set(git('diff', '--name-only', DEV190_BASE, 'HEAD', '--', *INPUTS).splitlines())
             if changed != DEV190_ALLOWED:

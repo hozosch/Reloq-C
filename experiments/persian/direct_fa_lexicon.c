@@ -3,6 +3,7 @@
  * is used at runtime. Generated tables retain their individual licenses.
  */
 #include "direct_fa_lexicon.h"
+#include "reloq_utf8.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -264,6 +265,101 @@ static int fully_vowelled_word(const char *word,size_t bytes,char *output,size_t
         if(units[i].vowel){output[used++]=units[i].vowel;++nucleus;}
     }
     if(count && units[count-1].consonant=='h' && !units[count-1].vowel)output[used++]='w';
+    output[used++]=']';output[used]=0;return 1;
+}
+
+static int guessed_joined_word(const char *word,size_t bytes,char *output,size_t capacity);
+
+/* Orthographic fallback for a previously unseen word. Persian short vowels
+ * are usually omitted, so this is an approximation, never a dictionary
+ * override. The general consonant+short-a pattern follows fa_rules' basic
+ * consonant analysis; explicit marks, long-vowel carriers and word-final
+ * heh take precedence. A permissible final consonant cluster is retained.
+ * This routine is shared by standalone hosts and does not invoke eSpeak. */
+int reloq_fa_direct_guess_word(const char *word,size_t bytes,char *output,size_t capacity)
+{
+    struct unit {char consonant,vowel;unsigned char sukun,geminate,explicit_vowel;} units[512];
+    size_t at=0,count=0;
+    if(!word || !bytes || !output || !capacity || memchr(word,0,bytes))return -1;
+    int joined=guessed_joined_word(word,bytes,output,capacity);
+    if(joined)return joined;
+    while(at<bytes) {
+        size_t next=at;uint32_t cp=0;
+        if(reloq_utf8_next((const unsigned char *)word,bytes,&next,&cp)!=1)return -1;
+        at=next;
+        if(cp==0x200c || cp==0x200d || cp==0x0640)continue;
+        if(cp==0x064e || cp==0x064f || cp==0x0650 || cp==0x0651 || cp==0x0652) {
+            if(!count)return 0;
+            struct unit *u=&units[count-1];
+            if(cp==0x0651)u->geminate=1;
+            else if(cp==0x0652){if(u->explicit_vowel)return 0;u->sukun=1;u->vowel=0;}
+            else {
+                if(u->sukun || u->explicit_vowel)return 0;
+                u->vowel=cp==0x064e?'A':cp==0x064f?'o':'e';u->explicit_vowel=1;
+            }
+            continue;
+        }
+        char consonant=explicit_consonant(cp),vowel=0;
+        if(cp==0x0622)vowel='a';
+        else if(cp==0x0627) {
+            if(!count)vowel='A';
+            else if(!units[count-1].vowel && !units[count-1].sukun)
+                {units[count-1].vowel='a';continue;}
+            else vowel='a';
+        } else if(cp==0x0648 || cp==0x06cc || cp==0x064a) {
+            char sound=cp==0x0648?'u':'i';
+            size_t look=at;uint32_t following=0;
+            if(look<bytes && reloq_utf8_next((const unsigned char *)word,bytes,&look,&following)!=1)return -1;
+            /* Before another written vowel, و is consonantal. The common
+             * productive -وند ending likewise starts with /v/, not /u/. */
+            int consonantal_waw=cp==0x0648 &&
+                (following==0x0627 || following==0x0622 || following==0x06cc || following==0x064a ||
+                 (bytes-at==sizeof "ند"-1 && !memcmp(word+at,"ند",sizeof "ند"-1)));
+            if(!consonantal_waw && count && !units[count-1].vowel && !units[count-1].sukun)
+                {units[count-1].vowel=sound;continue;}
+            consonant=cp==0x0648?'v':'j';
+        } else if(cp==0x0647 || cp==0x06c0) {
+            if(at==bytes && count && !units[count-1].vowel && !units[count-1].sukun)
+                {units[count-1].vowel='e';continue;}
+            consonant='h';
+        } else if(cp==0x0621 || cp==0x0623 || cp==0x0625 || cp==0x0639)consonant='w';
+        else if(cp==0x0626)consonant='j';
+        else if(cp==0x0624)consonant='v';
+        else if(cp==0x0629)consonant='t';
+        if(!consonant && !vowel)return 0;
+        if(count==sizeof units/sizeof units[0])return 0;
+        units[count++]=(struct unit){consonant,vowel,0,0,0};
+    }
+    if(!count)return 0;
+    size_t last=SIZE_MAX,nuclei=0;
+    for(size_t i=0;i<count;++i) {
+        if(units[i].vowel){last=i;++nuclei;continue;}
+        if(units[i].sukun || !units[i].consonant)continue;
+        if(i+1<count && (last==SIZE_MAX || (i-last>=2 && !units[i+1].vowel))) {
+            units[i].vowel='A';last=i;++nuclei;
+        }
+    }
+    if(!nuclei) {
+        size_t i=0;while(i<count && (units[i].sukun || !units[i].consonant))++i;
+        if(i==count)return 0;
+        units[i].vowel='A';nuclei=1;
+    }
+    /* At most two phones per unit and a syllable prefix per nucleus. */
+    if(count>(SIZE_MAX-5-3*nuclei)/3 || 5+3*count+3*nuclei>capacity)return -2;
+    size_t used=0,nucleus=0;
+    output[used++]='`';output[used++]='[';output[used++]='.';
+    output[used++]=nuclei==1?'1':'0';
+    for(size_t i=0;i<count;++i) {
+        struct unit u=units[i];
+        if(u.vowel && nucleus) {
+            output[used++]='.';output[used++]=nucleus+1==nuclei?'1':'0';
+        }
+        if(u.consonant){output[used++]=u.consonant;if(u.geminate)output[used++]=u.consonant;}
+        if(u.vowel){output[used++]=u.vowel;++nucleus;}
+    }
+    /* The acoustic bridge needs its silent carrier after a final /h/; the
+     * owned phone plan removes that carrier, keeping the actual H impulse. */
+    if(units[count-1].consonant=='h' && !units[count-1].vowel)output[used++]='w';
     output[used++]=']';output[used]=0;return 1;
 }
 
@@ -1551,6 +1647,58 @@ static int joined_compound_word(const char *word,size_t bytes,char *output,size_
     if(result!=1)return result;
     size_t count=stress_syllables(output);
     if(count && !enclitic)stress_primary(output,verb_prefix?0:count-1);
+    return 1;
+}
+
+/* Apply the same compound and verbal-prefix stress as the admitted-word
+ * rule, but allow an unknown component to use the general orthography. */
+int reloq_fa_direct_guess_prefixed_verb(const char *word,size_t bytes,char *output,size_t capacity)
+{
+    if(!word || !bytes || !output || !capacity || memchr(word,0,bytes))return -1;
+    if(!(stress_class(word,bytes)&2u))return 0;
+    static const struct {const char *ending,*phones;} endings[]={
+        {"ند","And"},{"ید","id"},{"یم","im"},
+        {"م","Am"},{"ی","i"},{"د","Ad"}
+    };
+    for(size_t i=0;i<sizeof endings/sizeof endings[0];++i) {
+        size_t stem=0;
+        if(!ends_with(word,bytes,endings[i].ending,&stem) || !stem)continue;
+        char root[2048];
+        int status=reloq_fa_direct_context_word(word,stem,0,root,sizeof root);
+        if(status<0)return status;
+        if(status!=1 || !single_phone_tag(root))continue;
+        size_t n=strlen(root),suffix=strlen(endings[i].phones);
+        /* Re-syllabify a final consonant as onset of the inflection. */
+        if(n<6 || !strchr("bptdkgfsvzSZCJrmnRlG",root[n-2]))continue;
+        if(n>SIZE_MAX-suffix-3 || n+suffix+3>capacity)return -2;
+        memcpy(output,root,n-2);
+        size_t at=n-2;output[at++]='.';output[at++]='0';output[at++]=root[n-2];
+        memcpy(output+at,endings[i].phones,suffix);at+=suffix;
+        output[at++]=']';output[at]=0;
+        return 1;
+    }
+    return 0;
+}
+
+static int guessed_joined_word(const char *word,size_t bytes,char *output,size_t capacity)
+{
+    size_t split=single_joiner(word,bytes);
+    if(split==SIZE_MAX || !split || split+3>=bytes)return 0;
+    const char *tail=word+split+3;size_t tail_bytes=bytes-split-3;
+    int verb_prefix=stress_word_is(word,split,"می") || stress_word_is(word,split,"نمی");
+    char left[2048],right[2048];
+    int a=reloq_fa_direct_context_word(word,split,0,left,sizeof left);
+    if(a==0)a=reloq_fa_direct_guess_word(word,split,left,sizeof left);
+    int b=reloq_fa_direct_context_word(tail,tail_bytes,0,right,sizeof right);
+    if(b==0 && verb_prefix)b=reloq_fa_direct_guess_prefixed_verb(tail,tail_bytes,right,sizeof right);
+    if(b==0)b=reloq_fa_direct_guess_word(tail,tail_bytes,right,sizeof right);
+    if(a<0 || b<0)return a<0?a:b;
+    if(a!=1 || b!=1 || !single_phone_tag(left) || !single_phone_tag(right))return 0;
+    (void)shorten_written_final_e(word,split,left);
+    int result=append_phone_tags(left,right,output,capacity);
+    if(result!=1)return result;
+    size_t count=stress_syllables(output);
+    if(count)stress_primary(output,verb_prefix?0:count-1);
     return 1;
 }
 

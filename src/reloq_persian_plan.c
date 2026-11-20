@@ -205,7 +205,7 @@ static int projected(struct plan *p,const char *s,size_t bytes,size_t **mapping)
 }
 
 static int segment(struct plan *p,const char *text,size_t bytes,int variant,int kind,
-                   size_t *source_map,size_t *error)
+                   size_t *source_map,size_t *error,int complete)
 {
     if(!bytes){source_map[0]=p->n;return 0;}
     size_t before=p->n;int result=0;char *tagged=NULL;size_t *input_map=NULL,*output_map=NULL;
@@ -221,6 +221,8 @@ static int segment(struct plan *p,const char *text,size_t bytes,int variant,int 
         result=reloq_fa_spell_for_plan(text,bytes,&tagged,&input_map,error);
     } else if(kind==1) {
         result=reloq_fa_spell_for_plan(text,bytes,&tagged,&input_map,error);
+    } else if(complete && !variant) {
+        result=reloq_fa_direct_text_complete(text,bytes,&tagged,&input_map,error);
     } else {
         if(bytes==SIZE_MAX || bytes+1>SIZE_MAX/sizeof(size_t))return -2;
         size_t num=bytes+1,ends[1]={bytes};unsigned char modes[1]={0};
@@ -306,10 +308,10 @@ static int english_run(const char *text,size_t at,size_t end,int variant,size_t 
     return 1;
 }
 
-int reloq_fa_analyze_runs(const char *text,size_t bytes,int mode,
+static int analyze_runs(const char *text,size_t bytes,int mode,
     const size_t *run_ends,const unsigned char *run_modes,size_t run_count,
     const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
-    struct reloq_fa_plan_event **events,size_t *count,size_t *target_events,size_t *error_offset)
+    struct reloq_fa_plan_event **events,size_t *count,size_t *target_events,size_t *error_offset,int complete)
 {
     if(events)*events=NULL;
     if(count)*count=0;
@@ -335,7 +337,7 @@ int reloq_fa_analyze_runs(const char *text,size_t bytes,int mode,
         size_t end=run_ends[r];int kind=run_modes[r++];
         while(kind!=2 && r<run_count && run_modes[r]==kind)end=run_ends[r++];
         if(kind!=0) {
-            size_t err=0;result=segment(&p,text+start,end-start,mode,kind,map+start,&err);
+            size_t err=0;result=segment(&p,text+start,end-start,mode,kind,map+start,&err,complete);
             if(result)*error_offset=start+err;
         } else {
             size_t from=start,at=start;
@@ -345,9 +347,9 @@ int reloq_fa_analyze_runs(const char *text,size_t bytes,int mode,
                     while(closing<end && text[closing]!=']' &&
                           text[closing]!=' ' && text[closing]!='\t' && text[closing]!='\n')++closing;
                     if(closing<end && text[closing]==']')++closing;
-                    result=segment(&p,text+from,at-from,mode,0,map+from,&err);
+                    result=segment(&p,text+from,at-from,mode,0,map+from,&err,complete);
                     if(result){*error_offset=from+err;break;}
-                    result=segment(&p,text+at,closing-at,mode,2,map+at,&err);
+                    result=segment(&p,text+at,closing-at,mode,2,map+at,&err,complete);
                     if(result){*error_offset=at+err;break;}
                     at=closing;from=at;continue;
                 }
@@ -359,7 +361,7 @@ int reloq_fa_analyze_runs(const char *text,size_t bytes,int mode,
                     if(foreign<0){*error_offset=at;result=foreign;break;}
                     if(!foreign){at=last>at?last:at+1;continue;}
                     size_t err=0;
-                    result=segment(&p,text+from,at-from,mode,0,map+from,&err);
+                    result=segment(&p,text+from,at-from,mode,0,map+from,&err,complete);
                     if(result){*error_offset=from+err;break;}
                     if(at>UINT32_MAX || last-at>UINT32_MAX){result=-1;*error_offset=at;break;}
                     size_t before=p.n;
@@ -369,7 +371,7 @@ int reloq_fa_analyze_runs(const char *text,size_t bytes,int mode,
                 }
                 if(parsed<0){*error_offset=at;result=1;break;}
                 size_t err=0;
-                result=segment(&p,text+from,at-from,mode,0,map+from,&err);
+                result=segment(&p,text+from,at-from,mode,0,map+from,&err,complete);
                 if(result){*error_offset=from+err;break;}
                 size_t before=p.n;
                 result=push(&p,RELOQ_FA_PLAN_INPUT_VARIANT,(uint32_t)next,0,0,0);
@@ -377,7 +379,7 @@ int reloq_fa_analyze_runs(const char *text,size_t bytes,int mode,
                 at+=used;map[at]=p.n;from=at;mode=next;
             }
             if(!result) {
-                size_t err=0;result=segment(&p,text+from,end-from,mode,0,map+from,&err);
+                size_t err=0;result=segment(&p,text+from,end-from,mode,0,map+from,&err,complete);
                 if(result)*error_offset=from+err;
             }
         }
@@ -398,3 +400,17 @@ int reloq_fa_analyze_runs(const char *text,size_t bytes,int mode,
     }
     free(p.events);free(map);free(mapped);return result;
 }
+
+int reloq_fa_analyze_runs(const char *text,size_t bytes,int mode,
+    const size_t *run_ends,const unsigned char *run_modes,size_t run_count,
+    const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
+    struct reloq_fa_plan_event **events,size_t *count,size_t *target_events,size_t *error_offset)
+{return analyze_runs(text,bytes,mode,run_ends,run_modes,run_count,source_offsets,is_index,
+                     event_count,events,count,target_events,error_offset,0);}
+
+int reloq_fa_analyze_runs_complete(const char *text,size_t bytes,int mode,
+    const size_t *run_ends,const unsigned char *run_modes,size_t run_count,
+    const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
+    struct reloq_fa_plan_event **events,size_t *count,size_t *target_events,size_t *error_offset)
+{return analyze_runs(text,bytes,mode,run_ends,run_modes,run_count,source_offsets,is_index,
+                     event_count,events,count,target_events,error_offset,1);}

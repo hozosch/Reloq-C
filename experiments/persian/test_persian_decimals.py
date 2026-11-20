@@ -65,7 +65,7 @@ def main():
     sys.modules['config'] = types.SimpleNamespace(conf={'speech': {'symbolLevel': level.NONE}})
     dictionaries = types.SimpleNamespace(dictionaries={'builtin': []})
     sys.modules['speechDictHandler'] = dictionaries
-    fa_id, pinglish_id, en_id = 0x7f0000, 0x7f0001, 0x10000
+    fa_id, pinglish_id, en_id = 0x140000, 0x140001, 0x10000
     profiles = {fa_id: types.SimpleNamespace(id=fa_id, locale='fa_IR'),
                 pinglish_id: types.SimpleNamespace(id=pinglish_id, locale='fa_Latn'),
                 en_id: types.SimpleNamespace(id=en_id, locale='en_US')}

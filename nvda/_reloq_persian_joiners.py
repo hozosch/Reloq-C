@@ -9,7 +9,7 @@ from speech.commands import CharacterModeCommand, IndexCommand, LangChangeComman
 
 from ._reloq_languages import language_for
 
-_FA_PROFILES = frozenset((0x7f0000, 0x7f0001))
+_FA_PROFILES = frozenset((0x140000, 0x140001))
 _MARKERS = {'\u200c': '\ue070', '\u200d': '\ue071', ':': '\ue073'}
 _RESTORE = str.maketrans({value: key for key, value in _MARKERS.items()})
 

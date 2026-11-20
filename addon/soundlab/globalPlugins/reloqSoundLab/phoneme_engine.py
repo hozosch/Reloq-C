@@ -104,6 +104,16 @@ def load(dll, settings):
             capture=FrameCapture(voice._dll).capture(voice,(phone.tag,),audio=False,phone_segments=True)
             if capture is None or not capture.frame_bytes:
                 raise ValueError('Der Laut konnte nicht geladen werden.')
+            # A one-vowel probe forms exactly one native syllable. If a
+            # provider omits phone trace events, its syllable clock is an
+            # independent exact boundary for this case. Never guess a
+            # consonant boundary or use a mismatching second rendering.
+            if (not capture.syllables and not phone.onset and phone.first==0 and
+                    phone.count==1 and len(phone.tag)==6 and phone.tag.startswith('`[.1')):
+                fallback=FrameCapture(voice._dll).capture(voice,(phone.tag,),audio=False)
+                if (fallback is not None and fallback.frame_bytes==capture.frame_bytes and
+                        len(fallback.syllables)==1):
+                    capture=fallback
             start,end=phonemes.interval(phone,capture.syllables)
             rows=capture.frames()
             candidates=[r for r in rows if start<=r.tick<end and

@@ -1,4 +1,4 @@
-"""Verify French M, blended N, US timing and uncolored Persian vowels."""
+"""Verify French M, French N bass with US upper formants, and Persian vowels."""
 from __future__ import annotations
 
 import argparse
@@ -85,7 +85,7 @@ def main():
                                 engine.set_parameter(key, value)
                     # M retains the French source and resonances. N retains
                     # French F0, the low resonance and source while its upper
-                    # targets blend the contextual French and US rules.
+                    # targets follow the contextual US rules.
                     for phone, word in (('m', 'mime'), ('n', 'niche')):
                         columns = ((2, 4, 7, 9, 10, 14, 16, 17, 19, 27) if phone == 'm'
                                    else (2, 4, 7, 9, 10, 14, 16, 27))
@@ -96,13 +96,10 @@ def main():
                             rate, gender, speed, phone, actual, original)
                         if phone == 'n':
                             upper = (17, 19)
-                            mixed = middle(nasal, 0, upper)
-                            french = french_onset(fr, fr_scope, word, upper)
+                            actual = middle(nasal, 0, upper)
                             english = middle(capture(us, us_scope, '`[.1nim]', False), 0, upper)
-                            for a, f, e in zip(mixed, french, english):
-                                assert min(f,e)-2 <= a <= max(f,e)+2, (rate,gender,speed,a,f,e)
-                                if abs(f-e)>4:
-                                    assert abs(a-(f+e)/2)<=2, (rate,gender,speed,a,f,e)
+                            for a, e in zip(actual, english):
+                                assert abs(a-e)<=2, (rate,gender,speed,a,e)
                     # Check both ends and six vowels. Preserve the adopted US
                     # phone timings while allowing the French sound targets.
                     for phone in 'mn':
@@ -172,7 +169,7 @@ def main():
         fa.close(); us.close(); fr.close()
         if previous:
             previous.close()
-    print(f'Passed {count} French M, blended N, US duration and uncolored-vowel cases.')
+    print(f'Passed {count} French M, N bass/US upper resonance, US duration and uncolored-vowel cases.')
 
 
 if __name__ == '__main__':

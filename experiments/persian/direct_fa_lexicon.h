@@ -13,6 +13,12 @@ int reloq_fa_direct_word(const char *word, size_t bytes, char *output, size_t ca
  * word follows before a boundary. Unknown stems and unadmitted forms fail. */
 int reloq_fa_direct_context_word(const char *word, size_t bytes, int follows_word,
                                  char *output, size_t capacity);
+/* General orthographic fallback after lexical and morphology rules fail.
+ * Unwritten short vowels are inferred and may be ambiguous. */
+int reloq_fa_direct_guess_word(const char *word,size_t bytes,char *output,size_t capacity);
+/* Use a classified finite verb and an independently known stem after a
+ * confirmed verbal prefix; 0 means no safe morphological analysis. */
+int reloq_fa_direct_guess_prefixed_verb(const char *word,size_t bytes,char *output,size_t capacity);
 size_t reloq_fa_direct_word_count(void);
 /* Apply conservative stress rules to a single generated reference tag.
  * The spelling must already be in the native normalized form. */

@@ -30,8 +30,8 @@ else:
                                   EciPitch, EciPitchHz, EciProsody, EciText, PAUSE_MODE)
     from _reloq_languages import Language, LanguageEngine, US_ENGLISH, GERMAN, FINNISH
 
-PERSIAN_PROBE = Language(0x7f0000, 'Persian test', 'fa_IR', 'utf-8', US_ENGLISH.voices)
-PINGLISH_PROBE = Language(0x7f0001, 'Persian (Pinglish) test', 'fa_Latn', 'utf-8', US_ENGLISH.voices)
+PERSIAN_PROBE = Language(0x140000, 'Persian test', 'fa_IR', 'utf-8', US_ENGLISH.voices)
+PINGLISH_PROBE = Language(0x140001, 'Persian (Pinglish) test', 'fa_Latn', 'utf-8', US_ENGLISH.voices)
 PROFILES = {profile.id: profile for profile in
             (PERSIAN_PROBE, PINGLISH_PROBE, US_ENGLISH, GERMAN, FINNISH)}
 

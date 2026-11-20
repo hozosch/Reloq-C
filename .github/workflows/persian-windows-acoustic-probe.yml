@@ -136,6 +136,7 @@ jobs:
           path: vendor/openevv61/build/windows-release
           key: persian-windows-provider-gcc14-v2-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c', 'src/reloq_persian_acoustics.c', 'src/reloq_persian_acoustics.h', 'tools/prepare_persian_provider.py', 'experiments/persian/build_native_probe.py', 'experiments/aragonese/build_native_probe.py') }}
           restore-keys: |
+            persian-windows-provider-gcc14-v2-5de40772759289fd47368c9f81b7a6276d78aba213423fcb60a098f9fd168b6a
             persian-windows-provider-gcc14-v2-ca576de950b66d8fbb873c89445a60993dddf2e0528e6da62ba39ba5d4d46999
             persian-windows-provider-gcc14-v2-4e6e2b0efe6a150a1ede3b8f1dd19922f4c0fedb3f31dbb2b9e705c3c4004460
             persian-windows-provider-gcc14-v2-7c9a787e05fed4238c0f7780436689064c7eb6ee6ae6ab9082cf81231a9a109b
@@ -144,7 +145,6 @@ jobs:
             persian-windows-provider-gcc14-v2-782694288976480b757bf5220770ab738c651bf3e9222a0c071b2a7198289a63
             persian-windows-provider-gcc14-v2-04cc9a755afeb7ef13a3aebfa7900e2fcef9ceaa6dec69c8d88257a01ecfdbac
             persian-windows-provider-gcc14-v2-0c10a06526b641297356b228a95a40bad91c9e8b9b7e613eed1188ac96286aa9
-            persian-windows-provider-gcc14-v2-f67c1d2ffe98915df1e66caa287666526b8a4547bbb0dd70135ef814bfb61d72
       - uses: actions/cache/restore@v4
         id: host
         with:
@@ -153,6 +153,7 @@ jobs:
             eci/eci.dll
           key: persian-windows-host-gcc14-v2-${{ hashFiles('eci/Makefile', 'eci/reloq_eci_fixed_math.c', 'src/**', 'include/**', 'vendor/openevv61/**', '!vendor/openevv61/build/**', 'experiments/persian/direct_fa_*.c', 'experiments/persian/direct_fa_*.h', 'experiments/persian/direct_fa_*.inc', 'tools/prepare_persian_provider.py', 'experiments/persian/build_native_probe.py', 'experiments/aragonese/build_native_probe.py') }}
           restore-keys: |
+            persian-windows-host-gcc14-v2-bdc1db30fb89d5b74756a0a4004095d3e1fd78de1a2d1b522df02f1f05c17c9c
             persian-windows-host-gcc14-v2-768d67b0405a722cb2963006a93c4bd82098b60f54ead2434822d7703f7cf858
             persian-windows-host-gcc14-v2-c9271a83e4aa463ba48644fd5727688aa3ce3fbf6b4452a211f99357010d4eb7
             persian-windows-host-gcc14-v2-32260b50bc1d953680e539a8182b9a61260f2c7d5f7b4c09c02a681570c1c7ff
@@ -161,7 +162,6 @@ jobs:
             persian-windows-host-gcc14-v2-014d42330379aa1315919614c79f41876d34c8d4eab6aeea8bc6b7ea194c949d
             persian-windows-host-gcc14-v2-12776d4d080ba6a3260e7a39aaf0c5364959c7e8e909bbb50ba87280ed821ef7
             persian-windows-host-gcc14-v2-7b91c4f5a30718c9fd1a3be2b4303da45bcb92864cdb940c236ce3f8f7a6e6b9
-            persian-windows-host-gcc14-v2-268ffbca07ccee73cc8031e3e92a2c32769e571c090464467f75ceef0bd2da09
       - name: Restore cached provider timestamps
         if: steps.provider.outputs.cache-hit == 'true'
         shell: bash
@@ -177,6 +177,12 @@ jobs:
         run: |
           python -B tests/test_persian_provider_cache.py
           if ($LASTEXITCODE -ne 0) { throw 'Provider cache safeguards failed' }
+      - name: Check overlapping phone clocks
+        shell: bash
+        run: |
+          export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
+          gcc -std=c11 -Wall -Wextra -Werror -Iinclude tests/test_reloq_trace_clock.c -o trace-clock.exe
+          ./trace-clock.exe
       - name: Restore cached host timestamps
         if: steps.host.outputs.cache-hit == 'true'
         shell: bash

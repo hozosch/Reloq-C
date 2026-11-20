@@ -3,6 +3,7 @@
 #include "direct_fa_lexicon.h"
 #include "direct_fa_normalize.h"
 #include "direct_fa_numbers.h"
+#include "direct_fa_characters.h"
 #include "reloq_utf8.h"
 #include <stdint.h>
 #include <stdlib.h>
@@ -202,7 +203,7 @@ static void retain_compound_prosody(const char *word,size_t bytes,int follows,
 void reloq_fa_direct_free(void *pointer) { free(pointer); }
 
 static int direct_normalized_text(const char *text,size_t length,char **output,
-                                  size_t **source_map,size_t *error_offset)
+                                  size_t **source_map,size_t *error_offset,int complete)
 {
     if(output)*output=NULL;
     if(source_map)*source_map=NULL;
@@ -260,7 +261,11 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
             char tag[2048];
             int follows=joined_be || follows_word_in_phrase(text,length,end);
             int found=reloq_fa_direct_context_word(text+start,end-start,follows,tag,sizeof tag);
-            if(found!=1){status=found==0?1:-1;break;}
+            if(found==0 && complete && start==prefixed_verb)
+                found=reloq_fa_direct_guess_prefixed_verb(text+start,end-start,tag,sizeof tag);
+            if(found==0 && complete)
+                found=reloq_fa_direct_guess_word(text+start,end-start,tag,sizeof tag);
+            if(found!=1){status=found==0?1:found==-2?-2:-1;break;}
             if(preceding_word && previous_start!=SIZE_MAX && previous_end<start)
                 reloq_fa_direct_stress_after_word(text+previous_start,previous_end-previous_start,
                                                   text+start,end-start,tag);
@@ -327,7 +332,17 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
             else if(cp==0x61f)punctuation='?';
             else if(cp==0x00ab)punctuation='(';
             else if(cp==0x00bb)punctuation=')';
-            else {status=1;break;}
+            else if(complete) {
+                char name[2048];int kind=0;
+                int named=reloq_fa_character_resolve(cp,name,sizeof name,&kind);
+                if(named==1 && kind)named=reloq_fa_character_code_name(cp,name,sizeof name);
+                if(named!=1){status=named<0?-1:1;break;}
+                if(b.used && b.data[b.used-1]!=' ' && append(&b," ",1)){status=-2;break;}
+                for(size_t i=start;i<next;++i)map[i]=b.used;
+                if(append(&b,name,strlen(name))){status=-2;break;}
+                map[next]=b.used;at=next;preceding_word=0;previous_start=SIZE_MAX;
+                continue;
+            } else {status=1;break;}
             size_t point=b.used;
             if(append(&b,&punctuation,1)){status=-2;break;}
             for(size_t i=start;i<next;++i)map[i]=point;
@@ -341,8 +356,8 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
     map[length]=b.used;*source_map=map;*output=b.data;return 0;
 }
 
-int reloq_fa_direct_text(const char *text,size_t length,char **output,
-                         size_t **source_map,size_t *error_offset)
+static int direct_text_mode(const char *text,size_t length,char **output,
+                            size_t **source_map,size_t *error_offset,int complete)
 {
     if(output)*output=NULL;
     if(source_map)*source_map=NULL;
@@ -373,7 +388,7 @@ int reloq_fa_direct_text(const char *text,size_t length,char **output,
             *error_offset=first;free(source_to_normalized);free(normalized);return 1;
         }
     }
-    status=direct_normalized_text(normalized,strlen(normalized),&tagged,&normalized_to_tagged,&offset);
+    status=direct_normalized_text(normalized,strlen(normalized),&tagged,&normalized_to_tagged,&offset,complete);
     if(status) {
         size_t original=0;
         while(original<length && source_to_normalized[original]<offset)++original;
@@ -385,9 +400,17 @@ int reloq_fa_direct_text(const char *text,size_t length,char **output,
     *output=tagged;*source_map=source_to_normalized;return 0;
 }
 
-int reloq_fa_direct_project(const char *text,size_t length,
+int reloq_fa_direct_text(const char *text,size_t length,char **output,
+                         size_t **source_map,size_t *error_offset)
+{return direct_text_mode(text,length,output,source_map,error_offset,0);}
+
+int reloq_fa_direct_text_complete(const char *text,size_t length,char **output,
+                                  size_t **source_map,size_t *error_offset)
+{return direct_text_mode(text,length,output,source_map,error_offset,1);}
+
+static int direct_project_mode(const char *text,size_t length,
     const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
-    char **output,size_t *target_offsets,size_t *error_offset)
+    char **output,size_t *target_offsets,size_t *error_offset,int complete)
 {
     if(output)*output=NULL;
     if(error_offset)*error_offset=0;
@@ -396,7 +419,7 @@ int reloq_fa_direct_project(const char *text,size_t length,
     size_t *map=NULL,*mapped=event_count?malloc(event_count*sizeof *mapped):NULL;
     if(event_count&&!mapped)return -2;
     char *tagged=NULL;
-    int status=reloq_fa_direct_text(text,length,&tagged,&map,error_offset);
+    int status=direct_text_mode(text,length,&tagged,&map,error_offset,complete);
     if(status){free(mapped);return status;}
     size_t tagged_length=strlen(tagged),previous=0,cursor=0,tag_start=0,tag_end=0;
     if(map[length]!=tagged_length){status=-1;goto done;}
@@ -425,3 +448,13 @@ int reloq_fa_direct_project(const char *text,size_t length,
 done:
     free(tagged);free(map);free(mapped);return status;
 }
+
+int reloq_fa_direct_project(const char *text,size_t length,
+    const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
+    char **output,size_t *target_offsets,size_t *error_offset)
+{return direct_project_mode(text,length,source_offsets,is_index,event_count,output,target_offsets,error_offset,0);}
+
+int reloq_fa_direct_project_complete(const char *text,size_t length,
+    const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
+    char **output,size_t *target_offsets,size_t *error_offset)
+{return direct_project_mode(text,length,source_offsets,is_index,event_count,output,target_offsets,error_offset,1);}

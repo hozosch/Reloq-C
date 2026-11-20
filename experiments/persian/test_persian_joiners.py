@@ -91,7 +91,7 @@ def main():
     sys.modules['config'] = types.SimpleNamespace(conf={'speech': {'symbolLevel': level.NONE}})
     dictionaries = types.SimpleNamespace(dictionaries={'builtin': []})
     sys.modules['speechDictHandler'] = dictionaries
-    fa_id, en_id = 0x7f0000, 0x10000
+    fa_id, en_id = 0x140000, 0x10000
     profiles = {fa_id: types.SimpleNamespace(id=fa_id, locale='fa_IR'),
                 en_id: types.SimpleNamespace(id=en_id, locale='en_US')}
     driver = types.SimpleNamespace(_selectedLanguage=fa_id, _languages=profiles, _submit_lock=threading.Lock())

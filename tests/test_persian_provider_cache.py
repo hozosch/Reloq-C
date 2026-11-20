@@ -16,6 +16,27 @@ import reuse_persian_provider_cache as cache
 
 
 class CacheReuseTests(unittest.TestCase):
+    def test_dev191_rebuilds_trace_bridge_and_changed_nasal_rule(self):
+        for changed, accepted in ((cache.DEV191_ALLOWED, True),
+                                  (cache.DEV191_ALLOWED | {'include/other.h'}, False),
+                                  (set(), False)):
+            with self.subTest(changed=changed), tempfile.TemporaryDirectory() as tmp:
+                build=Path(tmp)/'windows-release';obj=build/'src/reloq61_bridge.o'
+                british=build/'lang/engb61/delta_rules_c24_engb61.o'
+                obj.parent.mkdir(parents=True);obj.touch()
+                british.parent.mkdir(parents=True);british.touch()
+                with patch.object(cache,'BUILD',build),patch.object(cache,'git',return_value='\n'.join(changed)), \
+                     patch.object(cache,'reuse_dev156_generated') as reuse, \
+                     patch.dict(os.environ,{'PERSIAN_PROVIDER_CACHE_KEY':cache.DEV191_KEY}), \
+                     contextlib.redirect_stdout(io.StringIO()):
+                    cache.main()
+                self.assertEqual(reuse.called,accepted)
+                self.assertEqual(build.exists(),accepted)
+                if accepted:
+                    reuse.assert_called_once_with(frozenset({'delta_rules_c02_fifi.c'}),original_count=22)
+                    self.assertFalse(obj.exists())
+                    self.assertFalse(british.exists())
+
     def test_dev190_rebuilds_british_trace_and_nasal_rule(self):
         for changed, accepted in ((cache.DEV190_ALLOWED, True),
                                   (cache.DEV190_ALLOWED | {'include/reloq_eci.h'}, False),

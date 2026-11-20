@@ -22,8 +22,14 @@ def require(condition, detail):
 
 class Player:
     def __init__(self,*args,**kwargs):self.chunks=[]
-    def feed(self,data):self.chunks.append(bytes(data))
+    def feed(self,data,*args,**kwargs):
+        self.chunks.append(bytes(data))
+        callback=kwargs.get('onDone')
+        if callable(callback):callback()
     def idle(self):pass
+    def sync(self):pass
+    def stop(self):pass
+    def pause(self,value):pass
     def close(self):pass
 
 
@@ -53,6 +59,18 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             def make(*a,**kw):
                 player=Player(*a,**kw);self.players.append(player);return player
             soundlab.nvwave.WavePlayer=make
+            # Use the actual Eloquence driver as the active screen reader.
+            # The editor's loading announcement and selection changes can
+            # then synthesize concurrently with its independent capture.
+            import speech
+            import synthDriverHandler
+            import synthDrivers.reloqC as reloq
+            self.speech=speech
+            reloq.SynthDriver._make_player=staticmethod(lambda *a,**kw:Player(*a,**kw))
+            speech.cancelSpeech()
+            require(synthDriverHandler.setSynth('reloqC'),'could not select Eloquence')
+            self.synth=synthDriverHandler.getSynth()
+            self.synth.language='fa_IR'
             self.dialog=PhonemeEditorDialog(gui.mainFrame);self.errors=[];self.dialog.error=self.errors.append
             self.dialog.Show();self.dialog.Raise();wx.YieldIfNeeded()
             from NVDAObjects.IAccessible import getNVDAObjectFromEvent
@@ -74,6 +92,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     obj=getNVDAObjectFromEvent(handle,-4,0)
                     if obj is not None:names.append(obj.name)
                 self.names.append((label,names));require(label in names,(label,names))
+            speech.speakMessage('Der Lauteditor lädt jetzt eine lange Hörprobe für den Vergleich.')
             self.dialog.on_prepare(None);self.phase=0;self.deadline=time.monotonic()+60
             wx.CallLater(100,self.check)
         except Exception:self.fail()
@@ -154,12 +173,26 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 self.modified=b''.join(self.players[-1].chunks);self.phase=2
                 require(self.keys.Char(wx.WXK_F3),'could not send F3')
                 wx.CallLater(250,self.check);return
-            original=b''.join(self.players[-1].chunks)
-            require(self.modified!=original and len(self.modified)==len(original),'edited phone not audible')
-            self.dialog.phone.SetFocus();wx.YieldIfNeeded()
-            event=Key(wx.WXK_RIGHT);self.dialog.on_key(event)
-            require(event.skipped,'arrow was swallowed outside editor')
+            if self.phase==2:
+                from globalPlugins.reloqSoundLab import phonemes
+                original=b''.join(self.players[-1].chunks)
+                require(self.modified!=original and len(self.modified)==len(original),'edited phone not audible')
+                self.dialog.phone.SetFocus();wx.YieldIfNeeded()
+                event=Key(wx.WXK_RIGHT);self.dialog.on_key(event)
+                require(event.skipped,'arrow was swallowed outside editor')
+                require(self.dialog.language.SetStringSelection('Englisch (Großbritannien)'),
+                        'British English missing from language list')
+                self.dialog.on_language(Key(0))
+                options=phonemes.PHONES['Englisch (Großbritannien)']
+                self.dialog.phone.SetSelection(next(i for i,p in enumerate(options) if p.key=='I'))
+                self.dialog.on_phone(Key(0));self.phase=3
+                self.speech.speakMessage('Der britische Vokal wird geladen und abgespielt.')
+                self.dialog.on_play(None)
+                wx.CallLater(250,self.check);return
+            require(self.dialog._loaded and self.dialog._loaded.language=='Englisch (Großbritannien)'
+                    and self.dialog._loaded.key=='I','British vowel boundaries missing')
             self.dialog._closed=True;self.dialog.Destroy()
             RESULT.write_text(json.dumps({'ok':True,'labels':self.names,'f2_f3_audio':True,
-                'keyboard_formant_2':True,'project_roundtrip':True,'espeak_import':True}),encoding='utf8')
+                'keyboard_formant_2':True,'project_roundtrip':True,'espeak_import':True,
+                'active_eloquence_and_british_phone':True}),encoding='utf8')
         except Exception:self.fail()

@@ -144,15 +144,15 @@ optional `--original` checks the original approved recording's Korean section.
 ## Persian oral nasals and nearby vowels
 
 The current listening candidate runs the French /m/ acoustic rules and a
-French/US /n/ resonance blend against Persian phone records. The /n/ voice
-source, F0 and lowest resonance remain French; higher contextual targets are
-blended with the English alveolar rule. US nasal durations and transition
+French-bass/US-upper-resonance /n/ against Persian phone records. The /n/ voice
+source, F0 and lowest resonance remain French; higher contextual targets come
+from the English alveolar rule. US nasal durations and transition
 scheduling remain unchanged. Persian vowels next to those nasals keep their own
 vowel targets; the nasal remains free to form a normal transition into them.
 The vowel rule no longer selects Finnish nasal-specific formant or tilt
 allophones for /m/ and /n/. This is distinct from adding a nasal vowel.
 
-`test_us_nasals.py` checks French /m/, blended /n/, US phone durations and
+`test_us_nasals.py` checks French /m/, French-bass /n/, US phone durations and
 the vowel's formants and tilt for both voices and multiple speeds. It also
 measures synthesized upper-frequency energy relative to the lower band in
 the reported `nun` and `mim` cases. Listening remains necessary to assess
@@ -173,6 +173,20 @@ The existing production NVDA adapter does not yet consume this event plan for
 its complete mixed-language playback. Prosody, streaming and the fallback
 for words not covered by the direct analyzer still need to move before the
 voice can be described as independent of NVDA and eSpeak.
+
+The opt-in complete C analyzer and projection now apply general orthographic
+rules to uncovered Persian words while preserving known word context and
+source indices. Explicit vowels and long-vowel letters take precedence;
+some unwritten short vowels must be inferred and can remain ambiguous.
+For a classified verb following the productive می/نمی prefix, the native
+rules first combine an independently known stem with its inflection. This
+uses sentence or half-space context and is not applied to the same spelling
+in isolation, where a nominal reading may be possible.
+When no eSpeak binary is present, the existing NVDA test adapter remains
+selectable and uses this native projection for these cases. When a reference
+is present its established fallback still applies. Audio planning and mixed
+language orchestration still belong to the NVDA adapter, and these fallback
+rules need broader pronunciation review.
 
 ## Issue 49: earlier listening candidates
 

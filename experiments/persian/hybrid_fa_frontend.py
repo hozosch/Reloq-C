@@ -212,6 +212,12 @@ class DirectFirstPersian:
                 ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_ubyte), ctypes.c_size_t,
                 ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_size_t))
             self._project_text.restype = ctypes.c_int
+        self._project_complete = getattr(self._dll, 'eciPersianProjectCompleteUtf8', None)
+        if self._project_complete is not None:
+            self._project_complete.argtypes = (ctypes.c_char_p, ctypes.c_size_t,
+                ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_ubyte), ctypes.c_size_t,
+                ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_size_t))
+            self._project_complete.restype = ctypes.c_int
         self._number.argtypes = (
             ctypes.c_char_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_size_t),
             ctypes.c_void_p, ctypes.c_size_t,
@@ -226,6 +232,8 @@ class DirectFirstPersian:
             self._pinglish_word.argtypes = (ctypes.c_char_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t)
             self._pinglish_word.restype = ctypes.c_int
         self._worker_paths = (worker, espeak_library, data_parent)
+        self._reference_available = (espeak_library is not None and Path(espeak_library).is_file() and
+                                     (worker is None or Path(worker).is_file()))
         self._worker = None
         self._guard = threading.Lock()
         self._closed = False
@@ -295,6 +303,13 @@ class DirectFirstPersian:
         else:
             status = function(encoded, len(encoded), offsets, indices, len(events),
                               ctypes.byref(output), targets, ctypes.byref(error))
+        if (status == 1 and not pinglish and self._project_complete is not None and
+                not self._reference_available and '`' not in text and
+                not any('a' <= c.lower() <= 'z' for c in text if c.isascii())):
+            # No reference is installed: let the core keep known words and
+            # use its general orthographic rules for uncovered words.
+            status = self._project_complete(encoded, len(encoded), offsets, indices, len(events),
+                                            ctypes.byref(output), targets, ctypes.byref(error))
         if status == -2:
             raise MemoryError('native Persian projection allocation failed')
         if status:
@@ -303,6 +318,18 @@ class DirectFirstPersian:
             return ctypes.string_at(output).decode('ascii'), tuple(targets) if targets is not None else ()
         finally:
             self._free_projected(output)
+
+    def project_fallback_word(self, text: str) -> str | None:
+        """Use the native word rules if the optional reference fails."""
+        if self._project_complete is None or not text or '`' in text:
+            return None
+        encoded=text.encode('utf8');output=ctypes.c_void_p();error=ctypes.c_size_t()
+        status=self._project_complete(encoded,len(encoded),None,None,0,
+                                      ctypes.byref(output),None,ctypes.byref(error))
+        if status==-2:raise MemoryError('native Persian fallback allocation failed')
+        if status:return None
+        try:return ctypes.string_at(output).decode('ascii')
+        finally:self._free_projected(output)
 
     def analyze_direct(self, text: str) -> PersianAnalysis | None:
         """Return only a fully covered native Persian analysis, without eSpeak."""

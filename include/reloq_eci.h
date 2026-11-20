@@ -291,6 +291,11 @@ ECIAPI int ECICALL eciAddTextUtf8(ECIHand handle, const void *text, size_t bytes
 ECIAPI int ECICALL eciPersianProjectUtf8(const char *text,size_t bytes,
     const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
     char **output,size_t *target_offsets,size_t *error_offset);
+/* Complete Persian projection with general native rules for uncovered
+ * words. Mixed-language routing remains the host's responsibility. */
+ECIAPI int ECICALL eciPersianProjectCompleteUtf8(const char *text,size_t bytes,
+    const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
+    char **output,size_t *target_offsets,size_t *error_offset);
 ECIAPI void ECICALL eciPersianRelease(void *pointer);
 /* True for presentation-only characters ignored in ordinary running text;
  * explicit character spelling can still request their Unicode names. */
@@ -325,6 +330,12 @@ ECIAPI int ECICALL eciPersianProjectRunsUtf8(const char *text,size_t bytes,int m
  * with standard ECI voice selection nor synthesizes audio. */
 #include "reloq_persian_plan.h"
 ECIAPI int ECICALL eciPersianAnalyzeRunsUtf8(const char *text,size_t bytes,int mode,
+    const size_t *run_ends,const unsigned char *run_modes,size_t run_count,
+    const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
+    struct reloq_fa_plan_event **events,size_t *count,size_t *target_events,size_t *error_offset);
+/* Like eciPersianAnalyzeRunsUtf8, but analyze uncovered Persian words with
+ * general orthographic rules. This is analysis, not speech rendering. */
+ECIAPI int ECICALL eciPersianAnalyzeRunsCompleteUtf8(const char *text,size_t bytes,int mode,
     const size_t *run_ends,const unsigned char *run_modes,size_t run_count,
     const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
     struct reloq_fa_plan_event **events,size_t *count,size_t *target_events,size_t *error_offset);

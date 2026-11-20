@@ -15,12 +15,20 @@
 int reloq_fa_direct_text(const char *text, size_t length, char **output,
                          size_t **source_map, size_t *error_offset);
 
+/* For the standalone planner: infer uncovered Persian words with native
+ * orthographic rules. Normal direct_text remains strict. */
+int reloq_fa_direct_text_complete(const char *text,size_t length,char **output,
+                                  size_t **source_map,size_t *error_offset);
+
 /* Convert a complete Persian phrase and project source-byte event positions
  * to phoneme-tag boundaries in the same request. Non-index events inside a
  * word are rejected; indices inside a word map to its beginning. Offsets are
  * written only on success. The caller releases output with direct_free.
  * Returns the direct_text status, or 3 for an unsafe event position. */
 int reloq_fa_direct_project(const char *text,size_t length,
+    const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
+    char **output,size_t *target_offsets,size_t *error_offset);
+int reloq_fa_direct_project_complete(const char *text,size_t length,
     const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
     char **output,size_t *target_offsets,size_t *error_offset);
 void reloq_fa_direct_free(void *pointer);

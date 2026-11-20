@@ -17,7 +17,7 @@ def _paths(library: Path):
 def add_profiles(languages, library: Path):
     """Do not expose test profiles if their private components are absent."""
     text_library, worker, reference, _ = _paths(library)
-    if not all(path.is_file() for path in (text_library, reference, library)):
+    if not all(path.is_file() for path in (text_library, library)):
         return languages
     try:
         dll = ctypes.CDLL(str(library.resolve()))
@@ -34,6 +34,8 @@ def add_profiles(languages, library: Path):
                                ('eciPersianReplayFrames', 'reloq_fa_replay_frames')):
             require(dll, public, legacy)
         text_dll = dll if text_library.resolve() == library.resolve() else ctypes.CDLL(str(text_library.resolve()))
+        if not reference.is_file() and getattr(text_dll, 'eciPersianProjectCompleteUtf8', None) is None:
+            return languages
         for public, legacy in (('eciPersianTranslateUtf8', 'reloq_fa_direct_text'),
                                ('eciPersianNumber', 'reloq_fa_direct_number'),
                                ('eciPersianLetter', 'reloq_fa_direct_letter'),

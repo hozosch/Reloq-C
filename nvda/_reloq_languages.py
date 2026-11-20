@@ -105,7 +105,7 @@ ITALIAN = Language(0x50000, N_("Italian"), "it_IT", "utf-8", US_ENGLISH.voices)
 CHINESE_CHINA = Language(0x60000, "Mandarin Chinese", "zh_CN", "utf-8", US_ENGLISH.voices)
 # Both scripts use this native module. Accept saved Taiwan IDs without
 # presenting a second language choice or opening a second worker.
-LANGUAGE_ALIASES = {0x60001: 0x60000}
+LANGUAGE_ALIASES = {0x60001: 0x60000, 0x7f0000: 0x140000, 0x7f0001: 0x140001}
 JAPANESE = Language(0x80000, N_("Japanese"), "ja_JP", "utf-8", US_ENGLISH.voices)
 KOREAN = Language(0xa0000, N_("Korean"), "ko_KR", "utf-8", US_ENGLISH.voices)
 GREEK = Language(0x120000, N_("Greek"), "el_GR", "utf-8", US_ENGLISH.voices)
@@ -116,7 +116,7 @@ LANGUAGES = {p.id: p for p in (GERMAN, US_ENGLISH, BRITISH_ENGLISH,
 # Persistent bit positions: append new languages; never reorder existing ones.
 ACOUSTIC_CLOCK_LANGUAGES = (0x40000, 0x10000, 0x10001, 0x20000, 0x20001,
     0x30000, 0x30001, 0x50000, 0x70000, 0x90000, 0x60000, 0x80000, 0xa0000, 0x120000, 0x130000,
-    0x7f0000, 0x7f0001)  # Persian and Pinglish test profiles; preserve earlier bit positions.
+    0x140000, 0x140001)  # Persian and Pinglish test profiles; preserve earlier bit positions.
 ACOUSTIC_CLOCK_BITS = {language: 1 << i for i, language in enumerate(ACOUSTIC_CLOCK_LANGUAGES)}
 ACOUSTIC_CLOCK_DEFAULT = ACOUSTIC_CLOCK_BITS[0x20000] | ACOUSTIC_CLOCK_BITS[0x120000] | ACOUSTIC_CLOCK_BITS[0x130000]
 ACOUSTIC_CLOCK_MAX = (1 << len(ACOUSTIC_CLOCK_LANGUAGES)) - 1

@@ -2,6 +2,7 @@
 from __future__ import annotations
 import argparse
 from array import array
+from dataclasses import replace
 import importlib
 import math
 from pathlib import Path
@@ -85,6 +86,26 @@ def main():
                 assert 0<=loaded.start_ms<loaded.end_ms and len(pcm)>1000,(language,phone.key)
                 assert max(map(abs,samples),default=0)>100,(language,phone.key,'silent')
                 checks+=1
+        # A single vowel has an independently observed native syllable
+        # interval. Simulate a missing phone trace and verify that recovery
+        # uses the actual matching capture, including British English.
+        original_capture=frames.FrameCapture.capture
+        def without_phone_trace(self,voice,parts,**kwargs):
+            result=original_capture(self,voice,parts,**kwargs)
+            return replace(result,syllables=()) if kwargs.get('phone_segments') and result else result
+        try:
+            for language,key in (('Persisch','i'),('Englisch (USA)','i'),
+                                 ('Englisch (Großbritannien)','I')):
+                p=engine.defaults();p.update(language=language,phone=key)
+                expected=engine.load(a.dll,p)
+                frames.FrameCapture.capture=without_phone_trace
+                recovered=engine.load(a.dll,p)
+                frames.FrameCapture.capture=original_capture
+                assert expected.start_ms==recovered.start_ms and 0<recovered.end_ms<=expected.end_ms,language
+                assert engine.render(a.dll,p,recovered)[0],language
+                checks+=1
+        finally:
+            frames.FrameCapture.capture=original_capture
         for language,key in (('Persisch','i'),('Persisch','s'),('Persisch','p'),('Persisch','h'),
                              ('Persisch','C'),('Persisch','r_i'),('Persisch','i_r'),
                              ('Deutsch','u'),('Englisch (USA)','y'),('Japanisch','s')):

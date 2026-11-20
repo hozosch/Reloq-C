@@ -9,7 +9,7 @@ from speech.commands import CharacterModeCommand, IndexCommand, LangChangeComman
 from ._reloq_languages import language_for
 from ._reloq_persian_joiners import _dictionary_untouched
 from ._speech_tags import NativeDictionaryWord
-_FA, _PINGLISH = 0x7f0000, 0x7f0001
+_FA, _PINGLISH = 0x140000, 0x140001
 _DECIMAL = re.compile(r'(?<![0-9_])[+\-−]?(?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(?:\.[0-9]+)+')
 
 

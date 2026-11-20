@@ -41,6 +41,10 @@ jobs:
         run: sdkmanager 'ndk;30.0.16248370'
       - name: Check the independent Persian language planner
         run: python3 -B experiments/persian/test_persian_owned_plan.py
+      - name: Check overlapping phone clocks
+        run: |
+          cc -std=c11 -Wall -Wextra -Werror -Iinclude tests/test_reloq_trace_clock.c -o /tmp/reloq-trace-clock
+          /tmp/reloq-trace-clock
       - name: Check shared Persian transition planning
         run: |
           python3 -B experiments/persian/test_native_unvoiced_plan.py

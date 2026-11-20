@@ -906,8 +906,8 @@ static int32_t persian_fr_nasal_string(void *state,uint8_t st,uint8_t count,cons
         else:
             selected_call = r'''            {
                 /* Keep the French voice source, F0 and lowest resonance.
-                   Blend the higher articulatory targets with the contextual
-                   US alveolar rule, preserving the approved US timing. */
+                   Above it use the contextual US alveolar targets, while
+                   preserving the approved US timing and French bass. */
                 int16_t *formants[]={&STATE(int16_t,s450),&STATE(int16_t,s451),
                     &STATE(int16_t,s452),&STATE(int16_t,s453),
                     &STATE(int16_t,s454),&STATE(int16_t,s456)};
@@ -922,8 +922,7 @@ static int32_t persian_fr_nasal_string(void *state,uint8_t st,uint8_t count,cons
                     int32_t english=persian_us_eng_alv_Fv(state,(int32_t)(FIELD(0)));
                     for(int i=0;i<6;++i) {
                         int target=*formants[i],source=french[i];
-                        *formants[i]=(int16_t)(!english && source>0 && target>0 ?
-                                               (source+target+1)/2 : source);
+                        *formants[i]=(int16_t)(!english && target>0 ? target : source);
                     }
                     STATE(int16_t,s410)=noise[0];STATE(int16_t,s411)=noise[1];
                     STATE(int16_t,s412)=noise[2];STATE(int16_t,s439)=noise[3];

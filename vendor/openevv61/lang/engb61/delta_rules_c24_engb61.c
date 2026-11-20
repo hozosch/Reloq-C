@@ -928,6 +928,9 @@ L168:;
     RELOQ_RULE_RETURN(94);
 L187:;
     r0 = reloq61_typed_succeed(DELTA_ENTRY_succeed, state);
+    /* Also expose the native syllable clock for the editor's single-vowel
+     * fallback when individual phone intervals are unavailable. */
+    reloq61_syllable_trace_emit(state,STATE(int32_t,f13),STATE(int32_t,f14));
     RELOQ_RULE_RETURN(0);
 }
 

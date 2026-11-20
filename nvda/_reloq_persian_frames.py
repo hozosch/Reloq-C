@@ -281,6 +281,8 @@ class FrameCapture:
             if self._syllables is not None:
                 syllable_count, syllable_failed = ctypes.c_size_t(), ctypes.c_int()
                 syllable_pointer = self._syllables(ctypes.byref(syllable_count), ctypes.byref(syllable_failed))
+                if phone_segments and syllable_failed.value:
+                    raise RuntimeError('Die Lautgrenzen konnten nicht eindeutig erfasst werden.')
                 if not syllable_failed.value and syllable_pointer:
                     syllables = tuple((syllable_pointer[i].from_, syllable_pointer[i].to)
                                       for i in range(syllable_count.value))

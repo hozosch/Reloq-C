@@ -280,8 +280,8 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
 
     Covered words and numbers still use the direct rules. An unknown word is
     analysed on its own by the existing reference, with a following-word
-    context where appropriate. If that is unavailable, pronounce its letters;
-    unknown symbols use the existing Unicode names. Indexes inside one word
+    context where appropriate. If that is unavailable, use the native
+    orthographic rules; unknown symbols use the existing Unicode names. Indexes inside one word
     map to its beginning, as in the normal word-level source projection.
     """
     text, modes, internal, events, length = [], [], [], [], 0
@@ -380,8 +380,18 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
                     if not attempt:
                         continue
                 break
+        if not tag and not pinglish:
+            # Keep an unfamiliar word on the core's grapheme rules when the
+            # optional reference is unavailable, rather than naming letters.
+            function=getattr(frontend,'project_fallback_word',None)
+            proposed=function(value) if function is not None else None
+            if proposed and accepted(proposed):tag=proposed
+        if not tag and pinglish and value.isascii() and not any(c in 'aeiou' for c in value.lower()):
+            # Vowelless abbreviations and URL components such as "https"
+            # are read as characters; ordinary Persian words are not.
+            tag=names(value)
         if not tag:
-            tag = names(value)
+            raise UnsupportedPronunciation('Dieses Wort ist von den nativen Lautregeln noch nicht abgedeckt.')
         current_words[key] = tag
         return tag
 

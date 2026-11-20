@@ -65,6 +65,14 @@ int reloq_fa_analyze_runs(const char *text,size_t bytes,int mode,
     const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
     struct reloq_fa_plan_event **events,size_t *count,size_t *target_events,size_t *error_offset);
 
+/* Complete the same plan without any external pronunciation provider.
+ * Unrecognized Persian words use the general orthographic rules; unwritten
+ * short vowels are inferred and may require a dictionary correction. */
+int reloq_fa_analyze_runs_complete(const char *text,size_t bytes,int mode,
+    const size_t *run_ends,const unsigned char *run_modes,size_t run_count,
+    const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
+    struct reloq_fa_plan_event **events,size_t *count,size_t *target_events,size_t *error_offset);
+
 #ifdef __cplusplus
 }
 #endif

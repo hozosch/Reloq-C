@@ -95,7 +95,7 @@ def find(language, key):
 def interval(phone, spans):
     """Return the selected target and carrier end in native milliseconds."""
     if not spans:
-        raise ValueError('Für diesen Laut wurden keine Lautgrenzen gemeldet.')
+        raise ValueError('Das Sprachpaket meldet keine Lautgrenzen. Bitte prüfen, ob der Eloquence-C-Testbuild 1.5.0-dev191 oder neuer installiert ist.')
     if phone.onset:
         begin, end = 0.0, spans[0][0] / 10000.0
         if end < 1:

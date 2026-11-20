@@ -23,6 +23,8 @@ def main():
         ctypes.POINTER(ctypes.POINTER(Event)),ctypes.POINTER(ctypes.c_size_t),
         ctypes.POINTER(ctypes.c_size_t),ctypes.POINTER(ctypes.c_size_t))
     analyze.restype=ctypes.c_int
+    complete=dll.eciPersianAnalyzeRunsCompleteUtf8
+    complete.argtypes,complete.restype=analyze.argtypes,analyze.restype
     dll.eciPersianRelease.argtypes=(ctypes.c_void_p,)
     for source,mode,expected in (('سلام NVDA دنیا',0,['NVDA']),
                                  ('salam phone donya',1,['phone']),
@@ -42,6 +44,19 @@ def main():
             assert any(e.kind==2 for e in events[:count.value])
             assert list(mapped)==sorted(mapped)
         finally:dll.eciPersianRelease(events)
+    source='سلام ژژژژژ NVDA دنیا';raw=source.encode('utf8');length=len(raw)
+    ends=(ctypes.c_size_t*1)(length);kinds=(ctypes.c_ubyte*1)(0)
+    offsets=(ctypes.c_size_t*(length+1))(*range(length+1))
+    indexes=(ctypes.c_ubyte*(length+1))(*([1]*(length+1)))
+    mapped=(ctypes.c_size_t*(length+1))();events=ctypes.POINTER(Event)()
+    count=ctypes.c_size_t();error=ctypes.c_size_t()
+    status=complete(raw,length,0,ends,kinds,1,offsets,indexes,length+1,
+                    ctypes.byref(events),ctypes.byref(count),mapped,ctypes.byref(error))
+    try:
+        assert status==0 and count.value>0,(status,error.value)
+        assert [raw[e.value:e.value+e.flags].decode('ascii') for e in events[:count.value] if e.kind==8]==['NVDA']
+        assert list(mapped)==sorted(mapped)
+    finally:dll.eciPersianRelease(events)
     print('Passed shared C Persian/Pinglish and mixed-English analysis without NVDA or eSpeak.')
 
 

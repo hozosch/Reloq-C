@@ -899,12 +899,29 @@ int ECICALL eciPersianAnalyzeRunsUtf8(const char *text,size_t bytes,int mode,
                                 source_offsets,is_index,event_count,events,count,target_events,error_offset);
 }
 
+int ECICALL eciPersianAnalyzeRunsCompleteUtf8(const char *text,size_t bytes,int mode,
+    const size_t *run_ends,const unsigned char *run_modes,size_t run_count,
+    const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
+    struct reloq_fa_plan_event **events,size_t *count,size_t *target_events,size_t *error_offset)
+{
+    return reloq_fa_analyze_runs_complete(text,bytes,mode,run_ends,run_modes,run_count,
+                                source_offsets,is_index,event_count,events,count,target_events,error_offset);
+}
+
 int ECICALL eciPersianProjectUtf8(const char *text,size_t bytes,
     const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
     char **output,size_t *target_offsets,size_t *error_offset)
 {
     return eciPersianProjectTextUtf8(text,bytes,0,source_offsets,is_index,event_count,
                                      output,target_offsets,error_offset);
+}
+
+int ECICALL eciPersianProjectCompleteUtf8(const char *text,size_t bytes,
+    const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
+    char **output,size_t *target_offsets,size_t *error_offset)
+{
+    return reloq_fa_direct_project_complete(text,bytes,source_offsets,is_index,event_count,
+                                           output,target_offsets,error_offset);
 }
 
 int ECICALL eciPersianPinglishProjectUtf8(const char *text,size_t bytes,

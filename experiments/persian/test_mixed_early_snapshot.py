@@ -106,7 +106,7 @@ def main():
 
         # Random direct lexicon words exercise weak words and unpredictable
         # syllable counts without privileging any of the reported phrases.
-        engine.select_voice(0x7f0000, '1')
+        engine.select_voice(0x140000, '1')
         for key, value in ((SAMPLE_RATE, 3), (GENDER, 0), (HEAD_SIZE, 50),
                            (NATIVE_SPEED, 82), (ORIGINAL_ACOUSTIC_CLOCK, 0)):
             engine.set_parameter(key, value)
@@ -138,7 +138,7 @@ def main():
 
         # Interrupt after the streamed prefix, then prove that the next job
         # is complete and identical to the established non-early path.
-        engine.select_voice(0x7f0000, '1')
+        engine.select_voice(0x140000, '1')
         os.environ['RELOQ_FA_STREAM_PREFIX'] = '1'
         entered, released = threading.Event(), threading.Event()
         def block(stream, frames, first, last, marks=()):

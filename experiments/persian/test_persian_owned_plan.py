@@ -30,14 +30,24 @@ def build(directory: Path, compiler: str) -> Path:
 #include <stdlib.h>
 #include "reloq_persian_plan.h"
 #include "reloq_persian_phones.h"
+#include "reloq_persian_direct.h"
 __attribute__((visibility("default")))
 int fa_analyze(const char *t,size_t n,int m,const size_t *e,const unsigned char *k,size_t r,
  const size_t *s,const unsigned char *i,size_t c,struct reloq_fa_plan_event **o,size_t *z,size_t *p,size_t *x)
 {return reloq_fa_analyze_runs(t,n,m,e,k,r,s,i,c,o,z,p,x);}
 __attribute__((visibility("default")))
+int fa_analyze_complete(const char *t,size_t n,int m,const size_t *e,const unsigned char *k,size_t r,
+ const size_t *s,const unsigned char *i,size_t c,struct reloq_fa_plan_event **o,size_t *z,size_t *p,size_t *x)
+{return reloq_fa_analyze_runs_complete(t,n,m,e,k,r,s,i,c,o,z,p,x);}
+__attribute__((visibility("default")))
 int fa_legacy(const char *t,size_t n,struct reloq_fa_phone *p,size_t cap,size_t *z)
 {return reloq_fa_phones_from_legacy(t,n,p,cap,z,NULL);}
 __attribute__((visibility("default"))) void fa_release(void *p){free(p);}
+__attribute__((visibility("default")))
+int fa_guess(const char *word,size_t n,char *out,size_t capacity)
+{return reloq_fa_direct_guess_word(word,n,out,capacity);}
+__attribute__((visibility("default")))
+unsigned fa_classes(const char *word,size_t n){return reloq_fa_direct_word_classes(word,n);}
 ''', encoding='utf8')
     lib = directory / 'persian-standalone.so'
     sources = ['reloq_persian_plan.c', 'reloq_persian_mixed_project.c',
@@ -63,13 +73,18 @@ class Analyzer:
             ctypes.POINTER(ctypes.POINTER(Event)), ctypes.POINTER(ctypes.c_size_t),
             ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_size_t))
         self.call.restype = ctypes.c_int
+        self.complete = self.lib.fa_analyze_complete
+        self.complete.argtypes, self.complete.restype = self.call.argtypes, self.call.restype
         self.lib.fa_release.argtypes = (ctypes.c_void_p,)
+        self.guess = self.lib.fa_guess
+        self.guess.argtypes=(ctypes.c_char_p,ctypes.c_size_t,ctypes.c_char_p,ctypes.c_size_t)
+        self.guess.restype=ctypes.c_int
         self.legacy = self.lib.fa_legacy
         self.legacy.argtypes = (ctypes.c_char_p, ctypes.c_size_t, ctypes.POINTER(LegacyPhone),
                                ctypes.c_size_t, ctypes.POINTER(ctypes.c_size_t))
         self.legacy.restype = ctypes.c_int
 
-    def analyze(self, text, *, mode=0, runs=None, offsets=(), indexes=None):
+    def analyze(self, text, *, mode=0, runs=None, offsets=(), indexes=None, complete=False):
         raw = text.encode('utf8')
         runs = runs if runs is not None else ([(len(raw), 0)] if raw else [])
         ends = (ctypes.c_size_t * len(runs))(*(end for end, _ in runs))
@@ -80,7 +95,8 @@ class Analyzer:
         targets = (ctypes.c_size_t * len(offsets))(*([123456] * len(offsets)))
         output = ctypes.POINTER(Event)()
         count, error = ctypes.c_size_t(), ctypes.c_size_t()
-        result = self.call(raw, len(raw), mode, ends, kinds, len(runs), positions, flags,
+        function = self.complete if complete else self.call
+        result = function(raw, len(raw), mode, ends, kinds, len(runs), positions, flags,
                            len(offsets), ctypes.byref(output), ctypes.byref(count), targets, ctypes.byref(error))
         values = [(e.kind, e.value, e.flags, e.syllable, e.stress) for e in output[:count.value]]
         self.lib.fa_release(output)
@@ -100,6 +116,58 @@ def main():
     with tempfile.TemporaryDirectory(prefix='reloq-fa-plan-') as temp:
         core = Analyzer(build(Path(temp), args.cc))
         analyze = core.analyze
+        # Exercise general rules directly, independently of dictionary hits.
+        # Written short vowels, long carriers, sukun and shadda must take
+        # precedence over the default short-vowel insertion.
+        for source,expected in (('بَژْ','`[.1bAZ]'),('بُژْ','`[.1boZ]'),
+                                ('بِژْ','`[.1beZ]'),('بَژّ','`[.1bAZZ]'),
+                                ('ژاژ','`[.1ZaZ]'),('ژوژ','`[.1ZuZ]'),
+                                ('ژیژ','`[.1ZiZ]'),('ژژژژ','`[.0ZAZ.1ZAZ]'),
+                                ('ژالوار','`[.0Zal.1var]'),('زروند','`[.0zAr.1vAnd]')):
+            raw=source.encode();output=ctypes.create_string_buffer(2048)
+            assert core.guess(raw,len(raw),output,len(output))==1,source
+            assert output.value.decode('ascii')==expected,(source,output.value,expected)
+            result,events,_,_=analyze(expected,runs=[(len(expected),2)])
+            assert result==0 and sum(e[0]==WORD_BEGIN for e in events)==1
+        # The opt-in native completion applies general orthography only when
+        # a word has no known pronunciation. Preserve neighbouring words,
+        # English source slices and source boundaries without eSpeak.
+        unknown='ژژژژژ'
+        assert analyze(unknown)[0] == 1
+        inferred=analyze(unknown,complete=True)
+        explicit=analyze('ژَژْژَژْژْ')
+        assert inferred[0]==explicit[0]==0 and words(inferred[1])==words(explicit[1]),(inferred,explicit)
+        assert sum(e[0]==WORD_BEGIN for e in inferred[1])==1
+        assert sum(e[0]==PHONE and e[1]==20 for e in inferred[1])==5
+        joined='نمی‌پذیرد'
+        result,events,_,_=analyze(joined,complete=True)
+        prefix=[e[1] for e in analyze('نمی')[1] if e[0]==PHONE]
+        actual=[e[1] for e in events if e[0]==PHONE]
+        assert result==0 and actual[:len(prefix)]==prefix and sum(e[0]==WORD_BEGIN for e in events)==1
+        assert actual[-3:]==[28,1,10],actual  # /r a d/ from classified verb + known stem
+        spaced=analyze('نمی پذیرد',complete=True)
+        assert spaced[0]==0 and [e[1] for e in spaced[1] if e[0]==PHONE]==actual
+        # Without the verbal-prefix context the ambiguous uncovered word
+        # remains on the general grapheme rule, not the verb inflection.
+        citation=[e[1] for e in analyze('پذیرد',complete=True)[1] if e[0]==PHONE]
+        assert citation[-2:]==[28,10],citation
+        for verb,ending in (('کوشم',[19,1,25]),('کوشیم',[19,4,25]),
+                            ('کوشید',[19,4,10]),('کوشند',[19,1,26,10]),
+                            ('آویزد',[18,1,10])):
+            assert analyze(verb)[0]==1,verb
+            joined=analyze('می‌'+verb,complete=True)
+            spaced=analyze('می '+verb,complete=True)
+            jphones=[e[1] for e in joined[1] if e[0]==PHONE]
+            sphones=[e[1] for e in spaced[1] if e[0]==PHONE]
+            assert joined[0]==spaced[0]==0 and jphones==sphones and jphones[-len(ending):]==ending,(
+                verb,jphones,sphones)
+        text='سلام '+unknown+' NVDA دنیا'
+        raw=text.encode('utf8')
+        complete=analyze(text,complete=True,offsets=tuple(range(len(raw)+1)))
+        assert complete[0]==0 and list(complete[2])==sorted(complete[2]),complete
+        foreign=[raw[e[1]:e[1]+e[2]].decode('ascii') for e in complete[1] if e[0]==ENGLISH]
+        assert foreign==['NVDA'],foreign
+        assert words(analyze('سلام',complete=True)[1])==words(analyze('سلام')[1])
         for fa, latin in [('سلام', 'salam'), ('دنیا', 'donya'), ('ایران', 'iran'),
                           ('کتاب', 'ketab'), ('سلام دنیا', 'salam donya'),
                           ('زیرخط', 'zirkhat'), ('اتصال', 'ettesal')]:

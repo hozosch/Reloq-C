@@ -69,10 +69,25 @@ def main():
             assert bridge._paths(package / 'eci.dll') == (package / 'eci.dll', None,
                                                            installed / 'espeak.dll', installed)
             # Keep NVDA's eSpeak in its real directory alongside all of its
-            # Windows DLL dependencies; copying espeak.dll alone is not enough.
+            # Persian remains selectable without NVDA's eSpeak DLL. Native
+            # words and numbers keep their pronunciation; uncovered words use
+            # general C orthography, with source indexes.
             bridge._paths = lambda _library: (library, None,
                                                installed / 'missing-espeak.dll', args.data_parent.resolve())
-            assert bridge.add_profiles(dict(languages.LANGUAGES), library) == languages.LANGUAGES
+            offline = bridge.add_profiles(dict(languages.LANGUAGES), library)
+            assert bridge.PERSIAN_PROBE.id in offline and bridge.PINGLISH_PROBE.id in offline
+            engine = bridge.make_engine(library, languages=offline, language=bridge.PERSIAN_PROBE.id, voice='1')
+            try:
+                text='سلام ژژژژژ دنیا'
+                pcm,marks=bytearray(),[]
+                assert engine.speak((eci.EciIndex(11),text[:5],eci.EciIndex(12),text[5:],
+                                     eci.EciIndex(13)),pcm.extend,marks.append)
+                assert pcm and marks==[11,12,13]
+                frontend=engine._engines[bridge.PERSIAN_PROBE.id]._frontend
+                assert frontend._worker is None
+                projected=frontend.project_direct(text,((0,True),(len(text.encode('utf8')),True)))
+                assert projected and projected[0].count('`[')==3
+            finally:engine.close()
             bridge._paths = lambda _library: (library, None,
                                                args.espeak_library.resolve(), args.data_parent.resolve())
             profiles = bridge.add_profiles(dict(languages.LANGUAGES), library)
