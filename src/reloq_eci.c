@@ -918,6 +918,9 @@ int ECICALL eciPersianPinglishProjectUtf8(const char *text,size_t bytes,
 void ECICALL eciPersianRelease(void *pointer)
 {reloq_fa_direct_free(pointer);}
 
+int ECICALL eciPersianIgnorableTextCharacter(uint32_t codepoint)
+{return reloq_fa_ignorable_text_character(codepoint);}
+
 int ECICALL eciPersianTranslateUtf8(const char *text,size_t bytes,char **output,
     size_t **source_map,size_t *error_offset)
 {return reloq_fa_direct_text(text,bytes,output,source_map,error_offset);}

@@ -2,6 +2,13 @@
 #ifndef RELOQ_DIRECT_FA_NORMALIZE_H
 #define RELOQ_DIRECT_FA_NORMALIZE_H
 #include <stddef.h>
+#include <stdint.h>
+
+/* Invisible layout controls in ordinary running text. Persian joiners and
+ * directional controls have independent meaning and are not included. */
+int reloq_fa_ignorable_text_character(uint32_t codepoint);
+int reloq_fa_filter_ignorable(const char *text,size_t length,char **output,
+                              size_t **source_map,size_t *error_offset);
 
 /* Allocates UTF-8 output and a source-byte to output-byte map. Returns 0 on
  * success, -1 for invalid arguments/UTF-8, -2 for allocation failure. The

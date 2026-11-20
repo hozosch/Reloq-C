@@ -96,6 +96,18 @@ def main():
         for text in ('salam donya','man iran','salam ra'):
             for point in range(len(text)+1):
                 compare((text[:point],EciPitch(55),text[point:]))
+        # Ordinary invisible layout controls are filtered in the native
+        # analyzer before tokenization, with source indexes retained.
+        for plain, inserted, pinglish in (('salam donya', 'sa{}lam donya', True),
+                                          ('سلام دنیا', 'س{}لام دنیا', False)):
+            expected=frontend.project_direct(plain,(),pinglish=pinglish)
+            assert expected is not None
+            for char in ('\u200b','\u2060','\ufeff'):
+                text=inserted.format(char)
+                before=len(text[:text.index(char)].encode('utf8'))
+                after=before+len(char.encode('utf8'))
+                got=frontend.project_direct(text,((before,True),(after,True)),pinglish=pinglish)
+                assert got is not None and got[0]==expected[0] and got[1][0]==got[1][1],(text,got)
     finally:frontend.close()
     print(f'Passed {count} native Pinglish phrase, punctuation, index and control comparisons.')
 

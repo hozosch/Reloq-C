@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 import sys
+import unicodedata
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
 from _reloq_eci_direct import EciIndex, EciLanguage, EciText
@@ -48,8 +49,22 @@ def main():
         assert render(('سلام\u00a0دنیا',)) == render(('سلام دنیا',))
         assert render(('سلام ❤', EciIndex(7), '\ufe0f', ' دنیا')) == render(
             ('سلام ❤', EciIndex(7), ' دنیا'))
+        for char in ('\u200b', '\u2060', '\ufeff'):
+            assert render(('سلام' + char + ' دنیا',)) == render(('سلام دنیا',)), ascii(char)
+            assert render(('Personal - Microsoft' + char + ' Edge',)) == render(
+                ('Personal - Microsoft Edge',)), ascii(char)
+            assert render((EciIndex(60), 'سلام', EciIndex(61), char,
+                           EciIndex(62), ' دنیا', EciIndex(63))) == render(
+                (EciIndex(60), 'سلام', EciIndex(61), '',
+                 EciIndex(62), ' دنیا', EciIndex(63))), ascii(char)
+            name = unicodedata.name(char).lower()
+            assert render((char,)) == render((EciLanguage(US_ENGLISH.id, '1'), name)), ascii(char)
+            assert render((EciIndex(64), EciText(char, character_mode=True), EciIndex(65))) == render(
+                (EciIndex(64), EciLanguage(US_ENGLISH.id, '1'), name, EciIndex(65))), ascii(char)
         engine.select_voice(PINGLISH_PROBE.id, '1')
         assert render(('fa\u0304rsi',)) == render(('farsi',))
+        for char in ('\u200b', '\u2060', '\ufeff'):
+            assert render(('sa' + char + 'lam donya',)) == render(('salam donya',)), ascii(char)
         before = (EciIndex(4), 'salam ', EciIndex(5), '\0 donya', EciIndex(6))
         explicit = (EciIndex(4), 'salam ', EciIndex(5),
                     EciLanguage(US_ENGLISH.id, '1'), 'symbol for null',

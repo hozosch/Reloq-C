@@ -292,6 +292,9 @@ ECIAPI int ECICALL eciPersianProjectUtf8(const char *text,size_t bytes,
     const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
     char **output,size_t *target_offsets,size_t *error_offset);
 ECIAPI void ECICALL eciPersianRelease(void *pointer);
+/* True for presentation-only characters ignored in ordinary running text;
+ * explicit character spelling can still request their Unicode names. */
+ECIAPI int ECICALL eciPersianIgnorableTextCharacter(uint32_t codepoint);
 
 /* Shared Persian text frontend. mode 0 reads Persian script; mode 1 accepts
  * Persian script and Pinglish. Both use the same lexical/stress rules and

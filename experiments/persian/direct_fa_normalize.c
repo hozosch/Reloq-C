@@ -8,6 +8,35 @@
 struct fa_replacement { uint32_t source; const char *target; };
 #include "direct_fa_replacements.inc"
 
+int reloq_fa_ignorable_text_character(uint32_t cp)
+{return cp==0x200b || cp==0x2060 || cp==0xfeff;}
+
+int reloq_fa_filter_ignorable(const char *text,size_t length,char **output,
+                             size_t **source_map,size_t *error_offset)
+{
+    if(output)*output=NULL;
+    if(source_map)*source_map=NULL;
+    if(error_offset)*error_offset=0;
+    if(!text || !output || !source_map || !error_offset || length==SIZE_MAX ||
+       length+1>SIZE_MAX/sizeof(size_t) || memchr(text,0,length))return -1;
+    char *result=malloc(length+1);
+    size_t *map=malloc((length+1)*sizeof *map);
+    if(!result || !map){free(result);free(map);return -2;}
+    size_t at=0,used=0;
+    while(at<length) {
+        size_t begin=at;uint32_t cp;
+        if(reloq_utf8_next((const unsigned char *)text,length,&at,&cp)!=1) {
+            *error_offset=begin;free(result);free(map);return -1;
+        }
+        for(size_t i=begin;i<at;++i)map[i]=used;
+        if(!reloq_fa_ignorable_text_character(cp) || length==at-begin) {
+            memcpy(result+used,text+begin,at-begin);used+=at-begin;
+        }
+        map[at]=used;
+    }
+    result[used]=0;map[length]=used;*output=result;*source_map=map;return 0;
+}
+
 static const char *replacement(uint32_t source)
 {
     size_t lo=0,hi=sizeof fa_replacements/sizeof fa_replacements[0];
@@ -40,7 +69,9 @@ static int normalize(const char *text,size_t length,char **output,
         if(reloq_utf8_next((const unsigned char *)text,length,&at,&cp)!=1) {
             *error_offset=begin;free(map);free(result);return -1;
         }
-        const char *value=preserve_numbers && (cp==0x066b || cp==0x066c)?NULL:replacement(cp);
+        const char *value=preserve_numbers && reloq_fa_ignorable_text_character(cp) &&
+            length!=at-begin ? "" :
+            preserve_numbers && (cp==0x066b || cp==0x066c)?NULL:replacement(cp);
         size_t n=value?strlen(value):at-begin;
         if(n>capacity-used-1){free(map);free(result);return -2;}
         for(size_t i=begin;i<at;++i)map[i]=used;

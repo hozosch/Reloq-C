@@ -1096,30 +1096,32 @@ def _ease(x):
 
 
 def bridge_stop_onsets(plan, parts, en, window_ms=8.0):
-    """Soften a voiced onset after an English stop without editing the stop."""
+    """Soften a voiced onset after a stop at either language boundary."""
     native = plan._native_bridge_stop_onsets
     if native is None:
         return ()
     bounds = _edges_by_count(plan.counts)
     skip = (ctypes.c_ubyte * len(parts))(*([1] * len(parts)))
     for edge in range(1, len(parts)):
-        if (parts[edge-1].language != 'en-us' or parts[edge].language != 'fa' or
-                _bracket_boundary(parts, edge)):
+        if (parts[edge-1].language == parts[edge].language or _bracket_boundary(parts, edge)):
             continue
         boundary = bounds[edge-1]
         if not boundary or boundary >= len(plan.frames):
             continue
         left, right = plan.frames[boundary-1].controls, plan.frames[boundary].controls
-        if any(left[c] != 0 for c in (2, 7, 8)) or right[2] < 20 or right[8] != 0:
-            continue
-        incoming = _TAG.search(parts[edge].text)
-        if incoming is None or not re.match(r'\.[012][Aaeioumnrljv]', incoming.group(1)):
+        if (any(left[c] != 0 for c in (2, 7, 8)) or right[8] != 0 or
+                right[2] < 20 and (right[2] != 0 or right[7] != 0)):
             continue
         try:
-            displayed = tuple(_TAG.finditer(en._phonemes_for_probe(parts[edge-1].text)))
+            outgoing = (en._phonemes_for_probe(parts[edge-1].text)
+                        if parts[edge-1].language == 'en-us' else parts[edge-1].text)
+            incoming = (en._phonemes_for_probe(parts[edge].text)
+                        if parts[edge].language == 'en-us' else parts[edge].text)
         except (ValueError, RuntimeError, OSError, UnicodeError):
             continue
-        if displayed and re.search(r'[ptk]$', displayed[-1].group(1)):
+        left_tags, right_tags = tuple(_TAG.finditer(outgoing)), tuple(_TAG.finditer(incoming))
+        if (left_tags and right_tags and re.search(r'[ptk]$', left_tags[-1].group(1)) and
+                re.match(r"\.[012]'?[AaeiouAEIOU@XxyYwWmnrljv]", right_tags[0].group(1))):
             skip[edge] = 0
     if all(skip[1:]):
         return ()

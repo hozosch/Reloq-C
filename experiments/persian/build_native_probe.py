@@ -1952,6 +1952,21 @@ def prepare_short_initial_timing(work: Path, first_helper: str, next_helper: str
     text = (PROVIDER / 'lang' / 'fifi' / name).read_text(encoding='utf8')
     marker = 'int32_t reloq_fifi_assign_fin_nuc_durs(void *state, int32_t p0)\n{\n'
     medial_helper = pre_stressed_hiatus_helper()
+    # Reuse the word-fenced token scanner, but require at least two further
+    # vowel nuclei and an actual later stress. This is a structural timing
+    # rule, independent of the original spelling or input mode.
+    long_word_helper = first_helper.replace('persian_probe_first_of_multiple_vowels',
+                                             'persian_probe_first_of_long_stressed_word')
+    scan = 'if (!testFldeq(d,2,1,1)) { later=1; break; }'
+    if long_word_helper.count(scan) != 1:
+        raise RuntimeError('Cannot locate initial vowel count')
+    long_word_helper = long_word_helper.replace('int first=0,later=0;', 'int first=0,later=0,stressed=0;', 1)
+    long_word_helper = long_word_helper.replace(scan, r'''if (!testFldeq(d,2,1,1)) {
+                    ++later;
+                    if (!testFldeq(d,2,7,1) || !testFldeq(d,2,7,2)) stressed=1;
+                }''', 1)
+    long_word_helper = long_word_helper.replace('int final=first && later;',
+                                                 'int final=first && later>=2 && stressed;', 1)
     helper = r'''
 /* A long marker can require short timing at an unstressed word onset, or
    between vowels before stress. Change
@@ -2006,10 +2021,33 @@ static void persian_short_initial_end(int32_t node)
         *(unsigned char *)delta_record_field(&vstmtbl[2],11,fields)=0;
     }
 }
+
+/* Keep the long-I sound but reduce excessive initial nucleus duration in a
+   longer word whose primary/secondary stress is on a later syllable. Other
+   long vowels already have separate established timing rules above. */
+static int persian_long_initial_i(void *state)
+{
+    const char *us=getenv("RELOQ_FA_US_ARTICULATION");
+    delta_state *d=state;
+    int32_t at=STATE(int32_t,w26),node=0;
+    if (!us || us[0]!='1' || us[1] || !d || !at) return 0;
+    int32_t *point=vmover(d,EVV_AT(int32_t *,at),2);
+    if (point) node=vgetsc(d,0,0,EVV_REF(point),2);
+    if (!node || (*EVV_AT(int32_t *,node)&2)) return 0;
+    void *fields=TFLDS(EVV_AT(void *,node));
+    unsigned phone=*(const unsigned char *)delta_record_field(&vstmtbl[2],0,fields);
+    unsigned cls=*(const unsigned char *)delta_record_field(&vstmtbl[2],1,fields);
+    unsigned length=*(const unsigned char *)delta_record_field(&vstmtbl[2],11,fields);
+    int16_t stress=0;
+    memcpy(&stress,delta_record_field(&vstmtbl[2],7,fields),sizeof stress);
+    return cls==1 && phone==27 && length==0 && stress==0 &&
+        persian_probe_first_of_long_stressed_word(state,STATE_AT(w26,-4));
+}
 '''
     if text.count(marker) != 1:
         raise RuntimeError('Cannot locate Finnish nucleus timing dispatcher')
-    text = text.replace(marker, first_helper + '\n' + next_helper + '\n' + medial_helper + '\n' + helper + '\n' + marker, 1)
+    text = text.replace(marker, first_helper + '\n' + next_helper + '\n' + medial_helper + '\n' +
+                        long_word_helper + '\n' + helper + '\n' + marker, 1)
     begin = text.index(marker)
     end = text.index('\nstatic int32_t evv_assign_fin_nuc_durs(', begin)
     section = text[begin:end]
@@ -2017,8 +2055,16 @@ static void persian_short_initial_end(int32_t node)
     start = '    r0 = reloq_call_fifi_set_limits(state, (int32_t)(FIELD(0)));\n'
     if section.count(declaration) != 1 or section.count(start) != 1:
         raise RuntimeError('Cannot locate Finnish nucleus timing setup')
-    section = section.replace(declaration, declaration + '    int32_t persian_short_node=0;\n', 1)
-    section = section.replace(start, '    persian_short_node=persian_short_initial_begin(state);\n' + start, 1)
+    section = section.replace(declaration, declaration +
+                              '    int32_t persian_short_node=0; int persian_long_i=0;\n', 1)
+    section = section.replace(start, '    persian_short_node=persian_short_initial_begin(state);\n'
+                              '    if (!persian_short_node) persian_long_i=persian_long_initial_i(state);\n' + start, 1)
+    distribute = '    r0 = reloq_call_fifi_distribute_nucdur(state, (int32_t)(FIELD(0)));\n'
+    if section.count(distribute) != 1:
+        raise RuntimeError('Cannot locate Persian nucleus distribution')
+    section = section.replace(distribute, '    if (persian_long_i && STATE(int32_t,f33)>0)\n'
+                              '        STATE(int32_t,f33)=(int32_t)((int64_t)STATE(int32_t,f33)*85/100);\n' +
+                              distribute, 1)
     for label in ('L212:;\n', 'L231:;\n'):
         if section.count(label) != 1:
             raise RuntimeError('Cannot locate Finnish nucleus timing return')

@@ -79,7 +79,7 @@ _UNICODE_DASHES = '‐–—'
 # the single-core and unavailable-worker paths still use serial planning.
 _PARALLEL_MIN = 1
 _FAST_PILOT_MIN = 80
-_FAST_ENGLISH_PREFIX_MIN_MS = 200
+_FAST_ENGLISH_PREFIX_MIN_MS = 100
 
 
 def _colon_ends_sentence(text, index):
@@ -515,7 +515,7 @@ def try_continuous(owner, parts, on_pcm, on_index, *, fa_ids, english_id, german
             if estimated_usable:
                 displayed = en._phonemes_for_probe(sentence[0].text)
                 syllables = sum(len(re.findall(r'\.[012]', match.group())) for match in _TAG.finditer(displayed))
-                fast_english = syllables >= 4
+                fast_english = syllables >= 2
                 if fast_english:
                     parallel_pilot = available_pilot
         plan = context_plan(sentence, fa, en, rate, maximum=30000, source_events=events,

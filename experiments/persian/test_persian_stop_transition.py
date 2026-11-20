@@ -31,9 +31,9 @@ def main():
         plan._native_bridge_stop_onsets=fn
         edge=plan.counts[0]
         left=ctypes.string_at(plan.frames,edge*ctypes.sizeof(NativeFrame))
-        onset=tuple(plan.frames[edge].controls[i] for i in (2,7,8))
+        onset=tuple(tuple(plan.frames[edge+j].controls[i] for i in (2,7,8)) for j in range(8))
         result=original(plan,parts,en,german,rate,**kwargs)
-        after=tuple(plan.frames[edge].controls[i] for i in (2,7,8))
+        after=tuple(tuple(plan.frames[edge+j].controls[i] for i in (2,7,8)) for j in range(8))
         assert ctypes.string_at(plan.frames,edge*ctypes.sizeof(NativeFrame))==left, 'English stop changed'
         observed.append((onset,after,parts))
         return result
@@ -49,17 +49,21 @@ def main():
                         engine.set_parameter(parameter,value)
                     for text,changed in (('Persian text نقطه txt',True),
                                          ('Persian test نقطه txt',True),
-                                         ('text نقطه txt',False),
+                                         ('text نقطه txt',True),
+                                         ('رفت now',True),
                                          ('Persian dog نقطه txt',False),
-                                         ('Persian text هوا txt',False)):
+                                         ('Persian text هوا txt',False),
+                                         ('رفت hello',False)):
                         observed.clear();pcm=bytearray();marks=[]
                         assert engine.speak((EciIndex(1),text,EciIndex(2)),pcm.extend,marks.append)
                         assert observed and pcm and marks==[1,2],(text,rate,gender,speed)
                         before,after,_=observed[0]
                         if changed:
-                            assert before[0]>after[0]>0 and after[2]==before[2],(text,before,after)
+                            first=next((i for i,frame in enumerate(before) if frame[0]>=20 and frame[2]==0),None)
+                            assert first is not None and before[first][0]>after[first][0]>0 and \
+                                   after[first][2]==before[first][2],(text,before,after)
                         else:
-                            assert before==after,(text,before,after)
+                            assert before[0]==after[0],(text,before,after)
                         checks+=1
     finally:
         continuous_driver.selected_sentence=original

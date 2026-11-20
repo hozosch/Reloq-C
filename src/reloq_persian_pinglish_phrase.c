@@ -170,6 +170,35 @@ int reloq_fa_pinglish_project(const char *text,size_t length,
        (!source_offsets || !is_index || !target_offsets)) || length>(SIZE_MAX-1)/4 ||
        length+1>SIZE_MAX/sizeof(size_t) || event_count>SIZE_MAX/sizeof(size_t) ||
        memchr(text,0,length))return -1;
+    /* Filter presentation controls before finding Latin word boundaries so
+     * an invisible character inside a word does not split its spelling. */
+    int maybe_ignorable=0;
+    for(size_t i=0;i+2<length;++i)
+        if(((unsigned char)text[i]==0xe2 && (unsigned char)text[i+1]==0x80 && (unsigned char)text[i+2]==0x8b) ||
+           ((unsigned char)text[i]==0xe2 && (unsigned char)text[i+1]==0x81 && (unsigned char)text[i+2]==0xa0) ||
+           ((unsigned char)text[i]==0xef && (unsigned char)text[i+1]==0xbb && (unsigned char)text[i+2]==0xbf))
+            {maybe_ignorable=1;break;}
+    if(maybe_ignorable && length>3) {
+        char *filtered=NULL;size_t *mapping=NULL,error=0;
+        int result=reloq_fa_filter_ignorable(text,length,&filtered,&mapping,&error);
+        if(result){*error_offset=error;return result;}
+        size_t *events=event_count?malloc(event_count*sizeof *events):NULL;
+        if(event_count&&!events){free(filtered);free(mapping);return -2;}
+        for(size_t i=0;i<event_count;++i) {
+            if(source_offsets[i]>length || (i && source_offsets[i]<source_offsets[i-1])) {
+                free(filtered);free(mapping);free(events);return 3;
+            }
+            events[i]=mapping[source_offsets[i]];
+        }
+        result=reloq_fa_pinglish_project(filtered,strlen(filtered),events,is_index,event_count,
+                                        output,target_offsets,&error);
+        if(result) {
+            size_t source=0;
+            while(source<length && mapping[source]<error)++source;
+            *error_offset=source;
+        }
+        free(filtered);free(mapping);free(events);return result;
+    }
     char *normalized=malloc(length*4+1),*tagged=NULL;
     size_t *positions=malloc((length+1)*sizeof *positions),*map=NULL;
     size_t *mapped=event_count?malloc(event_count*sizeof *mapped):NULL;

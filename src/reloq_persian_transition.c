@@ -24,23 +24,30 @@ int reloq_persian_bridge_stop_onsets(const struct reloq_fa_frame *input,
     for(size_t edge=1;edge<segment_count;++edge) {
         if(skip[edge])continue;
         size_t boundary=ends[edge-1],right=ends[edge];
-        size_t left=edge>1?ends[edge-2]:0,quiet=boundary;
-        const float *first=input[boundary].controls;
+        size_t left=edge>1?ends[edge-2]:0,quiet=boundary,onset=boundary;
+        /* Native source indexes can land immediately before the first
+         * voiced frame rather than on it. Accept a few silent milliseconds,
+         * but never cross a release burst or an aspirated H onset. */
+        while(onset<right && times[onset]-times[boundary]<5 &&
+              input[onset].controls[2]==0 && input[onset].controls[7]==0 &&
+              input[onset].controls[8]==0)++onset;
+        if(onset==right || times[onset]-times[boundary]>=5)continue;
+        const float *first=input[onset].controls;
         if(first[2]<20 || first[8]!=0)continue;
         while(quiet>left) {
             const float *c=input[quiet-1].controls;
             if(c[2]!=0 || c[7]!=0 || c[8]!=0)break;
             --quiet;
         }
-        double closure=times[boundary]-times[quiet];
+        double closure=times[onset]-times[quiet];
         if(closure<3 || closure>100)continue;
-        size_t end=boundary;
-        while(end<right && times[end]-times[boundary]<window_ms &&
+        size_t end=onset;
+        while(end<right && times[end]-times[onset]<window_ms &&
               input[end].controls[2]>0 && input[end].controls[8]==0)++end;
-        if(end-boundary<3 || times[end]-times[boundary]<4)continue;
+        if(end-onset<3 || times[end]-times[onset]<4)continue;
         if(!copied){memcpy(output,input,frame_count*sizeof *input);copied=1;}
-        for(size_t i=boundary;i<end;++i) {
-            double x=(times[i]-times[boundary])/window_ms;
+        for(size_t i=onset;i<end;++i) {
+            double x=(times[i]-times[onset])/window_ms;
             double smooth=x*x*(3-2*x),drop=24*(1-smooth);
             for(unsigned column=2;column<=7;column+=5) {
                 double original=input[i].controls[column];

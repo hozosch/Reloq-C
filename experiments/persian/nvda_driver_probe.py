@@ -357,6 +357,29 @@ class PersianProbeLanguageEngine(LanguageEngine):
                       replace(part, text=valid_text(part.text)) if isinstance(part, EciText) else
                       replace(part, original=valid_text(part.original), segmented=valid_text(part.segmented))
                       if isinstance(part, EciCapitalWord) else part for part in parts)
+        # Consult the native text policy before Unicode-name and script
+        # routing. An isolated character or explicit spelling must still be
+        # named; indexes between ordinary fragments remain in their places.
+        ordinary = tuple(part if isinstance(part, str) else part.text
+                         for part in parts if isinstance(part, str) or
+                         isinstance(part, EciText) and not part.character_mode and not part.is_control)
+        if any(unicodedata.category(char) == 'Cf' for text in ordinary for char in text):
+            engine = self._activate(self._home)
+            is_ignorable = (getattr(engine._voice._dll, 'eciPersianIgnorableTextCharacter', None)
+                            if isinstance(engine, OwnedPersianEngine) else None)
+            if (is_ignorable is not None and
+                    any(not is_ignorable(ord(char)) for text in ordinary if '`' not in text for char in text)):
+                filtered, logical = [], self._home
+                for part in parts:
+                    if isinstance(part, EciLanguage):
+                        logical = self._key(part.language, part.voice)
+                    text = part if isinstance(part, str) else part.text if isinstance(part, EciText) else None
+                    if (logical[0] in (PERSIAN_PROBE.id, PINGLISH_PROBE.id) and text and '`' not in text and
+                            (not isinstance(part, EciText) or not part.character_mode and not part.is_control)):
+                        text = ''.join(char for char in text if not is_ignorable(ord(char)))
+                        part = replace(part, text=text) if isinstance(part, EciText) else text
+                    filtered.append(part)
+                parts = tuple(filtered)
         # Names without a Persian translation belong to the real English
         # engine, including when they occur inside a larger Persian run. Do
         # this before script routing so indexes and the surrounding text keep
