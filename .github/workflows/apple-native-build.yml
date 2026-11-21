@@ -5,6 +5,9 @@ on:
     branches: [codex/persian-native-u-20261121]
 permissions:
   contents: read
+concurrency:
+  group: apple-native-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   apple-native:
     runs-on: macos-15
@@ -14,13 +17,18 @@ jobs:
         with:
           persist-credentials: false
       - name: Build iOS, simulator and macOS libraries
-        run: make -j3 -f tools/apple/Makefile OUT="$RUNNER_TEMP/reloq-apple" xcframework
-      - name: Run native macOS ECI smoke test
+        run: |
+          make -j3 -f tools/apple/Makefile OUT="$RUNNER_TEMP/reloq-apple" xcframework > "$RUNNER_TEMP/apple-build.log" 2>&1 || {
+            tail -n 120 "$RUNNER_TEMP/apple-build.log"
+            exit 1
+          }
+      - name: Compile native macOS ECI smoke test
         run: |
           xcrun --sdk macosx clang -O2 -std=c11 -Wall -Wextra -Werror -Iinclude \
             tests/test_apple_eci_smoke.c "$RUNNER_TEMP/reloq-apple/macos/libreloq.a" \
             -liconv -lm -o "$RUNNER_TEMP/test-apple-eci"
-          "$RUNNER_TEMP/test-apple-eci"
+      - name: Run native macOS ECI smoke test
+        run: '"$RUNNER_TEMP/test-apple-eci"'
       - uses: actions/upload-artifact@v4
         with:
           name: reloq-apple-xcframework
