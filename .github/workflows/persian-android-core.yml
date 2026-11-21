@@ -2,7 +2,7 @@ name: Persian shared core on Android
 on:
   workflow_dispatch:
   push:
-    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116, codex/persian-issue49-followup-20261117, codex/persian-adjectives-20261117, codex/persian-phones-20261119, codex/persian-native-20261120, codex/persian-issue49-solh-20261120, codex/persian-native-transitions-20261120, codex/persian-sentence-core-20261120, codex/persian-sentence-linear-20261120, codex/persian-context-native-20261120, codex/persian-transition-streaming-20261120, codex/persian-native-sv-probe-20261120, codex/persian-finnish-nasal-swedish-20261120]
+    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116, codex/persian-issue49-followup-20261117, codex/persian-adjectives-20261117, codex/persian-phones-20261119, codex/persian-native-20261120, codex/persian-issue49-solh-20261120, codex/persian-native-transitions-20261120, codex/persian-sentence-core-20261120, codex/persian-sentence-linear-20261120, codex/persian-context-native-20261120, codex/persian-transition-streaming-20261120, codex/persian-native-sv-probe-20261120, codex/persian-finnish-nasal-swedish-20261120, codex/persian-native-u-20261121]
     paths:
       - .github/workflows/persian-android-core.yml
       - eci/Makefile
@@ -88,6 +88,7 @@ jobs:
           grep -q 'eciPersianProjectRunsCompleteUtf8' android-symbols.txt
           grep -q 'eciPersianCharacter' android-symbols.txt
           grep -q 'eciPersianCharacterResolve' android-symbols.txt
+          grep -q 'eciPersianSpeakUsNativeRunsUtf8' android-symbols.txt
           grep -q 'eciPersianNumberEvents' android-symbols.txt
           grep -q 'eciPersianPhoneInventory' android-symbols.txt
           grep -q 'eciPersianPhonesFromLegacy' android-symbols.txt
