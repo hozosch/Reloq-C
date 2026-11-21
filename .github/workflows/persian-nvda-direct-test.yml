@@ -31,6 +31,7 @@ on:
       - experiments/persian/test_fa_stress_fallback.py
       - experiments/persian/test_amir_native_rules.py
       - experiments/persian/test_amir_vowel_timing.py
+      - eci/test_persian_project.py
       - experiments/persian/compile_fa_city_stems.py
       - reference-persian-cities/**
       - experiments/persian/test_persian_stop_transition.py

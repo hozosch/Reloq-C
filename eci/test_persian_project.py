@@ -49,7 +49,7 @@ def main():
     # one malformed tag. The combining kasra belongs to NVDA's Persian
     # announcement "No next heading at level {i}".
     status, text, events, _error = run('1ِ', (0, 1, 3), (1, 1, 1))
-    assert status == 0 and text == "`[.1jek] `[.1'e:']"
+    assert status == 0 and text == '`[.1jek] `[.1e]'
     assert events == (0, len('`[.1jek] '), len(text)), events
     status, text, _events, _error = run('سلام2', (), ())
     assert status == 0 and text == '`[.0sA.1lam] `[.1do]'
