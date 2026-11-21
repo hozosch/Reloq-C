@@ -112,7 +112,7 @@ def main():
                             driver.language = locale
                             character_mode = sys.modules['speech.commands'].CharacterModeCommand
                             index = sys.modules['speech.commands'].IndexCommand
-                            for char in ('⚭', 'Ж', 'α', '⚽', '≪'):
+                            for char in ('⚭', 'Ж', 'α', '⚽', '≪', '«', '»'):
                                 expected, _, _ = run([character_mode(True), module.NativeDictionaryWord(char),
                                                       character_mode(False)])
                                 for enabled in (False, True):
@@ -148,6 +148,13 @@ def main():
                                                         index(76), dash, right])
                                     assert actual == expected, (locale, dash, 'running dash')
                                     checks.append((locale, 'running dash', dash))
+                                quoted_word = 'دنیا' if locale == 'fa_IR' else 'donya'
+                                quoted, _, _ = run([left + ' «', index(77), quoted_word,
+                                                    index(78), '» ' + right])
+                                bracketed, _, _ = run([left + ' (', index(77), quoted_word,
+                                                       index(78), ') ' + right])
+                                assert quoted == bracketed, (locale, 'running quotes')
+                                checks.append((locale, 'running quotes'))
                             for char in ('⚽', '🙂', 'α', 'Ж', '⚭', '≪'):
                                 on, projects, native = run(spelling(char, locale, True))
                                 off, _, _ = run(spelling(char, locale, False))

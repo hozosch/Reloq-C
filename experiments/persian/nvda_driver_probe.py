@@ -459,8 +459,11 @@ class PersianProbeLanguageEngine(LanguageEngine):
                 prev_char = (text[at - 1] if at else adjoining(part_index, -1)) if category.startswith('M') else ''
                 combining_text = bool(prev_char and (prev_char.isalpha() or
                                       unicodedata.category(prev_char).startswith('M')))
+                # The Persian frontend already treats silent angle quotes as
+                # brackets; retain that contour in multi-character speech.
                 if (cp < 128 or 0x600 <= cp <= 0x8ff or 0xfb50 <= cp <= 0xfeff or
                         char in '\u200c\u200d\ufe0e\ufe0f' or
+                        not isolated and char in '«»' or
                         char.isspace() or char.isdecimal() or latin or ipa_stress or combining_text or
                         logical[0] == PINGLISH_PROBE.id and category.startswith('M')):
                     continue

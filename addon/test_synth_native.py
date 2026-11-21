@@ -167,7 +167,7 @@ def main():
                     assert not next(part for part in guarded if isinstance(part, module.EciText)).character_mode
                     for locale in (entry.locale for entry in driver._languages.values()):
                         driver.language = locale
-                        for char in ('⚭', 'Ж', '≪'):
+                        for char in ('⚭', 'Ж', '≪', '«', '»'):
                             expected = run([char_mode(True), module.NativeDictionaryWord(char), char_mode(False)])
                             for enabled in (False, True):
                                 spelling_config['useSpellingFunctionality'] = enabled
