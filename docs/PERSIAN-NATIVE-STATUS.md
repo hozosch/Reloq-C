@@ -84,6 +84,16 @@ already available, and the ordinary span renderer can emit the result
 without either full-utterance capture. The Persian event plan owns stress
 and weak-word metadata; the existing US proxy describes the established
 phonetic and phrase mapping to use as a reference, not as another render.
+`eci/test_persian_syllable_plan_clock.py` compares the ordered plan syllables
+and their source-word event marks to the current provider's syllable clocks
+over several rates and both genders. Source words can yield multiple
+internal pronunciation groups, so their boundaries must come from the
+analyzer's event map rather than counting groups. Internal punctuation is
+not yet covered by the source-word clock invariant: in a comma example the
+next syllable overlaps its index boundary. Feed the ordered syllable events
+to the per-syllable duration/intonation boundary instead of treating output
+index marks as syllable boundaries; verify or reject any input where that
+event order cannot be matched. Mixed English needs its own alignment policy.
 
 ## Apple integration
 
