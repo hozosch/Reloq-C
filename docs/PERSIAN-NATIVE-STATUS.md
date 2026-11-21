@@ -47,6 +47,23 @@ experimental speech entry point does not support all of these and must not be
 presented as a finished replacement. Unknown written words still need
 linguistic and pronunciation validation.
 
+## First-audio latency
+
+The direct Persian acoustic path already uses the same native span delivery
+as the other languages, but it has the old Finnish contour and is not an
+acceptable substitute for the chosen US-derived melody. The complete C
+sentence path currently captures both the entire Persian target and a US
+pilot before it replays anything. This makes its first audio grow with the
+whole sentence, even though the underlying engine can emit spans as it goes.
+
+The goal is a native Persian phrase/intonation implementation that drives
+the shared incremental renderer with the accepted phonemes, timing and US
+contour, retaining source indexes and prompt cancellation. Do not make the
+two-pass route the normal voice merely because it has been moved out of
+Python. `experiments/persian/benchmark_native_streaming.py --library <path>`
+compares first PCM for the direct and current US-contour C paths with English
+and German; its measurements have no hardware-independent pass threshold.
+
 ## Apple integration
 
 [ReLoq Apple](https://github.com/Quinton1110/ReLoq-Apple) is an independently
