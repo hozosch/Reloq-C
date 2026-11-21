@@ -38,7 +38,7 @@ def main():
         return bytes(pcm),tuple(indices)
     checks=0
     try:
-        for lang,text in ((PERSIAN_PROBE.id,'او آمد.'),(PINGLISH_PROBE.id,'u amad.')):
+        for lang,text in ((PERSIAN_PROBE.id,'او آمد.'),(PINGLISH_PROBE.id,'u aamad.')):
             engine.select_voice(lang,'1')
             for rate in (1,3,6):
                 engine.set_parameter(SAMPLE_RATE,rate)

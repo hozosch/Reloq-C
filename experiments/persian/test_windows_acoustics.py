@@ -101,7 +101,7 @@ def main():
                   ScopedDirectPersianEngine(args.candidate, frontend, pinglish=True))
         try:
             outputs = []
-            for voice, text in zip(voices, ('سلام دنیا؟', 'salam donya?')):
+            for voice, text in zip(voices, ('سلام دنیا؟', 'salaam donyaa?')):
                 pcm = bytearray()
                 assert voice.speak((text,), pcm.extend, lambda _: None) and pcm
                 outputs.append(bytes(pcm))

@@ -90,7 +90,7 @@ def main():
     assert names['glottal-stop'] in [p.id for p in decode(lib,'`[.0sA.1wAt]')]
     assert [p.id for p in decode(lib,'`[.1sA.0ssA]')].count(names['s'])==3
 
-    for fa,latin in [('سلام','salam'),('ایران','iran'),('صلح','solh')]:
+    for fa,latin in [('سلام','salaam'),('ایران','iraan'),('صلح','solh')]:
         a,b=word(lib,fa,0),word(lib,latin,1)
         assert values(a)==values(b),(fa,latin,values(a),values(b))
     for source,pinglish in [('سلام دنیا',0),('physics',1)]:
