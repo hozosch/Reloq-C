@@ -52,7 +52,8 @@ int main(void)
     check("2–4",0,1,"2-4");check("2020 — 2024",0,1,"2020 - 2024");
     check("2 – -4",0,1,"2 - -4");check("2 – +4",0,1,"2 - +4");
     check("a_b",0,0,"a_b");
-    check("_",1,0," `[.1Un.0tR.2StrIX] ");
+    /* The native character table owns underscore's name and stress. */
+    check("_",1,0," `ts2 _ `ts0 ");
     check("café",0,0,"café");check("øł",0,0,"øł");
     check("Sa\xcc\x83o, ac\xcc\xa7" "a\xcc\x83o",0,2,"São, ação");
     check("Helsinki/Turku - ääni",0,2,"Helsinki/Turku - ääni");

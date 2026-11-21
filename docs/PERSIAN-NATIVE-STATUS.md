@@ -59,5 +59,6 @@ framework on a GitHub-hosted Mac and run a native ECI smoke test. A hosted
 Mac has successfully built all three library slices and passed the native
 Mac ECI smoke test after both Apple build recipes gained the small existing
 fixed-point table. The source selection, headers and smoke test also passed
-on Linux. A separate workflow builds the unsigned app; no test of the
-resulting app on a Mac or iPhone has been completed.
+on Linux. The separate compatibility workflow also passed the Mac bridge
+tests and built unsigned iPhone and Mac app targets. No signed app based on
+this branch or VoiceOver test on a Mac or iPhone has been completed.
