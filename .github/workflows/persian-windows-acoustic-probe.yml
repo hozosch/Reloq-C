@@ -32,6 +32,9 @@ on:
       - eci/test_persian_us_proxy_api.py
       - eci/test_persian_us_samples.py
       - eci/test_persian_owned_capture.py
+      - eci/test_persian_owned_us_capture.py
+      - eci/test_persian_native_pipeline.py
+      - experiments/persian/test_owned_us_capture_parity.py
       - experiments/persian/test_native_us_proxy.py
       - experiments/persian/test_us_proxy_audio_parity.py
       - include/reloq_persian_timing.h
@@ -303,6 +306,12 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Native Persian sample-clock alignment failed' }
           python -B eci/test_persian_owned_capture.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Owned native Persian capture or cancellation failed' }
+          python -B eci/test_persian_owned_us_capture.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Owned US Persian contour capture failed' }
+          python -B eci/test_persian_native_pipeline.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Independent Persian planning components failed' }
+          python -B experiments/persian/test_owned_us_capture_parity.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Owned US capture diverged from the Persian sentence planner' }
           python -B experiments/persian/test_native_us_proxy.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Native Persian US proxy diverged from the established planner' }
           python -B experiments/persian/test_us_proxy_audio_parity.py --library eci/eci.dll

@@ -68,7 +68,12 @@ int main(void)
     REQUIRE(!eciPersianCaptureNativeUtf8(fa,text,strlen(text),0,offsets,2,30000,&capture,&error));
     REQUIRE(capture.frame_count && capture.sample_count && capture.mark_count==2);
     REQUIRE(persian.count==before);
-    status=0;puts("Apple ECI smoke: voice changes, Persian proxy, speech and capture passed.");
+    eciPersianReleaseOwnedCapture(&capture);
+    before=actual.count;
+    REQUIRE(!eciPersianCaptureUsProxyUtf8(b,tags,strlen(tags),30000,&capture));
+    REQUIRE(capture.frame_count && capture.sample_count && capture.mark_count==1);
+    REQUIRE(actual.count==before && eciGetParam(b,RELOQ_ECI_PROCESS_TAGS)==0);
+    status=0;puts("Apple ECI smoke: voice changes, Persian speech and both captures passed.");
 done:
     eciPersianReleaseOwnedCapture(&capture);
     if(a)eciDelete(a);

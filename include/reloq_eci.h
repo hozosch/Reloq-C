@@ -475,6 +475,13 @@ struct reloq_fa_owned_capture {
 ECIAPI int ECICALL eciPersianCaptureNativeUtf8(ECIHand voice,const char *text,size_t bytes,int mode,
     const size_t *source_offsets,size_t index_count,size_t maximum_frames,
     struct reloq_fa_owned_capture *result,size_t *error_offset);
+/* Capture the matching US prosody pilot from a Persian acoustic projection.
+ * The caller supplies a dedicated idle, empty US-English handle. mark_samples
+ * contains the word boundaries before every word after the first. The result
+ * and return codes follow eciPersianCaptureNativeUtf8; invalid/unsupported
+ * projection returns 1. This still does not register a Persian voice. */
+ECIAPI int ECICALL eciPersianCaptureUsProxyUtf8(ECIHand pilot,const char *tagged,size_t bytes,
+    size_t maximum_frames,struct reloq_fa_owned_capture *result);
 ECIAPI void ECICALL eciPersianReleaseOwnedCapture(struct reloq_fa_owned_capture *result);
 ECIAPI int ECICALL eciPersianCaptureBegin(size_t maximum);
 ECIAPI const struct reloq_fa_frame *ECICALL eciPersianCaptureEnd(size_t *count,int *failed);
