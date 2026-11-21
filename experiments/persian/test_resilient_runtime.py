@@ -18,6 +18,9 @@ from text_frontend import native_sequence_accepted
 from _reloq_eci_direct import EciIndex, EciLanguage, EciPitch, EciText
 from _reloq_languages import US_ENGLISH
 
+# Native Persian character names use the same short-vowel policy as words.
+SYMBOL_TAGS = {key: re.sub(r"'([Aaeiou]):'", r"\1", value) for key, value in SYMBOL_TAGS.items()}
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -45,7 +48,7 @@ def main():
         after = 'هنگامِ ورود به ویندوز (به اِختیاراتِ مدیریتی نیاز دارد)'
         direct = frontend.analyze_direct(after)
         assert direct and "`[.0hen.1ga.0me]" in direct.parts[0].text
-        assert "`[.1'e:'G.0tja.2ra.0te]" in direct.parts[0].text
+        assert "`[.1eG.0tja.2ra.0te]" in direct.parts[0].text
         pcm, indexes = render((EciIndex(80), exact[:24], EciIndex(81), exact[24:], EciIndex(82)))
         assert pcm and [value for value, _ in indexes] == [80, 81, 82]
         assert frontend._worker is None, 'the NVDA label should use the direct text path'
@@ -85,11 +88,11 @@ def main():
         import unicodedata
         log_label = 'نمایشِ اِتِّفاقاتِ ثبت‌شده (Log)'
         normalized = unicodedata.normalize('NFC', log_label)
-        target = "`[.1'e:'t.0te.1fa.0Ra.2te]"
+        target = "`[.1et.0te.1fa.0Ra.2te]"
         for label in (log_label, normalized):
             part = frontend.analyze_direct(label.split(' (')[0])
             assert part and target in part.parts[0].text
-            assert '`[.0sAbt.0So.1d\'e:\']' in part.parts[0].text
+            assert '`[.0sAbt.0So.1de]' in part.parts[0].text
             assert render((EciIndex(92), label, EciIndex(93)))[0]
         assert frontend._worker is None, 'the normalized NVDA label should use direct text rules'
         unlisted = 'اِتِّفاقات'
@@ -100,7 +103,7 @@ def main():
         assert SYMBOL_TAGS['🙂'] in job.tagged and UNICODE_TAG not in job.tagged and ')' in job.tagged
         # Issue 49: retain these readings with and without NVDA text/index
         # splits, regardless of whether each word is now handled directly.
-        for text, expected in (('بله این حرف شما - درسته حتما', "`[.0do.0ros.1t'e:']"),
+        for text, expected in (('بله این حرف شما - درسته حتما', "`[.0do.0ros.1te]"),
                                ('ما عالی هستیم - خخخخ', '`[.0a.1li]')):
             parts = (EciIndex(1), text[:len(text)//2], EciIndex(2),
                      text[len(text)//2:], EciIndex(3))
@@ -148,7 +151,7 @@ def main():
         assert persian._voice._cancelled.is_set()
         tagged, _marks, _needs_validation = continuous_driver._project_part(
             persian, ('بله این حرف شما - درسته حتما',), follows=True)
-        assert "`[.0do.0ros.1t'e:']" in tagged, tagged
+        assert "`[.0do.0ros.1te]" in tagged, tagged
         # The original sentence is now fully native, so also exercise a
         # genuinely unknown inflection after the stale stop. This must take
         # the validation path and recover the whole word without spelling it.
