@@ -1,3 +1,8 @@
+/* This translation unit is linked into the ECI library itself. Its ECI
+ * calls are local definitions, not imports from a second Windows DLL. */
+#ifndef RELOQ_ECI_STATIC
+#define RELOQ_ECI_STATIC
+#endif
 #include "reloq_persian_speak.h"
 #include "reloq_persian_backend.h"
 #include <stdint.h>
