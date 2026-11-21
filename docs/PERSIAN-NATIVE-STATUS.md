@@ -94,6 +94,17 @@ next syllable overlaps its index boundary. Feed the ordered syllable events
 to the per-syllable duration/intonation boundary instead of treating output
 index marks as syllable boundaries; verify or reject any input where that
 event order cannot be matched. Mixed English needs its own alignment policy.
+The tone targets also need a vowel or sonorant clock within each syllable.
+`eci/test_persian_phone_plan_clock.py` compares the provider's phone clocks
+with the event-plan syllables for ordinary Persian and Pinglish phrases,
+including comma pauses. Equal counts are not sufficient to prove alignment:
+the current doubled /dʒ/ bridge can place a phone clock in the following
+syllable even when counts match. A future adapter must reconcile that case
+or decline it before producing audio.
+For an all-unstressed word whose phones the US provider cannot represent,
+the current proxy can add an artificial primary stress while retaining the
+weak-word control. That synthetic marker is not a Persian lexical accent;
+reproducing the selected contour requires both pieces of context.
 The existing scalar US tone helpers in `src/reloq_english_intonation.c` can
 express nuclear and phrase-final targets on a supplied clock, but do not yet
 cover all US phrase and accent decisions. They are candidates for a shared
