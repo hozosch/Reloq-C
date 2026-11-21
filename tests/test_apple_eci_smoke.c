@@ -37,24 +37,32 @@ int main(void)
 {
     int status=1;struct audio expected={0},actual={0},persian={0};
     ECIHand a=create(&expected,0x10000),b=create(&actual,0x10000),fa=create(&persian,0x90000);
-    if(!a || !b || !fa)goto done;
-    if(eciSetParam(a,RELOQ_ECI_PROCESS_TAGS,1)<0 ||
-       eciSetParam(b,RELOQ_ECI_PROCESS_TAGS,0)<0 ||
-       eciSetVoiceParam(a,0,2,60)<0 || eciSetVoiceParam(b,0,2,60)<0 ||
-       !add(a,"Batteries, `vb65 90 percent charged.") || !eciSynthesize(a) ||
-       !add(b,"Batteries, ") || eciSetVoiceParam(b,0,2,65)<0 ||
-       !add(b,"90 percent charged.") || !eciSynthesize(b) || !actual.count ||
-       expected.count!=actual.count ||
-       memcmp(expected.samples,actual.samples,actual.count*sizeof *actual.samples))goto done;
+    /* The CI runner should identify a failed step even when its compiler and
+     * library are platform-specific and the large build log is suppressed. */
+#define REQUIRE(condition) do { if(!(condition)) { \
+    fprintf(stderr,"Apple ECI smoke failed at line %d: %s\n",__LINE__,#condition); \
+    goto done; \
+} } while(0)
+    REQUIRE(a && b && fa);
+    REQUIRE(eciSetParam(a,RELOQ_ECI_PROCESS_TAGS,1)>=0);
+    REQUIRE(eciSetParam(b,RELOQ_ECI_PROCESS_TAGS,0)>=0);
+    REQUIRE(eciSetVoiceParam(a,0,2,60)>=0 && eciSetVoiceParam(b,0,2,60)>=0);
+    REQUIRE(add(a,"Batteries, `vb65 90 percent charged.") && eciSynthesize(a));
+    REQUIRE(add(b,"Batteries, ") && eciSetVoiceParam(b,0,2,65)>=0);
+    REQUIRE(add(b,"90 percent charged.") && eciSynthesize(b));
+    REQUIRE(actual.count && expected.count==actual.count);
+    REQUIRE(!memcmp(expected.samples,actual.samples,actual.count*sizeof *actual.samples));
     struct reloq_fa_us_proxy proxy={0};
     const char *tags="`[.1sefr] `[.0ket.1Ab].";
     if(eciPersianUsProxyUtf8(b,tags,strlen(tags),&proxy) || !proxy.text ||
        strcmp(proxy.text,"`[.1sEfs] `[.0kEt.1Ab].") || proxy.word_count!=2) {
+        fprintf(stderr,"Apple ECI smoke: US proxy failed or differed.\n");
         eciPersianUsProxyRelease(&proxy);goto done;
     }
     eciPersianUsProxyRelease(&proxy);
     const char *text="سلام دنیا.";size_t error=0;
-    if(eciPersianSpeakNativeUtf8(fa,text,strlen(text),0,NULL,NULL,0,&error) || !persian.count)goto done;
+    REQUIRE(!eciPersianSpeakNativeUtf8(fa,text,strlen(text),0,NULL,NULL,0,&error));
+    REQUIRE(persian.count);
     status=0;puts("Apple ECI smoke: voice changes, Persian proxy and native speech passed.");
 done:
     if(a)eciDelete(a);
@@ -62,5 +70,6 @@ done:
     if(fa)eciDelete(fa);
     free(expected.samples);free(actual.samples);free(persian.samples);
     if(status)fputs("Apple ECI smoke failed.\n",stderr);
+#undef REQUIRE
     return status;
 }
