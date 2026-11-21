@@ -22,8 +22,8 @@ def main():
     direct.restype = ctypes.c_int
     free.argtypes, free.restype = (ctypes.c_void_p,), None
     examples = {
-        'به علاوه': "`00 `[.0be] `[.0A.0la.1v'e:']",
-        'بعلاوه': "`[.0be.0A.0la.1v'e:']",
+        'به علاوه': '`00 `[.0be] `[.0A.0la.1ve]',
+        'بعلاوه': '`[.0be.0A.0la.1ve]',
         'علامت': '`[.0A.0la.1mAt]',
         'بدبخت': '`[.0bAd.1bAGt]',
         'سوال': '`[.1so]~`[.0al]',

@@ -142,7 +142,7 @@ jobs:
           # binary input matches and the exact artifact is still available.
           reusable=false
           if [ "$GITHUB_REF_NAME" = "codex/persian-finnish-nasal-swedish-20261120" ] &&
-             git diff --quiet e1a66001f8e8616230cefe4a999ac9d1fb7ee68a HEAD -- \
+             git diff --quiet c1f884b21f409792f0987978aaa516cb9f114f94 HEAD -- \
                eci/Makefile eci/reloq_eci_fixed_math.c src include vendor/openevv61 \
                tools/prepare_persian_provider.py tools/reuse_persian_provider_cache.py \
                experiments/aragonese/build_native_probe.py experiments/persian/build_native_probe.py \
@@ -151,9 +151,9 @@ jobs:
                experiments/persian/continuous_replay.inc experiments/persian/scoped_acoustics_probe.c \
                'experiments/persian/direct_fa_*.c' 'experiments/persian/direct_fa_*.h' \
                'experiments/persian/direct_fa_*.inc'; then
-            id=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/44913356389/artifacts?per_page=100" \
-              --jq '.artifacts[] | select(.id == 14711101826 and .expired == false and .digest == "sha256:53aed3930ad8242ec183acf5d230c7a3f9c82f3c36f406cfaa24ceb2d0f8fbf0" and .workflow_run.head_sha == "e1a66001f8e8616230cefe4a999ac9d1fb7ee68a") | .id' || true)
-            if [ "$id" = "14711101826" ]; then reusable=true; fi
+            id=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/44916929623/artifacts?per_page=100" \
+              --jq '.artifacts[] | select(.id == 14712393088 and .expired == false and .digest == "sha256:8af4080dcc2ba10759ae6ae6d9438e566cf7142056bc4dcf18e076f2659f04c1" and .workflow_run.head_sha == "c1f884b21f409792f0987978aaa516cb9f114f94") | .id' || true)
+            if [ "$id" = "14712393088" ]; then reusable=true; fi
           fi
           echo "reusable=$reusable" >> "$GITHUB_OUTPUT"
       - name: Reuse source-matched acoustic binaries
@@ -163,7 +163,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
-          gh run download 44913356389 --name persian-windows-acoustic-probe --dir reused-acoustic --repo "$GITHUB_REPOSITORY"
+          gh run download 44916929623 --name persian-windows-acoustic-probe --dir reused-acoustic --repo "$GITHUB_REPOSITORY"
           mkdir -p persian-windows-probe
           cp reused-acoustic/eci/eci.dll eci/eci.dll
           cp reused-acoustic/persian-windows-probe/eci_persian_probe.dll persian-windows-probe/eci_persian_probe.dll
