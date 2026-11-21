@@ -299,6 +299,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 self.synth.language = saved_language
             self.cases = [('fa_IR', 'سلام دنیا؟', False),
                           ('fa_Latn', 'salam donya?', False),
+                          ('fa_Latn', 'salaam donyaa?', False),
                           ('fa_IR', '`vs30 سلام دنیا', 'tags_slow'),
                           ('fa_IR', '`vs180 سلام دنیا', 'tags_fast'),
                           ('fa_IR', 'سلام دنیا', 'tags_plain'),
@@ -313,7 +314,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                         '`[.1solh]', '`[.1solhw]',
                                         "`[.1'A:'k.0si]", '`[.1Ak.0si]')),
                           ('fa_IR', 'او آمد.', False),
-                          ('fa_Latn', 'u amad.', False),
+                          ('fa_Latn', 'u aamad.', False),
                           ('fa_IR', 'بدبخت', False),
                           ('fa_IR', 'خطِ تیره', False),
                           ('fa_IR', 'زیرخط', False),
@@ -616,8 +617,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
     def next(self):
         try:
             if self.index == len(self.cases):
-                if self.results[0]['pcm_sha256'] != self.results[1]['pcm_sha256']:
-                    raise AssertionError('confirmed script and Pinglish words differ')
+                if self.results[0]['pcm_sha256'] == self.results[1]['pcm_sha256']:
+                    raise AssertionError('single-a Pinglish lost its short vowel')
+                matching = next(row for row in self.results if row['locale']=='fa_Latn'
+                                and row['text']=='salaam donyaa?' and row['spelling'] is False)
+                if self.results[0]['pcm_sha256'] != matching['pcm_sha256']:
+                    raise AssertionError('explicit aa Pinglish differs from Persian script')
                 for written, roman in (('عمومی', 'omumi'), ('خصوصی', 'khosusi'),
                                        ('تنظیمات عمومی', 'tanzimaat omumi')):
                     rows = [row for row in self.results if row['spelling']=='issue49_native_new_compound'
@@ -698,7 +703,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 if plain['pcm_sha256'] == pitch['pcm_sha256']:
                     raise AssertionError('NVDA did not apply the Persian ECI pitch tag')
                 script_glide = next(row for row in self.results if row['text'] == 'او آمد.')
-                roman_glide = next(row for row in self.results if row['text'] == 'u amad.')
+                roman_glide = next(row for row in self.results if row['text'] == 'u aamad.')
                 if script_glide['pcm_sha256'] != roman_glide['pcm_sha256']:
                     raise AssertionError('confirmed Persian and Pinglish vowel glides differ')
                 mixed = next(row for row in self.results if row['spelling'] == 'mixed')
@@ -1240,9 +1245,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 if spelling == 'pipeline_user_latency' and 'بررسیِ' in text and any(tag not in tags for tag in (
                         '`[.0bAr.0rA.1si.0e]', '`[.0God.1ka.0re]')):
                     raise AssertionError('NVDA spelled part of the update label: ' + ascii(tags))
-                if spelling == 'pipeline_symbols' and ('`[.0sA.1lam]' not in tags or
-                        '`[.0do.1nja]' not in tags or '`[.1ta.0vu.2merk.0ki]' in tags):
-                    raise AssertionError('NVDA punctuation damaged a Persian word: ' + ascii(tags))
+                if spelling == 'pipeline_symbols':
+                    expected_words = (('`[.0sA.1lAm]', '`[.0don.1jA]') if locale == 'fa_Latn'
+                                      else ('`[.0sA.1lam]', '`[.0do.1nja]'))
+                    if any(word not in tags for word in expected_words) or '`[.1ta.0vu.2merk.0ki]' in tags:
+                        raise AssertionError('NVDA punctuation damaged a Persian word: ' + ascii(tags))
                 if spelling == 'pipeline_mixed_symbols' and ('`[.0sA.1lam]' not in tags or
                         '`[.1ta.0vu.2merk.0ki]' in tags):
                     raise AssertionError('NVDA mixed punctuation damaged Persian speech: ' + ascii(tags))
