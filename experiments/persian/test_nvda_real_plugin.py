@@ -1290,7 +1290,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 tags = ' '.join(self.projected[self.before_projected:])
                 if expected not in tags:
                     raise AssertionError('NVDA lost the reported character name: ' + ascii((text, tags)))
-            if text in ('به علاوه', 'بعلاوه', '+'):
+            # The same ASCII plus sign is also exercised for other voices
+            # and for the independent Unicode cases below. This particular
+            # expectation belongs to the original Persian alāve cases only.
+            if locale == 'fa_IR' and (text in ('به علاوه', 'بعلاوه') or
+                                      text == '+' and spelling is True):
                 tags = ' '.join(self.projected[self.before_projected:])
                 expected = {"بعلاوه": "`[.0be.0A.0la.1ve]",
                             "به علاوه": "`[.0be] `[.0A.0la.1ve]",
