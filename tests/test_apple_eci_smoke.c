@@ -36,7 +36,7 @@ static int add(ECIHand h,const char *s) {return eciAddTextUtf8(h,s,strlen(s),0);
 int main(void)
 {
     int status=1;struct audio expected={0},actual={0},persian={0};
-    struct reloq_fa_owned_capture capture={0};
+    struct reloq_fa_owned_capture capture={0},donor={0};
     ECIHand a=create(&expected,0x10000),b=create(&actual,0x10000),fa=create(&persian,0x90000);
     /* The CI runner should identify a failed step even when its compiler and
      * library are platform-specific and the large build log is suppressed. */
@@ -64,18 +64,21 @@ int main(void)
     const char *text="سلام دنیا.";size_t error=0;
     REQUIRE(!eciPersianSpeakNativeUtf8(fa,text,strlen(text),0,NULL,NULL,0,&error));
     REQUIRE(persian.count);
-    size_t before=persian.count,offsets[]={0,strlen(text)};
-    REQUIRE(!eciPersianCaptureNativeUtf8(fa,text,strlen(text),0,offsets,2,30000,&capture,&error));
-    REQUIRE(capture.frame_count && capture.sample_count && capture.mark_count==2);
-    REQUIRE(persian.count==before);
-    eciPersianReleaseOwnedCapture(&capture);
-    before=actual.count;
-    REQUIRE(!eciPersianCaptureUsProxyUtf8(b,tags,strlen(tags),30000,&capture));
+    size_t before=persian.count,offsets[]={strlen("سلام ")};
+    REQUIRE(!eciPersianCaptureNativeUtf8(fa,text,strlen(text),0,offsets,1,30000,&capture,&error));
     REQUIRE(capture.frame_count && capture.sample_count && capture.mark_count==1);
+    REQUIRE(persian.count==before);
+    before=actual.count;
+    REQUIRE(!eciPersianCaptureUsProxyUtf8(b,tags,strlen(tags),30000,&donor));
+    REQUIRE(donor.frame_count && donor.sample_count && donor.mark_count==1);
     REQUIRE(actual.count==before && eciGetParam(b,RELOQ_ECI_PROCESS_TAGS)==0);
-    status=0;puts("Apple ECI smoke: voice changes, Persian speech and both captures passed.");
+    before=persian.count;
+    REQUIRE(!eciPersianReplayUsCapture(fa,&capture,&donor,NULL,NULL,0));
+    REQUIRE(persian.count>before);
+    status=0;puts("Apple ECI smoke: voice changes, Persian captures and replay passed.");
 done:
     eciPersianReleaseOwnedCapture(&capture);
+    eciPersianReleaseOwnedCapture(&donor);
     if(a)eciDelete(a);
     if(b)eciDelete(b);
     if(fa)eciDelete(fa);

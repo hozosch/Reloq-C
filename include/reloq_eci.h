@@ -554,6 +554,18 @@ ECIAPI int ECICALL eciPersianTransferUsSamples(struct reloq_fa_frame *target,siz
     const struct reloq_fa_syllable *target_syllables,size_t target_syllable_count,
     const struct reloq_fa_syllable *donor_syllables,size_t donor_syllable_count,
     const uint32_t *syllables_per_word);
+/* Experimental orchestration for two owned captures. Both must use the
+ * same sample rate as voice and contain matching word-boundary marks.
+ * Fits the US contour to a private copy of target and replays it through
+ * voice, emitting the caller's optional frame marks. Neither capture is
+ * modified. If individual word alignment fails, retry the complete phrase;
+ * entirely unvoiced targets need no pitch fit. The caller owns an idle,
+ * otherwise empty handle and must retain both captures until return.
+ * Returns 0 success, 1 insufficient contour, -1 invalid input, -2 memory,
+ * -3 replay failure, -4 cancellation. This is not yet a registered voice. */
+ECIAPI int ECICALL eciPersianReplayUsCapture(ECIHand voice,
+    const struct reloq_fa_owned_capture *target,const struct reloq_fa_owned_capture *donor,
+    const uint32_t *syllables_per_word,const struct reloq_fa_frame_mark *marks,size_t mark_count);
 /* Keep the original pitch except near language-switch edges. Bit 0 selects
  * the beginning and bit 1 the end; window is in the frame clock's ms. */
 ECIAPI int ECICALL eciPersianFitPitchEdges(struct reloq_fa_frame *rows,size_t count,

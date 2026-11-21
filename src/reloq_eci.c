@@ -2447,6 +2447,67 @@ int ECICALL eciPersianTransferUsSamples(struct reloq_fa_frame *target,size_t tar
 {return reloq_fa_transfer_us_samples(target,target_count,donor,donor_count,target_samples,donor_samples,
     word_count,sample_rate,target_syllables,target_syllable_count,donor_syllables,
     donor_syllable_count,syllables_per_word);}
+
+int ECICALL eciPersianReplayUsCapture(ECIHand handle,
+    const struct reloq_fa_owned_capture *target,const struct reloq_fa_owned_capture *donor,
+    const uint32_t *counts,const struct reloq_fa_frame_mark *marks,size_t mark_count)
+{
+    struct reloq_eci_engine *e=handle;
+    if(!e)return -1;
+    unsigned before=epoch_get(&e->stop_epoch);
+    if(!target || !donor || epoch_get(&e->busy) || e->queued ||
+       e->voice_mode!=RELOQ_ECI_VOICE_GENERIC || (mark_count && !marks) ||
+       mark_count>120000 || !target->frames || !target->frame_count ||
+       !donor->frames || !donor->frame_count || target->frame_count>120000 ||
+       donor->frame_count>120000 || target->mark_count!=donor->mark_count ||
+       target->mark_count>=4096 ||
+       (target->mark_count && (!target->mark_samples || !donor->mark_samples)) ||
+       (target->syllable_count && !target->syllables) ||
+       (donor->syllable_count && !donor->syllables))return -1;
+    size_t words=target->mark_count+1;
+    for(size_t i=0;i<target->mark_count;++i)
+        if(target->mark_samples[i]>target->sample_count || donor->mark_samples[i]>donor->sample_count ||
+           (i && (target->mark_samples[i]<target->mark_samples[i-1] ||
+                  donor->mark_samples[i]<donor->mark_samples[i-1])))return -1;
+    for(size_t i=0;i<mark_count;++i)
+        if(marks[i].frame>target->frame_count || marks[i].value<0 ||
+           (i && marks[i].frame<marks[i-1].frame))return -1;
+    unsigned rate=(unsigned)sample_hz(e->sample_rate_code);
+    if(!rate || target->frame_count>SIZE_MAX/sizeof *target->frames)return -1;
+    struct reloq_fa_frame *planned=malloc(target->frame_count*sizeof *planned);
+    uint64_t *bounds=malloc((words+1)*2*sizeof *bounds);
+    if(!planned || !bounds){free(planned);free(bounds);return -2;}
+    memcpy(planned,target->frames,target->frame_count*sizeof *planned);
+    uint64_t *tb=bounds,*db=bounds+words+1;
+    tb[0]=db[0]=0;
+    for(size_t i=0;i<target->mark_count;++i) {
+        tb[i+1]=target->mark_samples[i];db[i+1]=donor->mark_samples[i];
+    }
+    tb[words]=target->sample_count;db[words]=donor->sample_count;
+    int status=eciPersianTransferUsSamples(planned,target->frame_count,donor->frames,donor->frame_count,
+        tb,db,words,rate,target->syllables,target->syllable_count,
+        donor->syllables,donor->syllable_count,counts);
+    if(status==1 && words>1) {
+        /* A failed word fit can already have modified an earlier word. */
+        memcpy(planned,target->frames,target->frame_count*sizeof *planned);
+        uint64_t whole_target[]={0,target->sample_count},whole_donor[]={0,donor->sample_count};
+        status=eciPersianTransferUsSamples(planned,target->frame_count,donor->frames,donor->frame_count,
+            whole_target,whole_donor,1,rate,NULL,0,NULL,0,NULL);
+    }
+    if(status==1) {
+        int voiced=0;
+        for(size_t i=0;i<target->frame_count;++i)
+            if(target->frames[i].controls[1]>0 && target->frames[i].controls[2]>0){voiced=1;break;}
+        if(!voiced){memcpy(planned,target->frames,target->frame_count*sizeof *planned);status=0;}
+    }
+    if(epoch_get(&e->stop_epoch)!=before)status=-4;
+    else if(status<0)status=-1;
+    else if(!status) {
+        int rendered=eciPersianReplayFrames(handle,before,planned,target->frame_count,marks,mark_count);
+        status=rendered==RELOQ_ECI_OK?0:rendered==RELOQ_ECI_CANCELLED?-4:-3;
+    }
+    free(bounds);free(planned);return status;
+}
 int ECICALL eciPersianFitPitchEdges(struct reloq_fa_frame *rows,size_t count,
     const float *pilot,size_t length,const float *original,int64_t start,int64_t end,
     int64_t a,int64_t b,unsigned edges,int64_t window)
