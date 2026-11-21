@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import ctypes
 from pathlib import Path
+import random
 import re
 
 
@@ -38,6 +39,12 @@ def main():
             dll.eciPersianRelease(output)
             dll.eciPersianRelease(mapping)
 
+    def check_a_quality(roman, tag):
+        expected = ''.join('a' if match.group() == 'aa' else 'A'
+                           for match in re.finditer(r'aa|a', roman.lower()))
+        actual = ''.join(phone for phone in tag if phone in 'aA')
+        assert actual == expected, (roman, tag, expected, actual)
+
     table = Path(__file__).with_name('direct_fa_pinglish_lexicon.inc').read_text(encoding='utf8')
     entries = re.findall(r'^\s*\{"([a-z]+)", "([^"\\]+)"\},', table, re.M)
     assert len(entries) > 25000
@@ -45,15 +52,27 @@ def main():
     for roman, script in entries:
         if 'ph' in roman or 'th' in roman or 'ooo' in roman:
             continue  # Existing explicit English/fallback routing.
-        assert pinglish(roman) == (1, persian(script)), (roman, script, pinglish(roman), persian(script))
+        result = pinglish(roman)
+        assert result == (1, persian(script)), (roman, script, result, persian(script))
+        check_a_quality(roman, result[1])
         checked += 1
-    for roman, script in (('khane', 'خانه'), ('khaneh', 'خانه'), ('chetori', 'چطوری'),
+    # Exercise unresolved and inflected words too: no stored spelling or
+    # productive ending is allowed to change an individual a into aa.
+    rng = random.Random(20261121)
+    parts = ('b', 'd', 'f', 'g', 'h', 'k', 'l', 'm', 'n', 'r', 's', 't',
+             'sh', 'kh', 'ch', 'gh', 'z', 'a', 'aa', 'e', 'i', 'o', 'u')
+    for _ in range(3000):
+        roman = ''.join(rng.choice(parts) for _ in range(rng.randrange(2, 8)))
+        status, result = pinglish(roman)
+        if status == 1:
+            check_a_quality(roman, result)
+    for roman, script in (('khaane', 'خانه'), ('khaaneh', 'خانه'), ('chetori', 'چطوری'),
                           ('paraantez', 'پرانتز'), ('raayaane', 'رایانه'),
                           ('mikhaaham', 'می‌خواهم'), ('miravam', 'می‌روم'),
                           ('nemiravam', 'نمی‌روم'), ('tehraani', 'تهرانی'),
                           ('futbaal', 'فوتبال'), ('footbaal', 'فوتبال'),
-                          ('ketabam', 'کتابم'), ('ketabha', 'کتاب‌ها'),
-                          ('khubtar', 'خوبتر'), ('donyaye', 'دنیای'), ('majaazi', 'مجازی')):
+                          ('ketaabam', 'کتابم'), ('ketaabhaa', 'کتاب‌ها'),
+                          ('khubtar', 'خوبتر'), ('donyaaye', 'دنیای'), ('majaazi', 'مجازی')):
         assert pinglish(roman) == (1, persian(script)), (roman, script, pinglish(roman), persian(script))
         assert pinglish(roman.upper()) == pinglish(roman), roman
     for word in ('phone', 'this', 'zooon'):
@@ -69,6 +88,12 @@ def main():
     assert len(more) >= 4
     for roman, script in more:
         assert pinglish(roman) == (1, persian(script)), (roman, script)
+        check_a_quality(roman, pinglish(roman)[1])
+    aliases = Path(__file__).with_name('direct_fa_pinglish_aliases.inc').read_text(encoding='utf8')
+    for roman in re.findall(r'\{"([a-z]+)","', aliases):
+        status, tag = pinglish(roman)
+        assert status == 1, roman
+        check_a_quality(roman, tag)
     assert pinglish('zirkhat') == (1, persian('زیرخط'))
     print(f'Passed {checked} native Pinglish/Persian word comparisons and morphology checks.')
 

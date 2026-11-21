@@ -1,25 +1,19 @@
-/* Common roman spellings whose conventional single a can be the Persian
- * back vowel. Keep this shared by the phrase and word analyzers. */
+/* Alternative spellings consistent with the explicit a/aa distinction.
+ * Keep these shared by the phrase and word analyzers. */
 struct fa_alias {const char *roman,*persian;};
 static const struct fa_alias aliases[]={
-    {"salam","سلام"},{"salaam","سلام"},{"donya","دنیا"},{"donyaa","دنیا"},
-    {"iran","ایران"},{"iraan","ایران"},{"khub","خوب"},{"khoob","خوب"},
+    {"salaam","سلام"},{"donyaa","دنیا"},
+    {"iraan","ایران"},{"khub","خوب"},{"khoob","خوب"},
     {"nokte","نقطه"},{"nokteh","نقطه"},{"noghte","نقطه"},{"noghteh","نقطه"},
-    {"kaghaz","کاغذ"},{"kakhaz","کاغذ"},{"sefr","صفر"},{"yek","یک"},
-    {"soal","سوال"},{"soaal","سوال"},{"sual","سوال"},
+    {"sefr","صفر"},{"yek","یک"},
+    {"soaal","سوال"},
     {"badbakht","بدبخت"},{"badbacht","بدبخت"},
-    {"farsi","فارسی"},{"faarsi","فارسی"},{"ketab","کتاب"},{"ketaab","کتاب"},
+    {"faarsi","فارسی"},{"ketaab","کتاب"},
     {"eslash","اسلش"},{"ast","است"},{"man","من"},
-    {"u","او"},{"oo","او"},{"ou","او"},{"amad","آمد"},{"aamad","آمد"},
-    {"va","و"},{"ya","یا"},{"yaa","یا"},{"ke","که"},
-    {"ra","را"},{"raa","را"},{"az","از"},{"be","به"},{"ba","با"},
-    {"dar","در"},{"ta","تا"},{"taa","تا"},{"joz","جز"}
-};
-
-/* Conventional informal spellings recognized by the native word path. */
-static const struct fa_alias conventional_words[]={
-    {"khane","خانه"},{"khaneh","خانه"},{"farda","فردا"},
-    {"khoda","خدا"},{"khab","خواب"},
+    {"u","او"},{"oo","او"},{"ou","او"},{"aamad","آمد"},
+    {"va","و"},{"yaa","یا"},{"ke","که"},
+    {"raa","را"},{"az","از"},{"be","به"},{"baa","با"},
+    {"dar","در"},{"taa","تا"},{"joz","جز"}
 };
 
 static const char *lookup_fa_alias(const struct fa_alias *table,size_t count,

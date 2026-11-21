@@ -68,9 +68,9 @@ def main():
             except UnsupportedPronunciation:
                 pass
             copula = project_resilient(('zooon ', EciIndex(13), 'ast'), frontend, pinglish=True)
-            object_marker = project_resilient(('zooon ', EciIndex(14), 'ra'), frontend, pinglish=True)
+            object_marker = project_resilient(('zooon ', EciIndex(14), 'raa'), frontend, pinglish=True)
             separated = project_resilient(('zooon, ', EciIndex(15), 'ast'), frontend, pinglish=True)
-            conjunction = project_resilient(('ketab va ', EciIndex(16), 'zooon'), frontend, pinglish=True)
+            conjunction = project_resilient(('ketaab va ', EciIndex(16), 'zooon'), frontend, pinglish=True)
         assert copula.tagged.endswith(' `00 `[.0Ast]'), copula.tagged
         assert object_marker.tagged.endswith(' `00 `[.0ra]'), object_marker.tagged
         assert separated.tagged.endswith(', `[.1Ast]'), separated.tagged

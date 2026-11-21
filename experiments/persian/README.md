@@ -62,12 +62,13 @@ invariant; see https://pubmed.ncbi.nlm.nih.gov/28112017/.
 ### Pinglish A quality
 
 The native Pinglish word lookup distinguishes single `a` (the vowel of
-`haft`) from `aa` (the back vowel). Known Persian spellings are indexed with
-the same distinction; unresolved spellings use the shared Persian text path
-with explicit vowel marks. A small set of established informal spellings,
-including `salam`, `iran`, `farsi`, `ketab`, `khane` and plural `-ha`, is
-retained as exceptions. Pinglish spelling conventions vary, so `aa` remains
-the clear choice when a back vowel is intended.
+`haft`) from `aa` (the back vowel), without word-specific exceptions.
+Known Persian spellings are indexed with the same distinction; unresolved
+spellings use the shared Persian text path with explicit vowel marks. This
+also applies to word endings: write `-haa` for the back-vowel plural. For
+example, `salaam` and `iraan` retain the Persian back vowel, while `salam`
+and `iran` contain only short `a` sounds. Informal Pinglish conventions vary;
+this synthesizer deliberately follows the unambiguous spelling specified here.
 
 ### Numbers and character names (dev147 experiment)
 

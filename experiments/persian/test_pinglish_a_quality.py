@@ -41,6 +41,14 @@ def main():
         ('baran', 'baaraan', '`[.0bA.1rAn]', '`[.0ba.1ran]'),
         ('parantez', 'paraantez', '`[.0pA.0rAn.1tez]', '`[.0pA.0ran.1tez]'),
         ('tanzimat', 'tanzimaat', '`[.0tAn.0zi.1mAt]', '`[.0tAn.0zi.1mat]'),
+        ('salam', 'salaam', '`[.0sA.1lAm]', '`[.0sA.1lam]'),
+        ('iran', 'iraan', '`[.0i.1rAn]', "`[.0'i:'.1r'a:'n]"),
+        ('farsi', 'faarsi', '`[.0fAr.1si]', '`[.0far.1si]'),
+        ('ketab', 'ketaab', '`[.0ke.1tAb]', '`[.0ke.1tab]'),
+        ('khane', 'khaane', '`[.0GA.1ne]', "`[.0Ga.1n'e:']"),
+        ('farda', 'fardaa', '`[.0fAr.1dA]', '`[.0fAr.1da]'),
+        ('ra', 'raa', '`[.1rA]', '`[.1ra]'),
+        ('ba', 'baa', '`[.1bA]', '`[.1ba]'),
     )
     frontend = DirectFirstPersian(args.library, None, None, None)
     try:
@@ -50,19 +58,18 @@ def main():
                 assert word(spelling.upper()) == expected, spelling
                 projected = project((spelling,), frontend, allow_fallback=False, pinglish=True)
                 assert projected.tagged == expected, (spelling, projected.tagged, expected)
-        # These familiar informal spellings are retained as exceptions, and
-        # their explicit aa alternatives share the Persian word analysis.
-        for single, double, script in (
-                ('salam', 'salaam', 'سلام'), ('iran', 'iraan', 'ایران'),
-                ('farsi', 'faarsi', 'فارسی'), ('ketab', 'ketaab', 'کتاب'),
-                ('khane', 'khaane', 'خانه'), ('farda', 'fardaa', 'فردا')):
+        # No familiar word overrides the writer's vowel choice. The aa
+        # forms continue to share the same analysis as Persian script.
+        for spelling, script in (
+                ('salaam', 'سلام'), ('iraan', 'ایران'), ('faarsi', 'فارسی'),
+                ('ketaab', 'کتاب'), ('khaane', 'خانه'), ('fardaa', 'فردا')):
             expected = persian(script)
-            for spelling in (single, double):
-                assert word(spelling) == expected, (spelling, word(spelling), expected)
-                assert project((spelling,), frontend, allow_fallback=False,
-                               pinglish=True).tagged == expected, spelling
-        assert word('ketabha') == word('ketabhaa') == persian('کتاب‌ها')
-        assert word('khaanandeha') == word('khaanandehaa') == persian('خواننده‌ها')
+            assert word(spelling) == expected, (spelling, word(spelling), expected)
+            assert project((spelling,), frontend, allow_fallback=False,
+                           pinglish=True).tagged == expected, spelling
+        assert word('ketaabhaa') == persian('کتاب‌ها')
+        assert word('khaanandehaa') == persian('خواننده‌ها')
+        assert word('khaanandeha') == '`[.0Ga.0nAn.0de.1hA]'
         # A suffix must not reinterpret the preceding single a in a stem.
         assert word('baraan') == '`[.0bA.1ran]'
         assert project(('baraan',), frontend, allow_fallback=False,
@@ -85,11 +92,12 @@ def main():
 
     pinglish = PINGLISH_PROBE.id
     assert render(pinglish, 'bar baaz') != render(pinglish, 'baar baaz')
+    assert render(pinglish, 'salam') != render(pinglish, 'salaam')
+    assert render(pinglish, 'iran') != render(pinglish, 'iraan')
     for roman, script in (('bar', 'بر'), ('baar', 'بار'),
-                          ('salam', 'سلام'), ('salaam', 'سلام'),
-                          ('iran', 'ایران'), ('iraan', 'ایران')):
+                          ('salaam', 'سلام'), ('iraan', 'ایران')):
         assert render(pinglish, roman) == render(PERSIAN_PROBE.id, script), (roman, script)
-    print(f'Passed {len(pairs)} a/aa quality pairs, common exceptions and shared audio paths.')
+    print(f'Passed {len(pairs)} a/aa quality pairs without exceptions and shared audio paths.')
 
 
 if __name__ == '__main__':

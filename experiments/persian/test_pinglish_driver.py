@@ -21,14 +21,14 @@ def check_mapping(text, result):
 
 
 def analysis_tests(frontend):
-    pairs = {'salam donya?': 'سلام دنیا?', 'Salaam Donyaa!': 'سلام دنیا!',
-             'SALAM DONYA?': 'سلام دنیا?',
-             'salam ۱۲ donya?': 'سلام ۱۲ دنیا?',
-             'iran nokte kaghaz?': 'ایران نقطه کاغذ?',
-             'badbakht soal?': 'بدبخت سوال?',
+    pairs = {'salaam donyaa?': 'سلام دنیا?', 'Salaam Donyaa!': 'سلام دنیا!',
+             'SALAAM DONYAA?': 'سلام دنیا?',
+             'salaam ۱۲ donyaa?': 'سلام ۱۲ دنیا?',
+             'iraan nokte?': 'ایران نقطه?',
+             'badbakht soaal?': 'بدبخت سوال?',
              'badbacht': 'بدبخت',
-             'u amad.': 'او آمد.', 'oo aamad.': 'او آمد.', 'ou amad.': 'او آمد.',
-             'khoob yek sefr farsi ketab man': 'خوب یک صفر فارسی کتاب من'}
+             'u aamad.': 'او آمد.', 'oo aamad.': 'او آمد.', 'ou aamad.': 'او آمد.',
+             'khoob yek sefr faarsi ketaab man': 'خوب یک صفر فارسی کتاب من'}
     for source, expected in pairs.items():
         normalized, mapping = normalize_pinglish(source)
         assert normalized == expected
@@ -39,10 +39,11 @@ def analysis_tests(frontend):
         assert result is not None and result.parts == frontend.analyze_direct(expected).parts
         assert not result.used_fallback
         check_mapping(source, result)
-    for text in ('salam2', 'xsalam', 'salam\u200c', "salam's"):
+    for text in ('salaam2', 'xsalaam', 'salaam\u200c', "salaam's",
+                 'salam', 'iran', 'ra'):
         assert normalize_pinglish(text)[0] == text
-    for text, expected in (('fa\u0304rsi', 'فارسی'), ('salam\u0301', 'سلام'),
-                           ('خوب fa\u0304rsi', 'خوب فارسی')):
+    for text, expected in (('fa\u0304arsi', 'فارسی'), ('salaam\u0301', 'سلام'),
+                           ('خوب fa\u0304arsi', 'خوب فارسی')):
         normalized, mapping = normalize_pinglish(text)
         assert normalized == expected
         assert len(mapping) == len(text.encode('utf8')) + 1
@@ -51,21 +52,21 @@ def analysis_tests(frontend):
         result = frontend.analyze_pinglish(text, positioned=True, allow_fallback=False)
         check_mapping(text, result)
         assert not result.used_fallback
-    joined = frontend.analyze_pinglish('salam-e', positioned=True, allow_fallback=False)
-    check_mapping('salam-e', joined)
+    joined = frontend.analyze_pinglish('salaam-e', positioned=True, allow_fallback=False)
+    check_mapping('salaam-e', joined)
     # The shared C projector now resolves a hyphen to a word boundary.
     # Check the spoken words and projected marks instead of expecting its
     # former intermediate literal hyphen.
     expected = frontend.analyze_direct('سلام').parts[0].text + ' ' + LATIN_NAMES['e']
     assert not joined.used_fallback and joined.parts[0].text == expected
-    joined_job = project(('salam', EciIndex(101), '-', EciIndex(102), 'e'),
+    joined_job = project(('salaam', EciIndex(101), '-', EciIndex(102), 'e'),
                          frontend, pinglish=True, allow_fallback=False)
     assert joined_job.tagged == expected
     assert [part.value for part in joined_job.parts if isinstance(part, EciIndex)] == [101, 102]
     for parts in ((), (EciIndex(1),), (' ', EciIndex(2))):
         job = project(parts, frontend, pinglish=True, allow_fallback=True)
         assert not job.tagged.strip()
-    parts = ('sa', EciIndex(4), 'lam ', EciIndex(5), 'do', EciIndex(6), 'nya?')
+    parts = ('sa', EciIndex(4), 'laam ', EciIndex(5), 'do', EciIndex(6), 'nyaa?')
     job = project(parts, frontend, pinglish=True, allow_fallback=True)
     assert job.tagged == frontend.analyze_direct('سلام دنیا?').parts[0].text
     assert [part.value for part in job.parts if isinstance(part, EciIndex)] == [4, 5, 6]
@@ -133,9 +134,9 @@ def analysis_tests(frontend):
         assert result.used_fallback
         assert result.parts == frontend.analyze_pinglish(source, positioned=False, allow_fallback=True).parts
         assert not frontend.analyze_pinglish(source, positioned=False, allow_fallback=False)
-    word = frontend.analyze_pinglish('salam khubtar', positioned=True, allow_fallback=True)
+    word = frontend.analyze_pinglish('salaam khubtar', positioned=True, allow_fallback=True)
     assert word.parts[0].text.startswith(frontend.analyze_direct('سلام').parts[0].text)
-    assert word.source_map[len('salam ')] == word.parts[0].text.index('`[', 1)
+    assert word.source_map[len('salaam ')] == word.parts[0].text.index('`[', 1)
     parts = ('salam ', EciIndex(7), 'khubtar?', EciIndex(8))
     job = project(parts, frontend, pinglish=True, allow_fallback=True)
     assert not job.needs_native_validation and [p.value for p in job.parts if isinstance(p, EciIndex)] == [7, 8]
@@ -156,8 +157,8 @@ def playback_tests(frontend, probe):
     voice = ScopedDirectPersianEngine(probe, frontend, allow_fallback=True, pinglish=True)
     fa = ScopedDirectPersianEngine(probe, frontend, allow_fallback=True)
     try:
-        for roman, script in (('salam donya?', 'سلام دنیا؟'), ('Salaam Donyaa!', 'سلام دنیا!'),
-                              ('badbakht soal?', 'بدبخت سوال؟')):
+        for roman, script in (('salaam donyaa?', 'سلام دنیا؟'), ('Salaam Donyaa!', 'سلام دنیا!'),
+                              ('badbakht soaal?', 'بدبخت سوال؟')):
             expected, actual = bytearray(), bytearray()
             assert fa.speak((script,), expected.extend, lambda _: None)
             assert voice.speak((roman,), actual.extend, lambda _: None)

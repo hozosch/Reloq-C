@@ -12,22 +12,22 @@ else:
 # These are spelling aliases for pronunciations already confirmed in the
 # Persian-script voice, not a general transliterator or English detection.
 ALIASES = {
-    'salam': 'سلام', 'salaam': 'سلام', 'donya': 'دنیا', 'donyaa': 'دنیا',
-    'iran': 'ایران', 'iraan': 'ایران', 'khub': 'خوب', 'khoob': 'خوب',
+    'salaam': 'سلام', 'donyaa': 'دنیا',
+    'iraan': 'ایران', 'khub': 'خوب', 'khoob': 'خوب',
     'nokte': 'نقطه', 'nokteh': 'نقطه', 'noghte': 'نقطه', 'noghteh': 'نقطه',
-    'kaghaz': 'کاغذ', 'kakhaz': 'کاغذ', 'sefr': 'صفر', 'yek': 'یک',
-    'soal': 'سوال', 'soaal': 'سوال', 'sual': 'سوال', 'badbakht': 'بدبخت', 'badbacht': 'بدبخت',
-    'farsi': 'فارسی', 'faarsi': 'فارسی', 'ketab': 'کتاب', 'ketaab': 'کتاب',
+    'sefr': 'صفر', 'yek': 'یک',
+    'soaal': 'سوال', 'badbakht': 'بدبخت', 'badbacht': 'بدبخت',
+    'faarsi': 'فارسی', 'ketaab': 'کتاب',
     'eslash': 'اسلش',
     'ast': 'است',
     'man': 'من', 'u': 'او', 'oo': 'او', 'ou': 'او',
-    'amad': 'آمد', 'aamad': 'آمد',
+    'aamad': 'آمد',
     # Whole-word spellings of the same native contextual function words.
     # Keep a lone "o" as the Latin letter: it is ambiguous with colloquial
     # conjunction -o and is also used when a user navigates by character.
-    'va': 'و', 'ya': 'یا', 'yaa': 'یا', 'ke': 'که',
-    'ra': 'را', 'raa': 'را', 'az': 'از', 'be': 'به', 'ba': 'با',
-    'dar': 'در', 'ta': 'تا', 'taa': 'تا', 'joz': 'جز',
+    'va': 'و', 'yaa': 'یا', 'ke': 'که',
+    'raa': 'را', 'az': 'از', 'be': 'به', 'baa': 'با',
+    'dar': 'در', 'taa': 'تا', 'joz': 'جز',
 }
 LATIN_NAMES = {
     'a': '`[.1ej]', 'b': '`[.1bi]', 'c': '`[.1si]', 'd': '`[.1di]',

@@ -2,7 +2,7 @@
  * Sources: the Persian eSpeak-derived word table (GPL-3.0+) and
  * Lilak grammatical classes (Apache-2.0); see their NOTICE files.
  * Only one-pronunciation Roman spellings are admitted.
- * lexicon=fb58bfddd17b2a43c3cdea0113984e17b893e6917569f99d05c86baca7b3633f, classes=c971698c6f5918cad9f45d84fc281b263d8a3bf26e9012466a1ebaec32292a16, aliases=2edecf00dc95c07008783ddcdd0fa20f833353dbc8669f4b1fe5b000400fdf10
+ * lexicon=fb58bfddd17b2a43c3cdea0113984e17b893e6917569f99d05c86baca7b3633f, classes=c971698c6f5918cad9f45d84fc281b263d8a3bf26e9012466a1ebaec32292a16, aliases=9c14ed865f88535bc4a043ecdfaf389536f75de4779d806ba9c7d00eaf9005e9
  */
 static const struct fa_pinglish_entry fa_pinglish_entries[] = {
     {"aab", "آب"},

@@ -31,9 +31,6 @@ static const char *persian_for_roman(const char *key)
 {
     const char *word=reloq_fa_pinglish_common_alias(key,strlen(key));
     if(word)return word;
-    word=lookup_fa_alias(conventional_words,
-        sizeof conventional_words/sizeof conventional_words[0],key,strlen(key));
-    if(word)return word;
     word=find_roman(fa_pinglish_entries,
         sizeof fa_pinglish_entries/sizeof fa_pinglish_entries[0],key);
     return word?word:find_roman(fa_pinglish_extra,
@@ -112,12 +109,11 @@ static int persian_dictionary_pinglish(const char *key,char *output,size_t capac
     }
     /* Productive suffixes reuse the same per-stem admissions and stress
      * policy as Persian script. Do not guess an unrecognized base. */
-    /* -ha is a widespread informal spelling of the plural suffix, alongside
-     * unambiguous -haa. Require -aan for the other plural: automatically
-     * treating every final -an as a suffix changes unrelated single a's. */
+    /* Only -haa and -aan carry a back vowel. A single a always selects the
+     * short vowel, including in a suffix or an otherwise familiar word. */
     static const struct {const char *roman,*persian;char a_vowel,joiner;} endings[]={
         {"ash","ش",'A',0},{"tar","تر",'A',0},{"am","م",'A',0},{"at","ت",'A',0},
-        {"haa","ها",'a',1},{"ha","ها",'a',1},{"ye","ی",0,0},
+        {"haa","ها",'a',1},{"ye","ی",0,0},
         {"aan","ان",'a',0},{"i","ی",0,0}
     };
     for(size_t i=0;i<sizeof endings/sizeof endings[0];++i) {

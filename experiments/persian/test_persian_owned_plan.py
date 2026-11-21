@@ -185,8 +185,8 @@ def main():
         foreign=[raw[e[1]:e[1]+e[2]].decode('ascii') for e in complete[1] if e[0]==ENGLISH]
         assert foreign==['NVDA'],foreign
         assert words(analyze('سلام',complete=True)[1])==words(analyze('سلام')[1])
-        for fa, latin in [('سلام', 'salam'), ('دنیا', 'donya'), ('ایران', 'iran'),
-                          ('کتاب', 'ketab'), ('سلام دنیا', 'salam donya'),
+        for fa, latin in [('سلام', 'salaam'), ('دنیا', 'donyaa'), ('ایران', 'iraan'),
+                          ('کتاب', 'ketaab'), ('سلام دنیا', 'salaam donyaa'),
                           ('زیرخط', 'zirkhat'), ('اتصال', 'ettesaal')]:
             left, right = analyze(fa), analyze(latin, mode=1)
             assert left[0] == right[0] == 0 and left[1] == right[1], (fa, latin, left, right)
@@ -265,7 +265,7 @@ def main():
             result, events, _, _ = analyze(word)
             primary = {e[3] for e in events if e[0] == PHONE and e[4] == 1}
             assert result == 0 and primary == {stressed_syllable}, (word, result, primary)
-        switched = analyze('سلام `l20.1 salam `l20.0 دنیا')
+        switched = analyze('سلام `l20.1 salaam `l20.0 دنیا')
         assert switched[0] == 0 and [v[1] for v in switched[1] if v[0] == VARIANT] == [1, 0], switched
         expected = analyze('سلام سلام دنیا')
         assert expected[0] == 0 and words(switched[1]) == expected[1], (switched, expected)
