@@ -28,6 +28,25 @@ PATHS = ('eci/Makefile', 'src', 'include', 'vendor/openevv61',
          'experiments/persian/direct_fa_*.inc',
          '.github/workflows/persian-windows-acoustic-probe.yml')
 
+PINGLISH_EXTRA = 'experiments/persian/direct_fa_pinglish_extra.inc'
+
+
+def matching_pinglish_extra(sha):
+    """Only the generated source-digest comment may differ across builds."""
+    def read(ref):
+        result = subprocess.run(['git', 'show', f'{ref}:{PINGLISH_EXTRA}'],
+                                check=False, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        return result.stdout if result.returncode == 0 else None
+    old, current = read(sha), read('HEAD')
+    if old == current:
+        return True
+    if old is None or current is None:
+        return False
+    pattern = rb'(?m)^ \* Sources SHA256: [0-9a-f]{64} [0-9a-f]{64} [0-9a-f]{64}\r?$'
+    old, old_count = re.subn(pattern, b' * Sources SHA256: <digest>', old)
+    current, current_count = re.subn(pattern, b' * Sources SHA256: <digest>', current)
+    return old_count == current_count == 1 and old == current
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -72,9 +91,11 @@ def main():
         sha = run['head_sha']
         if len(sha) != 40 or any(c not in '0123456789abcdef' for c in sha):
             continue
-        result = subprocess.run(['git', 'diff', '--quiet', sha, 'HEAD', '--', *paths],
+        result = subprocess.run(['git', 'diff', '--quiet', sha, 'HEAD', '--', *paths,
+                                 f':(exclude){PINGLISH_EXTRA}'],
                                 check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        if result.returncode == 0 and matching_workflow(sha):
+        if (result.returncode == 0 and (args.audio_only or matching_pinglish_extra(sha))
+                and matching_workflow(sha)):
             if run.get('status') == 'completed':
                 print(int(run['id']))
                 return

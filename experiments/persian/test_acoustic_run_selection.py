@@ -78,6 +78,24 @@ def main():
         git('add', '.')
         git('commit', '-qm', 'changed build')
         assert select('--allow-branch-list-change') == '', 'a changed build recipe was accepted'
+        generated = root / 'experiments/persian/direct_fa_pinglish_extra.inc'
+        generated.write_text('/* Generated\n * Sources SHA256: ' + 'a' * 64 + ' ' +
+                             'b' * 64 + ' ' + 'c' * 64 + '\n */\nint value = 1;\n')
+        git('add', '.')
+        git('commit', '-qm', 'generated')
+        generated_base = git('rev-parse', 'HEAD')
+        generated.write_text(generated.read_text().replace('b' * 64, 'd' * 64))
+        git('add', '.')
+        git('commit', '-qm', 'updated provenance')
+        runs.write_text(json.dumps({'workflow_runs': [
+            {'id': 7, 'head_sha': generated_base, 'status': 'completed', 'conclusion': 'success'},
+        ]}))
+        assert select() == '7', 'a digest-only source comment prevented safe reuse'
+        generated.write_text(generated.read_text().replace('int value = 1;', 'int value = 2;'))
+        git('add', '.')
+        git('commit', '-qm', 'changed generated data')
+        assert select() == '', 'a changed generated table was accepted'
+        assert select('--audio-only') == '7', 'audio-only reuse should exclude text data'
     print('Passed verified acoustic reuse for text-only changes and acoustic-change rejection.')
 
 
