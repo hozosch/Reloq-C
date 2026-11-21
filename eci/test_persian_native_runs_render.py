@@ -155,6 +155,12 @@ def main():
         for mode in (0, 2):
             status, audio, marks, error = pair.render(unsafe, 0, ((len(unsafe), mode),))
             assert status == 1 and not audio and not marks, (mode, status, error)
+        # Adjacent same-mode runs form one input span; a control or an
+        # ambiguous group must not bypass validation when split in NVDA.
+        for text in ('`vs70 سلام', '`[.1salam]'):
+            status, audio, marks, error = pair.render(text, 0, ((1, 0), (len(text.encode()), 0)))
+            assert status == 1 and not audio and not marks, (text, status, error)
+            checks += 1
     finally:
         pair.close()
     print(f'Passed {checks} independent Persian sentence, input-variant and rejection comparisons.')

@@ -19,7 +19,7 @@ int reloq_fa_prepare_native(const char *text,size_t bytes,int variant,
 int reloq_fa_prepare_native_runs(const char *text,size_t bytes,int variant,
     const size_t *run_ends,const unsigned char *run_modes,size_t run_count,
     const size_t *source_offsets,size_t index_count,size_t *error_offset,
-    struct reloq_fa_prepared *result,char **donor_text);
+    struct reloq_fa_prepared *result,char **donor_text,int validate_modes);
 void reloq_fa_prepared_clear(struct reloq_fa_prepared *prepared);
 
 /* Speak one already prepared acoustic plan. Positions refer to bytes in the

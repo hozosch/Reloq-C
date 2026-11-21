@@ -51,7 +51,11 @@ linguistic and pronunciation validation.
 
 The direct Persian acoustic path already uses the same native span delivery
 as the other languages, but it has the old Finnish contour and is not an
-acceptable substitute for the chosen US-derived melody. The complete C
+acceptable substitute for the chosen US-derived melody. An experimental
+incremental entry point now accepts text, character-name and unambiguous
+phonetic runs and emits through that same renderer. It is not selected by
+the voice; user controls and some English contexts still need a fallback.
+The complete C
 sentence path currently captures both the entire Persian target and a US
 pilot before it replays anything. This makes its first audio grow with the
 whole sentence, even though the underlying engine can emit spans as it goes.
@@ -63,6 +67,23 @@ two-pass route the normal voice merely because it has been moved out of
 Python. `experiments/persian/benchmark_native_streaming.py --library <path>`
 compares first PCM for the direct and current US-contour C paths with English
 and German; its measurements have no hardware-independent pass threshold.
+
+The US melody needs to be fixed in the Persian core itself, with Persian
+syllables, lexical stress, weak words and punctuation as its inputs. A direct
+experimental call of the US provider's intonation rule on the current
+Finnish-backed Persian state failed in isolation. The providers have
+language-specific symbol tables and records, so their entry points cannot be
+treated as interchangeable. Adapt the rule inputs to the Persian plan and
+native duration clock, then compare the resulting F0 and audio with the
+accepted US-derived contour before enabling it in any platform voice.
+The current provider runs `generate_durations`, `generate_intonation`, and
+`generate_acoustic_vals` in that order for each syllable in
+`vendor/openevv61/lang/fifi/delta_rules_c04_fifi.c`. That per-syllable
+boundary is the intended integration point: the Persian duration clock is
+already available, and the ordinary span renderer can emit the result
+without either full-utterance capture. The Persian event plan owns stress
+and weak-word metadata; the existing US proxy describes the established
+phonetic and phrase mapping to use as a reference, not as another render.
 
 ## Apple integration
 

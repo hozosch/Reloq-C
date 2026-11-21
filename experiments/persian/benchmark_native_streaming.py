@@ -23,7 +23,7 @@ def main():
     if not 1 <= args.repeats <= 100:
         parser.error('--repeats must be between 1 and 100')
     dll = (c.WinDLL if sys.platform == 'win32' else c.CDLL)(str(args.library.resolve()))
-    H, I, S = c.c_void_p, c.c_int, c.c_size_t
+    H, I, S, B = c.c_void_p, c.c_int, c.c_size_t, c.c_ubyte
     callback = (c.WINFUNCTYPE if sys.platform == 'win32' else c.CFUNCTYPE)(I, H, I, I, H)
     declarations = (
         ('eciNewEx', H, (I,)), ('eciDelete', H, (H,)), ('eciSetParam', I, (H, I, I)),
@@ -31,6 +31,8 @@ def main():
         ('eciAddTextUtf8', I, (H, c.c_char_p, S, I)), ('eciSynthesize', I, (H,)),
         ('eciPersianSpeakNativeUtf8', I, (H, c.c_char_p, S, I, c.POINTER(S),
                                          c.POINTER(I), S, c.POINTER(S))),
+        ('eciPersianSpeakNativeRunsUtf8', I, (H, c.c_char_p, S, I, c.POINTER(S),
+            c.POINTER(B), S, c.POINTER(S), c.POINTER(I), S, c.POINTER(S))),
         ('eciPersianSpeakUsNativeUtf8', I, (H, H, c.c_char_p, S, I, c.POINTER(S),
                                            c.POINTER(I), S, S, c.POINTER(S))),
     )
@@ -71,6 +73,11 @@ def main():
                 status = dll.eciPersianSpeakNativeUtf8(persian, data, len(data), 0,
                                                         None, None, 0, c.byref(error))
                 success = status == 0
+            elif kind == 'persian_direct_runs':
+                end, run_mode = S(len(data)), B(0)
+                status = dll.eciPersianSpeakNativeRunsUtf8(persian, data, len(data), 0,
+                    c.byref(end), c.byref(run_mode), 1, None, None, 0, c.byref(error))
+                success = status == 0
             elif kind == 'persian_us_contour':
                 status = dll.eciPersianSpeakUsNativeUtf8(persian, english, data, len(data), 0,
                                                           None, None, 0, 120000, c.byref(error))
@@ -89,6 +96,7 @@ def main():
         results = []
         for title, multiplier in (('short', 1), ('long', 5)):
             texts = {'persian_direct': ' '.join([fa] * multiplier),
+                     'persian_direct_runs': ' '.join([fa] * multiplier),
                      'persian_us_contour': ' '.join([fa] * multiplier),
                      'english': ' '.join([en] * multiplier),
                      'german': ' '.join([de] * multiplier)}

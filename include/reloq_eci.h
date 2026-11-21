@@ -365,6 +365,18 @@ ECIAPI int ECICALL eciPersianAnalyzeRunsCompleteUtf8(const char *text,size_t byt
  * -3 synthesis failure. Unknown words use orthographic inference. */
 ECIAPI int ECICALL eciPersianSpeakNativeUtf8(ECIHand voice,const char *text,size_t bytes,int mode,
     const size_t *source_offsets,const int *index_values,size_t index_count,size_t *error_offset);
+/* Experimental incremental version for normal text, character-name and
+ * unambiguous phonetic runs, using the same run format as the analyzer.
+ * This uses the Finnish-based contour and is not the selected US-melody
+ * voice. It must not replace the current Persian voice. English-only names,
+ * unsupported controls and ambiguous phonetics are declined before output.
+ * An English text run can also be declined by the acoustic backend.
+ * A stop observed during rendering returns -4. Like the earlier native
+ * route, cancellation racing preparation or the initial render is not yet
+ * guaranteed. Other return values match eciPersianSpeakNativeUtf8. */
+ECIAPI int ECICALL eciPersianSpeakNativeRunsUtf8(ECIHand voice,const char *text,size_t bytes,int mode,
+    const size_t *run_ends,const unsigned char *run_modes,size_t run_count,
+    const size_t *source_offsets,const int *index_values,size_t index_count,size_t *error_offset);
 /* Prepare the silent US contour text on an idle, empty US ECI handle.
  * Word boundary offsets and the result allocation are described in
  * reloq_persian_us_proxy.h. This does not alter Persian pronunciation. */

@@ -89,6 +89,7 @@ jobs:
           grep -q 'eciPersianCharacter' android-symbols.txt
           grep -q 'eciPersianCharacterResolve' android-symbols.txt
           grep -q 'eciPersianSpeakUsNativeRunsUtf8' android-symbols.txt
+          grep -q 'eciPersianSpeakNativeRunsUtf8' android-symbols.txt
           grep -q 'eciPersianNumberEvents' android-symbols.txt
           grep -q 'eciPersianPhoneInventory' android-symbols.txt
           grep -q 'eciPersianPhonesFromLegacy' android-symbols.txt

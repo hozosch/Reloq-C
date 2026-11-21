@@ -1586,6 +1586,30 @@ int ECICALL eciPersianSpeakNativeUtf8(ECIHand handle,const char *text,size_t byt
     return reloq_fa_speak_native(handle,text,bytes,mode,source_offsets,index_values,index_count,error_offset);
 }
 
+int ECICALL eciPersianSpeakNativeRunsUtf8(ECIHand handle,const char *text,size_t bytes,int mode,
+    const size_t *run_ends,const unsigned char *run_modes,size_t run_count,
+    const size_t *source_offsets,const int *index_values,size_t index_count,size_t *error_offset)
+{
+    struct reloq_eci_engine *e=handle;
+    if(error_offset)*error_offset=0;
+    if(!e || !text || !error_offset || bytes==SIZE_MAX || (mode!=0 && mode!=1) ||
+       (index_count && (!source_offsets || !index_values)) || index_count>4096 ||
+       epoch_get(&e->busy) || e->queued || e->voice_mode!=RELOQ_ECI_VOICE_GENERIC ||
+       (e->language_dialect&~0xff00)!=0x90000 || memchr(text,0,bytes))return -1;
+    for(size_t i=0;i<index_count;++i)
+        if(source_offsets[i]>bytes || index_values[i]<0 ||
+           (i && source_offsets[i]<source_offsets[i-1]))return -1;
+    unsigned before=epoch_get(&e->stop_epoch);
+    struct reloq_fa_prepared prepared={0};
+    int status=reloq_fa_prepare_native_runs(text,bytes,mode,run_ends,run_modes,run_count,
+        source_offsets,index_count,error_offset,&prepared,NULL,1);
+    if(!status && epoch_get(&e->stop_epoch)!=before)status=-4;
+    if(!status)status=reloq_fa_speak_prepared(handle,&prepared,prepared.positions,index_values,NULL,index_count);
+    if(epoch_get(&e->stop_epoch)!=before)status=-4;
+    reloq_fa_prepared_clear(&prepared);
+    return status;
+}
+
 int ECICALL eciSynchronize(ECIHand handle)
 {
     struct reloq_eci_engine *e = handle;
@@ -2649,7 +2673,7 @@ static int reloq_fa_speak_us_native(ECIHand handle,ECIHand pilot_handle,
     struct reloq_fa_frame_mark *replay_marks=NULL;
     struct reloq_fa_glide_candidate *glides=NULL;
     int status=use_runs ? reloq_fa_prepare_native_runs(text,bytes,mode,run_ends,run_modes,run_count,
-        source_offsets,index_count,error_offset,&prepared,&donor_text) :
+        source_offsets,index_count,error_offset,&prepared,&donor_text,1) :
         reloq_fa_prepare_native(text,bytes,mode,source_offsets,index_count,error_offset,&prepared);
     if(status)goto done;
     status=reloq_fa_native_words_make(prepared.backend.text,prepared.backend.length,&words);

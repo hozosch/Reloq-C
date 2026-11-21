@@ -4,6 +4,7 @@
 #define RELOQ_ECI_STATIC
 #endif
 #include "reloq_persian_speak.h"
+#include "reloq_inline_tags.h"
 #include "reloq_utf8.h"
 #include <stdint.h>
 #include <stdlib.h>
@@ -42,7 +43,7 @@ static int reloq_fa_explicit_contour_safe(const char *text,size_t bytes)
 int reloq_fa_prepare_native_runs(const char *text,size_t bytes,int variant,
     const size_t *run_ends,const unsigned char *run_modes,size_t run_count,
     const size_t *source_offsets,size_t index_count,size_t *error_offset,
-    struct reloq_fa_prepared *result,char **donor_text)
+    struct reloq_fa_prepared *result,char **donor_text,int validate_modes)
 {
     if(error_offset)*error_offset=0;
     if(donor_text)*donor_text=NULL;
@@ -64,14 +65,22 @@ int reloq_fa_prepare_native_runs(const char *text,size_t bytes,int variant,
     /* Do not replace a known English Unicode name by a numeric fallback,
      * or give Persian letter names to Latin spelling in the Persian profile.
      * Those cases need a separate English language event. */
-    size_t start=0;
-    for(size_t r=0;donor_text && r<run_count && !status;++r) {
-        size_t end=run_ends[r];
-        if(run_modes[r]==2 && !reloq_fa_explicit_contour_safe(text+start,end-start)) {
+    size_t start=0,r=0;
+    while(validate_modes && r<run_count && !status) {
+        size_t end=run_ends[r];unsigned char run_mode=run_modes[r++];
+        /* The analyzer joins adjacent runs of the same mode. Validate the
+         * same spans so a split tag cannot evade the preflight. */
+        while(run_mode!=2 && r<run_count && run_modes[r]==run_mode)end=run_ends[r++];
+        if(run_mode==2 && !reloq_fa_explicit_contour_safe(text+start,end-start)) {
             *error_offset=start;status=1;
         }
-        if(run_modes[r]==0)for(size_t i=start;i+1<end && !status;++i) {
-            if(text[i]!='`' || text[i+1]!='[')continue;
+        if(run_mode==0)for(size_t i=start;i+1<end && !status;++i) {
+            if(text[i]!='`')continue;
+            struct reloq_inline_tag tag=reloq_inline_tag_read((const unsigned char *)text+i,end-i,0);
+            if(tag.kind!=RELOQ_TAG_NONE && tag.kind!=RELOQ_TAG_SPR && tag.kind!=RELOQ_TAG_LANGUAGE) {
+                *error_offset=i;status=1;break;
+            }
+            if(text[i+1]!='[')continue;
             size_t close=i+2;
             while(close<end && text[close]!=']' && text[close]!=' ' &&
                   text[close]!='\t' && text[close]!='\n')++close;
@@ -81,7 +90,7 @@ int reloq_fa_prepare_native_runs(const char *text,size_t bytes,int variant,
             }
             i=close;
         }
-        if(run_modes[r]==1)for(size_t at=start;at<end;) {
+        if(run_mode==1)for(size_t at=start;at<end;) {
             size_t first=at;uint32_t cp=0;char name[2048];int kind=0;
             if(reloq_utf8_next((const unsigned char *)text,end,&at,&cp)!=1 ||
                eciPersianCharacterResolve(cp,name,sizeof name,&kind)!=1) {
@@ -126,7 +135,7 @@ int reloq_fa_prepare_native(const char *text,size_t bytes,int variant,
     if(memchr(text,'`',bytes))return 1;
     size_t end=bytes;unsigned char mode=0;
     return reloq_fa_prepare_native_runs(text,bytes,variant,bytes?&end:NULL,
-        bytes?&mode:NULL,bytes?1:0,source_offsets,index_count,error_offset,result,NULL);
+        bytes?&mode:NULL,bytes?1:0,source_offsets,index_count,error_offset,result,NULL,0);
 }
 
 int reloq_fa_speak_prepared(ECIHand voice,const struct reloq_fa_prepared *prepared,
