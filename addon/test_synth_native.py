@@ -167,7 +167,8 @@ def main():
                     assert not next(part for part in guarded if isinstance(part, module.EciText)).character_mode
                     for locale in (entry.locale for entry in driver._languages.values()):
                         driver.language = locale
-                        for char in ('⚭', 'Ж', '≪', '«', '»'):
+                        for char in ('⚭', 'Ж', '≪', '«', '»', '€', '×', '→', '∑', '\u00a0', '\u200b',
+                                     '@', '+', '?', 'a', '1', ' ', '\t', '\n', '\r', '\x7f'):
                             expected = run([char_mode(True), module.NativeDictionaryWord(char), char_mode(False)])
                             for enabled in (False, True):
                                 spelling_config['useSpellingFunctionality'] = enabled
@@ -185,6 +186,12 @@ def main():
                             reference = run(['Hallo ', index(73), ' ', index(74), ' Welt'])
                             for char in ('⚭', 'α'):
                                 assert run(['Hallo ', index(73), char, index(74), ' Welt']) == reference, (locale, char)
+                                report['checks'] += 1
+                            for char in ('@', '+', '?'):
+                                # A text fragment between indexes is still
+                                # part of the sentence, not a character job.
+                                expected = run(['Hallo ' + char + ' Welt'])
+                                assert run(['Hallo ', index(73), char, index(74), ' Welt']) == expected, (locale, char)
                                 report['checks'] += 1
                             assert run(['Hallo ', index(73), '🙂', index(74), ' Welt']) != reference
                             report['checks'] += 1

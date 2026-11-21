@@ -16,7 +16,8 @@ def main():
         engine = DirectEciEngine(args.library.resolve(), dialect=language.id,
                                  encoding='utf8', native_voice=True)
         try:
-            for char in ('⚭', 'Ж', '≪', 'α', '🙂'):
+            for char in ('⚭', 'Ж', '≪', 'α', '🙂', '€', '×', '→', '∑', '\u00a0', '\u200b',
+                         '@', '+', '?', 'a', '1', ' ', '\t', '\n', '\r', '\x7f'):
                 source = [EciIndex(11), char, EciIndex(12)]
                 explicit = [EciIndex(11), EciText(char, character_mode=True), EciIndex(12)]
                 actual = render(engine, source)

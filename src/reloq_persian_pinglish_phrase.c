@@ -222,10 +222,12 @@ static int pinglish_project_mode(const char *text,size_t length,
             memcpy(normalized+used,text+first,next-first);used+=next-first;at=next;
             positions[at]=used;saw_word=1;
         } else {
-            /* Do not admit raw controls, brackets, or punctuation that was
-             * not admitted by the previous Pinglish frontend. */
+            /* Preserve the strict shortcut's established fallback behavior.
+             * The complete native planner can also retain bracket boundaries
+             * without needing the host's Pinglish tokenizer. */
             if(!(ascii_digit(c) || c==' ' || c=='\t' || c==',' || c=='.' ||
-                 c=='?' || c=='!' || c==':' || c==';' || c=='+' || c=='-'))
+                 c=='?' || c=='!' || c==':' || c==';' || c=='+' || c=='-' ||
+                 (complete && strchr("()[]{}",c))))
                 {status=1;break;}
             normalized[used++]=(char)c;positions[++at]=used;
             if(ascii_digit(c))saw_word=1;

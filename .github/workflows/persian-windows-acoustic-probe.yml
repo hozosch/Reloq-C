@@ -33,6 +33,8 @@ on:
       - eci/test_persian_us_samples.py
       - eci/test_persian_owned_capture.py
       - eci/test_persian_owned_us_capture.py
+      - eci/test_persian_native_us_render.py
+      - experiments/persian/test_native_us_sentence_parity.py
       - eci/test_persian_native_pipeline.py
       - experiments/persian/test_owned_us_capture_parity.py
       - experiments/persian/test_native_us_proxy.py
@@ -309,6 +311,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Owned native Persian capture or cancellation failed' }
           python -B eci/test_persian_owned_us_capture.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Owned US Persian contour capture failed' }
+          python -B eci/test_persian_native_us_render.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Native Persian US sentence rendering failed' }
+          python -B experiments/persian/test_native_us_sentence_parity.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Native Persian sentence differs from the current voice' }
           python -B eci/test_persian_native_pipeline.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Independent Persian planning components failed' }
           python -B experiments/persian/test_owned_us_capture_parity.py --library eci/eci.dll

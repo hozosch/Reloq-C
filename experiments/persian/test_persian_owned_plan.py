@@ -145,6 +145,15 @@ def main():
         assert result==0 and mapped==sorted(mapped),(mixed,result,events)
         assert sum(e[0]==PHONE and e[1]==20 for e in events)==5
         assert [raw[e[1]:e[1]+e[2]].decode('ascii') for e in events if e[0]==ENGLISH]==['phone']
+        # Complete Pinglish analysis owns bracket punctuation; it must not
+        # require the host tokenizer for an otherwise native phrase.
+        for left,right in (('(',')'), ('[',']'), ('{','}')):
+            text=f'salaam {left}donyaa{right} khoob'
+            raw=text.encode('utf8')
+            result,events,mapped,_=analyze(text,mode=1,complete=True,offsets=range(len(raw)+1))
+            punctuation=[e[1] for e in events if e[0]==PUNCTUATION]
+            assert result==0 and punctuation==[ord(left),ord(right)],(text,result,punctuation)
+            assert mapped==sorted(mapped) and not any(e[0]==ENGLISH for e in events),(text,mapped)
         for mark,phone in (('َ',1),('ُ',5),('ِ',3)):
             result,events,_,_=analyze(mark)
             phones=[e for e in events if e[0]==PHONE]

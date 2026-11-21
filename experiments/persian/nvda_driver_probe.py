@@ -539,7 +539,7 @@ class PersianProbeLanguageEngine(LanguageEngine):
                     key, fragment, mode = logical, char, True
                     if 'A' <= char <= 'Z' or 'a' <= char <= 'z':
                         key = english
-                    elif ord(char) > 127 and isinstance(engine, OwnedPersianEngine):
+                    elif isinstance(engine, OwnedPersianEngine):
                         named = engine._frontend.analyze_character(char).parts[0]
                         if named.language == 'en-us':
                             if latin_fold(char) is not None:
@@ -562,7 +562,8 @@ class PersianProbeLanguageEngine(LanguageEngine):
             # and preserves indexes around the switch.
             if (logical[0] in (PERSIAN_PROBE.id, PINGLISH_PROBE.id) and text and
                     (len(text) == 1 or isinstance(part, EciText) and part.character_mode) and
-                    any(ord(char) > 127 for char in text) and
+                    (any(ord(char) > 127 for char in text) or isolated or
+                     isinstance(part, EciText) and part.character_mode) and
                     not (text in ('\ufe0e', '\ufe0f') and
                          not (isinstance(part, EciText) and part.character_mode)) and
                     not (isinstance(part, EciText) and part.is_control)):
@@ -570,8 +571,10 @@ class PersianProbeLanguageEngine(LanguageEngine):
                 if isinstance(engine, OwnedPersianEngine):
                     named = []
                     for char in text:
-                        named_part = (engine._frontend.analyze_character(char).parts[0]
-                                      if ord(char) > 127 else None)
+                        analyze = (engine._frontend.analyze_pinglish_character
+                                   if logical[0] == PINGLISH_PROBE.id
+                                   else engine._frontend.analyze_character)
+                        named_part = analyze(char).parts[0]
                         if named_part and named_part.language == 'en-us' and latin_fold(char) is not None:
                             name = char if logical[0] == PERSIAN_PROBE.id else None
                         else:

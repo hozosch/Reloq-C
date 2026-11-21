@@ -1320,7 +1320,7 @@ int ECICALL eciSynthesize(ECIHand handle)
          * host did not send a spelling flag. Count the complete queued text,
          * not the fragments separated by source indexes or voice controls. */
         if((!guards || !guards[0]) && reloq_utf8_next(phrase,text_bytes,&at,&cp)==1 &&
-           at==text_bytes && cp>127)
+           at==text_bytes)
             memset(modes,1,text_bytes);
     }
     if((unicode_input||control_count)&&text_bytes) {
@@ -2460,13 +2460,14 @@ int ECICALL eciPersianTransferUsSamples(struct reloq_fa_frame *target,size_t tar
     word_count,sample_rate,target_syllables,target_syllable_count,donor_syllables,
     donor_syllable_count,syllables_per_word);}
 
-int ECICALL eciPersianReplayUsCapture(ECIHand handle,
+static int reloq_fa_replay_us_capture(ECIHand handle,
     const struct reloq_fa_owned_capture *target,const struct reloq_fa_owned_capture *donor,
-    const uint32_t *counts,const struct reloq_fa_frame_mark *marks,size_t mark_count)
+    const uint32_t *counts,const struct reloq_fa_frame_mark *marks,size_t mark_count,
+    unsigned before)
 {
     struct reloq_eci_engine *e=handle;
     if(!e)return -1;
-    unsigned before=epoch_get(&e->stop_epoch);
+    if(epoch_get(&e->stop_epoch)!=before)return -4;
     if(!target || !donor || epoch_get(&e->busy) || e->queued ||
        e->voice_mode!=RELOQ_ECI_VOICE_GENERIC || (mark_count && !marks) ||
        mark_count>120000 || !target->frames || !target->frame_count ||
@@ -2519,6 +2520,218 @@ int ECICALL eciPersianReplayUsCapture(ECIHand handle,
         status=rendered==RELOQ_ECI_OK?0:rendered==RELOQ_ECI_CANCELLED?-4:-3;
     }
     free(bounds);free(planned);return status;
+}
+
+int ECICALL eciPersianReplayUsCapture(ECIHand handle,
+    const struct reloq_fa_owned_capture *target,const struct reloq_fa_owned_capture *donor,
+    const uint32_t *counts,const struct reloq_fa_frame_mark *marks,size_t mark_count)
+{
+    struct reloq_eci_engine *e=handle;
+    if(!e)return -1;
+    return reloq_fa_replay_us_capture(handle,target,donor,counts,marks,mark_count,
+        epoch_get(&e->stop_epoch));
+}
+
+/* The projected Persian plan is ASCII ECI phonetics. These boundaries match
+ * the sentence planner: punctuation belongs to the following word and a
+ * weak-word control is marked before the control, not after it. */
+struct reloq_fa_native_words {
+    size_t *boundaries;
+    unsigned char *pause,*glide;
+    uint32_t *syllables;
+    size_t count;
+};
+
+static void reloq_fa_native_words_clear(struct reloq_fa_native_words *words)
+{
+    free(words->boundaries);free(words->pause);free(words->glide);free(words->syllables);
+    *words=(struct reloq_fa_native_words){0};
+}
+
+static int reloq_fa_native_words_make(const char *text,size_t bytes,
+    struct reloq_fa_native_words *words)
+{
+    *words=(struct reloq_fa_native_words){0};
+    if(!text || memchr(text,0,bytes) || strstr(text,"`l"))return 1;
+    size_t count=0;
+    for(size_t i=0;i+2<bytes;) {
+        if(text[i]!='`' || text[i+1]!='['){++i;continue;}
+        size_t end=i+2;while(end<bytes && text[end]!=']')++end;
+        if(end==bytes || end==i+2 || ++count>4096)return 1;
+        i=end+1;
+    }
+    if(!count)return 1;
+    words->syllables=calloc(count,sizeof *words->syllables);
+    words->boundaries=count>1?malloc((count-1)*sizeof *words->boundaries):NULL;
+    words->pause=count>1?calloc(count-1,sizeof *words->pause):NULL;
+    words->glide=count>1?calloc(count-1,sizeof *words->glide):NULL;
+    if(!words->syllables || (count>1 && (!words->boundaries || !words->pause || !words->glide))) {
+        reloq_fa_native_words_clear(words);return -2;
+    }
+    size_t word=0,previous_start=0,previous_end=0;
+    for(size_t i=0;i+2<bytes;) {
+        if(text[i]!='`' || text[i+1]!='['){++i;continue;}
+        size_t end=i+2;while(end<bytes && text[end]!=']')++end;
+        if(word) {
+            size_t boundary=i;
+            for(size_t p=previous_end;p<i;++p)
+                if(strchr(".,?!:;()[]{}",text[p])){boundary=previous_end;break;}
+            if(boundary==i) {
+                size_t p=i;
+                while(p>previous_end && strchr(" \t\n\r\v\f",text[p-1]))--p;
+                if(p>=previous_end+3 && !memcmp(text+p-3,"`00",3))boundary=p-3;
+            }
+            words->boundaries[word-1]=boundary;
+            words->pause[word-1]=(unsigned char)(boundary<bytes &&
+                strchr(".,?!:;()[]{}",text[boundary])!=NULL);
+            int space=i>previous_end;
+            for(size_t p=previous_end;p<i;++p)
+                if(!strchr(" \t\n\r\v\f",text[p])){space=0;break;}
+            int final_u=(previous_end>=2 && text[previous_end-2]=='u') ||
+                (previous_end>=5 && !memcmp(text+previous_end-5,"'u:']",5));
+            int initial_a=i+4<end && text[i+2]=='.' && text[i+3]>='0' && text[i+3]<='2' &&
+                (text[i+4]=='a' || (i+8<=end && !memcmp(text+i+4,"'a:'",4)));
+            if(space && final_u && initial_a &&
+               !memchr(text+previous_start,'w',previous_end-previous_start) &&
+               !memchr(text+i,'w',end+1-i))words->glide[word-1]=1;
+        }
+        for(size_t p=i+2;p+1<end;++p)
+            if(text[p]=='.' && text[p+1]>='0' && text[p+1]<='2')++words->syllables[word];
+        ++word;previous_start=i;previous_end=end+1;i=end+1;
+    }
+    words->count=count;return 0;
+}
+
+struct reloq_fa_prepared_capture_job {
+    ECIHand handle;const struct reloq_fa_prepared *prepared;
+    const size_t *positions;const unsigned char *pause;size_t count;
+};
+static int reloq_fa_capture_prepared_run(void *context,const int *values)
+{
+    struct reloq_fa_prepared_capture_job *job=context;
+    return reloq_fa_speak_prepared(job->handle,job->prepared,job->positions,
+        values,job->pause,job->count);
+}
+
+static int reloq_fa_sample_tick(uint64_t sample,unsigned rate,int64_t *tick)
+{
+    if(!rate || sample>UINT64_MAX/1000u)return -1;
+    uint64_t scaled=sample*1000u,whole=scaled/rate,remainder=scaled%rate;
+    if(remainder*2u>rate || (remainder*2u==rate && (whole&1u)))++whole;
+    if(whole>INT64_MAX)return -1;
+    *tick=(int64_t)whole;return 0;
+}
+
+int ECICALL eciPersianSpeakUsNativeUtf8(ECIHand handle,ECIHand pilot_handle,
+    const char *text,size_t bytes,int mode,const size_t *source_offsets,
+    const int *index_values,size_t index_count,size_t maximum_frames,size_t *error_offset)
+{
+    struct reloq_eci_engine *e=handle,*pilot=pilot_handle;
+    if(error_offset)*error_offset=0;
+    if(!e || !pilot || e==pilot || !text || !error_offset || bytes==SIZE_MAX ||
+       (mode!=0 && mode!=1) || (index_count && (!source_offsets || !index_values)) ||
+       index_count>4096 || !maximum_frames || maximum_frames>120000 ||
+       epoch_get(&e->busy) || epoch_get(&pilot->busy) || e->queued || pilot->queued ||
+       e->voice_mode!=RELOQ_ECI_VOICE_GENERIC || pilot->voice_mode!=RELOQ_ECI_VOICE_GENERIC ||
+       (e->language_dialect&~0xff00)!=0x90000 || pilot->language!=0x10000 ||
+       e->sample_rate_code!=pilot->sample_rate_code || memchr(text,0,bytes))return -1;
+    for(size_t i=0;i<index_count;++i)
+        if(source_offsets[i]>bytes || index_values[i]<0 ||
+           (i && source_offsets[i]<source_offsets[i-1]))return -1;
+    unsigned before=epoch_get(&e->stop_epoch),pilot_before=epoch_get(&pilot->stop_epoch);
+    struct reloq_fa_prepared prepared={0};struct reloq_fa_native_words words={0};
+    struct reloq_fa_owned_capture target={0},donor={0};
+    char *donor_text=NULL;
+    size_t *positions=NULL,*source_slots=NULL,*word_slots=NULL;
+    unsigned char *pauses=NULL;uint64_t *word_samples=NULL;
+    struct reloq_fa_frame_mark *replay_marks=NULL;
+    struct reloq_fa_glide_candidate *glides=NULL;
+    int status=reloq_fa_prepare_native(text,bytes,mode,source_offsets,index_count,error_offset,&prepared);
+    if(status)goto done;
+    status=reloq_fa_native_words_make(prepared.backend.text,prepared.backend.length,&words);
+    if(status)goto done;
+    /* The target plan collapses and marks geminated affricates for the
+     * acoustic provider. The established US pilot instead uses the original
+     * pronunciation, including both phones; preserve that contour input. */
+    size_t donor_error=0;
+    status=eciPersianProjectTextCompleteUtf8(text,bytes,mode,NULL,NULL,0,
+        &donor_text,NULL,&donor_error);
+    if(status) {
+        if(donor_error<=bytes)*error_offset=donor_error;
+        if(status>0)status=1;
+        goto done;
+    }
+    if(!donor_text){status=1;goto done;}
+    size_t word_count=words.count-1;
+    if(index_count+word_count>4096){status=1;goto done;}
+    size_t total=index_count+word_count;
+    positions=total?malloc(total*sizeof *positions):NULL;
+    pauses=total?calloc(total,sizeof *pauses):NULL;
+    source_slots=index_count?malloc(index_count*sizeof *source_slots):NULL;
+    word_slots=word_count?malloc(word_count*sizeof *word_slots):NULL;
+    word_samples=word_count?malloc(word_count*sizeof *word_samples):NULL;
+    glides=word_count?malloc(word_count*sizeof *glides):NULL;
+    replay_marks=index_count?malloc(index_count*sizeof *replay_marks):NULL;
+    if((total && (!positions || !pauses)) || (index_count && (!source_slots || !replay_marks)) ||
+       (word_count && (!word_slots || !word_samples || !glides))){status=-2;goto done;}
+    for(size_t source=0,word=0,at=0;at<total;++at) {
+        if(word<word_count && (source==index_count || words.boundaries[word]<=prepared.positions[source])) {
+            positions[at]=words.boundaries[word];pauses[at]=words.pause[word];word_slots[word++]=at;
+        } else {positions[at]=prepared.positions[source];source_slots[source++]=at;}
+    }
+    if(epoch_get(&e->stop_epoch)!=before || epoch_get(&pilot->stop_epoch)!=pilot_before){status=-4;goto done;}
+    struct reloq_fa_prepared_capture_job job={handle,&prepared,positions,pauses,total};
+    status=reloq_fa_capture_owned(e,total,maximum_frames,before,
+        reloq_fa_capture_prepared_run,&job,&target);
+    if(status)goto done;
+    if(epoch_get(&e->stop_epoch)!=before || epoch_get(&pilot->stop_epoch)!=pilot_before){status=-4;goto done;}
+    status=eciPersianCaptureUsProxyUtf8(pilot_handle,donor_text,strlen(donor_text),maximum_frames,&donor);
+    if(status)goto done;
+    if(epoch_get(&e->stop_epoch)!=before || epoch_get(&pilot->stop_epoch)!=pilot_before){status=-4;goto done;}
+    if(donor.mark_count!=word_count){status=1;goto done;}
+    unsigned rate=(unsigned)sample_hz(e->sample_rate_code);
+    for(size_t i=0;i<word_count;++i)word_samples[i]=target.mark_samples[word_slots[i]];
+    size_t glide_count=0;
+    for(size_t i=0;i<word_count;++i)if(words.glide[i]) {
+        int64_t left=0,boundary=0,right=0;
+        if(!target.frame_count || reloq_fa_sample_tick(word_samples[i],rate,&boundary) ||
+           (i && reloq_fa_sample_tick(word_samples[i-1],rate,&left)) ||
+           (i+1<word_count && reloq_fa_sample_tick(word_samples[i+1],rate,&right))) {
+            status=1;goto done;
+        }
+        if(i+1==word_count)right=target.frames[target.frame_count-1].tick+1;
+        if(left>=boundary || boundary>=right){status=1;goto done;}
+        glides[glide_count++]=(struct reloq_fa_glide_candidate){(uint32_t)i+1,left,boundary,right};
+    }
+    if(glide_count) {
+        size_t applied=0;
+        status=eciPersianApplyGlides(target.frames,target.frame_count,glides,glide_count,1,&applied);
+        if(status)goto done;
+    }
+    for(size_t i=0;i<index_count;++i) {
+        size_t frame=0;
+        if(source_offsets[i]==bytes)frame=target.frame_count;
+        else if(source_offsets[i]) {
+            int64_t tick=0;
+            if(reloq_fa_sample_tick(target.mark_samples[source_slots[i]],rate,&tick)){status=-1;goto done;}
+            size_t lo=0,hi=target.frame_count;
+            while(lo<hi){size_t mid=lo+(hi-lo)/2;if(target.frames[mid].tick<tick)lo=mid+1;else hi=mid;}
+            frame=lo;
+        }
+        if(frame>UINT32_MAX){status=-1;goto done;}
+        replay_marks[i]=(struct reloq_fa_frame_mark){(uint32_t)frame,index_values[i]};
+    }
+    struct reloq_fa_owned_capture target_words=target;
+    target_words.mark_samples=word_samples;target_words.mark_count=word_count;
+    status=reloq_fa_replay_us_capture(handle,&target_words,&donor,words.syllables,
+        replay_marks,index_count,before);
+done:
+    reloq_fa_prepared_clear(&prepared);reloq_fa_native_words_clear(&words);
+    eciPersianRelease(donor_text);
+    eciPersianReleaseOwnedCapture(&target);eciPersianReleaseOwnedCapture(&donor);
+    free(positions);free(pauses);free(source_slots);free(word_slots);free(word_samples);
+    free(replay_marks);free(glides);
+    return status;
 }
 int ECICALL eciPersianFitPitchEdges(struct reloq_fa_frame *rows,size_t count,
     const float *pilot,size_t length,const float *original,int64_t start,int64_t end,

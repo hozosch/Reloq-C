@@ -112,9 +112,13 @@ def main():
                             driver.language = locale
                             character_mode = sys.modules['speech.commands'].CharacterModeCommand
                             index = sys.modules['speech.commands'].IndexCommand
-                            for char in ('⚭', 'Ж', 'α', '⚽', '≪', '«', '»'):
-                                expected, _, _ = run([character_mode(True), module.NativeDictionaryWord(char),
-                                                      character_mode(False)])
+                            for char in ('⚭', 'Ж', 'α', '⚽', '≪', '«', '»', '€', '×', '→', '∑', '\u00a0', '\u200b',
+                                         '@', '+', '?', 'a', '1', ' ', '\t', '\n', '\r', '\x7f'):
+                                try:
+                                    expected, _, _ = run([character_mode(True), module.NativeDictionaryWord(char),
+                                                          character_mode(False)])
+                                except BaseException as error:
+                                    raise AssertionError((locale, repr(char), 'explicit character')) from error
                                 for enabled in (False, True):
                                     spelling_config['useSpellingFunctionality'] = enabled
                                     actual, _, _ = run([index(71), char, index(72)])

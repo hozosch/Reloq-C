@@ -18,6 +18,13 @@ int reloq_fa_prepare_native(const char *text,size_t bytes,int variant,
     struct reloq_fa_prepared *result);
 void reloq_fa_prepared_clear(struct reloq_fa_prepared *prepared);
 
+/* Speak one already prepared acoustic plan. Positions refer to bytes in the
+ * prepared plan, not the original source. Optional pause flags add the same
+ * boundary space used by the existing sentence planner after a word mark. */
+int reloq_fa_speak_prepared(ECIHand voice,const struct reloq_fa_prepared *prepared,
+    const size_t *positions,const int *index_values,const unsigned char *pause,
+    size_t index_count);
+
 /* Development-only shared C route. The caller supplies an idle, otherwise
  * empty 0x90000 ECI handle with its callback, output buffer and desired voice
  * configured. It works without NVDA or eSpeak. This initial route still uses

@@ -23,12 +23,17 @@ word marks, without NVDA. A third experimental C entry point fits and replays
 the two captures, retaining the caller's frame-index marks and leaving both
 captures unchanged. A standalone test compares that step with the existing
 separate contour transfer and replay for short phrases at all seven sample
-rates, including cancellation. The test still prepares both captures and
-their word boundaries externally; this is not yet the sentence renderer.
+rates, including cancellation. A further experimental C entry point now
+prepares ordinary Persian or Pinglish text, derives word boundaries and
+syllable counts, captures both contexts, applies the selected U-to-A glide,
+fits the US contour and replays source indexes without NVDA or eSpeak. The
+native complete Pinglish analysis also accepts bracket boundaries directly.
+These paths still use the accepted Finnish-based acoustic bridge and the US
+prosody pilot; they do not constitute an independently registered voice.
 
 The language is not yet a normal, independent ECI voice. The remaining work
-includes registering Persian and Pinglish dialects, moving the orchestration
-of both captures, word boundaries, full contour rules and streaming into C, and
+includes registering Persian and Pinglish dialects, completing the C sentence
+renderer for mixed languages, controls, full contour rules and streaming, and
 retaining the accepted sound, US sentence contours, cancellation, controls,
 character reading, source indexes and mixed English speech. The current
 experimental speech entry point does not support all of these and must not be

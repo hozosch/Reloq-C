@@ -61,7 +61,7 @@ class _SpeechPreparationMarker(SynthCommand):
 
 
 def _is_isolated_unicode(sequence):
-    """A single non-ASCII scalar, apart from speech control commands.
+    """A single Unicode character, apart from speech control commands.
 
     An index or a language change is not text, but a protected text command
     or another fragment means the scalar is part of a larger utterance.
@@ -73,7 +73,7 @@ def _is_isolated_unicode(sequence):
         if isinstance(item, str):
             if not item:
                 continue
-            if found or len(item) != 1 or ord(item) < 128:
+            if found or len(item) != 1:
                 return False
             found = True
         elif (isinstance(getattr(item, 'text', None), str) and item.text or
@@ -477,7 +477,7 @@ class SynthDriver(BaseSynthDriver):
             elif isinstance(item, LangChangeCommand):
                 locale = item.lang or self._languages[home].locale
                 selected = language_for(item.lang, home, self._languages) or selected
-            elif (spelling or isolated) and isinstance(item, str) and len(item) == 1 and ord(item) > 127:
+            elif (spelling or isolated) and isinstance(item, str) and len(item) == 1 and (isolated or ord(item) > 127):
                 try:
                     dictionaries_enabled = getattr(globalVars, 'speechDictionaryProcessing', True)
                     if dictionaries_enabled and self._imported_dictionaries.matches(item, selected, voice):

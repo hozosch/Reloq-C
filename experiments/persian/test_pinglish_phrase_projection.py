@@ -58,8 +58,18 @@ def main():
                      'khane3 ketabam','a man','ketabam 66','khane, salam?',
                      'سلام دنیا؟','سلام khane','salam دنیا','khane، سلام','سلام khane را'):
             assert frontend.project_direct(text,(),pinglish=True) is not None,text
-        for text in ('phone salam','salam (iran)','šalam'):
+        for text in ('phone salam','šalam'):
             assert frontend.project_direct(text,(),pinglish=True) is None,text
+        # Brackets are now supported by the complete no-reference planner;
+        # the strict shortcut still leaves them to the previous tokenizer.
+        available=frontend._reference_available
+        try:
+            frontend._reference_available=True
+            assert frontend.project_direct('salam (iran)',(),pinglish=True) is None
+            frontend._reference_available=False
+            assert frontend.project_direct('salam (iran)',(),pinglish=True) is not None
+        finally:
+            frontend._reference_available=available
         examples=('salam', 'SalAm DONYA?', 'man iran', 'salam va donya', 'salam ra',
                   'salam ast', 'be iran', 'salam 66', 'salam-iran', 'yek, do?',
                   'salam physics', 'salam3', 'salam (iran)', 'šalam', 'salam x',

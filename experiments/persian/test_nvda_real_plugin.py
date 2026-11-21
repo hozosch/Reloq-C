@@ -641,7 +641,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                               for mode in ('unicode_spelling_on', 'unicode_spelling_off'))
             self.cases.extend((locale, char, mode)
                               for locale in ('de_DE', 'en_US', 'fa_IR', 'fa_Latn')
-                              for char in ('⚭', '≪', 'Ж', 'α', '🙂', '«', '»')
+                              for char in ('⚭', '≪', 'Ж', 'α', '🙂', '«', '»', '€', '×', '→', '\u00a0', '\u200b',
+                                           '@', '+', '?', 'a', '1', ' ', '\t', '\n', '\r', '\x7f')
                               for mode in ('unicode_single_on', 'unicode_single_off', 'unicode_single_direct',
                                            'unicode_single_reference'))
             self.cases.extend((locale, text, mode) for locale, original, reference in (
@@ -863,7 +864,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     for char in ('⚭', '⊖', '≪', 'Ж', 'α', '⚽', '🙂'):
                         if sound(locale, char, 'unicode_spelling_on') != sound(locale, char, 'unicode_spelling_off'):
                             raise AssertionError('NVDA lost the Unicode name while spelling: ' + ascii((locale, char)))
-                    for char in ('⚭', '≪', 'Ж', 'α', '🙂', '«', '»'):
+                    for char in ('⚭', '≪', 'Ж', 'α', '🙂', '«', '»', '€', '×', '→', '\u00a0', '\u200b',
+                                 '@', '+', '?', 'a', '1', ' ', '\t', '\n', '\r', '\x7f'):
                         reference = sound(locale, char, 'unicode_single_reference')
                         for mode in ('unicode_single_on', 'unicode_single_off', 'unicode_single_direct'):
                             if sound(locale, char, mode) != reference:

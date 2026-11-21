@@ -277,7 +277,7 @@ ECIAPI int ECICALL eciUpdateDictA(ECIHand handle,ECIDictHand dictionary,int volu
  * experimental generic text frontend; the exact voice remains unchanged. */
 /* Length-aware native Unicode input. Mode 1 names characters in the selected
  * language; mode 0 reads text. Successive fragments are analyzed together.
- * If the complete queued UTF-8 text is one non-ASCII scalar, mode 0 also
+ * If the complete queued UTF-8 text is one Unicode scalar, mode 0 also
  * names that character unless it is dictionary-protected; indexes and voice
  * controls do not make it text. */
 /* Mode bit 0 requests character spelling; bit 1 protects the text from the
@@ -571,6 +571,23 @@ ECIAPI int ECICALL eciPersianTransferUsSamples(struct reloq_fa_frame *target,siz
 ECIAPI int ECICALL eciPersianReplayUsCapture(ECIHand voice,
     const struct reloq_fa_owned_capture *target,const struct reloq_fa_owned_capture *donor,
     const uint32_t *syllables_per_word,const struct reloq_fa_frame_mark *marks,size_t mark_count);
+/* Experimental end-to-end C renderer for plain Persian or Pinglish text.
+ * A configured Finnish-backed acoustic handle and a separate US pilot must be
+ * idle, empty and set to the same sample rate. The renderer prepares the
+ * Persian plan, captures both contours, fits the US melody and replays it
+ * through voice. Ordered source byte offsets and non-negative index values
+ * are delivered through voice's callback. The pilot is silent. No NVDA or
+ * eSpeak component is required.
+ * This initial route rejects mixed English and inline controls and does not
+ * yet include all of the established NVDA sentence/transition rules or
+ * incremental playback; it is not the registered Persian voice. Unknown
+ * Persian words still use experimental orthographic inference. Stop on voice
+ * is checked between stages; also stop pilot to interrupt a pilot capture.
+ * Return 0 success, 1 unsupported input/contour, -1 invalid input,
+ * -2 allocation failure, -3 synthesis failure, -4 cancellation. */
+ECIAPI int ECICALL eciPersianSpeakUsNativeUtf8(ECIHand voice,ECIHand pilot,
+    const char *text,size_t bytes,int mode,const size_t *source_offsets,
+    const int *index_values,size_t index_count,size_t maximum_frames,size_t *error_offset);
 /* Keep the original pitch except near language-switch edges. Bit 0 selects
  * the beginning and bit 1 the end; window is in the frame clock's ms. */
 ECIAPI int ECICALL eciPersianFitPitchEdges(struct reloq_fa_frame *rows,size_t count,
