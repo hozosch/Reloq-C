@@ -1,5 +1,5 @@
 diff --git a/Engine/apple.mk b/Engine/apple.mk
-index f917a84..e9fd320 100644
+index f917a84..5d0cae5 100644
 --- a/Engine/apple.mk
 +++ b/Engine/apple.mk
 @@ -52,9 +52,15 @@ PB     := $(OUT)/$(PLATFORM)
@@ -43,7 +43,7 @@ index f917a84..e9fd320 100644
  $(PB)/libreloq.a: $(PB)/reloq.o
  	rm -f $@ && $(PAR) rcs $@ $(PB)/reloq.o
  	@mkdir -p $(PB)/Headers && cp $(ROOT)/include/eci.h $(ROOT)/include/reloq_eci.h $(PB)/Headers/
-+	@for h in reloq_persian_plan.h reloq_persian_numbers.h reloq_persian_phones.h reloq_persian_us_proxy.h; do \
++	@for h in reloq_persian_plan.h reloq_persian_numbers.h reloq_persian_phones.h reloq_persian_us_proxy.h reloq_persian_frames.h; do \
 +	  if test -f "$(ROOT)/include/$$h"; then cp "$(ROOT)/include/$$h" $(PB)/Headers/; fi; done
  
  # The three slices, each its own sub-make (PLATFORM picks the compiler), then one XCFramework.
@@ -74,14 +74,14 @@ index 224fdc4..b939c00 100644
              && ev_lang_count() == 15 && ev_lang_index(0x123456) == -1 && ev_voice_open_lang(1, 0x123456) == NULL,
              "languages: the stub knows all 15 of both engines, an unknown language refused"); }
 diff --git a/Makefile b/Makefile
-index 98c8f13..a205274 100644
+index 98c8f13..e1a52dd 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -24,6 +24,8 @@ engine:
  	cp -R build/reloq/ReloqEngine.xcframework Engine/reloq.xcframework
  	mkdir -p Engine/reloq-include
  	cp $(RELOQ)/include/eci.h $(RELOQ)/include/reloq_eci.h Engine/reloq-include/
-+	@for h in reloq_persian_plan.h reloq_persian_numbers.h reloq_persian_phones.h reloq_persian_us_proxy.h; do \
++	@for h in reloq_persian_plan.h reloq_persian_numbers.h reloq_persian_phones.h reloq_persian_us_proxy.h reloq_persian_frames.h; do \
 +	  if test -f "$(RELOQ)/include/$$h"; then cp "$(RELOQ)/include/$$h" Engine/reloq-include/; fi; done
  	printf '#define EV_ENGINE_BUILD "Reloq-C@%s%s"\n#define EV_RELOQ_VERSION "%s"\n' \
  	  "$$(git -C $(RELOQ) rev-parse --short HEAD)" \

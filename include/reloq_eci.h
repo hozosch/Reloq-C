@@ -448,6 +448,34 @@ struct reloq_fa_frame;
 struct reloq_fa_frame_mark;
 struct reloq_fa_syllable;
 struct reloq_fa_glide_candidate;
+/* Owned, silent capture for the experimental native Persian renderer.
+ * Frame and syllable layouts are defined in reloq_persian_frames.h. The
+ * mark array contains one sample-clock position for each source offset in
+ * the order supplied by the caller. No sound or index is sent to the
+ * handle's normal callback while capturing. */
+struct reloq_fa_owned_capture {
+    struct reloq_fa_frame *frames;
+    size_t frame_count;
+    struct reloq_fa_syllable *syllables;
+    size_t syllable_count;
+    uint64_t *mark_samples;
+    size_t mark_count;
+    uint64_t sample_count;
+};
+/* Experimental C-only planning step, not yet a registered Persian voice.
+ * Requires an idle, empty Finnish-backed handle reserved by the caller for
+ * this request. Temporarily replaces and then restores its callback and
+ * output buffer; the caller may stop it from another thread. mode is 0 for
+ * Persian and 1 for Pinglish. Ordered offsets are UTF-8 byte positions.
+ * maximum_frames is 1..120000; index_count is at most 4096. Release a
+ * successful result with eciPersianReleaseOwnedCapture before reusing it.
+ * Returns 0 success, 1 unsupported input, -1 invalid/nested request,
+ * -2 allocation failure, -3 synthesis/capture failure, -4 cancellation.
+ * Unknown written words still use the experimental orthographic inference. */
+ECIAPI int ECICALL eciPersianCaptureNativeUtf8(ECIHand voice,const char *text,size_t bytes,int mode,
+    const size_t *source_offsets,size_t index_count,size_t maximum_frames,
+    struct reloq_fa_owned_capture *result,size_t *error_offset);
+ECIAPI void ECICALL eciPersianReleaseOwnedCapture(struct reloq_fa_owned_capture *result);
 ECIAPI int ECICALL eciPersianCaptureBegin(size_t maximum);
 ECIAPI const struct reloq_fa_frame *ECICALL eciPersianCaptureEnd(size_t *count,int *failed);
 ECIAPI const struct reloq_fa_frame *ECICALL eciPersianCaptureCurrent(size_t *count,int *failed);

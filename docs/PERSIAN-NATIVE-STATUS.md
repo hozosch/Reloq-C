@@ -14,10 +14,13 @@ full generated proxy are compared against the previous implementation.
 Sample-clock word bounds are also converted and fitted in C, including the
 same rounding and syllable alignment. Native text preparation is reusable
 independently of the synthesis call, so a future C renderer can capture and
-replay the prepared event plan without an NVDA object.
+replay the prepared event plan without an NVDA object. An experimental C
+entry point now owns the silent Persian target frames, syllable timing and
+source-index sample positions. It restores the caller's output and callback
+after capture; the owned data remain valid for a subsequent donor pass.
 
 The language is not yet a normal, independent ECI voice. The remaining work
-includes registering Persian and Pinglish dialects, moving target/donor frame
+includes registering Persian and Pinglish dialects, moving the remaining donor
 capture, contour fitting, replay and streaming orchestration into C, and
 retaining the accepted sound, US sentence contours, cancellation, controls,
 character reading, source indexes and mixed English speech. The current

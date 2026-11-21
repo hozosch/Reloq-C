@@ -36,6 +36,7 @@ static int add(ECIHand h,const char *s) {return eciAddTextUtf8(h,s,strlen(s),0);
 int main(void)
 {
     int status=1;struct audio expected={0},actual={0},persian={0};
+    struct reloq_fa_owned_capture capture={0};
     ECIHand a=create(&expected,0x10000),b=create(&actual,0x10000),fa=create(&persian,0x90000);
     /* The CI runner should identify a failed step even when its compiler and
      * library are platform-specific and the large build log is suppressed. */
@@ -63,8 +64,13 @@ int main(void)
     const char *text="سلام دنیا.";size_t error=0;
     REQUIRE(!eciPersianSpeakNativeUtf8(fa,text,strlen(text),0,NULL,NULL,0,&error));
     REQUIRE(persian.count);
-    status=0;puts("Apple ECI smoke: voice changes, Persian proxy and native speech passed.");
+    size_t before=persian.count,offsets[]={0,strlen(text)};
+    REQUIRE(!eciPersianCaptureNativeUtf8(fa,text,strlen(text),0,offsets,2,30000,&capture,&error));
+    REQUIRE(capture.frame_count && capture.sample_count && capture.mark_count==2);
+    REQUIRE(persian.count==before);
+    status=0;puts("Apple ECI smoke: voice changes, Persian proxy, speech and capture passed.");
 done:
+    eciPersianReleaseOwnedCapture(&capture);
     if(a)eciDelete(a);
     if(b)eciDelete(b);
     if(fa)eciDelete(fa);

@@ -2195,6 +2195,107 @@ const struct reloq_fa_syllable *ECICALL eciPersianCaptureSyllables(size_t *count
 {return reloq_fa_capture_syllables(count,failed);}
 void ECICALL eciPersianCaptureRelease(void)
 {reloq61_syllable_trace_set(NULL,NULL);reloq_fa_capture_release();}
+
+struct reloq_fa_owned_capture_context {
+    struct reloq_eci_engine *engine;
+    uint64_t *marks;
+    size_t mark_count;
+    unsigned epoch;
+    int failed;
+};
+
+static int ECICALL reloq_fa_owned_capture_callback(ECIHand handle,int message,
+    int value,void *opaque)
+{
+    struct reloq_fa_owned_capture_context *c=opaque;
+    if(!c || handle!=c->engine || epoch_get(&c->engine->stop_epoch)!=c->epoch)
+        return eciDataAbort;
+    if(message==eciIndexReply) {
+        size_t sample=eciPersianCaptureSampleCount();
+        if(value<=0 || (size_t)value>c->mark_count || sample==SIZE_MAX ||
+           c->marks[value-1]!=UINT64_MAX) {
+            c->failed=1;return eciDataAbort;
+        }
+        c->marks[value-1]=(uint64_t)sample;
+    } else if(message==eciWaveformBuffer && value>0) {
+        /* A controls-only request must never deliver audible samples. */
+        c->failed=1;return eciDataAbort;
+    }
+    return eciDataProcessed;
+}
+
+void ECICALL eciPersianReleaseOwnedCapture(struct reloq_fa_owned_capture *result)
+{
+    if(!result)return;
+    free(result->frames);free(result->syllables);free(result->mark_samples);
+    *result=(struct reloq_fa_owned_capture){0};
+}
+
+int ECICALL eciPersianCaptureNativeUtf8(ECIHand handle,const char *text,size_t bytes,int mode,
+    const size_t *source_offsets,size_t index_count,size_t maximum_frames,
+    struct reloq_fa_owned_capture *result,size_t *error_offset)
+{
+    if(error_offset)*error_offset=0;
+    if(!result)return -1;
+    *result=(struct reloq_fa_owned_capture){0};
+    struct reloq_eci_engine *e=handle;
+    if(!e || !text || !error_offset || bytes==SIZE_MAX || (mode!=0 && mode!=1) ||
+       (index_count && !source_offsets) || index_count>4096 ||
+       !maximum_frames || maximum_frames>120000 || epoch_get(&e->busy) || e->queued ||
+       e->voice_mode!=RELOQ_ECI_VOICE_GENERIC ||
+       (e->language_dialect&~0xff00)!=0x90000 || memchr(text,0,bytes))return -1;
+    for(size_t i=0;i<index_count;++i)
+        if(source_offsets[i]>bytes || (i && source_offsets[i]<source_offsets[i-1]))return -1;
+    unsigned before=epoch_get(&e->stop_epoch);
+    uint64_t *marks=index_count?malloc(index_count*sizeof *marks):NULL;
+    int *values=index_count?malloc(index_count*sizeof *values):NULL;
+    if(index_count && (!marks || !values)){free(marks);free(values);return -2;}
+    for(size_t i=0;i<index_count;++i){marks[i]=UINT64_MAX;values[i]=(int)i+1;}
+    if(eciPersianCaptureBegin(maximum_frames)){free(marks);free(values);return -1;}
+    int status=-3,failed=0;size_t count=0,syllable_count=0,sample_count=0;
+    struct reloq_fa_owned_capture prepared={0};
+    struct reloq_fa_owned_capture_context context={e,marks,index_count,before,0};
+    ECICallback old_callback=e->callback;void *old_data=e->callback_data;
+    short *old_output=e->output;int old_output_samples=e->output_samples;
+    short output[2048];
+    if(epoch_get(&e->stop_epoch)!=before){status=-4;goto done;}
+    if(eciPersianCaptureSetControlsOnly(1))goto done;
+    e->callback=reloq_fa_owned_capture_callback;e->callback_data=&context;
+    e->output=output;e->output_samples=(int)(sizeof output/sizeof *output);
+    status=eciPersianSpeakNativeUtf8(handle,text,bytes,mode,source_offsets,values,index_count,error_offset);
+    e->callback=old_callback;e->callback_data=old_data;
+    e->output=old_output;e->output_samples=old_output_samples;
+    sample_count=eciPersianCaptureSampleCount();
+    const struct reloq_fa_frame *frames=eciPersianCaptureEnd(&count,&failed);
+    if(epoch_get(&e->stop_epoch)!=before){status=-4;goto done;}
+    if(status)goto done;
+    if(failed || context.failed || sample_count==SIZE_MAX || (count && !frames) ||
+       count>SIZE_MAX/sizeof *prepared.frames){status=-3;goto done;}
+    for(size_t i=0;i<index_count;++i)if(marks[i]==UINT64_MAX){status=-3;goto done;}
+    int syllable_failed=0;
+    const struct reloq_fa_syllable *syllables=eciPersianCaptureSyllables(&syllable_count,&syllable_failed);
+    if(syllable_failed){syllable_count=0;syllables=NULL;}
+    if((syllable_count && !syllables) || syllable_count>SIZE_MAX/sizeof *prepared.syllables) {
+        status=-3;goto done;
+    }
+    if(count) {
+        prepared.frames=malloc(count*sizeof *prepared.frames);
+        if(!prepared.frames){status=-2;goto done;}
+        memcpy(prepared.frames,frames,count*sizeof *prepared.frames);
+    }
+    if(syllable_count) {
+        prepared.syllables=malloc(syllable_count*sizeof *prepared.syllables);
+        if(!prepared.syllables){status=-2;goto done;}
+        memcpy(prepared.syllables,syllables,syllable_count*sizeof *prepared.syllables);
+    }
+    prepared.frame_count=count;prepared.syllable_count=syllable_count;
+    prepared.mark_samples=marks;prepared.mark_count=index_count;prepared.sample_count=(uint64_t)sample_count;
+    marks=NULL;*result=prepared;prepared=(struct reloq_fa_owned_capture){0};status=0;
+done:
+    eciPersianCaptureRelease();free(values);free(marks);
+    eciPersianReleaseOwnedCapture(&prepared);
+    return status;
+}
 int ECICALL eciPersianCaptureSetControlsOnly(int enabled)
 {return reloq_fa_capture_set_controls_only(enabled);}
 int ECICALL eciPersianCaptureSetPhoneTrace(int enabled)
