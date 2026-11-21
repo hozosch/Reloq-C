@@ -34,6 +34,10 @@ SOURCE := $(filter-out $(ROOT)/src/reloq_host.c $(ROOT)/src/reloq_voice_filter.c
     $(ROOT)/src/reloq_persian_acoustics.c $(ROOT)/src/reloq_english%.c, \
     $(wildcard $(ROOT)/src/*.c)) $(ROOT)/src/reloq_english_spr.c
 OBJECTS := $(patsubst $(ROOT)/src/%.c,$(BUILD)/core/%.o,$(SOURCE))
+# Mach-O retains db2lin's fixed-point table reference through the relocatable
+# provider link even when that helper is unused. Match the Windows build's
+# small table rather than bundling the legacy Klatt renderer tables.
+OBJECTS += $(BUILD)/core/reloq_eci_fixed_math.o
 PUBLIC_HEADERS := eci.h reloq_eci.h reloq_persian_plan.h reloq_persian_numbers.h \
     reloq_persian_phones.h reloq_persian_us_proxy.h
 CFLAGS := $(OPT) -std=c11 -Wall -Wextra -pedantic -pthread -ffunction-sections \
@@ -48,6 +52,9 @@ rules:
 $(RULES): rules
 
 $(BUILD)/core/%.o: $(ROOT)/src/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+$(BUILD)/core/reloq_eci_fixed_math.o: $(ROOT)/eci/reloq_eci_fixed_math.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 -include $(OBJECTS:.o=.d)

@@ -1,8 +1,8 @@
 diff --git a/Engine/apple.mk b/Engine/apple.mk
-index f917a84..f8aa2b0 100644
+index f917a84..e9fd320 100644
 --- a/Engine/apple.mk
 +++ b/Engine/apple.mk
-@@ -52,7 +52,8 @@ PB     := $(OUT)/$(PLATFORM)
+@@ -52,9 +52,15 @@ PB     := $(OUT)/$(PLATFORM)
  RULES  := $(PB)/rules/libreloq61.a
  
  CORE_SOURCES := $(filter-out $(ROOT)/src/reloq_host.c $(ROOT)/src/reloq_voice_filter.c $(ROOT)/src/reloq_orthography.c \
@@ -11,8 +11,25 @@ index f917a84..f8aa2b0 100644
 +                  $(ROOT)/src/reloq_english%.c,$(wildcard $(ROOT)/src/*.c)) \
                  $(ROOT)/src/reloq_english_spr.c
  CORE_OBJECTS := $(patsubst $(ROOT)/src/%.c,$(PB)/core/%.o,$(CORE_SOURCES))
++# Newer cores need this small fixed-point table when the provider's db2lin
++# helper is retained by the Mach-O relocatable link. Keep older cores usable.
++ifneq ($(wildcard $(ROOT)/eci/reloq_eci_fixed_math.c),)
++CORE_OBJECTS += $(PB)/core/reloq_eci_fixed_math.o
++endif
  CORE_CFLAGS  := $(OPT) -std=c11 -Wall -Wextra -pedantic -pthread -ffunction-sections -fdata-sections \
-@@ -77,13 +78,16 @@ $(PB)/core/%.o: $(ROOT)/src/%.c
+                 -ffp-contract=off -fvisibility=hidden -DECI_STATIC -MMD -MP -I$(ROOT)/include
+ 
+@@ -70,6 +76,9 @@ $(RULES): rules ;
+ $(PB)/core/%.o: $(ROOT)/src/%.c
+ 	@mkdir -p $(dir $@)
+ 	$(PCC) $(CORE_CFLAGS) -c $< -o $@
++$(PB)/core/reloq_eci_fixed_math.o: $(ROOT)/eci/reloq_eci_fixed_math.c
++	@mkdir -p $(dir $@)
++	$(PCC) $(CORE_CFLAGS) -c $< -o $@
+ 
+ -include $(CORE_OBJECTS:.o=.d)
+ 
+@@ -77,13 +86,16 @@ $(PB)/core/%.o: $(ROOT)/src/%.c
  # objects). The ECI names stay global (hidden); the rest of the names are the engine's own.
  $(PB)/reloq.o: $(CORE_OBJECTS) $(RULES)
  	rm -f $(PB)/all.a && cp $(RULES) $(PB)/all.a && $(PAR) rs $(PB)/all.a $(CORE_OBJECTS) >/dev/null
