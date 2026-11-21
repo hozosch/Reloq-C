@@ -46,7 +46,8 @@ def main():
     pinglish.argtypes = (ctypes.c_char_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t)
     current._dll.eciPersianRelease.argtypes = (ctypes.c_void_p,)
     actual_tags = []
-    for text, roman in (('ایتالیا', 'itaaliaa'), ('ایتالیایی', 'itaaliaai')):
+    for text, roman, short in (('ایتالیا', 'itaaliaa', '`[.0i.0ta.0li.1a]'),
+                               ('ایتالیایی', 'itaaliaai', '`[.0i.0ta.0li.0a.1i]')):
         raw = text.encode('utf8'); output = ctypes.c_void_p(); mapping = ctypes.c_void_p(); error = ctypes.c_size_t()
         assert translate(raw, len(raw), ctypes.byref(output), ctypes.byref(mapping), ctypes.byref(error)) == 0
         try:
@@ -55,8 +56,8 @@ def main():
             current._dll.eciPersianRelease(output); current._dll.eciPersianRelease(mapping)
         encoded = roman.encode('ascii'); target = ctypes.create_string_buffer(2048)
         assert pinglish(encoded, len(encoded), target, len(target)) == 1
-        assert target.value.decode('ascii') == tag and "'i:'" in tag, (text, roman, tag)
-        actual_tags.append((tag, tag.replace("'i:'", 'i', 1)))
+        assert target.value.decode('ascii') == tag == short, (text, roman, tag)
+        actual_tags.append((tag, short))
     checks = 0
     try:
         for rate in (1, 3, 6):

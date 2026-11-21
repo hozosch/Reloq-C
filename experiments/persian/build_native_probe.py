@@ -2449,16 +2449,14 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
                 if(short_u_cluster)scaled=(scaled*9+5)/10;
                 STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
             }
-            /* A short, weak medial U must not disappear when it replaces
-               an imported long marker. Give all short U nuclei in this
-               same structural context a native, bounded duration; the
-               acoustic target and explicit long phonetic input are kept. */
+            /* A weak medial short U must remain audible, without bringing
+               back the duration of an imported long vowel. */
             if (us_timing && node && cls==1 && phone==32 && length==1 && stress==0 &&
                 STATE(int32_t,f33)>0 &&
                 persian_probe_weak_medial_u(state,STATE_AT(w26,-4))) {
                 int64_t duration=STATE(int32_t,f33);
                 int64_t extra=(3*duration+1)/2;
-                if(extra>400000)extra=400000;
+                if(extra>200000)extra=200000;
                 int64_t scaled=duration+extra;
                 STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
             }
@@ -3482,6 +3480,16 @@ static void persian_open_vowel(void *state,int phone)
             persian_open_vowel(state,'u');
             const char *us=getenv("RELOQ_FA_US_ARTICULATION");
             if (us && us[0]=='1' && !us[1]) {
+                /* Finnish's alveolar obstruent context opens and fronts U
+                   even at the nucleus. Keep the Persian U target before
+                   S/Z/T/D; the native interpolator still joins the phones. */
+                unsigned next=persian_probe_front_a_neighbour(state,STATE(int32_t,w61),0);
+                if(next==2 || next==5 || next==9 || next==10) {
+                    if(STATE(int16_t,s448)>0)STATE(int16_t,s448)=280;
+                    if(STATE(int16_t,s449)>0)STATE(int16_t,s449)=280;
+                    if(STATE(int16_t,s450)>0)STATE(int16_t,s450)=700;
+                    if(STATE(int16_t,s451)>0)STATE(int16_t,s451)=700;
+                }
                 /* German long /u/: 250/750/2400 Hz, compared to the
                    native 280/700/2150. Shift the contextual endpoints by
                    the same amount and retain inheritance markers. Restore

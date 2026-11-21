@@ -1,6 +1,7 @@
 /* Persian standalone character naming in the shared, cross-platform core. */
 #include "direct_fa_characters.h"
 #include "direct_fa_letters.h"
+#include "direct_fa_lexicon.h"
 #include "reloq_unicode.h"
 #include <stdio.h>
 #include <string.h>
@@ -62,6 +63,8 @@ int reloq_fa_character_code_name(uint32_t codepoint,char *output,size_t capacity
         if(!part || append(result,sizeof result,&used," ") ||
            append(result,sizeof result,&used,part))return -1;
     }
+    reloq_fa_direct_normalize_durations(result);
+    used=strlen(result);
     if(used>=capacity)return -1;
     memcpy(output,result,used+1);return 1;
 }
@@ -94,6 +97,10 @@ static int character_resolve(uint32_t codepoint,char *output,size_t capacity,
             if(reloq_fa_character_code_name(codepoint,result,sizeof result)!=1)return -1;
             used=strlen(result);
         }
+    }
+    if(!selected) {
+        reloq_fa_direct_normalize_durations(result);
+        used=strlen(result);
     }
     if(used>=capacity)return -1;
     memcpy(output,result,used+1);

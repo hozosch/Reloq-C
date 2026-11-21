@@ -65,17 +65,17 @@ def main():
                       ('ماهینی', '`[.1ma.0hi.0ni]')):
         assert final_stress(adjust(word, tag)), (word, adjust(word, tag))
     assert adjust('جائی', '`[.1Ja.0wi]') == '`[.1Ja.0wi]'
-    assert project('اساسی').startswith("`[.0'A:'"), project('اساسی')
+    assert project('اساسی').startswith('`[.0A'), project('اساسی')
     for mark, expected in (('َ', '`[.1A]'), ('ُ', '`[.1o]'), ('ِ', '`[.1e]')):
         assert project(mark) == expected
         assert project('ا' + mark) == expected
     assert project('َُِ') == '`[.1A] `[.1o] `[.1e]'
 
-    assert project('سوئد') == "`[.0s'u:'.1wed]"
-    assert project('سوئدی') == "`[.0s'u:'.0we.1di]"
-    assert adjust('سوئد', "`[.0s'u:'.1wed]") == "`[.0s'u:'.1wed]"
-    assert adjust('مسئول', "`[.0mAs.1w'u:'l]") == "`[.0mAs.1w'u:'l]"
-    assert project('معلوم') == "`[.0mAw.1l'u:'m]"
+    assert project('سوئد') == '`[.0su.1wed]'
+    assert project('سوئدی') == '`[.0su.0we.1di]'
+    assert adjust('سوئد', "`[.0s'u:'.1wed]") == '`[.0su.1wed]'
+    assert adjust('مسئول', "`[.0mAs.1w'u:'l]") == '`[.0mAs.1wul]'
+    assert project('معلوم') == '`[.0mAw.1lum]'
 
     # Unknown Persian in Pinglish mode reaches the same complete C path;
     # all source byte boundaries remain monotonic.

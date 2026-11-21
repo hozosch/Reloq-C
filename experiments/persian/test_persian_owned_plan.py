@@ -212,8 +212,8 @@ def main():
             left, right = analyze(fa), analyze(latin, mode=1)
             assert left[0] == right[0] == 0 and left[1] == right[1]
             vowels = [e for e in left[1] if e[0] == PHONE and e[1] == 4]
-            assert vowels and vowels[0][2] == 3 and vowels[0][4] == 0, (fa, vowels)
-            assert all(not e[2] & 2 for e in vowels[1:]), (fa, vowels)
+            assert vowels and not vowels[0][2] & 1 and vowels[0][4] == 0, (fa, vowels)
+            assert all(not e[2] & 1 for e in vowels), (fa, vowels)
             back_a = [e for e in left[1] if e[0] == PHONE and e[1] == 2]
             assert sum(bool(e[2] & 4) for e in back_a) == (fa == 'ایتالیایی'), (fa, back_a)
         for tag in ("`[.0'i:'.1r'a:']", "`[.1'i:'.0ta.0li.0a]",

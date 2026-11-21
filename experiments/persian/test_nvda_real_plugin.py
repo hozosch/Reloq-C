@@ -59,7 +59,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             from synthDrivers.reloqC._reloq_eci_transport import EciTextTransport
             from synthDrivers.reloqC._reloq_persian_frames import FrameCapture
             self.speech, self.character, self.index_command = speech, CharacterModeCommand, IndexCommand
-            self.symbol_tags = SYMBOL_TAGS
+            self.symbol_tags = {key: re.sub(r"'([Aaeiou]):'", r"\1", value)
+                                for key, value in SYMBOL_TAGS.items()}
             # Reproduce dev136's donor mapping inside the same real NVDA
             # driver to compare the user's old and new slider settings.
             self.reference_calibration = False
@@ -1135,7 +1136,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 if expected not in tags or not any(self.us_fits[self.before_us_fits:]):
                     raise AssertionError('NVDA lost the plural h or US contour: ' + ascii((text, tags)))
             if spelling == 'issue50_r_after_i_vowel':
-                expected = {'تیره': "`[.0ti.1r'e:']", 'ایران': "`[.0'i:'.1r'a:'n]",
+                expected = {'تیره': "`[.0ti.1re]", 'ایران': "`[.0i.1ran]",
                             'سیری': '`[.0si.1ri]'}[text]
                 tags = ' '.join(self.projected[self.before_projected:])
                 if expected not in tags or not any(self.us_fits[self.before_us_fits:]):
@@ -1145,15 +1146,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 if self.synth.rate != 38 or '`[.1zir.0GAt]' not in tags or not any(self.us_fits[self.before_us_fits:]):
                     raise AssertionError('NVDA lost zirkhat or its US contour at speed 38: ' + ascii(tags))
             if spelling == 'issue49_native_new_compound':
-                expected={'بختیاری‌زاده':"`[.0bAG.0ti.0j'a:'.0ri.0za.1d'e:']",
-                          'بختیارزاده':"`[.0bAG.0ti.0j'a:'r.0za.1d'e:']",
-                          'فوتبال':"`[.0f'u:'t.1bal]", 'فوتبالیست':"`[.0f'u:'t.0ba.1list]",
+                expected={'بختیاری‌زاده':"`[.0bAG.0ti.0ja.0ri.0za.1de]",
+                          'بختیارزاده':"`[.0bAG.0ti.0jar.0za.1de]",
+                          'فوتبال':"`[.0fut.1bal]", 'فوتبالیست':"`[.0fut.0ba.1list]",
                           'پژوهشگران':'`[.0pA.0Zu.0heS.0gA.1ran]',
                           'پژوهشگری':'`[.0pA.0Zu.0heS.0gA.1ri]',
                           'پژوهشگرها':'`[.0pA.0Zu.0heS.0gAr.1ha]',
                           'پژوهشگر‌ها':'`[.0pA.0Zu.0heS.0gAr.1ha]',
                           'کارگرها':'`[.0kar.0gAr.1ha]',
-                          'کوچک':"`[.0k'u:'.1CAk]", 'کوچکتر':"`[.0k'u:'.0CAk.1tAr]",
+                          'کوچک':"`[.0ku.1CAk]", 'کوچکتر':"`[.0ku.0CAk.1tAr]",
                           'اصغر':'`[.0As.1RAr]', 'اکبر':'`[.0Ak.1bAr]',
                           'اخگر':'`[.0AG.1gAr]', 'احمد':'`[.0Ah.1mAd]',
                           'عکس':'`[.1Aks]', 'عکسی':'`[.1Ak.0si]',
@@ -1161,16 +1162,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           'bar':'`[.1bAr]', 'baar':'`[.1bar]',
                           'man':'`[.1mAn]', 'maan':'`[.1man]',
                           'salam':'`[.0sA.1lAm]', 'salaam':'`[.0sA.1lam]',
-                          'iran':'`[.0i.1rAn]', 'iraan':"`[.0'i:'.1r'a:'n]",
+                          'iran':'`[.0i.1rAn]', 'iraan':"`[.0i.1ran]",
                           'عمومی':'`[.0o.0mu.1mi]', 'omumi':'`[.0o.0mu.1mi]',
                           'خصوصی':'`[.0Go.0su.1si]', 'khosusi':'`[.0Go.0su.1si]',
                           'تنظیمات عمومی':'`[.0tAn.0zi.1mat] `[.0o.0mu.1mi]',
                           'tanzimaat omumi':'`[.0tAn.0zi.1mat] `[.0o.0mu.1mi]',
-                          'کودک':"`[.0k'u:'.1dAk]",
-                          'دو کودک':"`[.1do] `[.0k'u:'.1dAk]",
-                          'مادر کودک':"`[.0ma.1dAr] `[.0k'u:'.1dAk]",
+                          'کودک':"`[.0ku.1dAk]",
+                          'دو کودک':"`[.1do] `[.0ku.1dAk]",
+                          'مادر کودک':"`[.0ma.1dAr] `[.0ku.1dAk]",
                           'معرفی':'`[.0mo.0wAr.0re.1fi]',
-                          'خواجه‌ئیان':"`[.1Ga.0J'e:'.0'i:'.1an]"}[text]
+                          'خواجه‌ئیان':"`[.1Ga.0Je.0i.1an]"}[text]
                 tags=' '.join(self.projected[self.before_projected:])
                 if expected not in tags or not any(self.us_fits[self.before_us_fits:]):
                     raise AssertionError('NVDA lost native word rules or US contour: '+ascii((text,tags)))
@@ -1188,7 +1189,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 raise AssertionError('NVDA lost the separated language boundary around a hyphen: ' + ascii(text))
             if spelling in ('issue49_hyphen', 'issue49_unknown'):
                 tags = ' '.join(self.projected[self.before_projected:])
-                expected = ("`[.0do.0ros.1t'e:']" if 'درسته' in text else '`[.0a.1li]')
+                expected = ("`[.0do.0ros.1te]" if 'درسته' in text else '`[.0a.1li]')
                 if expected not in tags:
                     details = self.projected_sources[self.before_projected_sources:]
                     raise AssertionError('NVDA spelled a Persian word: ' + ascii(details))
@@ -1204,33 +1205,33 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 expected = {'ً':'`[.1An]', 'ٌ':'`[.1on]', 'ٍ':'`[.1en]',
                             'َ':'`[.1A]', 'ُ':'`[.1o]', 'ِ':'`[.1e]',
                             'ّ':'`[.0tAS.1did]', 'ْ':'`[.0sa.1ken]',
-                            'ٰ':"`[.0A.1lef] `[.0mAR.0s'u:'.1r'e:']"}[text]
+                            'ٰ':"`[.0A.1lef] `[.0mAR.0su.1re]"}[text]
                 tags = ' '.join(self.projected[self.before_projected:])
                 if expected not in tags:
                     raise AssertionError('NVDA lost the Persian character name: ' + ascii(tags))
             if ((spelling is True and text in 'ٔأˈˌə̇αé⚽/\\') or
                     spelling in ('issue49_hamza_line', 'issue49_hamza_line_none')):
-                expected = {'ٔ': "`[.0hAm.1ze.0j'e:'] `[.0ba.1la]",
-                            'أ': "`[.0A.1lef] `[.0hAm.1z'e:']"}.get(text, self.symbol_tags.get(text))
+                expected = {'ٔ': "`[.0hAm.1ze.0je] `[.0ba.1la]",
+                            'أ': "`[.0A.1lef] `[.0hAm.1ze]"}.get(text, self.symbol_tags.get(text))
                 tags = ' '.join(self.projected[self.before_projected:])
                 if expected not in tags:
                     raise AssertionError('NVDA lost the reported character name: ' + ascii((text, tags)))
             if text in ('به علاوه', 'بعلاوه', '+'):
                 tags = ' '.join(self.projected[self.before_projected:])
-                expected = {"بعلاوه": "`[.0be.0A.0la.1v'e:']",
-                            "به علاوه": "`[.0be] `[.0A.0la.1v'e:']",
-                            "+": "`[.0b'e:'] `[.0A.0la.1v'e:']"}[text]
+                expected = {"بعلاوه": "`[.0be.0A.0la.1ve]",
+                            "به علاوه": "`[.0be] `[.0A.0la.1ve]",
+                            "+": "`[.0be] `[.0A.0la.1ve]"}[text]
                 if expected not in tags:
                     raise AssertionError('NVDA lost the corrected alāve reading: ' + ascii(tags))
             if spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most'):
                 tags = ' '.join(self.projected[self.before_projected:])
                 if spelling in ('pipeline', 'pipeline_most') and locale == 'fa_IR' and ('`[.0hen.1ga.0me]' not in tags or
-                        "`[.1'e:'G.0tja.2ra.0te]" not in tags):
+                        "`[.1eG.0tja.2ra.0te]" not in tags):
                     raise AssertionError('NVDA preprocessing lost the vocalized Persian words: ' + ascii(tags))
                 if spelling == 'pipeline_stop' and '`[.0mo.0te.0vAR.1Ref]' not in tags:
                     raise AssertionError('NVDA spelled the Persian word for stopped: ' + ascii(tags))
-                if spelling == 'pipeline_log' and ("`[.1'e:'t.0te.1fa.0Ra.2te]" not in tags or
-                        "`[.0sAbt.0So.1d'e:']" not in tags):
+                if spelling == 'pipeline_log' and ("`[.1et.0te.1fa.0Ra.2te]" not in tags or
+                        "`[.0sAbt.0So.1de]" not in tags):
                     raise AssertionError('NVDA spelled part of the normalized log label: ' + ascii(tags))
                 if 'تنظیماتِ ذخیره‌شده‌ی' in text and (
                         '`[.0zA.0Gi.0re.0So.1de.0je]' not in tags or

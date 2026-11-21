@@ -62,10 +62,11 @@ def main():
         assert ping(encoded, len(encoded), output, len(output)) == 1, roman
         assert output.value.decode('ascii') == project(written), (roman, output.value, project(written))
     assert project('2') == project('دو') == '`[.1do]'
-    # Ordinary long /a/, /i/ and /u/, and an open /æ/, keep their marks.
-    assert "'a:'" in project('ایران') and "'i:'" in project('ایران')
-    assert "'u:'" in project('خوب')
-    assert project('اساسی').startswith("`[.0'A:'")
+    # Generated words use the short variant of each vowel, without changing
+    # the independent A/a timbres. Explicit length remains available below.
+    assert project('ایران') == '`[.0i.1ran]'
+    assert "'u:'" not in project('خوب')
+    assert project('اساسی').startswith('`[.0A')
 
     checks = 0
     try:

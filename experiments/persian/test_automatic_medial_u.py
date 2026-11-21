@@ -44,11 +44,11 @@ def main():
         source = word.encode('utf8'); tag = ctypes.create_string_buffer(b"`[.0o.0m'u:'.1mi]")
         assert stress(source, len(source), tag, len(tag)) == 0
         assert tag.value == b'`[.0o.0mu.1mi]', (word, tag.value)
-    for word, tag in (('عموم', "`[.0o.1m'u:'m]"), ('سوئد', "`[.0s'u:'.1wed]")):
+    for word, tag in (('عموم', '`[.0o.1mum]'), ('سوئد', '`[.0su.1wed]')):
         assert convert(word) == tag, (word, convert(word))
     # Apply the same policy after a compound has acquired its final stress,
     # rather than only before suffixes and constituents are assembled.
-    assert convert('به‌روزرسانی‌های') == "`[.0b'e:'.0ruz.0re.0sa.0ni.1ha.0je]"
+    assert convert('به‌روزرسانی‌های') == '`[.0be.0ruz.0re.0sa.0ni.1ha.0je]'
 
     comparisons = 0
     try:

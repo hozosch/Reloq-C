@@ -30,8 +30,8 @@ def main():
                 native = engine._frontend.analyze_direct(word)
                 assert native and not native.used_fallback, word
                 assert engine._frontend._worker is None, 'known surname used a fallback'
-                assert ".0'i:'.1an]" in result.tagged, result.tagged
-                short = result.tagged.replace(".0'i:'.1an]", '.0i.1an]', 1)
+                assert '.0i.1an]' in result.tagged, result.tagged
+                short = '`[.1Ga.0Je.0i.1an]'
                 observed = capture(acoustic, scope, result.tagged)
                 reference = capture(acoustic, scope, short)
                 a,b=observed.syllables[5]; c,d=reference.syllables[5]

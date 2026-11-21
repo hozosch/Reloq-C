@@ -13,24 +13,27 @@ static size_t arabic_mark(const char *text,size_t length,size_t at,unsigned char
 /* A cardinal group has final lexical prominence, including a group made of
  * several native tags (e.g. one hundred and one). Keep the reference's
  * secondary stresses and phones, then apply its existing phrase weakening. */
-static int emit(struct number_output *b,const char *text,int weaken,int final_stress,
-                int short_hundred)
+static int emit(struct number_output *b,const char *text,int weaken,int final_stress)
 {
     size_t n=strlen(text),space=b->used?1:0;
-    /* In 100–199, the source table lengthens the vowel of صد. Persian صد
-     * uses the same short /æ/ as the independently spoken word. Match the
-     * first syllable only, preserving the remaining number and its stress. */
-    int shorten=short_hundred && n>=9 && text[0]=='`' && text[1]=='[' &&
-                text[2]=='.' && text[3]>='0' && text[3]<='2' && text[4]=='s' &&
-                !memcmp(text+5,"'A:'",4);
-    size_t written=n-(shorten?3u:0u);
+    /* Size and emit the normalized result, so a caller with exactly enough
+     * space for a short vowel does not need room for the discarded marker. */
+    size_t written=0;
+    for(size_t i=0;i<n;++i) {
+        if(i+3<n && text[i]=='\'' && strchr("Aaeiou",text[i+1]) &&
+           text[i+2]==':' && text[i+3]=='\'')i+=3;
+        ++written;
+    }
     if(written>SIZE_MAX-b->used-space-1 || b->used+space+written>=b->capacity)return -2;
     if(space)b->out[b->used++]=' ';
     size_t last=SIZE_MAX;
     if(final_stress)for(size_t i=1;i<n;++i)
         if(text[i-1]=='.' && text[i]>='0' && text[i]<='2')last=i;
     for(size_t i=0;i<n;++i) {
-        if(shorten && i==5) {b->out[b->used++]='A';i+=3;continue;}
+        if(i+3<n && text[i]=='\'' && strchr("Aaeiou",text[i+1]) &&
+           text[i+2]==':' && text[i+3]=='\'') {
+            b->out[b->used++]=text[i+1];i+=3;continue;
+        }
         char value=text[i];
         if(last!=SIZE_MAX && i && text[i-1]=='.' && value>='0' && value<='2') {
             if(i==last)value='1';
@@ -210,8 +213,7 @@ int reloq_fa_direct_number(const char *text,size_t length,size_t *consumed,
         const char *value=event->kind==RELOQ_FA_NUMBER_GROUP?fa_number_groups[event->value]:
             event->kind==RELOQ_FA_NUMBER_SCALE?fa_number_scales[event->value][event->linked]:
             fa_number_decimal;
-        int hundred=event->kind==RELOQ_FA_NUMBER_GROUP && event->value>=100 && event->value<200;
-        if(emit(&b,value,(int)event->weaken,(int)event->final_stress,hundred))return -2;
+        if(emit(&b,value,(int)event->weaken,(int)event->final_stress))return -2;
     }
     *consumed=used;return 0;
 }

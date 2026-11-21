@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import re
 from pathlib import Path
 
 from compile_direct_lexicon import EXPECTED_DICT, digest
@@ -29,6 +30,9 @@ def generate(worker, native, frontend) -> str:
             expanded = frontend.analyze_direct(NVDA_SPOKEN_NAMES[char])
             if expanded is not None and len(expanded.parts) == 1:
                 tag = expanded.parts[0].text
+        # Persian text uses one vowel quality with the native short timing.
+        # Explicit caller-supplied phonetic length remains available.
+        tag = re.sub(r"'([Aaeiou]):'", r"\1", tag)
         if not native_sequence_accepted(tag, native._phonemes_for_probe(tag)):
             raise RuntimeError(f'native parser changed the name of U+{ord(char):04X}')
         output.append(f'    {{0x{ord(char):04x}u, "{tag}"}},\n')

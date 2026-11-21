@@ -1348,28 +1348,26 @@ static void apply_persian_stress(const char *word,size_t bytes,char *tag,int dir
     }
 }
 
-/* Reference-derived long markers are not a separate Persian /u/ quality.
- * For an unstressed internal nucleus before the word's primary stress,
- * hand its duration to the Persian timing rule instead. Preserve explicit
- * phonetic input, initial and final nuclei, stressed /u/ and every other
- * vowel. Apply this only after the word's accent has been resolved. */
+/* Reference length marks must not impose a second Persian vowel duration.
+ * This is used only on automatically produced text, not on phonetic input
+ * supplied by the caller. Preserve vowel identity, stress and every other
+ * control, including text outside phoneme groups and multi-group results. */
 void reloq_fa_direct_normalize_durations(char *tag)
 {
     if(!tag)return;
-    size_t n=strlen(tag);
-    if(n<4 || tag[0]!='`' || tag[1]!='[' || tag[n-1]!=']' ||
-       memchr(tag+2,']',n-3))return;
-    for(char *p=tag+2;(p=strstr(p,"'u:'"))!=NULL;) {
-        char *syllable=NULL;unsigned count=0;
-        for(char *q=tag+2;q<p;++q)
-            if(q[0]=='.' && q[1]>='0' && q[1]<='2'){syllable=q;++count;++q;}
-        if(count<2 || !syllable || syllable[1]!='0'){p+=4;continue;}
-        int later_stress=0;
-        for(char *q=p+4;*q && *q!=']';++q)
-            if(q[0]=='.' && q[1]=='1'){later_stress=1;break;}
-        if(!later_stress){p+=4;continue;}
-        *p='u';memmove(p+1,p+4,strlen(p+4)+1);++p;
+    char *read=tag,*write=tag;int in_group=0;
+    while(*read) {
+        if(!in_group && read[0]=='`' && read[1]=='[') {
+            *write++=*read++;*write++=*read++;in_group=1;continue;
+        }
+        if(in_group && read[0]=='\'' && read[1] && strchr("Aaeiou",read[1]) &&
+           read[2]==':' && read[3]=='\'') {
+            *write++=read[1];read+=4;continue;
+        }
+        if(in_group && *read==']')in_group=0;
+        *write++=*read++;
     }
+    *write=0;
 }
 
 int reloq_fa_direct_stress(const char *word,size_t bytes,char *tag,size_t capacity)

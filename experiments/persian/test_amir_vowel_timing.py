@@ -33,8 +33,8 @@ def main():
             dll.eciPersianRelease(result); dll.eciPersianRelease(mapping)
 
     current_tag = project(engine, 'اساسی')
-    assert current_tag.startswith("`[.0'A:'"), current_tag
-    short_tag = current_tag.replace("'A:'", 'A', 1)
+    assert current_tag == '`[.0A.1sa.0si]', current_tag
+    short_tag = '`[.0A.1sa.0si]'
     old_tag = project(previous, 'اساسی') if previous else None
     count = 0
     try:

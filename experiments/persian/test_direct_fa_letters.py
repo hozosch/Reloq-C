@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import re
 
 from direct_fa_sequence import EciIndex, EciText, ScopedDirectPersianEngine, project, project_resilient
 from espeak_worker import EspeakWorker
@@ -21,6 +22,7 @@ def reference_tests(frontend, reference):
             expanded = frontend.analyze_direct(NVDA_SPOKEN_NAMES[char])
             if expanded is not None and len(expanded.parts) == 1:
                 tag = expanded.parts[0].text
+        tag = re.sub(r"'([Aaeiou]):'", r'\1', tag)
         assert analysis.parts[0].text == tag, char
         assert analysis.source_map == (0,) * len(char.encode('utf8')) + (len(tag),)
         job = project((EciIndex(1), EciText(char, character_mode=True), EciIndex(2)),
@@ -49,7 +51,7 @@ def reference_tests(frontend, reference):
         name = frontend.analyze_character(char)
         assert name is not None and name.parts[0].text
         if char in SYMBOL_TAGS:
-            assert name.parts[0].text == SYMBOL_TAGS[char]
+            assert name.parts[0].text == re.sub(r"'([Aaeiou]):'", r'\1', SYMBOL_TAGS[char])
         assert name.source_map == (0,) * len(char.encode('utf8')) + (len(name.parts[0].text),)
         job = project((EciIndex(5), EciText(char, character_mode=True), EciIndex(6)),
                       frontend, allow_fallback=True)

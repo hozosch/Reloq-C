@@ -47,7 +47,7 @@ def main():
     def phones(value):
         # Persian lexical stress is now assigned by our own rules rather
         # than copied from eSpeak; compare the underlying phones separately.
-        return re.sub(r'\.[012]', '.0', value)
+        return re.sub(r'\.[012]', '.0', re.sub(r"'([Aaeiou]):'", r'\1', value))
     with EspeakPhonemeProbe(args.espeak_library, args.data_parent) as reference:
         for number in range(1000):
             source = str(number)
@@ -75,7 +75,7 @@ def main():
     examples = {
         '1001': "`[.2jek] `[.0he.2za.0ro] `[.1jek]",
         '003': "`[.0sefr] `[.0sefr] `[.1se]",
-        '۳٫۱۴': "`[.2se] `[.0noR.2t'e:'] `[.0jek] `[.0Ca.1har]",
+        '۳٫۱۴': '`[.2se] `[.0noR.2te] `[.0jek] `[.0Ca.1har]',
         '−۳': "`[.0mAn.1fi] `[.1se]",
         '+۳': "`[.0mos.1bAt] `[.1se]",
     }

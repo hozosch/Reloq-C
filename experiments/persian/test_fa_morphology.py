@@ -42,35 +42,35 @@ def main():
                  'شرط','صورت','عنوان','راحتی','علاوه','نظر'):
         joined=project('به‌'+word);spaced=project('به '+word)
         assert joined==spaced and joined.startswith('`00 `[.0be] '),(word,joined,spaced)
-    assert project('به‌روز')=="`[.0b'e:'.1r'u:'z]"
-    assert project('به‌روزرسانی')=="`[.0b'e:'.2r'u:'z.0re.1sa.0ni]"
-    assert project('به‌روزرسانی‌های')=="`[.0b'e:'.0ruz.0re.0sa.0ni.1ha.0je]"
+    assert project('به‌روز')=="`[.0be.1ruz]"
+    assert project('به‌روزرسانی')=="`[.0be.2ruz.0re.1sa.0ni]"
+    assert project('به‌روزرسانی‌های')=="`[.0be.0ruz.0re.0sa.0ni.1ha.0je]"
 
     # Suffixes are rules over independently spoken stems, including stems
     # absent from the old plural bitmap and additional held-out nouns.
     for stem in ('کانال','پاتیل','هتل','پاستیل','سبیل','کتاب','ماشین',
                  'کودک','قلم','لباس','دوست','خانه','پرده','پنجره','جعبه'):
-        for ending,tail in (('ها','.1ha]'),('های','.1ha.0je]'),('هایی',".1ha.0'i:']")):
+        for ending,tail in (('ها','.1ha]'),('های','.1ha.0je]'),('هایی',".1ha.0i]")):
             tag=project(stem+'‌'+ending)
             assert tag.endswith(tail) and tag.count('.1')==1,(stem,ending,tag)
     assert project('خانه‌ها')=='`[.0Ga.0ne.1ha]'
     assert project('دیوانه‌ها')=='`[.0di.0va.0ne.1ha]'
     assert project('نیمه‌راه')=='`[.0ni.0me.1rahw]'
-    assert project('خانه‌ای')=="`[.0Ga.1ne.0'i:']"
-    assert project('پدیده‌ای')=="`[.0pA.0di.1de.0'i:']"
-    assert project('پدیده‌ی')=="`[.0pA.0di.1de.0j'e:']"
+    assert project('خانه‌ای')=="`[.0Ga.1ne.0i]"
+    assert project('پدیده‌ای')=="`[.0pA.0di.1de.0i]"
+    assert project('پدیده‌ی')=="`[.0pA.0di.1de.0je]"
     assert project('آماده‌سازی')=='`[.0a.0ma.0de.0sa.1zi]'
     assert project('عجیب‌ترین').endswith('.0tA.1rin]')
-    assert project('نیم‌فاصله').endswith(".0fa.0se.1l'e:']")
+    assert project('نیم‌فاصله').endswith(".0fa.0se.1le]")
     assert project('نیم‌اتصال').endswith('.0et.0te.1sal]')
     assert project('بک‌اسلش')=='`[.0bAk.0es.1lAS]'
     # Native composition covers classified -ختیار/-ختیاری derivatives and
     # -زاده surnames using their own recognized stems, without asking eSpeak.
-    assert project('بختیار')=="`[.0bAG.0ti.1j'a:'r]"
-    assert project('بختیاری')=="`[.0bAG.0ti.0j'a:'.1ri]"
-    assert project('بختیاری‌زاده')=="`[.0bAG.0ti.0j'a:'.0ri.0za.1d'e:']"
-    assert project('بختیارزاده')=="`[.0bAG.0ti.0j'a:'r.0za.1d'e:']"
-    assert project('علی‌زاده')=="`[.0'A:'.0li.0za.1d'e:']"
+    assert project('بختیار')=="`[.0bAG.0ti.1jar]"
+    assert project('بختیاری')=="`[.0bAG.0ti.0ja.1ri]"
+    assert project('بختیاری‌زاده')=="`[.0bAG.0ti.0ja.0ri.0za.1de]"
+    assert project('بختیارزاده')=="`[.0bAG.0ti.0jar.0za.1de]"
+    assert project('علی‌زاده')=="`[.0A.0li.0za.1de]"
     project('کتابزاده',covered=False)
     project('زختیار',covered=False)
     # Classified forms of a known -گر agent noun are composed with plural
@@ -81,7 +81,7 @@ def main():
     assert project('کارگری')=='`[.0kar.0gA.1ri]'
     assert project('پژوهشگرها')==project('پژوهشگر‌ها')=="`[.0pA.0Zu.0heS.0gAr.1ha]"
     assert project('پژوهشگرهای')==project('پژوهشگر‌های')=="`[.0pA.0Zu.0heS.0gAr.1ha.0je]"
-    assert project('پژوهشگرهایی')==project('پژوهشگر‌هایی')=="`[.0pA.0Zu.0heS.0gAr.1ha.0'i:']"
+    assert project('پژوهشگرهایی')==project('پژوهشگر‌هایی')=="`[.0pA.0Zu.0heS.0gAr.1ha.0i]"
     assert project('کارگرها')==project('کارگر‌ها')=='`[.0kar.0gAr.1ha]'
     project('پردازشگری',covered=False)
     # NVDA's fa symbols.dic supplies slash names with vowel marks. Reuse a
@@ -101,14 +101,14 @@ def main():
     # leaves the accent on the independently known noun. Independently listed
     # words and the previous decision on this surname remain unchanged.
     assert project('پیمانکاران')=='`[.0pej.0man.0ka.1ran]'
-    assert project('صدای')=="`[.0se.1da.0j'e:']"
+    assert project('صدای')=="`[.0se.1da.0je]"
     assert project('هوای')=='`[.0hA.1va.0je]'
     assert project('بابای')=='`[.0ba.1ba.0je]'
     assert project('دنیای')=='`[.0do.1nja.0je]'
     assert project('پای')=='`[.1paj]'
     assert project('تهران')=='`[.0teh.1ran]'
     assert project('آسمان')=='`[.0a.0se.1man]'
-    assert project('خواجه‌ئیان')=="`[.1Ga.0J'e:'.0'i:'.1an]"
+    assert project('خواجه‌ئیان')=="`[.1Ga.0Je.0i.1an]"
 
     # Apply productive accent patterns, but protect possessives, verbs,
     # independent pronouns and a known indefinite -i form.
@@ -116,7 +116,7 @@ def main():
         'فارسی':'`[.0far.1si]', 'صندلی':'`[.0sAn.0dA.1li]',
         'قربانی':'`[.0Ror.0ba.1ni]', 'انسانی':'`[.0en.0sa.1ni]',
         'تهرانی':'`[.0teh.0ra.1ni]',
-        'درباره':"`[.0dAr.0ba.1r'e:']", 'درمورد':"`[.0dAr.0m'o:'.1red]",
+        'درباره':"`[.0dAr.0ba.1re]", 'درمورد':"`[.0dAr.0mo.1red]",
         'اگرچه':'`[.0A.0gAr.1Ce]', 'همچنین':'`[.0hAm.0Ce.1nin]',
         'مربیان':'`[.0mo.0rAb.0bi.1jan]', 'بازهم':'`[.1baz.0hAm]',
         'ازهم':'`[.0Az.1hAm]', 'اوهم':'`[.1o.0hAm]', 'وهم':'`[.1vAhm]',
