@@ -401,8 +401,29 @@ class PersianProbeLanguageEngine(LanguageEngine):
                           for part in parts if isinstance(part, str) or
                           isinstance(part, EciText) and not part.is_control).strip()
         isolated = len(visible) == 1
+        def adjoining(index, direction):
+            # Source indexes and voice controls do not divide a word.
+            index += direction
+            while 0 <= index < len(parts):
+                candidate = parts[index]
+                if isinstance(candidate, (EciIndex, EciPitch, EciPitchHz, EciProsody)):
+                    index += direction
+                    continue
+                if isinstance(candidate, str):
+                    value = candidate
+                elif isinstance(candidate, EciText) and not (candidate.character_mode or
+                        candidate.is_control or candidate.segmentation_guarded):
+                    value = candidate.text
+                else:
+                    break
+                if '`' in value:
+                    break
+                if value:
+                    return value[0] if direction > 0 else value[-1]
+                index += direction
+            return ''
         expanded, logical, names, previous_char = [], self._home, {}, None
-        for part in parts:
+        for part_index, part in enumerate(parts):
             if isinstance(part, EciLanguage):
                 logical = self._key(part.language, part.voice)
                 previous_char = None
@@ -431,11 +452,17 @@ class PersianProbeLanguageEngine(LanguageEngine):
             positions = []
             for at, char in enumerate(text):
                 cp = ord(char)
+                category = unicodedata.category(char)
+                latin = unicodedata.name(char, '').startswith('LATIN ')
+                next_char = (text[at + 1] if at + 1 < len(text) else adjoining(part_index, 1)) if char in ('\u02c8', '\u02cc') else ''
+                ipa_stress = bool(next_char and unicodedata.name(next_char, '').startswith('LATIN '))
+                prev_char = (text[at - 1] if at else adjoining(part_index, -1)) if category.startswith('M') else ''
+                combining_text = bool(prev_char and (prev_char.isalpha() or
+                                      unicodedata.category(prev_char).startswith('M')))
                 if (cp < 128 or 0x600 <= cp <= 0x8ff or 0xfb50 <= cp <= 0xfeff or
                         char in '\u200c\u200d\ufe0e\ufe0f' or
-                        char.isspace() or char.isdecimal() or
-                        latin_fold(char) is not None or
-                        logical[0] == PINGLISH_PROBE.id and unicodedata.category(char).startswith('M')):
+                        char.isspace() or char.isdecimal() or latin or ipa_stress or combining_text or
+                        logical[0] == PINGLISH_PROBE.id and category.startswith('M')):
                     continue
                 engine = self._activate(logical)
                 emoji = isinstance(engine, OwnedPersianEngine) and engine.is_emoji_character(char)

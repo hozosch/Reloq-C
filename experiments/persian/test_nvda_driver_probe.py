@@ -57,28 +57,31 @@ def fake_routing_test():
     assert language_for('fa', PINGLISH_PROBE.id, PROFILES) == PINGLISH_PROBE.id
     engine = PersianProbeLanguageEngine(Path('/unused'), language=PERSIAN_PROBE.id,
                                         languages=PROFILES, engine_factory=FakeEngine)
+    persian_byte = bytes([(PERSIAN_PROBE.id >> 16) & 0xff])
+    pinglish_byte = bytes([(PINGLISH_PROBE.id >> 16) & 0xff])
+    english_byte = bytes([(US_ENGLISH.id >> 16) & 0xff])
     try:
         pcm, indexes = bytearray(), []
         assert engine.speak((EciIndex(4), 'سلام', EciIndex(5)), pcm.extend, indexes.append)
-        assert bytes(pcm) == b'\x7f' and indexes == [4, 5]
+        assert bytes(pcm) == persian_byte and indexes == [4, 5]
         pcm.clear()
         engine.select_voice(PINGLISH_PROBE.id, '1')
         assert engine.speak((EciIndex(14), 'salam', EciIndex(15)), pcm.extend, indexes.append)
-        assert bytes(pcm) == b'\x7f' and indexes[-2:] == [14, 15]
+        assert bytes(pcm) == pinglish_byte and indexes[-2:] == [14, 15]
         pcm.clear()
         assert engine.speak((EciLanguage(US_ENGLISH.id, '1'), EciIndex(16), 'NVDA ',
                              EciLanguage(PERSIAN_PROBE.id, '1'), EciIndex(17), 'خوب', EciIndex(18)),
                             pcm.extend, indexes.append)
-        assert bytes(pcm) == b'\x01\x7f' and indexes[-3:] == [16, 17, 18]
+        assert bytes(pcm) == english_byte + persian_byte and indexes[-3:] == [16, 17, 18]
         pcm.clear()
         engine.select_voice(PERSIAN_PROBE.id, '1')
         assert engine.speak((EciIndex(19), 'NVDA ', EciIndex(20), 'خوب', EciIndex(21)),
                             pcm.extend, indexes.append)
-        assert bytes(pcm) == b'\x01\x7f' and indexes[-3:] == [19, 20, 21]
+        assert bytes(pcm) == english_byte + persian_byte and indexes[-3:] == [19, 20, 21]
         pcm.clear()
         assert engine.speak((EciLanguage(US_ENGLISH.id, '1'), 'Hello'),
                             pcm.extend, lambda _: None)
-        assert bytes(pcm) == b'\x01'
+        assert bytes(pcm) == english_byte
     finally:
         engine.close()
 

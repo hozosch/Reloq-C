@@ -7,7 +7,7 @@ import tempfile
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'nvda'))
 from _reloq_eci_direct import EciIndex
-from nvda_driver_probe import PERSIAN_PROBE, PINGLISH_PROBE, make_language_engine
+from nvda_driver_probe import PERSIAN_PROBE, PINGLISH_PROBE, US_ENGLISH, make_language_engine
 
 
 def main():
@@ -35,6 +35,18 @@ def main():
                                          EciIndex(3)),pcm.extend,marks.append),text
                     assert pcm and marks==[1,2,3],(text,marks,len(pcm))
                     assert frontend._worker is None,text
+                if profile is PERSIAN_PROBE:
+                    # IPA stress and combining marks belong to the English
+                    # pronunciation here, not to isolated character naming.
+                    def ipa(language, parts):
+                        engine.select_voice(language,'1')
+                        pcm=bytearray(); indexes=[]
+                        assert engine.speak(parts,pcm.extend,lambda value:indexes.append((value,len(pcm))))
+                        return bytes(pcm),indexes
+                    for parts in (('ˌchi-kən-ˈgu̇n-yə',),
+                                  ('ˌ',EciIndex(71),'chi-kən-ˈgu',EciIndex(72),'̇n-yə')):
+                        assert ipa(PERSIAN_PROBE.id,parts)==ipa(US_ENGLISH.id,parts), (
+                            parts,'mixed IPA changed English speech or its source indexes')
             finally:engine.close()
     print('Passed Persian, Pinglish and mixed speech without eSpeak, including general unknown-word rules.')
 
