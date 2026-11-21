@@ -62,7 +62,9 @@ def projection_tests(frontend):
             assert project(parts, frontend) == expected, parts
         # A rejected control must not be partially mapped or emitted.
         assert frontend.project_direct('سلام', ((2, False),)) is None
-        assert frontend.project_direct('ناموجودمطمئن', ()) is None
+        unknown = frontend.project_direct('ناموجودمطمئن', ())
+        complete = frontend._project_text_complete is not None or frontend._project_complete is not None
+        assert (unknown is not None) == complete
         lexicon = Path(__file__).with_name('direct_fa_lexicon.inc').read_text(encoding='utf8')
         words = re.findall(r'^\s*\{"([^"\\]+)",\s*"', lexicon, re.M)
         assert len(words) > 10000
@@ -114,9 +116,14 @@ def projection_tests(frontend):
     for char in '«»':
         spelled = project((EciText(char, character_mode=True),), frontend)
         assert spelled.tagged == frontend.analyze_character(char).parts[0].text
-    for bad in (('سلام NVDA',), ('ناموجودمطمئن',), ('سل', EciPitch(65), 'ام.'),
+    bad_cases = [('سلام NVDA',), ('سل', EciPitch(65), 'ام.'),
                 ('؟',), ('3,14',),
-                ('سلام\0',), ('`vp80 سلام',), (EciIndex(-1), 'سلام')):
+                ('سلام\0',), ('`vp80 سلام',), (EciIndex(-1), 'سلام')]
+    if frontend._project_text_complete is None and frontend._project_complete is None:
+        bad_cases.append(('ناموجودمطمئن',))
+    else:
+        assert project(('ناموجودمطمئن',), frontend).tagged
+    for bad in bad_cases:
         assert_rejected(bad, frontend)
     tag = '`[.1a]'
     for mapping in ((0, 2, len(tag)), (0, -1, len(tag)), (0, 0.5, len(tag))):
