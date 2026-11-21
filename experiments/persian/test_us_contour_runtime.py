@@ -206,12 +206,12 @@ def main():
         assert [part.value for part in native_joined.parts if isinstance(part, EciIndex)] == [51, 52, 53]
         pinglish = voice._activate(voice._key(PINGLISH_PROBE.id, '1'))
         assert project(('eslash',), pinglish._frontend, pinglish=True).tagged == '`[.0es.1lAS]'
-        for text in ('ketab va khub', 'az ketab', 'joz iran', 'ketab ra', 'ya ketab', 'khub ast'):
+        for text in ('ketaab va khub', 'az ketaab', 'joz iraan', 'ketaab raa', 'yaa ketaab', 'khub ast'):
             item = project((text,), pinglish._frontend, pinglish=True, allow_fallback=False)
             assert '`00 ' in item.tagged, (text, item.tagged)
-        isolated = project(('ra',), pinglish._frontend, pinglish=True, allow_fallback=False)
+        isolated = project(('raa',), pinglish._frontend, pinglish=True, allow_fallback=False)
         assert isolated.tagged == '`[.1ra]'
-        after_english, _, _ = _project_part(pinglish, ('ra',), follows=False, preceded=True)
+        after_english, _, _ = _project_part(pinglish, ('raa',), follows=False, preceded=True)
         assert after_english == '`00 `[.0ra]', after_english
         after_english, _, _ = _project_part(pinglish, ('ast',), follows=False, preceded=True)
         assert after_english == '`00 `[.0Ast]', after_english
@@ -221,7 +221,7 @@ def main():
             item = project((text,), pinglish._frontend, pinglish=True, allow_fallback=False)
             assert '`00 `[.0Ast]' in item.tagged, (text, item.tagged)
         assert project(('khub, ast',), pinglish._frontend, pinglish=True).tagged.endswith('`[.1Ast]')
-        for text in ('ketab va khub', 'ketab ra', 'az ketab'):
+        for text in ('ketaab va khub', 'ketaab raa', 'az ketaab'):
             resilient = project_resilient((text,), pinglish._frontend, pinglish=True)
             assert '`00 ' in resilient.tagged, (text, resilient.tagged)
         assert _sentence_colons_as_periods('`[.1do]: `[.1se]', 'دو: سه') == '`[.1do]. `[.1se]'
