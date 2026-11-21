@@ -208,6 +208,7 @@ def main():
     assert source.count('prepare_persian_symbols(self._languages[') == 2
     tree = ast.parse(source)
     part_function = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == '_parts')
+    isolated = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == '_is_isolated_unicode')
     eci = importlib.import_module('probe_driver._reloq_eci_direct')
     namespace = {'GERMAN': profiles[fa_id], 'LANGUAGES': profiles, 'EciText': eci.EciText,
                  'CharacterModeCommand': CharacterModeCommand, 'LangChangeCommand': LangChangeCommand,
@@ -217,7 +218,7 @@ def main():
                  'SegmentationGuard', 'NativeDictionaryWord', 'CapitalWordCommand', 'BreakCommand', 'PhonemeCommand'):
         namespace[name] = type(name, (), {})
     namespace['IndexCommand'] = IndexCommand
-    module = ast.fix_missing_locations(ast.Module(body=[part_function], type_ignores=[]))
+    module = ast.fix_missing_locations(ast.Module(body=[isolated, part_function], type_ignores=[]))
     exec(compile(module, 'generated-nvda-driver', 'exec'), namespace)
     guarded = joiners.protect_joiners(types.SimpleNamespace(_selectedLanguage=fa_id, _languages=profiles,
                                      _submit_lock=threading.Lock()), [word])

@@ -116,6 +116,7 @@ def main():
             PREFIX + '__init__.py': (ROOT / 'addon/synth/synthDrivers/reloqC/__init__.py').read_bytes()}
     tree = ast.parse(add_persian(base)[PREFIX + '__init__.py'].decode('utf8'))
     function = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == '_parts')
+    isolated = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == '_is_isolated_unicode')
     eci = importlib.import_module('probe_driver._reloq_eci_direct')
     namespace = {'GERMAN': profiles[fa_id], 'LANGUAGES': profiles, 'EciText': eci.EciText,
                  'EciIndex': eci.EciIndex, 'IndexCommand': IndexCommand,
@@ -126,7 +127,7 @@ def main():
     for name in ('PitchCommand', 'RateCommand', 'VolumeCommand', 'EciTagCommand', 'SegmentationGuard',
                  'CapitalWordCommand', 'BreakCommand', 'PhonemeCommand'):
         namespace[name] = type(name, (), {})
-    module = ast.fix_missing_locations(ast.Module(body=[function], type_ignores=[]))
+    module = ast.fix_missing_locations(ast.Module(body=[isolated, function], type_ignores=[]))
     exec(compile(module, 'generated-nvda-driver', 'exec'), namespace)
     nvda_sequence = [processors['fa'].processText(item, level.NONE) + '  ' if isinstance(item, str) else item
                      for item in marked]
