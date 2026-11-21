@@ -2042,3 +2042,31 @@ words, Persian and Pinglish, and interrupted speech. `benchmark_uncached.py`
 records a separate complete/incremental first-feed comparison; this uses a
 nonblocking test player and does not measure an actual device or NVDA event
 loop. No synthesized audio or sentence result is cached.
+
+# C-only Persian speech pilot (21 November 2026)
+
+`eciPersianSpeakNativeUtf8` is an experimental route from UTF-8 Persian or
+Pinglish through the existing language-owned C event plan to the shared ECI
+acoustic engine. The caller supplies an idle Finnish-backed ECI handle with
+its output callback configured; no NVDA driver or eSpeak runtime is needed.
+Unknown Persian words use the C orthographic completion rules, so an
+unwritten vowel can still be inferred incorrectly. Persian glottal-onset
+and geminated-affricate markings are retained for supported single-language
+plans; the API rejects a mixed-English plan containing these markings until
+per-run scope is available.
+
+The pilot is deliberately separate from the existing NVDA voice. It does
+not yet implement the established US sentence contour, character-spelling
+mode, user inline controls or reliable cancellation during preparation.
+Some numeric formats, including `3,14`, are currently rejected rather than
+silently pronounced incorrectly.
+It does not register Persian as an ordinary ECI dialect or connect the new
+route to the SAPI5 or Android frontends. The existing accepted Finnish-based
+acoustic backend remains in use. These limitations must be resolved before
+the pilot replaces the current driver.
+
+`test_native_backend.c` is a standalone C client. It compares the pilot's
+output and ordered source indices with the established direct acoustic path,
+and exercises Persian, Pinglish, English mixing, uncovered words, multiple
+rates and voices. A successful Linux test does not establish Windows/NVDA,
+Android, SAPI5, subjective speech quality or real-device responsiveness.

@@ -264,15 +264,15 @@ def main():
 
         # Resetting a stale stop must not discard a new stop delivered
         # while the US handle is being prepared.
-        saved_probe = en.raw._phonemes_for_probe
-        def cancel_probe(text):
+        saved_proxy = continuous_driver.indexed_us_proxy
+        def cancel_proxy(*args, **kwargs):
             voice.cancel()
-            return saved_probe(text)
+            return saved_proxy(*args, **kwargs)
         audio = bytearray()
         # Exercise the serial fallback explicitly; ordinary short requests
         # now use the independently cancellable parallel US worker.
         with patch.object(continuous_driver.os, 'cpu_count', return_value=1), \
-             patch.object(en.raw, '_phonemes_for_probe', side_effect=cancel_probe):
+             patch.object(continuous_driver, 'indexed_us_proxy', side_effect=cancel_proxy):
             assert not voice.speak(('سلام دنیا.',), audio.extend, lambda _: None)
         assert not audio, 'a cancelled request emitted stale audio'
 

@@ -68,6 +68,7 @@ HEADERS += ../src/reloq_character_data.inc
 HEADERS += ../src/reloq_german_inline_controls.inc ../src/reloq_german_roots85.inc
 HEADERS += $(wildcard ../include/*.h) ../src/reloq_german_lexical_quantity.inc
 HEADERS += ../src/reloq_core_internal.h
+HEADERS += ../src/reloq_persian_backend.h ../src/reloq_persian_speak.h
 HEADERS += ../src/reloq_inline_word_controls.h
 HEADERS += ../src/reloq_body_extension.h
 HEADERS += $(wildcard ../src/*.inc)
@@ -220,7 +221,10 @@ test_reloq_hearing_profiles: ../tests/test_reloq_hearing_profiles.c build/posix/
 test_reloq_classic_body: ../tests/test_reloq_classic_body.c ../src/reloq_session.c $(HEADERS) build/posix/reloq_core.o build/posix/reloq_rate_transfer.o build/posix/reloq_noise_profile.o build/posix/reloq_frame_adapter.o build/posix/reloq_german_voice_defaults.o build/posix/reloq_voice_controls.o
 	$(CC) $(CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $< build/posix/reloq_core.o build/posix/reloq_rate_transfer.o build/posix/reloq_noise_profile.o build/posix/reloq_frame_adapter.o build/posix/reloq_german_voice_defaults.o build/posix/reloq_voice_controls.o -Wl,--gc-sections -lm -o $@
 
-test: test_reloq_eci test_reloq_german_context test_reloq_german_cancel test_reloq_hash_delete test_reloq_rate_dispatch test_reloq_silence_cut test_reloq_classic_source libreloq_eci.so
+test_persian_native_backend: ../experiments/persian/test_native_backend.c ../src/reloq_persian_backend.c ../src/reloq_persian_backend.h libreloq_eci.so
+	$(CC) $(CFLAGS) -I../include -I../src ../experiments/persian/test_native_backend.c ../src/reloq_persian_backend.c -L. -lreloq_eci -Wl,-rpath,'$$ORIGIN' -lm -o $@
+
+test: test_reloq_eci test_reloq_german_context test_reloq_german_cancel test_reloq_hash_delete test_reloq_rate_dispatch test_reloq_silence_cut test_reloq_classic_source test_persian_native_backend libreloq_eci.so
 	./test_reloq_eci
 	./test_reloq_german_context
 	./test_reloq_german_cancel
@@ -228,6 +232,7 @@ test: test_reloq_eci test_reloq_german_context test_reloq_german_cancel test_rel
 	./test_reloq_rate_dispatch
 	./test_reloq_silence_cut
 	./test_reloq_classic_source
+	./test_persian_native_backend
 	python3 test_public_abi.py libreloq_eci.so --header ../include/reloq_eci.h
 	python3 -B test_persian_project.py --library libreloq_eci.so
 	python3 ../nvda/test_eci_standard_api.py --library libreloq_eci.so
@@ -291,6 +296,6 @@ windows-abi: $(WINDOWS_OUTPUT)
 	python3 verify_pe_exports.py $(WINDOWS_OUTPUT) --arch $(WINDOWS_ARCH) --objdump $(WINDOWS_OBJDUMP) --header ../include/reloq_eci.h
 
 clean:
-	rm -f libreloq_eci.so test_reloq_eci test_reloq_german_context test_reloq_german_cancel test_reloq_hash_delete test_reloq_rate_dispatch test_reloq_silence_cut eci.dll libeci.dll.a eci_windows_x64_abi_probe.exe eci_windows_x64_runtime_smoke.exe
+	rm -f libreloq_eci.so test_reloq_eci test_reloq_german_context test_reloq_german_cancel test_reloq_hash_delete test_reloq_rate_dispatch test_reloq_silence_cut test_persian_native_backend eci.dll libeci.dll.a eci_windows_x64_abi_probe.exe eci_windows_x64_runtime_smoke.exe
 	rm -rf build
 .DELETE_ON_ERROR:

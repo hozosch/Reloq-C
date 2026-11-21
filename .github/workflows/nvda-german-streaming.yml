@@ -163,6 +163,7 @@ jobs:
           & $dsp
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_inline_queue.py --library $core
+          python nvda/test_eci_inline_queue_digits.py --library $core
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python nvda/test_eci_tag_boundaries.py --library $core --output tag-boundaries.json
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

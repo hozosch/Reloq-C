@@ -960,11 +960,28 @@ static pthread_once_t fs_once = PTHREAD_ONCE_INIT;
 static pthread_key_t  fs_key;
 static int            fs_keyed;
 
+#if defined(__APPLE__)
+/* On Darwin (macOS, iOS) the key's value is the frame stack itself, not a
+   flag. Darwin puts a thread's __thread storage back before the keys made
+   after it are told the thread is ending -- a destructor there reads fs_base
+   as a fresh zero -- so evv_frame_done gave nothing back and a program that
+   stopped from a fresh thread each time still went quiet on the sixty-third.
+   The value is all a destructor has to go on there. The landing places went
+   with that storage and are not given back, as before; they are malloc's,
+   not the region's. glibc keeps the storage until its destructors are done,
+   and Windows' fiber-local callback is the same, so evv_frame_done does the
+   whole of it on both. */
+static void fs_gone(void *frames)
+{
+    evv_arena_free(frames);
+}
+#else
 static void fs_gone(void *unused)
 {
     (void)unused;
     evv_frame_done();
 }
+#endif
 
 static void fs_open(void)
 {
@@ -975,8 +992,24 @@ static void fs_watch(void)
 {
     pthread_once(&fs_once, fs_open);
     if (fs_keyed)
+#if defined(__APPLE__)
+        pthread_setspecific(fs_key, fs_base);
+#else
         pthread_setspecific(fs_key, (void *)1);
+#endif
 }
+
+#if defined(__APPLE__)
+/* Frames given back while the thread lives on -- an engine thread's, from
+   its trampoline -- must not be given back again when it ends, and on Darwin
+   the key's value would still name them. Only a thread that has called
+   fs_watch gets here, so fs_keyed is settled for it. */
+static void fs_unwatch(void)
+{
+    if (fs_keyed)
+        pthread_setspecific(fs_key, 0);
+}
+#endif
 
 __attribute__((destructor)) static void fs_close(void)
 {
@@ -1011,6 +1044,9 @@ void evv_frame_done(void)
         fs_base = 0;
         fs_top = 0;
         fs_end = 0;
+#if defined(__APPLE__)
+        fs_unwatch();
+#endif
     }
     evv_land_done();
 }

@@ -25,6 +25,8 @@ The [latest release](https://github.com/hozosch/Reloq-C/releases/latest) provide
 
 Release **1.4.1** updates existing installations on all three platforms. If you are upgrading directly from the published 1.1 NVDA or Android package, consult the [1.1.1 transition notes](docs/releases/1.1.1.md) for the one-time identity change. See the [1.4.1 release notes](docs/releases/1.4.1.md) for this update. Source archives are for developers and are not installable packages.
 
+For iPhone, iPad and Apple-silicon Macs, Quinton Williams independently maintains [ReLoq Apple](https://github.com/Quinton1110/ReLoq-Apple), an app that makes ReLoq voices available to VoiceOver and Spoken Content. Its [download page](https://quintonwilliams.me/reloq-apple/) provides the iOS/iPadOS and Mac packages. The author's current 0.1.1 app uses ReLoq C 1.4.1 plus the Apple platform fixes; Persian and the unreleased 2.0 development work are not included. The iOS package is installed separately from the App Store; the project explains AltStore, SideStore and Sideloadly installation and refresh requirements.
+
 ## Current features
 
 - **14 language variants**, including German, American and British English, Chinese, Japanese, Korean and Greek.

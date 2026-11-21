@@ -1301,7 +1301,7 @@ static void take_fa_phone(void *context,int32_t from,int32_t to,unsigned phone)
 {
     struct rule_plan *s=context;
     if(s->fa_phone_failed)return;
-    if(from<0 || to<=from || phone>RELOQ_FA_TUNE_BEFORE_FINAL_H ||
+    if(from<0 || to<=from || phone>RELOQ_FA_TUNE_U ||
        (s->fa_phone_count && from<s->fa_phones[s->fa_phone_count-1].from)) {
         s->fa_phone_failed=1;return;
     }

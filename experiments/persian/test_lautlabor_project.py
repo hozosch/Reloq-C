@@ -24,6 +24,7 @@ EDITS = {
     'e': ([0,0,-25,75,0], [0,0,0,0,0]),
     'o': ([0,0,50,425,0], [0,0,0,0,0]),
     'r_i': ([0,0,0,0,0], [0,0,-4,-2,0]),
+    'u': ([0,0,25,50,25], [1,3,6,12,9]),
 }
 # The newer project was saved while the earlier project was active; these
 # are therefore additional edits relative to that earlier voice.
@@ -78,8 +79,8 @@ def main():
                                 p=eng.defaults();p.update(language='Persisch',phone=phone,gender=gender,
                                     head=head,rate=rate,clock=clock,context=True,
                                     frequencies=list(frequencies),gains_db=list(gains))
-                                previous_project=phone=='a'
-                                if previous_project:
+                                previous_project=phone in ('a','u')
+                                if phone=='a':
                                     p['frequencies'],p['gains_db']=map(list,BACK_A_REVISION)
                                 assert switch(2 if previous_project else 0)==1
                                 try:
@@ -99,19 +100,20 @@ def main():
                                     assert error<.03 and corr>.998,(phone,gender,head,rate,clock,error,corr)
                                 checks+=1
 
-            # Reproduce the exact saved editor settings as well as the
+            # Reproduce both exact saved editor settings as well as the
             # connected and cross-voice cases above.
-            p=eng.defaults();p.update(language='Persisch',phone='a',gender=0,
-                head=50,rate=3,speed=65,pitch=65,clock=0,context=False,
-                frequencies=list(BACK_A_REVISION[0]),gains_db=list(BACK_A_REVISION[1]))
-            assert switch(2)==1
-            try:
-                old=eng.load(library,p);expected,normalized=eng.render(library,p,old,modified=True)
-            finally:assert switch(1)==2
-            new=eng.load(library,p);obtained,_=eng.render(library,p,new,modified=False)
-            error,corr=audio_error(expected,obtained)
-            assert error<(.15 if normalized else .03) and corr>(.99 if normalized else .998),(error,corr)
-            checks+=1
+            for phone,edit in (('a',BACK_A_REVISION),('u',EDITS['u'])):
+                p=eng.defaults();p.update(language='Persisch',phone=phone,gender=0,
+                    head=50,rate=3,speed=65,pitch=65,clock=0,context=False,
+                    frequencies=list(edit[0]),gains_db=list(edit[1]))
+                assert switch(2)==1
+                try:
+                    old=eng.load(library,p);expected,normalized=eng.render(library,p,old,modified=True)
+                finally:assert switch(1)==2
+                new=eng.load(library,p);obtained,_=eng.render(library,p,new,modified=False)
+                error,corr=audio_error(expected,obtained)
+                assert error<(.15 if normalized else .03) and corr>(.99 if normalized else .998),(phone,error,corr)
+                checks+=1
 
         # R is edited only for the actual R before I, never a final R or R
         # before another vowel. The neighbouring vowel remains its own phone.
@@ -126,7 +128,7 @@ def main():
                 marker=any(first<=row.tick<end and round(row.controls[11])==16405 for row in item.frames())
                 assert marker==expected,(tag,marker,expected)
                 checks+=1
-            for tag in ('`[.1i]', '`[.1u]', '`[.1ru]'):
+            for tag in ('`[.1i]',):
                 assert switch(0)==1;before,_=capture(fa,scope,tag,True)
                 assert switch(1)==0;after,_=capture(fa,scope,tag,True)
                 assert before.pcm==after.pcm,(tag,'unedited sound changed')

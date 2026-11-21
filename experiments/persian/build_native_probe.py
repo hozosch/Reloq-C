@@ -3564,6 +3564,7 @@ static void persian_open_vowel(void *state,int phone)
                 persian_probe_following_final_h(state,STATE(int32_t,w61))?RELOQ_FA_TUNE_BEFORE_FINAL_H:
                 current==31?RELOQ_FA_TUNE_FRONT_A:current==34?RELOQ_FA_TUNE_BACK_A:
                 current==29?RELOQ_FA_TUNE_E:current==33?RELOQ_FA_TUNE_O:
+                current==32?RELOQ_FA_TUNE_U:
                 current==19 && following==27?RELOQ_FA_TUNE_R_BEFORE_I:
                 current==19 && following==34?RELOQ_FA_TUNE_R_BEFORE_BACK_A:RELOQ_FA_TUNE_OTHER;
             reloq61_fa_phone_emit(state,STATE(int32_t,f10),STATE(int32_t,f11),target);

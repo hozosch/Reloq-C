@@ -348,6 +348,25 @@ ECIAPI int ECICALL eciPersianAnalyzeRunsCompleteUtf8(const char *text,size_t byt
     const size_t *run_ends,const unsigned char *run_modes,size_t run_count,
     const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
     struct reloq_fa_plan_event **events,size_t *count,size_t *target_events,size_t *error_offset);
+/* Experimental C-only speech route using an idle, empty Finnish-backed ECI
+ * handle and the same native Persian text plan. Does not need NVDA or
+ * eSpeak. The US sentence contour, spelling and user inline controls are
+ * not yet implemented here; cancellation during preparation is incomplete.
+ * It must not replace the current Persian voice or run inside an existing
+ * Persian acoustic scope.
+ * Source offsets are ordered UTF-8 byte positions and values are delivered
+ * as ECI indices. mode: 0 Persian, 1 Pinglish. The caller owns all buffers.
+ * Returns 0 on success, 1 unsupported, -1 invalid, -2 memory failure,
+ * -3 synthesis failure. Unknown words use orthographic inference. */
+ECIAPI int ECICALL eciPersianSpeakNativeUtf8(ECIHand voice,const char *text,size_t bytes,int mode,
+    const size_t *source_offsets,const int *index_values,size_t index_count,size_t *error_offset);
+/* Prepare the silent US contour text on an idle, empty US ECI handle.
+ * Word boundary offsets and the result allocation are described in
+ * reloq_persian_us_proxy.h. This does not alter Persian pronunciation. */
+struct reloq_fa_us_proxy;
+ECIAPI int ECICALL eciPersianUsProxyUtf8(ECIHand pilot,const char *text,size_t bytes,
+    struct reloq_fa_us_proxy *result);
+ECIAPI void ECICALL eciPersianUsProxyRelease(struct reloq_fa_us_proxy *result);
 /* Backward-compatible Pinglish-mode entry point. */
 ECIAPI int ECICALL eciPersianPinglishProjectUtf8(const char *text,size_t bytes,
     const size_t *source_offsets,const unsigned char *is_index,size_t event_count,

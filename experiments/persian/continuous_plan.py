@@ -338,7 +338,7 @@ def _word_markers(parts):
     return markers
 
 
-def indexed_us_proxy(tagged, en, marks):
+def _indexed_us_proxy_python(tagged, en, marks):
     """Make a US prosody proxy with marks before whole Persian words."""
     # The Persian final R after /f/ or a stop is voiceless. A voiced US R
     # would make the donor's audible contour extend far beyond the target's
@@ -368,6 +368,62 @@ def indexed_us_proxy(tagged, en, marks):
     result.append(proxy[previous:])
     return tuple(result)
 
+
+
+class _NativeUsProxy(ctypes.Structure):
+    _fields_ = [('text', ctypes.c_void_p), ('length', ctypes.c_size_t),
+                ('word_offsets', ctypes.POINTER(ctypes.c_size_t)),
+                ('word_count', ctypes.c_size_t)]
+
+
+def indexed_us_proxy(tagged, en, marks):
+    """Prepare the established US pilot in the shared core when available."""
+    dll = getattr(en, '_dll', None)
+    make = getattr(dll, 'eciPersianUsProxyUtf8', None) if dll else None
+    release = getattr(dll, 'eciPersianUsProxyRelease', None) if dll else None
+    handle = getattr(en, '_handle', None)
+    if make is None or release is None or not handle:
+        # Existing installations can still load this frontend before their
+        # native runtime has been replaced by the matching version.
+        return _indexed_us_proxy_python(tagged, en, marks)
+    make.argtypes = (ctypes.c_void_p, ctypes.c_char_p, ctypes.c_size_t,
+                     ctypes.POINTER(_NativeUsProxy))
+    make.restype = ctypes.c_int
+    release.argtypes = (ctypes.POINTER(_NativeUsProxy),)
+    release.restype = None
+    check = getattr(en, '_check', None)
+    cancelled = getattr(en, 'cancelled', None)
+    if check:
+        check()
+    if cancelled is not None and cancelled.is_set():
+        raise InterruptedError('sentence planning was cancelled')
+    data, output = tagged.encode('utf-8'), _NativeUsProxy()
+    status = make(handle, data, len(data), ctypes.byref(output))
+    try:
+        if check:
+            check()
+        if cancelled is not None and cancelled.is_set():
+            raise InterruptedError('sentence planning was cancelled')
+        if status == 1:
+            raise ValueError('invalid Persian US proxy input or worker')
+        if status == -2:
+            raise MemoryError('cannot allocate Persian US proxy')
+        if status:
+            raise RuntimeError('native US pronunciation probe failed')
+        if output.word_count != len(marks) + 1:
+            raise ValueError('US proxy changed the Persian word count')
+        text = ctypes.string_at(output.text, output.length)
+        result, previous = [], 0
+        for i, mark in enumerate(marks):
+            boundary = output.word_offsets[i]
+            if not previous <= boundary <= len(text):
+                raise ValueError('invalid US proxy word boundary')
+            result.extend((text[previous:boundary].decode('utf-8'), EciIndex(mark)))
+            previous = boundary
+        result.append(text[previous:].decode('utf-8'))
+        return tuple(result)
+    finally:
+        release(ctypes.byref(output))
 
 def _last_audible(pcm, rate, *, native=None):
     if native is not None:

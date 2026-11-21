@@ -31,10 +31,11 @@ void reloq_fa_tuning_targets(float c[62],unsigned phone,double from,double to,
     static const unsigned columns[4]={9,13,15,17};
     int after_r=phone==RELOQ_FA_TUNE_BACK_A_AFTER_R && fa_tuning_on==1;
     if(phone==RELOQ_FA_TUNE_BACK_A_AFTER_R)phone=RELOQ_FA_TUNE_BACK_A;
-    if(!fa_tuning_on || !c || phone<1 || phone>5 || from<0 || to<=from || at<from || at>=to || rate<8000)return;
+    if(!fa_tuning_on || !c || phone<1 || (phone>5 && phone!=RELOQ_FA_TUNE_U) ||
+       from<0 || to<=from || at<from || at>=to || rate<8000)return;
     double fade_in=after_r?1.0:fmax(0.0,(at-from)/3.0);
     double w=fmin(1.0,fmin(fade_in,fmax(0.0,(to-at)/3.0)));
-    for(unsigned i=0;i<4;++i)if(shifts[phone][i] && c[columns[i]]>0 && w>0) {
+    for(unsigned i=0;phone<=5 && i<4;++i)if(shifts[phone][i] && c[columns[i]]>0 && w>0) {
         double v=c[columns[i]]+shifts[phone][i]*w;
         c[columns[i]]=(float)fmax(40.0,fmin(rate*.475,v));
     }
@@ -45,6 +46,15 @@ void reloq_fa_tuning_targets(float c[62],unsigned phone,double from,double to,
         for(unsigned i=0;i<4;++i)if(revised_a[i] && c[columns[i]]>0 && w>0) {
             double v=c[columns[i]]+revised_a[i]*w;
             c[columns[i]]=(float)fmax(40.0,fmin(rate*.475,v));
+        }
+    /* The newer U project is relative to the existing voice as well.
+     * Its fifth formant is edited in addition to the first four. */
+    static const int revised_u[5]={0,0,25,50,25};
+    static const unsigned u_columns[5]={9,13,15,17,19};
+    if(fa_tuning_on==1 && phone==RELOQ_FA_TUNE_U)
+        for(unsigned i=0;i<5;++i)if(revised_u[i] && c[u_columns[i]]>0 && w>0) {
+            double v=c[u_columns[i]]+revised_u[i]*w;
+            c[u_columns[i]]=(float)fmax(40.0,fmin(rate*.475,v));
         }
     double centre=at+duration/2.0,gain=1.0;
     if(from>0)gain=fmin(gain,fmax(0.0,(centre-from)/8.0));
@@ -77,13 +87,16 @@ static void tuning_prepare(struct reloq_fa_tuning_filter *f,const float c[62],in
         {0,0,0,0,0},{0,0,0,0,0},{0,0,-4,-2,0}};
     static const unsigned centres[5]={9,13,15,17,19};
     static const int revised_a_gains[5]={1,1,-1,2,0};
+    static const int revised_u_gains[5]={1,3,6,12,9};
     if(!f || !c)return;
     int marker=isfinite(c[11]) && c[11]>=RELOQ_FA_TUNING_MARKER+1 &&
-               c[11]<=RELOQ_FA_TUNING_MARKER+5 ? (int)c[11]-RELOQ_FA_TUNING_MARKER:0;
-    unsigned phone=marker>=1 && marker<=5 && c[11]==(float)(RELOQ_FA_TUNING_MARKER+marker) ? (unsigned)marker:0;
+               c[11]<=RELOQ_FA_TUNING_MARKER+RELOQ_FA_TUNE_U ? (int)c[11]-RELOQ_FA_TUNING_MARKER:0;
+    unsigned phone=(marker>=1 && (marker<=5 || marker==RELOQ_FA_TUNE_U) &&
+                    c[11]==(float)(RELOQ_FA_TUNING_MARKER+marker)) ? (unsigned)marker:0;
     double weight=c[12];
     if(!fa_tuning_on || rate<8000 || rate>48000 || !isfinite(weight) || weight<=0 || weight>1)phone=0;
-    if(revision && (fa_tuning_on!=1 || phone!=RELOQ_FA_TUNE_BACK_A))phone=0;
+    if(revision && (fa_tuning_on!=1 ||
+       (phone!=RELOQ_FA_TUNE_BACK_A && phone!=RELOQ_FA_TUNE_U)))phone=0;
     if(!phone) {
         if(f->phone || f->active)memset(f,0,sizeof *f);
         return;
@@ -96,7 +109,8 @@ static void tuning_prepare(struct reloq_fa_tuning_filter *f,const float c[62],in
     for(unsigned i=0;i<5;++i) {
         struct reloq_fa_tuning_band *b=f->bands+i;
         double frequency=c[centres[i]],width=c[centres[i]+1];
-        double gain=(revision?revised_a_gains[i]:gains[phone][i])*weight;
+        double gain=(revision?(phone==RELOQ_FA_TUNE_U?revised_u_gains[i]:revised_a_gains[i]):
+                     (phone==RELOQ_FA_TUNE_U?0:gains[phone][i]))*weight;
         b->active=0;
         if(!gain || !isfinite(frequency) || !isfinite(width) || frequency<30 || frequency>=rate*.475)continue;
         width=fmax(50.0,width);

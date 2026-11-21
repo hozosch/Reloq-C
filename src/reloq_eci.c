@@ -26,6 +26,8 @@
 #include "reloq_persian_acoustics.h"
 #include "reloq_persian_frame_internal.h"
 #include "reloq_persian_tuning.h"
+#include "reloq_persian_speak.h"
+#include "reloq_persian_us_proxy.h"
 #include "reloq_syllable_trace.h"
 
 #include <limits.h>
@@ -260,6 +262,7 @@ static int insert_voice_controls(unsigned char **text,size_t *length,
         memcpy(next+used,*text+from,at-from);
         if(next_guards)memcpy(next_guards+used,*guards+from,at-from);
         used+=at-from;from=at;
+        size_t annotations_begin=used;
         for(unsigned k=0;k<8;++k)if(initial.values[k]!=controls[i].voice.values[k] ||
             (k==2 && initial.pitch_hz!=controls[i].voice.pitch_hz)) {
             /* An enabled WPM setting owns speed until explicitly cleared. */
@@ -278,6 +281,12 @@ static int insert_voice_controls(unsigned char **text,size_t *length,
             if(n<0||n>=96){free(next);free(next_guards);free(offsets);free(added);return -1;}
             used+=(size_t)n;
         }
+        /* A digit immediately after the last generated annotation would be
+         * parsed as part of its numeric parameter (e.g. vb65 + 90). Only
+         * add the separator in that ambiguous case; the established
+         * mid-word behavior for ordinary text remains unchanged. */
+        if(used>annotations_begin && at<*length &&
+           (*text)[at]>='0' && (*text)[at]<='9')next[used++]=' ';
         initial=controls[i].voice;offsets[i]=at;added[i]=used-at;
     }
     memcpy(next+used,*text+from,*length-from);
@@ -1556,6 +1565,15 @@ done:
     return result == RELOQ_ECI_OK;
 }
 
+int ECICALL eciPersianSpeakNativeUtf8(ECIHand handle,const char *text,size_t bytes,int mode,
+    const size_t *source_offsets,const int *index_values,size_t index_count,size_t *error_offset)
+{
+    struct reloq_eci_engine *e=handle;
+    if(error_offset)*error_offset=0;
+    if(!e || epoch_get(&e->busy) || e->queued)return -1;
+    return reloq_fa_speak_native(handle,text,bytes,mode,source_offsets,index_values,index_count,error_offset);
+}
+
 int ECICALL eciSynchronize(ECIHand handle)
 {
     struct reloq_eci_engine *e = handle;
@@ -1904,6 +1922,70 @@ static FILE *open_utf8_lexicon(const char *path)
 #include "reloq_eci_compat.inc"
 #include "reloq_eci_dictionary.inc"
 #include "reloq_eci_phonemes.inc"
+
+struct persian_us_probe {
+    ECIHand handle;
+    unsigned epoch;
+    reloq_fa_proxy_sink sink;
+    void *sink_context;
+    char buffer[8192];
+    int failed;
+};
+static int ECICALL persian_us_phonemes(ECIHand handle,int message,int count,void *context)
+{
+    struct persian_us_probe *p=context;
+    struct reloq_eci_engine *e=handle;
+    if(epoch_get(&e->stop_epoch)!=p->epoch)return eciDataAbort;
+    if(message==eciPhonemeBuffer) {
+        if(count<0 || (size_t)count>sizeof p->buffer){p->failed=-1;return eciDataAbort;}
+        int result=p->sink(p->sink_context,p->buffer,(size_t)count);
+        if(result){p->failed=result==-2?-2:-1;return eciDataAbort;}
+    }
+    return eciDataProcessed;
+}
+static int persian_us_probe_word(void *context,const char *text,size_t length,
+    reloq_fa_proxy_sink sink,void *sink_context)
+{
+    struct persian_us_probe *p=context;
+    struct reloq_eci_engine *e=p->handle;
+    if(epoch_get(&e->stop_epoch)!=p->epoch)return -1;
+    p->sink=sink;p->sink_context=sink_context;p->failed=0;
+    if(!eciAddTextUtf8(p->handle,text,length,0) ||
+       !eciGeneratePhonemes(p->handle,(int)sizeof p->buffer,p->buffer)) {
+        (void)eciClearInput(p->handle);
+        return p->failed?p->failed:-1;
+    }
+    return 0;
+}
+int ECICALL eciPersianUsProxyUtf8(ECIHand handle,const char *text,size_t bytes,
+    struct reloq_fa_us_proxy *result)
+{
+    if(result)*result=(struct reloq_fa_us_proxy){0};
+    struct reloq_eci_engine *e=handle;
+    if(!e || !result || !text || bytes==SIZE_MAX || e->language!=0x10000 ||
+       epoch_get(&e->busy) || e->queued)return 1;
+    size_t pos=0;uint32_t scalar;
+    while(pos<bytes)if(reloq_utf8_next((const unsigned char *)text,bytes,&pos,&scalar)!=1 || !scalar)return 1;
+    struct persian_us_probe p={.handle=handle,.epoch=epoch_get(&e->stop_epoch)};
+    ECICallback previous=e->callback;void *previous_data=e->callback_data;
+    int mode=e->synth_mode,tags=e->process_tags;
+    if(eciSetParam(handle,RELOQ_ECI_SYNTH_MODE,1)<0 ||
+       eciSetParam(handle,RELOQ_ECI_PROCESS_TAGS,1)<0) {
+        (void)eciSetParam(handle,RELOQ_ECI_SYNTH_MODE,mode);
+        return -1;
+    }
+    eciRegisterCallback(handle,persian_us_phonemes,&p);
+    int status=reloq_fa_us_proxy_make(text,bytes,persian_us_probe_word,&p,result);
+    if(epoch_get(&e->stop_epoch)!=p.epoch && !status){reloq_fa_us_proxy_clear(result);status=-1;}
+    (void)eciClearInput(handle);
+    (void)eciSetParam(handle,RELOQ_ECI_SYNTH_MODE,mode);
+    (void)eciSetParam(handle,RELOQ_ECI_PROCESS_TAGS,tags);
+    eciRegisterCallback(handle,previous,previous_data);
+    return status;
+}
+void ECICALL eciPersianUsProxyRelease(struct reloq_fa_us_proxy *result)
+{reloq_fa_us_proxy_clear(result);}
+
 
 int ECICALL eciSetDictionaryPath(ECIHand handle,const char *utf8_directory)
 {
