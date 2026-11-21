@@ -188,12 +188,22 @@ def main():
             requests.append(value)
             assert value == unknown
             return PersianAnalysis((SpeechPart('fa', '`[.0na.0mo.1jud]'),), None, True)
-        with patch.object(fa_engine._frontend, 'analyze', side_effect=reference):
+        # Simulate an installed reference for this fallback-specific case;
+        # without one, the native complete analyzer now handles the word.
+        with patch.object(fa_engine._frontend, '_reference_available', True), \
+             patch.object(fa_engine._frontend, 'analyze', side_effect=reference):
             joined = project_resilient(('به', EciIndex(51), '\u200c', EciIndex(52),
                                         'طور ', EciIndex(53), unknown), fa_engine._frontend)
             spaced = project_resilient(('به طور ' + unknown,), fa_engine._frontend)
         assert joined.tagged == spaced.tagged and requests == [unknown, unknown]
         assert [part.value for part in joined.parts if isinstance(part, EciIndex)] == [51, 52, 53]
+        with patch.object(fa_engine._frontend, 'analyze',
+                          side_effect=AssertionError('unavailable reference was requested')):
+            native_joined = project_resilient(('به', EciIndex(51), '\u200c', EciIndex(52),
+                                               'طور ', EciIndex(53), unknown), fa_engine._frontend)
+            native_spaced = project_resilient(('به طور ' + unknown,), fa_engine._frontend)
+        assert native_joined.tagged == native_spaced.tagged
+        assert [part.value for part in native_joined.parts if isinstance(part, EciIndex)] == [51, 52, 53]
         pinglish = voice._activate(voice._key(PINGLISH_PROBE.id, '1'))
         assert project(('eslash',), pinglish._frontend, pinglish=True).tagged == '`[.0es.1lAS]'
         for text in ('ketab va khub', 'az ketab', 'joz iran', 'ketab ra', 'ya ketab', 'khub ast'):
