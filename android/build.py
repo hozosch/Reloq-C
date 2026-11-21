@@ -12,6 +12,8 @@ import shutil
 import subprocess
 import sys
 import zipfile
+import re
+import xml.etree.ElementTree as ET
 from verify_apk import verify_apk,verify_upgrade,verify_previous_package,verify_permissions
 from codegen import generate,build_epoch
 
@@ -20,6 +22,20 @@ HERE=ROOT/"android"
 # Android ABI -> (clang target prefix, file tag)
 ABIS={"arm64-v8a":("aarch64-linux-android26","arm64"),
       "x86_64":("x86_64-linux-android26","x86_64")}
+
+
+def android_version(manifest=HERE/"AndroidManifest.xml"):
+    version=ET.parse(manifest).getroot().get("{http://schemas.android.com/apk/res/android}versionName")
+    if not version or not re.fullmatch(r"\d+\.\d+\.\d+(?:-(?:dev|rc)\d+)?",version):
+        raise ValueError(f"invalid Android version: {manifest}")
+    return version
+
+
+def android_output(tag,version):
+    if tag not in {value[1] for value in ABIS.values()} or not re.fullmatch(
+            r"\d+\.\d+\.\d+(?:-(?:dev|rc)\d+)?",version):
+        raise ValueError("invalid Android package name")
+    return ROOT/f"dist/reloq-c-android-{tag}-{version}.apk"
 
 
 def run(*command, **kwargs):
@@ -52,7 +68,7 @@ def main():
     android_jar=(args.android_jar or sdk/"platforms/android-35/android.jar").resolve()
     triple,tag=ABIS[args.abi]
     if args.build_dir is None and args.abi!="arm64-v8a":args.build_dir=HERE/f"build-{tag}"
-    if args.output is None:args.output=ROOT/f"dist/reloq-c-android-{tag}-1.4.1.apk"
+    if args.output is None:args.output=android_output(tag,android_version())
     prebuilt={"linux":"linux-x86_64","darwin":"darwin-x86_64"}.get(sys.platform,"linux-x86_64")
     host=ndk/f"toolchains/llvm/prebuilt/{prebuilt}/bin"
     compiler=host/f"{triple}-clang"

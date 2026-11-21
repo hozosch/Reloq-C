@@ -9,6 +9,7 @@ jobs:
   version:
     runs-on: ubuntu-24.04
     outputs:
+      version: ${{ steps.version.outputs.version }}
       stable: ${{ steps.version.outputs.stable }}
       packageable: ${{ steps.version.outputs.packageable }}
       build_epoch: ${{ steps.version.outputs.build_epoch }}
@@ -19,6 +20,8 @@ jobs:
       - name: Select stable installable packaging
         id: version
         run: |
+          python3 tools/check_release_versions.py
+          python3 tools/test_release_versions.py
           python3 - <<'PY'
           import os, re, time
           from pathlib import Path
@@ -27,6 +30,7 @@ jobs:
           stable = bool(re.fullmatch(r'\d+\.\d+\.\d+', value))
           packageable = stable or bool(re.fullmatch(r'\d+\.\d+\.\d+-(?:dev|rc)\d+', value))
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('version=' + value + '\n')
               output.write('stable=' + str(stable).lower() + '\n')
               output.write('packageable=' + str(packageable).lower() + '\n')
               output.write(f'build_epoch={int(time.time())}\n')
@@ -115,6 +119,8 @@ jobs:
           python3 -B nvda/test_eci_inflection_tags.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_inline_queue.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_inline_queue_digits.py --library eci/libreloq_eci.so
+          python3 -B nvda/test_eci_upper_number.py --library eci/libreloq_eci.so
+          python3 -B nvda/test_eci_english_currency_case.py --library eci/libreloq_eci.so
           python3 -B eci/test_persian_us_proxy_api.py --library eci/libreloq_eci.so
           python3 -B eci/test_persian_us_samples.py --library eci/libreloq_eci.so
           python3 -B eci/test_persian_owned_capture.py --library eci/libreloq_eci.so
@@ -261,11 +267,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release download v1.4.1 --repo "$GITHUB_REPOSITORY" --pattern 'reloq-c-synth-x64-1.4.1.nvda-addon' --dir previous-addon
-          python3 tools/test_nvda_upgrade.py --previous previous-addon/reloq-c-synth-x64-1.4.1.nvda-addon --candidate dist/reloq-c-synth-x64-1.4.1.nvda-addon --allow-rebuild
+          python3 tools/test_nvda_upgrade.py --previous previous-addon/reloq-c-synth-x64-1.4.1.nvda-addon --candidate 'dist/reloq-c-synth-x64-${{ needs.version.outputs.version }}.nvda-addon' --allow-rebuild
       - name: Verify NVDA driver and offline dictionary startup
         run: |
           for language in en de; do
-            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.4.1.nvda-addon"))' "$language"
+            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-${{ needs.version.outputs.version }}.nvda-addon"))' "$language"
           done
       - uses: actions/upload-artifact@v4
         with:
@@ -274,7 +280,7 @@ jobs:
           compression-level: 0
           retention-days: 14
   nvda-windows:
-    needs: nvda
+    needs: [version, nvda]
     runs-on: windows-2022
     timeout-minutes: 35
     steps:
@@ -288,7 +294,7 @@ jobs:
       - name: Verify packaged Windows core and NVDA integration
         shell: pwsh
         run: |
-          $addon = (Get-Item candidate/reloq-c-synth-x64-1.4.1.nvda-addon).FullName
+          $addon = (Get-Item 'candidate/reloq-c-synth-x64-${{ needs.version.outputs.version }}.nvda-addon').FullName
           python -c "import zipfile; z=zipfile.ZipFile(r'$addon'); assert z.testzip() is None; z.extract('synthDrivers/reloqC/eci.dll', 'candidate')"
           if ($LASTEXITCODE -ne 0) { throw 'Core extraction failed' }
           $dll = (Get-Item candidate/synthDrivers/reloqC/eci.dll).FullName
@@ -313,15 +319,16 @@ jobs:
           $installer = (Get-Item candidate/nvda_2026.3.1.exe).FullName
           $p = Start-Process $installer -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
           if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw 'NVDA portable install failed' }
-          python -B addon/test_nvda_real_settings.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.4.1.nvda-addon --work settings-results
+          $addon = (Get-Item 'candidate/reloq-c-synth-x64-${{ needs.version.outputs.version }}.nvda-addon').FullName
+          python -B addon/test_nvda_real_settings.py --nvda portable-nvda/nvda.exe --addon $addon --work settings-results
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA settings probe failed' }
-          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.4.1.nvda-addon --work segmentation-results
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon $addon --work segmentation-results
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA dictionary and segmentation probe failed' }
-          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.4.1.nvda-addon --plugin addon/test_nvda_real_issue40_plugin.py --work acronym-results
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon $addon --plugin addon/test_nvda_real_issue40_plugin.py --work acronym-results
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA acronym and dictionary boundary probe failed' }
-          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.4.1.nvda-addon --plugin addon/test_nvda_real_early_start_plugin.py --work early-start-results
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon $addon --plugin addon/test_nvda_real_early_start_plugin.py --work early-start-results
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA early startup probe failed' }
-          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.4.1.nvda-addon --plugin addon/test_nvda_real_dictionary_feedback_plugin.py --work dictionary-feedback-results
+          python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon $addon --plugin addon/test_nvda_real_dictionary_feedback_plugin.py --work dictionary-feedback-results
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA dictionary feedback probe failed' }
   collect:
     needs: [version, native-regressions, sapi, android, nvda, nvda-windows]

@@ -23,7 +23,24 @@ from build_translations import translation_entries
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "addon" / "synth"
-DEFAULT_OUTPUT = ROOT / "dist" / "reloq-c-synth-x64-1.4.1.nvda-addon"
+
+
+def addon_version(manifest: Path = SOURCE / "manifest.ini") -> str:
+    """Read the version that will actually be embedded in the package."""
+    matches = re.findall(r'^version\s*=\s*"(\d+\.\d+\.\d+(?:-(?:dev|rc)\d+)?)"\s*$',
+                         manifest.read_text(encoding="utf-8"), re.M)
+    if len(matches) != 1:
+        raise ValueError(f"invalid or ambiguous NVDA version: {manifest}")
+    return matches[0]
+
+
+def addon_output(version: str) -> Path:
+    if not re.fullmatch(r"\d+\.\d+\.\d+(?:-(?:dev|rc)\d+)?", version):
+        raise ValueError("invalid NVDA package version")
+    return ROOT / "dist" / f"reloq-c-synth-x64-{version}.nvda-addon"
+
+
+DEFAULT_OUTPUT = addon_output(addon_version())
 RLEX_HEADER = b"RELOQ-DE-SPR-1\n"
 HEX = re.compile(rb"[0-9A-F]+\Z")
 

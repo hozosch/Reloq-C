@@ -179,12 +179,14 @@ jobs:
           foreach ($arch in @('x64','x86')) {
             $core = if ($arch -eq 'x64') { Join-Path $install 'eci.dll' } else { Join-Path $install 'x86\eci.dll' }
             if ((Get-FileHash $core -Algorithm SHA256).Hash -ne (Get-FileHash "test-$arch/eci.dll" -Algorithm SHA256).Hash) {
-              throw "SAPI $arch core was not replaced by the new 1.4.1 build"
+              throw "SAPI $arch core was not replaced by the new build"
             }
           }
           Test-StartLinks 'Stimmeinstellungen' 'Anleitung'
           $registered = Get-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D3F8BA6E-1C62-4B0D-8A33-3840B77376AC}_is1'
-          if ($registered.DisplayName -ne 'ReLoq C SAPI5' -or $registered.DisplayVersion -ne '1.4.1') { throw 'SAPI application name or version metadata is incorrect' }
+          $packageVersion = python -c 'from sapi.version import VERSION; print(VERSION)'
+          if ($LASTEXITCODE -ne 0) { throw 'SAPI package version could not be read' }
+          if ($registered.DisplayName -ne 'ReLoq C SAPI5' -or $registered.DisplayVersion -ne $packageVersion) { throw 'SAPI application name or version metadata is incorrect' }
           if ((Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'Dictionary edit lost during upgrade' }
           & ./sapi/test_japanese_sapi.ps1 -ReportPath dist/validation/japanese-results.json
           python -B sapi/test_dictionary_import_ui.py --directory $install
