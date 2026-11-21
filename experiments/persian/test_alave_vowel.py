@@ -23,23 +23,28 @@ def main():
     try:
         frontend = engine._engines[PERSIAN_PROBE.id]._frontend
         phones = lambda value: re.sub(r'\.[012]', '.#', re.sub(r'`00\s*', '', value))
+        # The independent native rules use the selected short final vowel
+        # and final word stress. The older eSpeak projection below remains a
+        # separate reference, rather than overriding the current voice.
         expected = {
-            'علاوه': "`[.0A.1la.0v'e:']",
-            'علاوه‌ی': "`[.0A.1la.0ve.1j'e:']",
-            'بعلاوه': "`[.0be.0A.1la.0v'e:']",
-            'بعلاوه‌ی': "`[.0be.0A.1la.0ve.1j'e:']",
-            'به علاوه': "`[.0be] `[.0A.1la.0v'e:']",
+            'علاوه': '`[.0A.0la.1ve]',
+            'علاوه‌ی': '`[.0A.0la.1ve.0je]',
+            'بعلاوه': '`[.0be.0A.0la.1ve]',
+            'بعلاوه‌ی': '`[.0be.0A.0la.1ve.0je]',
+            'به علاوه': '`[.0be] `[.0A.0la.1ve]',
         }
         for word, tag in expected.items():
             analysis = frontend.analyze_direct(word)
             assert analysis and phones(analysis.parts[0].text) == phones(tag), (word, analysis)
-        assert word_tag("a:|l|'A|v|e:") == expected['علاوه']
-        assert word_tag("b|e|a:|l|'A|v|e:") == expected['بعلاوه']
-        # Existing symbol names retain their own preposition pronunciation;
-        # both paths must still preserve the intended vowel in alāve.
+        reference = "`[.0A.1la.0v'e:']"
+        assert word_tag("a:|l|'A|v|e:") == reference
+        assert word_tag("b|e|a:|l|'A|v|e:") == "`[.0be.0A.1la.0v'e:']"
+        # The native character name and native words share the accepted
+        # pronunciation, while the legacy reference remains independently
+        # checked for its original pronunciation.
         symbol = frontend.analyze_character('+')
-        assert symbol and phones(symbol.parts[0].text) == phones(SYMBOL_TAGS['+'])
-        assert phones(SYMBOL_TAGS['+']).endswith(phones(expected['علاوه']))
+        assert symbol and phones(symbol.parts[0].text) == phones(expected['به علاوه'])
+        assert phones(SYMBOL_TAGS['+']).endswith(phones(reference))
 
         for part in ('به علاوه', 'بعلاوه', EciText('+', character_mode=True)):
             pcm, marks = bytearray(), []
