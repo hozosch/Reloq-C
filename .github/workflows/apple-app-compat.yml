@@ -1,0 +1,59 @@
+name: Check ReLoq Apple against the development core
+on:
+  push:
+    branches: [codex/persian-native-u-20261121]
+    paths:
+      - .github/workflows/apple-app-compat.yml
+      - tools/apple/reloq-apple-0.1.1-core2.patch
+      - src/**
+      - include/**
+      - vendor/openevv61/**
+      - addon/synth/manifest.ini
+permissions:
+  contents: read
+concurrency:
+  group: apple-app-compat-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  apple-app-compat:
+    runs-on: macos-15
+    timeout-minutes: 55
+    steps:
+      - name: Check out the development core
+        uses: actions/checkout@v4
+        with:
+          path: engine
+          persist-credentials: false
+      - name: Check out ReLoq Apple 0.1.1
+        uses: actions/checkout@v4
+        with:
+          repository: Quinton1110/ReLoq-Apple
+          ref: 6ea066b8357626374bd5a21a32920659ae475646
+          path: app
+          persist-credentials: false
+      - name: Apply the reviewable compatibility changes
+        run: git -C app apply "$GITHUB_WORKSPACE/engine/tools/apple/reloq-apple-0.1.1-core2.patch"
+      - name: Build the app's engine libraries
+        run: |
+          make -C app engine RELOQ=../engine JOBS=3 > "$RUNNER_TEMP/app-engine.log" 2>&1 || {
+            tail -n 120 "$RUNNER_TEMP/app-engine.log"
+            exit 1
+          }
+      - name: Run the app bridge and native Mac tests
+        run: |
+          make -C app test engine-check
+          make -C app engine-test DICT_DIR=../engine/data/community
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Build unsigned iPhone and Mac apps
+        working-directory: app
+        run: |
+          xcodegen generate
+          for scheme in EloquenceVoices EloquenceVoices-macOS; do
+            if [ "$scheme" = EloquenceVoices ]; then destination='generic/platform=iOS'; else destination='generic/platform=macOS'; fi
+            xcodebuild -project EloquenceVoices.xcodeproj -scheme "$scheme" -configuration Release \
+              -destination "$destination" CODE_SIGNING_ALLOWED=NO build > "$RUNNER_TEMP/$scheme.log" 2>&1 || {
+              tail -n 120 "$RUNNER_TEMP/$scheme.log"
+              exit 1
+            }
+          done

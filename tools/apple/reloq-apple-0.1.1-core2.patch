@@ -1,0 +1,130 @@
+diff --git a/Engine/apple.mk b/Engine/apple.mk
+index f917a84..f8aa2b0 100644
+--- a/Engine/apple.mk
++++ b/Engine/apple.mk
+@@ -52,7 +52,8 @@ PB     := $(OUT)/$(PLATFORM)
+ RULES  := $(PB)/rules/libreloq61.a
+ 
+ CORE_SOURCES := $(filter-out $(ROOT)/src/reloq_host.c $(ROOT)/src/reloq_voice_filter.c $(ROOT)/src/reloq_orthography.c \
+-                  $(ROOT)/src/reloq_german_word_edges.c $(ROOT)/src/reloq_english%.c,$(wildcard $(ROOT)/src/*.c)) \
++                  $(ROOT)/src/reloq_german_word_edges.c $(ROOT)/src/reloq_persian_acoustics.c \
++                  $(ROOT)/src/reloq_english%.c,$(wildcard $(ROOT)/src/*.c)) \
+                 $(ROOT)/src/reloq_english_spr.c
+ CORE_OBJECTS := $(patsubst $(ROOT)/src/%.c,$(PB)/core/%.o,$(CORE_SOURCES))
+ CORE_CFLAGS  := $(OPT) -std=c11 -Wall -Wextra -pedantic -pthread -ffunction-sections -fdata-sections \
+@@ -77,13 +78,16 @@ $(PB)/core/%.o: $(ROOT)/src/%.c
+ # objects). The ECI names stay global (hidden); the rest of the names are the engine's own.
+ $(PB)/reloq.o: $(CORE_OBJECTS) $(RULES)
+ 	rm -f $(PB)/all.a && cp $(RULES) $(PB)/all.a && $(PAR) rs $(PB)/all.a $(CORE_OBJECTS) >/dev/null
+-	printf '_eci*\n_reloq_eci_*\n' > $(PB)/keep.txt
+-	$(PCC) -r -nostdlib $(filter -flto%,$(OPT)) -Wl,-all_load -Wl,-exported_symbols_list,$(PB)/keep.txt $(PB)/all.a -o $@
++	# Keep the visibility the objects already have: an eci* wildcard also
++	# matches hidden provider internals and the linker refuses to export them.
++	$(PCC) -r -nostdlib $(filter -flto%,$(OPT)) -Wl,-all_load $(PB)/all.a -o $@
+ 	rm -f $(PB)/all.a
+ 
+ $(PB)/libreloq.a: $(PB)/reloq.o
+ 	rm -f $@ && $(PAR) rcs $@ $(PB)/reloq.o
+ 	@mkdir -p $(PB)/Headers && cp $(ROOT)/include/eci.h $(ROOT)/include/reloq_eci.h $(PB)/Headers/
++	@for h in reloq_persian_plan.h reloq_persian_numbers.h reloq_persian_phones.h reloq_persian_us_proxy.h; do \
++	  if test -f "$(ROOT)/include/$$h"; then cp "$(ROOT)/include/$$h" $(PB)/Headers/; fi; done
+ 
+ # The three slices, each its own sub-make (PLATFORM picks the compiler), then one XCFramework.
+ xcframework:
+diff --git a/Engine/test/ev_test.c b/Engine/test/ev_test.c
+index 224fdc4..b939c00 100644
+--- a/Engine/test/ev_test.c
++++ b/Engine/test/ev_test.c
+@@ -299,7 +299,7 @@ int main(int argc, char **argv)
+ 
+     /* Text per language, as the stub routes it (ReLoq C's way, the default engine): Polish, Japanese,
+        Chinese, Korean and Greek go through as UTF-8 (eciAddTextUtf8), the rest as Windows-1252 with its
+-       0x80-0x9F characters (euro, oe, bullet ...). Format characters drop out in all of them. */
++       0x80-0x9F characters (euro, oe, bullet ...). Persian preserves its orthographic joiners. */
+     { char got[256];
+       ev_text_fold_lang("5 \xe2\x82\xac \xc5\x93" "uvre \xe2\x80\xa2 \xe2\x80\x8ex", EV_LANG_FRFR, got, sizeof got);
+       CHECK(strcmp(got, "5 \x80 \x9c" "uvre   x") == 0, "French: euro and oe as Windows-1252 bytes, a bullet still a space, LRM dropped");
+@@ -309,6 +309,11 @@ int main(int argc, char **argv)
+       CHECK(strcmp(got, "\xe3\x81\x93\xe3\x82\x93 x") == 0, "Japanese: UTF-8 kept, LRM dropped");
+       ev_text_fold_lang("\xce\x93\xce\xb5\xce\xb9\xce\xac `x", EV_LANG_ELGR, got, sizeof got);
+       CHECK(strcmp(got, "\xce\x93\xce\xb5\xce\xb9\xce\xac  x") == 0, "Greek: UTF-8 kept, backtick neutralised");
++      ev_text_fold_lang("راه\xe2\x80\x8c" "ان\xe2\x80\x8d" "دازی\xe2\x80\x8e", EV_LANG_FAIR, got, sizeof got);
++      CHECK(strcmp(got, "راه\xe2\x80\x8c" "ان\xe2\x80\x8d" "دازی") == 0,
++            "Persian: UTF-8 and word joiners kept; directional mark dropped");
++      ev_text_fold_lang("raah\xe2\x80\x8c" "andaazi", EV_LANG_FAIR_LATIN, got, sizeof got);
++      CHECK(strcmp(got, "raah\xe2\x80\x8c" "andaazi") == 0, "Pinglish: UTF-8 and non-joiner kept");
+       CHECK(ev_lang_index(EV_LANG_ENGB) == 1 && ev_lang_index(EV_LANG_ZHCN) >= 0 && ev_lang_index(EV_LANG_PLPL) >= 0
+             && ev_lang_count() == 15 && ev_lang_index(0x123456) == -1 && ev_voice_open_lang(1, 0x123456) == NULL,
+             "languages: the stub knows all 15 of both engines, an unknown language refused"); }
+diff --git a/Makefile b/Makefile
+index 98c8f13..a205274 100644
+--- a/Makefile
++++ b/Makefile
+@@ -24,6 +24,8 @@ engine:
+ 	cp -R build/reloq/ReloqEngine.xcframework Engine/reloq.xcframework
+ 	mkdir -p Engine/reloq-include
+ 	cp $(RELOQ)/include/eci.h $(RELOQ)/include/reloq_eci.h Engine/reloq-include/
++	@for h in reloq_persian_plan.h reloq_persian_numbers.h reloq_persian_phones.h reloq_persian_us_proxy.h; do \
++	  if test -f "$(RELOQ)/include/$$h"; then cp "$(RELOQ)/include/$$h" Engine/reloq-include/; fi; done
+ 	printf '#define EV_ENGINE_BUILD "Reloq-C@%s%s"\n#define EV_RELOQ_VERSION "%s"\n' \
+ 	  "$$(git -C $(RELOQ) rev-parse --short HEAD)" \
+ 	  "$$(git -C $(RELOQ) diff --quiet -- src include vendor || echo +dirty)" \
+diff --git a/Shared/Bridge/ev_bridge.c b/Shared/Bridge/ev_bridge.c
+index d059b3b..b615dc2 100644
+--- a/Shared/Bridge/ev_bridge.c
++++ b/Shared/Bridge/ev_bridge.c
+@@ -706,7 +706,7 @@ static char *ev_text_to_bytes(const char *utf8)
+ }
+ 
+ /* Text the engine takes as UTF-8 (ev_lang_takes_utf8): only the invisible format characters come out. */
+-static char *ev_text_utf8_clean(const char *utf8)
++static char *ev_text_utf8_clean(const char *utf8, int32_t lang)
+ {
+     size_t n = strlen(utf8);
+     char *out = (char *)malloc(n + 1);
+@@ -715,7 +715,13 @@ static char *ev_text_utf8_clean(const char *utf8)
+     while (i < n) {
+         int len;
+         uint32_t cp = ev_utf8_at(utf8, n, i, &len);
+-        if (!ev_is_format_char(cp)) { memcpy(out + o, utf8 + i, (size_t)len); o += (size_t)len; }
++        /* In Persian, ZWNJ and ZWJ are orthographic boundaries. The native
++           analyzer needs them even though unrelated formatting is removed. */
++        int persian_joiner = (lang == EV_LANG_FAIR || lang == EV_LANG_FAIR_LATIN)
++            && (cp == 0x200C || cp == 0x200D);
++        if (persian_joiner || !ev_is_format_char(cp)) {
++            memcpy(out + o, utf8 + i, (size_t)len); o += (size_t)len;
++        }
+         i += (size_t)len;
+     }
+     out[o] = 0;
+@@ -749,7 +755,7 @@ static int ev_lang_takes_utf8(int32_t lang)
+        ones stay Windows-1252 bytes through eciAddText, so the dictionaries (cp1252 files, matched on
+        these bytes) work exactly as with IBM's engine. */
+     return lang == EV_LANG_ZHCN || lang == EV_LANG_JAJP || lang == EV_LANG_KOKR || lang == EV_LANG_ELGR
+-        || lang == EV_LANG_PLPL;
++        || lang == EV_LANG_PLPL || lang == EV_LANG_FAIR || lang == EV_LANG_FAIR_LATIN;
+ #endif
+ }
+ 
+@@ -759,7 +765,7 @@ static int ev_lang_takes_utf8(int32_t lang)
+ 
+ static char *ev_prepare_text(const char *utf8, int32_t lang)
+ {
+-    char *b = ev_lang_takes_utf8(lang) ? ev_text_utf8_clean(utf8) : ev_text_to_bytes(utf8), *p;
++    char *b = ev_lang_takes_utf8(lang) ? ev_text_utf8_clean(utf8, lang) : ev_text_to_bytes(utf8), *p;
+     if (b && !ev_voice_tags_on)
+         for (p = b; *p; p++) if (*p == '`') *p = ' ';
+     /* US English only, as openevv: the mode is 0 (default reading) unless the text itself sets one with `ts,
+diff --git a/Shared/Bridge/ev_bridge.h b/Shared/Bridge/ev_bridge.h
+index 7061f60..7e8cd80 100644
+--- a/Shared/Bridge/ev_bridge.h
++++ b/Shared/Bridge/ev_bridge.h
+@@ -107,6 +107,8 @@ typedef struct ev_request {
+ #define EV_LANG_KOKR 0xa0000        /* ReLoq only */
+ #define EV_LANG_PLPL 0x110000       /* not in ReLoq C (the stub only) */
+ #define EV_LANG_ELGR 0x120000       /* ReLoq only */
++#define EV_LANG_FAIR 0x140000       /* Persian, once the native core registers it */
++#define EV_LANG_FAIR_LATIN 0x140001 /* Persian with Latin transcription */
+ /* Room for every language any engine here has (dictionary slots); ev_lang_count() is this build's. */
+ #define EV_LANGS 16
+ /* 0 ... ev_lang_count()-1 for a language this build's engine speaks, -1 otherwise. */

@@ -44,6 +44,13 @@ list without checking that path. A Mac build and device/VoiceOver validation
 remain necessary; the author tested the older 1.4.1-based Apple build, not
 this development branch.
 
+For review, `tools/apple/reloq-apple-0.1.1-core2.patch` prepares that app's
+0.1.1 source for the newer headers, provider archive and Persian joiners. It
+does not enable or advertise the incomplete Persian voice. The separate Apple
+app compatibility workflow pins the author's 0.1.1 commit, applies this patch
+and builds unsigned apps against the development core. Passing CI will not
+replace testing the signed app and speech extension on Apple devices.
+
 The in-tree Apple build can be invoked on a Mac with
 `make -f tools/apple/Makefile xcframework`. It prepares iOS, iOS simulator
 and Apple-silicon macOS static libraries and the public ECI headers.
