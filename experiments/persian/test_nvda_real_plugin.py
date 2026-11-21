@@ -88,43 +88,63 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                         self.syllable_fits.append(result == 0)
                         return result
                     instance.fit_pitch_anchors = observe_syllables
+                def note_native_syllables(result, target, nt, donor, nd, tb, db, words,
+                                          ts, nts, ds, nds, counts):
+                    observed = False
+                    if result == 0 and counts is not None and ts is not None and ds is not None:
+                        count = tuple(counts[i] for i in range(words))
+                        if any(n > 1 for n in count):
+                            target_item = SimpleNamespace(syllables=tuple((ts[i].from_, ts[i].to) for i in range(nts)))
+                            donor_item = SimpleNamespace(syllables=tuple((ds[i].from_, ds[i].to) for i in range(nds)))
+                            target_bounds = tuple(tb[i] for i in range(words + 1))
+                            donor_bounds = tuple(db[i] for i in range(words + 1))
+                            tg = continuous_plan._syllable_word_edges(target_item, target_bounds, count)
+                            dg = continuous_plan._syllable_word_edges(donor_item, donor_bounds, count)
+                            target_ticks = [target[i].tick for i in range(nt)]
+                            donor_ticks = [donor[i].tick for i in range(nd)]
+                            donor_pitch = [donor[i].controls[1] for i in range(nd)]
+                            for i, n in enumerate(count):
+                                if n < 2:
+                                    continue
+                                left = tg[i] if tg is not None else continuous_plan._syllable_edges(
+                                    target_item, target_bounds[i], target_bounds[i+1], n)
+                                right = dg[i] if dg is not None else continuous_plan._syllable_edges(
+                                    donor_item, donor_bounds[i], donor_bounds[i+1], n)
+                                for t, d in zip(left, right):
+                                    at = bisect_left(target_ticks, t)
+                                    if at < nt and target_ticks[at] == t and abs(
+                                            target[at].controls[1] - continuous_plan._interp(d, donor_ticks, donor_pitch)) < .01:
+                                        observed = True
+                                        break
+                                if observed:
+                                    break
+                    self.syllable_fits.append(observed)
+                    return result
                 if instance.transfer_us_words is not None:
                     original_transfer = instance.transfer_us_words
                     def observe_native_syllables(target, nt, donor, nd, tb, db, words,
                                                  ts, nts, ds, nds, counts):
                         result = original_transfer(target, nt, donor, nd, tb, db, words,
                                                    ts, nts, ds, nds, counts)
-                        observed = False
-                        if result == 0 and counts is not None and ts is not None and ds is not None:
-                            count = tuple(counts[i] for i in range(words))
-                            if any(n > 1 for n in count):
-                                target_item = SimpleNamespace(syllables=tuple((ts[i].from_, ts[i].to) for i in range(nts)))
-                                donor_item = SimpleNamespace(syllables=tuple((ds[i].from_, ds[i].to) for i in range(nds)))
-                                target_bounds = tuple(tb[i] for i in range(words + 1))
-                                donor_bounds = tuple(db[i] for i in range(words + 1))
-                                tg = continuous_plan._syllable_word_edges(target_item, target_bounds, count)
-                                dg = continuous_plan._syllable_word_edges(donor_item, donor_bounds, count)
-                                target_ticks = [target[i].tick for i in range(nt)]
-                                donor_ticks = [donor[i].tick for i in range(nd)]
-                                donor_pitch = [donor[i].controls[1] for i in range(nd)]
-                                for i, n in enumerate(count):
-                                    if n < 2:
-                                        continue
-                                    left = tg[i] if tg is not None else continuous_plan._syllable_edges(
-                                        target_item, target_bounds[i], target_bounds[i+1], n)
-                                    right = dg[i] if dg is not None else continuous_plan._syllable_edges(
-                                        donor_item, donor_bounds[i], donor_bounds[i+1], n)
-                                    for t, d in zip(left, right):
-                                        at = bisect_left(target_ticks, t)
-                                        if at < nt and target_ticks[at] == t and abs(
-                                                target[at].controls[1] - continuous_plan._interp(d, donor_ticks, donor_pitch)) < .01:
-                                            observed = True
-                                            break
-                                    if observed:
-                                        break
-                        self.syllable_fits.append(observed)
-                        return result
+                        return note_native_syllables(result, target, nt, donor, nd, tb, db, words,
+                                                     ts, nts, ds, nds, counts)
                     instance.transfer_us_words = observe_native_syllables
+                if instance.transfer_us_samples is not None:
+                    original_samples = instance.transfer_us_samples
+                    def observe_native_samples(target, nt, donor, nd, tb, db, words, rate,
+                                               ts, nts, ds, nds, counts):
+                        result = original_samples(target, nt, donor, nd, tb, db, words, rate,
+                                                  ts, nts, ds, nds, counts)
+                        if result:
+                            self.syllable_fits.append(False)
+                            return result
+                        target_bounds = [round(tb[i] * 1000 / rate) for i in range(words + 1)]
+                        donor_bounds = [round(db[i] * 1000 / rate) for i in range(words + 1)]
+                        target_bounds[-1] = min(target_bounds[-1], target[nt-1].tick + 1)
+                        donor_bounds[-1] = min(donor_bounds[-1], donor[nd-1].tick + 1)
+                        return note_native_syllables(result, target, nt, donor, nd, target_bounds,
+                                                     donor_bounds, words, ts, nts, ds, nds, counts)
+                    instance.transfer_us_samples = observe_native_samples
                 if self.sample_finnish:
                     instance.transfer_korean_pitch = None
             FrameCapture.__init__ = comparison_capture_init
@@ -263,6 +283,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if not synthDriverHandler.setSynth('reloqC'):
                 raise RuntimeError('could not select ReLoq C')
             self.synth = synthDriverHandler.getSynth()
+            import config
+            self.spelling_config = config.conf['speech'][self.synth.name]
+            self.saved_spelling_functionality = self.spelling_config['useSpellingFunctionality']
             import speechDictHandler
             builtin = next(d for d in speechDictHandler.listAvailableSpeechDictDefinitions()
                            if getattr(d.source, 'value', d.source) == 'builtin')
@@ -611,6 +634,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.cases.append(('fa_IR', '۹۶. شماره ۹۶. ۹۶: سلام دنیا.', 'comparison_96'))
             self.cases.extend(('fa_IR', 'سلام دنیا خوب.', 'comparison_' + kind + '_pitch')
                               for kind in ('finnish', 'plain'))
+            self.cases.extend((locale, char, mode)
+                              for locale in ('de_DE', 'en_US')
+                              for char in ('⚭', '⊖', '≪')
+                              for mode in ('unicode_spelling_on', 'unicode_spelling_off'))
             self.next()
         except BaseException:
             self.fail()
@@ -821,6 +848,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 def sound(locale, text, mode):
                     return next(row['pcm_sha256'] for row in self.results
                                 if row['locale'] == locale and row['text'] == text and row['spelling'] == mode)
+                self.spelling_config['useSpellingFunctionality'] = self.saved_spelling_functionality
+                for locale in ('de_DE', 'en_US'):
+                    for char in ('⚭', '⊖', '≪'):
+                        if sound(locale, char, 'unicode_spelling_on') != sound(locale, char, 'unicode_spelling_off'):
+                            raise AssertionError('NVDA lost the Unicode name while spelling: ' + ascii((locale, char)))
                 for symbol, label in (('-', 'خطِ تیره'), ('_', 'زیرخط')):
                     if sound('fa_IR', symbol, True) != sound('fa_IR', label, False):
                         raise AssertionError('NVDA symbol differs from its written Persian name: ' + symbol)
@@ -849,6 +881,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 self.synth.rate = old_rate
                 self.saved_rate_for_r_test = None
             self.synth.language = locale
+            if spelling in ('unicode_spelling_on', 'unicode_spelling_off'):
+                self.spelling_config['useSpellingFunctionality'] = spelling == 'unicode_spelling_on'
             self.nav_stale_case = spelling == 'issue49_weak_us_stale'
             self.nav_stale_injected = False
             self.before_us_fits = len(self.us_fits)
@@ -897,6 +931,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             elif spelling == 'comparison_finnish_dense':
                 sequence = [part for i, word in enumerate(text.split(), 60000)
                             for part in (word + ' ', self.index_command(i))]
+            elif spelling in ('unicode_spelling_on', 'unicode_spelling_off'):
+                sequence = list(self.speech.getSpellingSpeech(text, locale=locale, endsUtterance=False))
             elif spelling == 'issue49_korean_spelling':
                 sequence = [self.character(True), text, self.character(False)]
             elif spelling == 'english_exception':
@@ -957,7 +993,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.pipeline = self.pipeline or (isinstance(spelling, str) and spelling.startswith('issue50_'))
             self.pipeline = self.pipeline or spelling in ('issue49_quotes', 'issue49_numeric', 'issue49_own_vowel', 'issue49_nominal_compound', 'issue49_native_new_compound')
             self.pipeline = self.pipeline or spelling in ('issue49_preposition', 'issue49_final_accent',
-                                                          'issue49_character_navigation')
+                                                          'issue49_character_navigation',
+                                                          'unicode_spelling_on', 'unicode_spelling_off')
             self.pipeline = self.pipeline or spelling in ('issue49_version_some', 'issue49_version_split',
                                                            'issue49_emoji_some', 'issue49_emoji_split',
                                                            'issue49_heading', 'issue49_heading_split',

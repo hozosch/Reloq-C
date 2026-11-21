@@ -45,11 +45,21 @@ def speech_api(driver, on_sequence):
         sources[locale] = (data, ns["SpeechSymbols"]())
     ns["SpeechSymbolProcessor"].localeSymbols = ns["LocaleDataMap"](lambda locale: sources[locale])
     processors = {locale: ns["SpeechSymbolProcessor"](locale) for locale in sources}
+    def find_processor(locale):
+        try:
+            return processors[locale]
+        except KeyError:
+            raise LookupError(locale) from None
+    ns["_localeSpeechSymbolProcessors"] = ns["LocaleDataMap"](find_processor)
+    execute(SOURCE / "characterProcessing.py",
+        lambda n: isinstance(n, ast.FunctionDef) and n.name == "processSpeechSymbol", ns)
     symbols = types.SimpleNamespace(SymbolLevel=ns["SymbolLevel"],
         processSpeechSymbols=lambda locale, text, level:
-            processors.get(locale.split("_")[0], processors["en"]).processText(text, level))
+            processors.get(locale.split("_")[0], processors["en"]).processText(text, level),
+        processSpeechSymbol=ns["processSpeechSymbol"])
     config = sys.modules["config"]
-    for key, value in dict(autoDialectSwitching=True, unicodeNormalization=False, symbolLevel=0).items():
+    for key, value in dict(autoDialectSwitching=True, unicodeNormalization=False, symbolLevel=0,
+                           reportNormalizedForCharacterNavigation=False).items():
         config.conf["speech"][key] = value
 
     class Spri(IntEnum):
@@ -73,7 +83,7 @@ def speech_api(driver, on_sequence):
         RE_CONVERT_WHITESPACE=re.compile("[\0\r\n]"),
         speechDictHandler=types.SimpleNamespace(processText=lambda text: text),
         unicodeNormalize=lambda text: unicodedata.normalize("NFKC", text),
-        shouldSwitchVoice=lambda: True)
+        shouldSwitchVoice=lambda: True, getSynth=lambda: driver)
     execute(SOURCE / "speech/manager.py",
         lambda n: isinstance(n, ast.ClassDef) and n.name == "ParamChangeTracker", ns)
     manager_source = ast.parse((SOURCE / "speech/manager.py").read_text(encoding="utf-8"))
@@ -103,5 +113,11 @@ def speech_api(driver, on_sequence):
 
     ns["_manager"] = types.SimpleNamespace(speak=queue)
     execute(SOURCE / "speech/speech.py",
-        lambda n: isinstance(n, ast.FunctionDef) and n.name in ("processText", "speak"), ns)
-    return types.SimpleNamespace(speak=ns["speak"], processText=ns["processText"], symbols=symbols)
+        lambda n: isinstance(n, ast.FunctionDef) and n.name in (
+            "processText", "speak", "_getSpellingSpeechAddCharMode",
+            "_getSpellingCharAddCapNotification", "_getSpellingSpeechWithoutCharMode",
+            "getSpellingSpeech") or
+            isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "LANGS_WITH_CONJUNCT_CHARS"
+                                               for t in n.targets), ns)
+    return types.SimpleNamespace(speak=ns["speak"], processText=ns["processText"], symbols=symbols,
+                                 getSpellingSpeech=ns["getSpellingSpeech"])

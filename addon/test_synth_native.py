@@ -30,6 +30,7 @@ def main():
     parser.add_argument("--library", type=Path, required=True)
     parser.add_argument("--addon", type=Path, help="Test this exact existing package without rebuilding its translations")
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--spelling-only", action="store_true", help="Run the NVDA Unicode-spelling checks only")
     args = parser.parse_args()
     library = args.library.resolve()
     loader = ctypes.WinDLL if sys.platform == "win32" else ctypes.CDLL
@@ -141,6 +142,82 @@ def main():
 
             try:
                 driver.sampleRate = "3"
+                driver.voiceTags = False
+                driver.language = "de_DE"
+                speech_config = sys.modules['config'].conf['speech']
+                try:
+                    spelling_config = speech_config[driver.name]
+                except KeyError:
+                    speech_config[driver.name] = {}
+                    spelling_config = speech_config[driver.name]
+                for key, value in dict(useSpellingFunctionality=True, capPitchChange=0,
+                        sayCapForCapitals=False, beepForCapitals=False).items():
+                    spelling_config[key] = value
+                speech_dictionary = api.speak.__globals__['speechDictHandler']
+                with mock.patch.dict(sys.modules, {'speechDictHandler': speech_dictionary,
+                                                   'characterProcessing': api.symbols}):
+                    for use_spelling in (True, False):
+                        spelling_config['useSpellingFunctionality'] = use_spelling
+                        for char, name in (('∰', 'Volumenintegral'), ('⌘', 'Sehenswürdigkeitszeichen'),
+                                           ('⚭', 'Ehezeichen'), ('⊖', 'eingekreistes Minuszeichen'),
+                                           ('≪', 'sehr viel kleiner als')):
+                            sequence = list(api.getSpellingSpeech(char, locale='de_DE', endsUtterance=False))
+                            actual = run(sequence)
+                            submitted = received[-1]
+                            nvda_name = api.symbols.processSpeechSymbol('de_DE', char)
+                            expected = run([name if nvda_name == char else nvda_name])
+                            assert actual == expected, (use_spelling, char, name, sequence, submitted,
+                                                        len(actual), len(expected))
+                            report['checks'] += 1
+                    # Personal speech dictionaries retain priority over the
+                    # synth's fallback name when spelling mode is disabled.
+                    spelling_config['useSpellingFunctionality'] = False
+                    unknown = next(char for char in ('∰', '⌘', '⚭', '⊖', '≪')
+                                   if api.symbols.processSpeechSymbol('de_DE', char) == char)
+                    original_process = speech_dictionary.processText
+                    speech_dictionary.processText = lambda text: 'Benutzerwort' if text == unknown else text
+                    try:
+                        sequence = list(api.getSpellingSpeech(unknown, locale='de_DE', endsUtterance=False))
+                        actual = run(sequence)
+                        submitted = received[-1]
+                        expected = run(['Benutzerwort'])
+                        assert actual == expected, (sequence, submitted, len(actual), len(expected))
+                    finally:
+                        speech_dictionary.processText = original_process
+                    report['checks'] += 1
+                    original_imported = driver._imported_dictionaries
+                    class ImportedSymbolDictionary:
+                        records = (object(),)
+                        def matches(self, text, language, voice):
+                            return text == unknown and language == 0x40000
+                        def process(self, text, language, voice):
+                            return 'Benutzerwort' if self.matches(text, language, voice) else text
+                    driver._imported_dictionaries = ImportedSymbolDictionary()
+                    try:
+                        sequence = list(api.getSpellingSpeech(unknown, locale='de_DE', endsUtterance=False))
+                        assert run(sequence) == run(['Benutzerwort'])
+                    finally:
+                        driver._imported_dictionaries = original_imported
+                    report['checks'] += 1
+                    # The same symbol should keep its name across the two
+                    # NVDA spelling settings for other installed languages.
+                    for locale in ('en_US', 'es_ES', 'fr_FR'):
+                        driver.language = locale
+                        for char in ('∰', '⚭', '⊖', '≪', '\u2067'):
+                            for level in (0, 300):
+                                spelling_config['useSpellingFunctionality'] = True
+                                expected = run(list(api.getSpellingSpeech(char, locale=locale,
+                                                                         endsUtterance=False)), level=level)
+                                spelling_config['useSpellingFunctionality'] = False
+                                actual = run(list(api.getSpellingSpeech(char, locale=locale,
+                                                                       endsUtterance=False)), level=level)
+                                assert actual == expected, (locale, char, level)
+                                report['checks'] += 1
+                    driver.language = 'de_DE'
+                spelling_config['useSpellingFunctionality'] = True
+                if args.spelling_only:
+                    print('NVDA Unicode spelling passed:', report['checks'], 'checks')
+                    return
                 driver.voiceTags = True
                 cases = {
                     "de_DE": ("Das ist eine ", "Nachricht", " mit einem Test."),

@@ -14,6 +14,7 @@ import math
 from pathlib import Path
 import threading
 import re
+import unicodedata
 
 import addonHandler
 addonHandler.initTranslation()
@@ -393,6 +394,7 @@ class SynthDriver(BaseSynthDriver):
             return sequence
         needs_processing = (self._voiceTags or self._wordSegmentation or self._camelCase or
                             self._imported_dictionaries.records or
+                            self._has_unmarked_spelled_unicode(sequence) or
                             any(isinstance(item, str) and _BUILTIN_BOUNDARY.search(item) for item in sequence))
         if not needs_processing:
             return sequence
@@ -407,7 +409,68 @@ class SynthDriver(BaseSynthDriver):
         if not isinstance(speechSequence, list) or not any(item is marker for item in speechSequence):
             return
         prepared = [item for item in speechSequence if item is not marker]
+        prepared = self._preserve_spelled_unicode(prepared, symbolLevel)
         speechSequence[:] = self._protect_tags(prepared, symbolLevel=symbolLevel)
+
+    @staticmethod
+    def _has_unmarked_spelled_unicode(sequence):
+        # NVDA surrounds spelling with this command even when the user has
+        # disabled the synthesizer's normal character-mode functionality.
+        spelling, character_mode = False, False
+        for item in sequence:
+            if type(item).__name__ == 'SuppressUnicodeNormalizationCommand':
+                spelling = bool(item.state)
+            elif isinstance(item, CharacterModeCommand):
+                character_mode = bool(item.state)
+            elif (spelling and not character_mode and isinstance(item, str) and len(item) == 1 and
+                  ord(item) > 127 and unicodedata.category(item)[0] in 'SPMC'):
+                return True
+        return False
+
+    def _preserve_spelled_unicode(self, sequence, symbol_level):
+        if not self._has_unmarked_spelled_unicode(sequence):
+            return sequence
+        # Do not override a user speech-dictionary replacement or NVDA's own
+        # configured symbol reading. Only supply character mode when those
+        # processors would otherwise pass the original symbol unchanged.
+        try:
+            import characterProcessing
+            import globalVars
+            import speechDictHandler
+            level = symbol_level
+            if level is None or level == characterProcessing.SymbolLevel.UNCHANGED:
+                level = characterProcessing.SymbolLevel(config.conf['speech']['symbolLevel'])
+            with self._submit_lock:
+                home, voice = self._selectedLanguage, self._voice
+            selected = home
+            locale = self._languages[home].locale
+        except (ImportError, AttributeError, KeyError, TypeError, ValueError):
+            return sequence
+        result, spelling, character_mode = [], False, False
+        for item in sequence:
+            if type(item).__name__ == 'SuppressUnicodeNormalizationCommand':
+                spelling = bool(item.state)
+            elif isinstance(item, CharacterModeCommand):
+                character_mode = bool(item.state)
+            elif isinstance(item, LangChangeCommand):
+                locale = item.lang or self._languages[home].locale
+                selected = language_for(item.lang, home, self._languages) or selected
+            elif (spelling and not character_mode and isinstance(item, str) and len(item) == 1 and
+                  ord(item) > 127 and unicodedata.category(item)[0] in 'SPMC'):
+                try:
+                    if (getattr(globalVars, 'speechDictionaryProcessing', True) and
+                            self._imported_dictionaries.matches(item, selected, voice)):
+                        processed = None
+                    else:
+                        processed = speechDictHandler.processText(item)
+                        processed = characterProcessing.processSpeechSymbols(locale, processed, level).strip()
+                except (AttributeError, KeyError, LookupError, TypeError, ValueError):
+                    processed = None
+                if processed == item:
+                    result.extend((CharacterModeCommand(True), item, CharacterModeCommand(False)))
+                    continue
+            result.append(item)
+        return result
 
     @staticmethod
     def _native_following_boundary(text, start, end, words, starts, locale, symbol_level, normalize):
