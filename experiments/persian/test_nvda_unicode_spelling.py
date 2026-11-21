@@ -112,11 +112,14 @@ def main():
                             driver.language = locale
                             character_mode = sys.modules['speech.commands'].CharacterModeCommand
                             index = sys.modules['speech.commands'].IndexCommand
+                            single_character_audio = {}
                             for char in ('⚭', 'Ж', 'α', '⚽', '≪', '«', '»', '€', '×', '→', '∑', '\u00a0', '\u200b',
+                                         '\u202a', '\u202b', '\u202c', '\u202d', '\u202e', '✓', '➔',
                                          '@', '+', '?', 'a', '1', ' ', '\t', '\n', '\r', '\x7f'):
                                 try:
                                     expected, _, _ = run([character_mode(True), module.NativeDictionaryWord(char),
                                                           character_mode(False)])
+                                    single_character_audio[char] = expected
                                 except BaseException as error:
                                     raise AssertionError((locale, repr(char), 'explicit character')) from error
                                 for enabled in (False, True):
@@ -131,7 +134,7 @@ def main():
                             with mock.patch.object(api.symbols, 'processSpeechSymbols',
                                                    side_effect=lambda loc, text, level: text):
                                 reference, _, _ = run([before, index(73), ' ', index(74), after])
-                                for char in ('⚭', 'α', '≪'):
+                                for char in ('⚭', 'α', '≪', '\u202e', '✓', '➔'):
                                     actual, _, _ = run([before, index(73), char, index(74), after])
                                     assert actual == reference, (locale, char, 'running text')
                                     checks.append((locale, 'raw running text', char))
@@ -159,7 +162,8 @@ def main():
                                                        index(78), ') ' + right])
                                 assert quoted == bracketed, (locale, 'running quotes')
                                 checks.append((locale, 'running quotes'))
-                            for char in ('⚽', '🙂', 'α', 'Ж', '⚭', '≪', '\x7f', '\u00a0', '\u200b'):
+                            for char in ('⚽', '🙂', 'α', 'Ж', '⚭', '≪', '\x7f', '\u00a0', '\u200b',
+                                         '\u202a', '\u202b', '\u202c', '\u202d', '\u202e', '✓', '➔'):
                                 on, projects, native = run(spelling(char, locale, True))
                                 off, _, _ = run(spelling(char, locale, False))
                                 assert on == off, (locale, char, len(on), len(off))
@@ -173,6 +177,18 @@ def main():
                                 if char == '\x7f':
                                     assert '`[.1hAzf]' in ' '.join(tag for _, tag in projects), (locale, char, projects)
                                     assert 'delete' not in ' '.join(native).lower(), (locale, char, native)
+                                if char in ('\u202a', '\u202b', '\u202c', '\u202d', '\u202e', '✓', '➔'):
+                                    expected = re.sub(r"'([Aaeiou]):'", r"\1", symbols[char])
+                                    assert expected in ' '.join(tag for _, tag in projects), (locale, char, projects)
+                                    assert on == single_character_audio[char], (locale, char, 'NVDA versus direct name')
+                                    english = {'\u202a': 'left to right embedding',
+                                               '\u202b': 'right to left embedding',
+                                               '\u202c': 'pop directional formatting',
+                                               '\u202d': 'left to right override',
+                                               '\u202e': 'right to left override',
+                                               '✓': 'check mark',
+                                               '➔': 'heavy wide headed rightwards arrow'}[char]
+                                    assert english not in ' '.join(native).lower(), (locale, char, native)
                                 checks.append((locale, char))
 
                             # The same unlisted Unicode character in a running

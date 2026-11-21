@@ -115,7 +115,8 @@ def main():
         assert actual == expected and actual[0] == 0, (actual[0], actual[3])
         checks += 1
 
-        for char, tag in (('ب', '`[.1be]'), ('َ', '`[.1A]'), ('\x7f', '`[.1hAzf]')):
+        for char, tag in (('ب', '`[.1be]'), ('َ', '`[.1A]'), ('\x7f', '`[.1hAzf]'),
+                          ('✓', '`[.1tik]')):
             actual = voice.render(char, 0, ((len(char.encode()), 1),))
             expected = voice.render(tag, 0, ((len(tag.encode()), 2),))
             assert actual == expected and actual[0] == 0 and actual[1], (char, actual[0], expected[0])

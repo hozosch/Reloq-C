@@ -35,7 +35,7 @@ def main():
         assert frontend.analyze_direct('نمی‌آراست') is None
         for char, name in (('\0', 'symbol for null'),
                            ('\ud800', 'replacement character'),
-                           ('\u202e', 'right-to-left override'),
+                           ('\u2069', 'pop directional isolate'),
                            ('Ж', 'cyrillic capital letter zhe')):
             # An uncovered word still needs reference validation. Unknown
             # Unicode names are for explicit character reading, not prose.
@@ -51,7 +51,13 @@ def main():
                             ('\x0c', 'پایان صفحه'), ('\x7f', 'حذف'),
                             ('\x85', 'خط بعدی'), ('\u00a0', 'فاصله بدون شکست'),
                             ('\u00ad', 'خط تیره نرم'), ('\u200b', 'فاصله بدون عرض'),
-                            ('\u202f', 'فاصله باریک بدون شکست')):
+                            ('\u202f', 'فاصله باریک بدون شکست'),
+                            ('\u202a', 'چپ به راستِ توکار'),
+                            ('\u202b', 'راست به چپِ توکار'),
+                            ('\u202c', 'پایانِ جهت'),
+                            ('\u202d', 'بازنویسیِ چپ به راست'),
+                            ('\u202e', 'بازنویسیِ راست به چپ'),
+                            ('✓', 'تیک'), ('➔', 'فِلِشِ راست نمای سر پهن')):
             named = frontend.analyze_character(char)
             written = frontend.analyze_direct(label)
             assert named and written and named.parts == written.parts, (ascii(char), named, written)

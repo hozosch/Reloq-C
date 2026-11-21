@@ -19,7 +19,13 @@ from reuse_persian_host_cache import (ALLOWED, EXPECTED_KEY, RECENT_ALLOWED, REC
                                       DEV187_ALLOWED, DEV187_KEY, DEV188_ALLOWED, DEV188_KEY,
                                       DEV188_TRANSITION_ALLOWED, DEV188_TRANSITION_KEY,
                                       DEV189_ALLOWED, DEV189_KEY, DEV190_ALLOWED, DEV190_KEY,
-                                      DEV191_ALLOWED, DEV191_KEY, DEV200_ALLOWED, DEV200_KEY, eligible)
+                                      DEV191_ALLOWED, DEV191_KEY, DEV200_ALLOWED, DEV200_KEY,
+                                      DEV201_ALLOWED, DEV201_KEY, eligible)
+
+assert eligible(DEV201_KEY, DEV201_ALLOWED)
+assert not eligible(DEV201_KEY, ())
+assert not eligible(DEV201_KEY, DEV201_ALLOWED | {'src/reloq_core.c'})
+assert not eligible(DEV201_KEY, DEV201_ALLOWED - {'experiments/persian/direct_fa_lexicon.c'})
 
 assert eligible(DEV200_KEY, DEV200_ALLOWED)
 assert not eligible(DEV200_KEY, ())

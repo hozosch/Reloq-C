@@ -49,11 +49,11 @@ NAMES = {
     '\u0655': 'همزه پایین',
 }
 
-# Common nonprinting characters need localized names too. The Persian
-# labels use the native word rules below, so regenerating this table keeps
-# their current pronunciation instead of importing a reference voice's
-# duration or stress choices.
-NATIVE_CONTROL_NAMES = {
+# Known Persian labels use the native word rules below, so regenerating
+# this table keeps their current pronunciation instead of importing a
+# reference voice's duration or stress choices. The formatting and symbol
+# labels also follow the pinned NVDA Persian symbol dictionary.
+NATIVE_NAME_OVERRIDES = {
     '\x08': 'بک اسپیس',
     '\x0b': 'تب عمودی',
     '\x0c': 'پایان صفحه',
@@ -63,8 +63,17 @@ NATIVE_CONTROL_NAMES = {
     '\u00ad': 'خط تیره نرم',
     '\u200b': 'فاصله بدون عرض',
     '\u202f': 'فاصله باریک بدون شکست',
+    '\u202a': 'چپ به راستِ توکار',
+    '\u202b': 'راست به چپِ توکار',
+    '\u202c': 'پایانِ جهت',
+    '\u202d': 'بازنویسیِ چپ به راست',
+    '\u202e': 'بازنویسیِ راست به چپ',
+    '✓': 'تیک',
+    # NVDA normalizes the dictionary's ZWNJ characters to spaces before
+    # forwarding the written name to a synthesizer.
+    '➔': 'فِلِشِ راست نمای سر پهن',
 }
-NAMES.update(NATIVE_CONTROL_NAMES)
+NAMES.update(NATIVE_NAME_OVERRIDES)
 
 GREEK = (
     ('Α', 'α', 'آلفا'), ('Β', 'β', 'بتا'), ('Γ', 'γ', 'گاما'),
@@ -175,6 +184,8 @@ def main():
                 raise RuntimeError('this table requires eSpeak NG 1.53.0')
             values = {}
             for char, name in named_symbols().items():
+                if char in NATIVE_NAME_OVERRIDES:
+                    continue  # generated independently from the native rules below
                 parts = translate_text(api, name)
                 if len(parts) != 1 or parts[0].language != 'fa':
                     raise RuntimeError(f'unsupported symbol name {name!r}: {parts!r}')
@@ -224,10 +235,10 @@ def main():
                     names[chr(start + i)] = word
             with DirectFirstPersian(args.probe, None, None, None) as frontend:
                 values = restress_known_names(values, names, frontend)
-                for char, label in NATIVE_CONTROL_NAMES.items():
+                for char, label in NATIVE_NAME_OVERRIDES.items():
                     analysis = frontend.analyze_direct(label)
                     if not analysis or len(analysis.parts) != 1 or analysis.parts[0].language != 'fa':
-                        raise RuntimeError(f'unsupported native control name {label!r}')
+                        raise RuntimeError(f'unsupported native symbol name {label!r}')
                     values[char] = analysis.parts[0].text
             for name, tag in [*values.items(), ('unicode', unicode_name)]:
                 native_text = tag.replace('~', ' ')

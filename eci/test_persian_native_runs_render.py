@@ -128,7 +128,8 @@ def main():
         checks += 1
         # Character names and explicit native phonetic groups are rendered
         # with the same selected contour, alone and inside ordinary text.
-        for char, tag in (('ب', '`[.1be]'), ('َ', '`[.1A]'), ('\x7f', '`[.1hAzf]')):
+        for char, tag in (('ب', '`[.1be]'), ('َ', '`[.1A]'), ('\x7f', '`[.1hAzf]'),
+                          ('✓', '`[.1tik]')):
             a = pair.render(char, 0, ((len(char.encode()), 1),))
             b = pair.render(tag, 0, ((len(tag.encode()), 2),))
             assert a == b and a[0] == 0 and a[1], (char, a[0], b[0])

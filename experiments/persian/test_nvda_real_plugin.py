@@ -637,11 +637,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                               for kind in ('finnish', 'plain'))
             self.cases.extend((locale, char, mode)
                               for locale in ('de_DE', 'en_US', 'fa_IR', 'fa_Latn')
-                              for char in ('⚭', '⊖', '≪', 'Ж', 'α', '⚽', '🙂', '\x7f', '\u00a0', '\u200b')
+                              for char in ('⚭', '⊖', '≪', 'Ж', 'α', '⚽', '🙂', '\x7f', '\u00a0', '\u200b',
+                                           '\u202e', '✓')
                               for mode in ('unicode_spelling_on', 'unicode_spelling_off'))
             self.cases.extend((locale, char, mode)
                               for locale in ('de_DE', 'en_US', 'fa_IR', 'fa_Latn')
                               for char in ('⚭', '≪', 'Ж', 'α', '🙂', '«', '»', '€', '×', '→', '\u00a0', '\u200b',
+                                           '\u202e', '✓',
                                            '@', '+', '?', 'a', '1', ' ', '\t', '\n', '\r', '\x7f')
                               for mode in ('unicode_single_on', 'unicode_single_off', 'unicode_single_direct',
                                            'unicode_single_reference'))
@@ -861,10 +863,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                 if row['locale'] == locale and row['text'] == text and row['spelling'] == mode)
                 self.spelling_config['useSpellingFunctionality'] = self.saved_spelling_functionality
                 for locale in ('de_DE', 'en_US', 'fa_IR', 'fa_Latn'):
-                    for char in ('⚭', '⊖', '≪', 'Ж', 'α', '⚽', '🙂', '\x7f', '\u00a0', '\u200b'):
+                    for char in ('⚭', '⊖', '≪', 'Ж', 'α', '⚽', '🙂', '\x7f', '\u00a0', '\u200b',
+                                 '\u202e', '✓'):
                         if sound(locale, char, 'unicode_spelling_on') != sound(locale, char, 'unicode_spelling_off'):
                             raise AssertionError('NVDA lost the Unicode name while spelling: ' + ascii((locale, char)))
                     for char in ('⚭', '≪', 'Ж', 'α', '🙂', '«', '»', '€', '×', '→', '\u00a0', '\u200b',
+                                 '\u202e', '✓',
                                  '@', '+', '?', 'a', '1', ' ', '\t', '\n', '\r', '\x7f'):
                         reference = sound(locale, char, 'unicode_single_reference')
                         for mode in ('unicode_single_on', 'unicode_single_off', 'unicode_single_direct'):
@@ -1295,6 +1299,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 tags = ' '.join(self.projected[self.before_projected:])
                 if '`[.1hAzf]' not in tags:
                     raise AssertionError('NVDA did not use the Persian delete name: ' + ascii(tags))
+            if (locale in ('fa_IR', 'fa_Latn') and text in ('\u202e', '✓') and
+                    isinstance(spelling, str) and spelling.startswith('unicode_')):
+                expected = {'\u202e': '`[.0baz.0ne.0vi.1si.0je]', '✓': '`[.1tik]'}[text]
+                tags = ' '.join(self.projected[self.before_projected:])
+                if expected not in tags:
+                    raise AssertionError('NVDA lost a Persian symbol name: ' + ascii((text, tags)))
             # The same ASCII plus sign is also exercised for other voices
             # and for the independent Unicode cases below. This particular
             # expectation belongs to the original Persian alāve cases only.

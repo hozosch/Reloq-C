@@ -105,6 +105,19 @@ def main():
     assert project('هوای')=='`[.0hA.1va.0je]'
     assert project('بابای')=='`[.0ba.1ba.0je]'
     assert project('دنیای')=='`[.0do.1nja.0je]'
+    # A written ezafe after a known i-final noun or adjective is a weak
+    # suffix; its lexical accent remains on the recognized base. Previously
+    # admitted vocalized forms keep their existing, independently checked
+    # pronunciation. An unclassified base must not be guessed.
+    for stem in ('بازنویسی', 'آلمانی', 'اضافی'):
+        base = project(stem)
+        assert base.endswith('i]')
+        assert project(stem + 'ِ') == base[:-1] + '.0je]', stem
+    assert project('بازنویسیِ راست به چپ') == (
+        '`[.0baz.0ne.0vi.1si.0je] `[.1rast] `00 `[.0be] `[.1CAp]')
+    assert project('بازبینیِ') == '`[.0baz.0bi.1ni.0e]'
+    assert project('آماده‌سازیِ') == '`[.0a.0ma.0de.0sa.0zi.1e]'
+    project('ژژژژیِ', covered=False)
     assert project('پای')=='`[.1paj]'
     assert project('تهران')=='`[.0teh.1ran]'
     assert project('آسمان')=='`[.0a.0se.1man]'

@@ -1447,6 +1447,29 @@ static int append_phone_tags(const char *left,const char *right,char *output,siz
     return 1;
 }
 
+/* An explicitly written ezafe after a classified, known i-final noun or
+ * adjective has an unstressed /ye/ after its vowel. Only compose forms for
+ * which the base pronunciation is already available, and preserve its
+ * lexical stress. Exact recorded vocalized forms have already taken priority.
+ * The mark is required; do not guess an unwritten ezafe from plain text. */
+static int known_i_final_ezafe(const char *word,size_t bytes,int follows_word,
+                               char *output,size_t capacity,unsigned depth)
+{
+    size_t stem=0,root=0;
+    if(!ends_with(word,bytes,"ِ",&stem) || !stem ||
+       (!ends_with(word,stem,"ی",&root) && !ends_with(word,stem,"ي",&root)) ||
+       stress_class(word,stem)!=1u)return 0;
+    char base[2048];
+    int result=direct_context_depth(word,stem,follows_word,base,sizeof base,depth+1);
+    if(result!=1)return result;
+    size_t n=strlen(base);
+    if(!single_phone_tag(base) || n<3 || base[n-2]!='i')return 0;
+    if(n>SIZE_MAX-5 || n+5>capacity)return -2;
+    memcpy(output,base,n-1);
+    memcpy(output+n-1,".0je]",6);
+    return 1;
+}
+
 /* A classified -یار / -یاری derivative after an independently known -خت
  * stem can syllabify as /...x.ti.ja:r(i)/. Preserve existing full-word
  * pronunciations first; require lexical class evidence and the matching
@@ -1991,6 +2014,9 @@ static int direct_context_depth(const char *word,size_t bytes,int follows_word,
     result=joined_compound_word(word,bytes,output,capacity,depth);
     if(result)return result;
     result=joined_context_verb(word,bytes,output,capacity);
+    if(result)return result;
+    /* Previously supported inflected and compound words take priority. */
+    result=known_i_final_ezafe(word,bytes,follows_word,output,capacity,depth);
     if(result)return result;
 
     /* NFC/NFKC places Arabic vowel marks before shadda, while the eSpeak

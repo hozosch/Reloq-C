@@ -94,6 +94,10 @@ next syllable overlaps its index boundary. Feed the ordered syllable events
 to the per-syllable duration/intonation boundary instead of treating output
 index marks as syllable boundaries; verify or reject any input where that
 event order cannot be matched. Mixed English needs its own alignment policy.
+The existing scalar US tone helpers in `src/reloq_english_intonation.c` can
+express nuclear and phrase-final targets on a supplied clock, but do not yet
+cover all US phrase and accent decisions. They are candidates for a shared
+rule implementation, not a drop-in replacement for the accepted contour.
 
 ## Apple integration
 
