@@ -467,7 +467,11 @@ class PersianProbeLanguageEngine(LanguageEngine):
                 engine = self._activate(logical)
                 emoji = isinstance(engine, OwnedPersianEngine) and engine.is_emoji_character(char)
                 if not isolated and not emoji:
-                    positions.append((at, None, False))
+                    # Keep dash punctuation as a dash: it separates language
+                    # runs and affects sentence timing even when its Unicode
+                    # name must not be spoken in running text.
+                    replacement = '-' if category == 'Pd' else ' '
+                    positions.append((at, replacement, False))
                     continue
                 if char not in names:
                     if not isinstance(engine, OwnedPersianEngine):
@@ -487,7 +491,7 @@ class PersianProbeLanguageEngine(LanguageEngine):
                 if announce:
                     expanded.extend((EciLanguage(US_ENGLISH.id, logical[1]), name, EciLanguage(*logical)))
                 else:
-                    expanded.append(replace(part, text=' ') if isinstance(part, EciText) else ' ')
+                    expanded.append(replace(part, text=name) if isinstance(part, EciText) else name)
                 start = at + 1
             if start < len(text):
                 expanded.append(replace(part, text=text[start:]) if isinstance(part, EciText) else text[start:])

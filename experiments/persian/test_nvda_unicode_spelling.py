@@ -135,6 +135,19 @@ def main():
                                     actual, _, _ = run([before, index(73), char, index(74), after])
                                     assert actual != reference, (locale, char, 'emoji in running text')
                                     checks.append((locale, 'emoji in running text', char))
+                                # Dashes still separate languages and affect
+                                # timing; do not turn them into spaces when
+                                # suppressing their Unicode names in prose.
+                                middle = 'NVDA' if locale == 'fa_IR' else 'phone'
+                                left = 'سلام' if locale == 'fa_IR' else 'salam'
+                                right = 'خوب' if locale == 'fa_IR' else 'khub'
+                                expected, _, _ = run([left, index(75), '-', middle,
+                                                      index(76), '-', right])
+                                for dash in ('‐', '–', '—'):
+                                    actual, _, _ = run([left, index(75), dash, middle,
+                                                        index(76), dash, right])
+                                    assert actual == expected, (locale, dash, 'running dash')
+                                    checks.append((locale, 'running dash', dash))
                             for char in ('⚽', '🙂', 'α', 'Ж', '⚭', '≪'):
                                 on, projects, native = run(spelling(char, locale, True))
                                 off, _, _ = run(spelling(char, locale, False))
