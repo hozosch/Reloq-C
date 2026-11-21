@@ -90,7 +90,7 @@ static int persian_dictionary_pinglish(const char *key,char *output,size_t capac
      * policy as Persian script. Do not guess an unrecognized base. */
     static const struct {const char *roman,*persian;} endings[]={
         {"ash","ش"},{"tar","تر"},{"am","م"},{"at","ت"},
-        {"ha","ها"},{"ye","ی"},{"an","ان"}
+        {"ha","ها"},{"ye","ی"},{"an","ان"},{"i","ی"}
     };
     for(size_t i=0;i<sizeof endings/sizeof endings[0];++i) {
         size_t suffix=strlen(endings[i].roman);
@@ -104,7 +104,12 @@ static int persian_dictionary_pinglish(const char *key,char *output,size_t capac
         size_t extra=strlen(endings[i].persian);
         if(n+extra>=sizeof formed)continue;
         memcpy(formed,word,n);memcpy(formed+n,endings[i].persian,extra+1);
-        int status=persian_pinglish_word(formed,output,capacity,complete);
+        /* A bare -i is highly ambiguous in Pinglish. Accept this spelling
+         * only if the Persian analyzer already recognizes the complete
+         * derived form, rather than letting its last-resort guess create
+         * a new word solely from the Roman suffix. */
+        int strict_i=suffix==1 && endings[i].roman[0]=='i';
+        int status=persian_pinglish_word(formed,output,capacity,strict_i?0:complete);
         if(status!=0)return status;
     }
     return 0;

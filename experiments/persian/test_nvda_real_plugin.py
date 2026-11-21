@@ -310,7 +310,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                             for locale in ('fa_IR', 'fa_Latn')
                             for tag in ('`[.1qa]', '`[.1Ra]', '`[.1xa]', '`[.1Ga]',
                                         '`[.1?a]', '`[.1wa]', '`[.1h?a]', '`[.1hwa]',
-                                        '`[.1solh]', '`[.1solhw]')),
+                                        '`[.1solh]', '`[.1solhw]',
+                                        "`[.1'A:'k.0si]", '`[.1Ak.0si]')),
                           ('fa_IR', 'او آمد.', False),
                           ('fa_Latn', 'u amad.', False),
                           ('fa_IR', 'بدبخت', False),
@@ -542,6 +543,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                ('fa_IR', 'پژوهشگرها', 'issue49_native_new_compound'),
                                ('fa_IR', 'پژوهشگر‌ها', 'issue49_native_new_compound'),
                                ('fa_IR', 'کارگرها', 'issue49_native_new_compound'),
+                               ('fa_IR', 'عکس', 'issue49_native_new_compound'),
+                               ('fa_IR', 'عکسی', 'issue49_native_new_compound'),
+                               ('fa_Latn', 'aks', 'issue49_native_new_compound'),
+                               ('fa_Latn', 'aksi', 'issue49_native_new_compound'),
                                ('fa_IR', 'کوچک', 'issue49_native_new_compound'),
                                ('fa_IR', 'کوچکتر', 'issue49_native_new_compound'),
                                ('fa_IR', 'اصغر', 'issue49_native_new_compound'),
@@ -608,6 +613,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                         row['text']==text and row['spelling']=='tags_phoneme_own')
                         if item(requested)['pcm_sha256'] != item(prior)['pcm_sha256']:
                             raise AssertionError('Persian user phoneme changed the selected sound: '+locale+' '+requested)
+                    if item("`[.1'A:'k.0si]")['pcm_sha256'] == item('`[.1Ak.0si]')['pcm_sha256']:
+                        raise AssertionError('Explicit long and short vowel trials sounded identical: '+locale)
                 unicode_reference = next(row for row in self.results
                                          if row['locale'] == 'en_US' and
                                          row['text'] == 'cyrillic capital letter zhe')
@@ -1064,8 +1071,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 if expected not in tags:
                     raise AssertionError('NVDA lost a reported final word accent: ' + ascii((text, tags)))
             if spelling == 'issue49_nominal_compound':
-                expected = ("`[.0ra.0h'A:'n.0da.1zi.0e]" if text.endswith('ِ') else
-                            "`[.0ra.0h'A:'n.0da.1zi]")
+                expected = ('`[.0ra.0hAn.0da.1zi.0e]' if text.endswith('ِ') else
+                            '`[.0ra.0hAn.0da.1zi]')
                 tags = ' '.join(self.projected[self.before_projected:])
                 if expected not in tags:
                     raise AssertionError('NVDA lost nominal compound accent: ' + ascii((text, tags)))
@@ -1090,7 +1097,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 if not re.search(r'\.[012]sA', tags) or "s'A:'" in tags:
                     raise AssertionError('NVDA elongated the hundred-group vowel: ' + ascii((text, tags)))
             if spelling == 'issue50_plural':
-                expected = ("`[.0'A:'f.0z'u:'.0ne.1ha.0je]" if text == 'افزونه‌های' else
+                expected = ("`[.0Af.0z'u:'.0ne.1ha.0je]" if text == 'افزونه‌های' else
                             "`[.0bAr.0na.0me.1ha.0je]")
                 tags = ' '.join(self.projected[self.before_projected:])
                 if expected not in tags:
@@ -1121,8 +1128,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           'پژوهشگر‌ها':'`[.0pA.0Zu.0heS.0gAr.1ha]',
                           'کارگرها':'`[.0kar.0gAr.1ha]',
                           'کوچک':"`[.0k'u:'.1CAk]", 'کوچکتر':"`[.0k'u:'.0CAk.1tAr]",
-                          'اصغر':"`[.0'A:'s.1RAr]", 'اکبر':"`[.0'A:'k.1bAr]",
-                          'اخگر':"`[.0'A:'G.1gAr]", 'احمد':"`[.0'A:'h.1mAd]",
+                          'اصغر':'`[.0As.1RAr]', 'اکبر':'`[.0Ak.1bAr]',
+                          'اخگر':'`[.0AG.1gAr]', 'احمد':'`[.0Ah.1mAd]',
+                          'عکس':'`[.1Aks]', 'عکسی':'`[.1Ak.0si]',
+                          'aks':'`[.1Aks]', 'aksi':'`[.1Ak.0si]',
                           'کودک':"`[.0k'u:'.1dAk]",
                           'دو کودک':"`[.1do] `[.0k'u:'.1dAk]",
                           'مادر کودک':"`[.0ma.1dAr] `[.0k'u:'.1dAk]",

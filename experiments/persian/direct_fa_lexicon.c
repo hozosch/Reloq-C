@@ -1062,6 +1062,30 @@ static void unstress_repeated_initial_alif(const char *word,size_t bytes,char *t
         if(tag[i]=='.' && tag[i+1]=='1'){tag[3]='0';return;}
 }
 
+/* The imported pronunciations sometimes mark Persian /æ/ as long before a
+ * consonant cluster. That marker is acoustic, not a separate Persian vowel.
+ * Use the ordinary short /æ/ for closed syllables with two following
+ * consonants, including a cluster divided by a syllable boundary. Operate
+ * only on a generated single-word pronunciation: explicitly entered phone
+ * tags and their requested lengths remain under the caller's control. */
+static void shorten_clustered_front_vowels(char *tag)
+{
+    size_t n=strlen(tag);
+    if(n<4 || tag[0]!='`' || tag[1]!='[' || tag[n-1]!=']' ||
+       memchr(tag+2,']',n-3))return;
+    const char *consonants="bptdkgfsvzSZCJrmnRlGhwj";
+    for(char *p=tag+2;(p=strstr(p,"'A:'"))!=NULL;) {
+        char *next=p+4;
+        if(!*next || !strchr(consonants,*next)) {p=next;continue;}
+        ++next;
+        if(next[0]=='.' && next[1]>='0' && next[1]<='2')next+=2;
+        if(!*next || !strchr(consonants,*next)) {p+=4;continue;}
+        *p='A';
+        memmove(p+1,p+4,strlen(p+4)+1);
+        ++p;
+    }
+}
+
 /* City names are grammatical evidence for the derivational, stressed -i
  * in a demonym. The same spelling can also be a verb: a preceding verbal
  * prefix still supplies its usual stress in the phrase-level rule. */
@@ -1109,6 +1133,7 @@ static int potentially_weak_ending(const char *word,size_t bytes)
 
 static void apply_persian_stress(const char *word,size_t bytes,char *tag,int direct)
 {
+    shorten_clustered_front_vowels(tag);
     size_t syllables=stress_syllables(tag),stem=0;
     if(!syllables || syllables==1)return;
     shorten_initial_alif_lam(word,bytes,tag);

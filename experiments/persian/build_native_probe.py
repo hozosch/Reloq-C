@@ -2419,6 +2419,33 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
                 if(short_u_cluster)scaled=(scaled*9+5)/10;
                 STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
             }
+            /* A phrase-final /i/ or /o/ needs enough voiced time for the
+               contour to reach its end. Weak /i/ can also collapse to just
+               a few milliseconds before the next word; give it a smaller
+               bounded recovery there. Keep isolated vowel-mark names and
+               the acoustic vowel targets unchanged. */
+            if (us_timing && node && cls==1 && (phone==27 || phone==33) &&
+                STATE(int32_t,f33)>0 &&
+                persian_probe_vowel_word_final(state,STATE_AT(w26,-4),(unsigned)phone) &&
+                !persian_probe_lone_vowel(state,STATE_AT(w26,-4),(unsigned)phone)) {
+                int32_t next_ref=EVV_AT(int32_t *,node)[1]&~3;
+                int32_t *point=next_ref ? vmover(d,EVV_AT(int32_t *,next_ref),2) : NULL;
+                int32_t next=point ? vgetsc(d,0,0,EVV_REF(point),2) : 0;
+                unsigned following=next && !(*EVV_AT(int32_t *,next)&2) ?
+                    *(const unsigned char *)delta_record_field(&vstmtbl[2],0,
+                        TFLDS(EVV_AT(void *,next))) : 0;
+                int phrase_final=!next || following==36;
+                if (phrase_final || (phone==27 && stress==0)) {
+                    int64_t duration=STATE(int32_t,f33);
+                    int64_t extra=phrase_final ?
+                        (stress==0 ? (3*duration+2)/5 : (duration+2)/5) :
+                        (2*duration+2)/5;
+                    int64_t limit=phrase_final ? (stress==0 ? 350000 : 250000) : 150000;
+                    if(extra>limit)extra=limit;
+                    int64_t scaled=duration+extra;
+                    STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
+                }
+            }
             /* Compact a weak /i/ in hiatus as before. A short unstressed
                back /a/ in the same context gets a smaller listening-test
                reduction. Keep both vowel targets and consonants unchanged. */
