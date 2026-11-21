@@ -187,7 +187,7 @@ def main():
         assert words(analyze('سلام',complete=True)[1])==words(analyze('سلام')[1])
         for fa, latin in [('سلام', 'salam'), ('دنیا', 'donya'), ('ایران', 'iran'),
                           ('کتاب', 'ketab'), ('سلام دنیا', 'salam donya'),
-                          ('زیرخط', 'zirkhat'), ('اتصال', 'ettesal')]:
+                          ('زیرخط', 'zirkhat'), ('اتصال', 'ettesaal')]:
             left, right = analyze(fa), analyze(latin, mode=1)
             assert left[0] == right[0] == 0 and left[1] == right[1], (fa, latin, left, right)
         # Previously unknown Roman words must pass through the same explicitly
@@ -208,7 +208,7 @@ def main():
         assert analyze('سِهْ')[0] == 0
         # The independent plan carries the same timing decision as the
         # current audible backend without changing the vowel's identity.
-        for fa, latin in [('ایتالیا', 'italia'), ('ایتالیایی', 'italiai')]:
+        for fa, latin in [('ایتالیا', 'itaaliaa'), ('ایتالیایی', 'itaaliaai')]:
             left, right = analyze(fa), analyze(latin, mode=1)
             assert left[0] == right[0] == 0 and left[1] == right[1]
             vowels = [e for e in left[1] if e[0] == PHONE and e[1] == 4]

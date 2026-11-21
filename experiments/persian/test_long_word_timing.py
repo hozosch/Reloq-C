@@ -46,7 +46,7 @@ def main():
     pinglish.argtypes = (ctypes.c_char_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t)
     current._dll.eciPersianRelease.argtypes = (ctypes.c_void_p,)
     actual_tags = []
-    for text, roman in (('ایتالیا', 'italia'), ('ایتالیایی', 'italiai')):
+    for text, roman in (('ایتالیا', 'itaaliaa'), ('ایتالیایی', 'itaaliaai')):
         raw = text.encode('utf8'); output = ctypes.c_void_p(); mapping = ctypes.c_void_p(); error = ctypes.c_size_t()
         assert translate(raw, len(raw), ctypes.byref(output), ctypes.byref(mapping), ctypes.byref(error)) == 0
         try:
