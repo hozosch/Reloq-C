@@ -212,6 +212,12 @@ class DirectFirstPersian:
                 ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_ubyte), ctypes.c_size_t,
                 ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_size_t))
             self._project_text.restype = ctypes.c_int
+        self._project_text_complete = getattr(self._dll, 'eciPersianProjectTextCompleteUtf8', None)
+        if self._project_text_complete is not None:
+            self._project_text_complete.argtypes = (ctypes.c_char_p, ctypes.c_size_t, ctypes.c_int,
+                ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_ubyte), ctypes.c_size_t,
+                ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_size_t))
+            self._project_text_complete.restype = ctypes.c_int
         self._project_complete = getattr(self._dll, 'eciPersianProjectCompleteUtf8', None)
         if self._project_complete is not None:
             self._project_complete.argtypes = (ctypes.c_char_p, ctypes.c_size_t,
@@ -303,7 +309,13 @@ class DirectFirstPersian:
         else:
             status = function(encoded, len(encoded), offsets, indices, len(events),
                               ctypes.byref(output), targets, ctypes.byref(error))
-        if (status == 1 and not pinglish and self._project_complete is not None and
+        if (status == 1 and self._project_text_complete is not None and
+                not self._reference_available and '`' not in text and
+                (pinglish or not any('a' <= c.lower() <= 'z' for c in text if c.isascii()))):
+            status = self._project_text_complete(encoded, len(encoded), int(pinglish), offsets,
+                                                 indices, len(events), ctypes.byref(output),
+                                                 targets, ctypes.byref(error))
+        elif (status == 1 and not pinglish and self._project_complete is not None and
                 not self._reference_available and '`' not in text and
                 not any('a' <= c.lower() <= 'z' for c in text if c.isascii())):
             # No reference is installed: let the core keep known words and

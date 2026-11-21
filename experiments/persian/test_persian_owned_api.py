@@ -57,6 +57,23 @@ def main():
         assert [raw[e.value:e.value+e.flags].decode('ascii') for e in events[:count.value] if e.kind==8]==['NVDA']
         assert list(mapped)==sorted(mapped)
     finally:dll.eciPersianRelease(events)
+    # Complete mode must use the same native fallback in Pinglish mode,
+    # including a Persian-script unknown, while retaining clear English
+    # exceptions and every byte-index boundary.
+    source='salam ژژژژژ phone donya';raw=source.encode('utf8');length=len(raw)
+    ends=(ctypes.c_size_t*1)(length);kinds=(ctypes.c_ubyte*1)(0)
+    offsets=(ctypes.c_size_t*(length+1))(*range(length+1))
+    indexes=(ctypes.c_ubyte*(length+1))(*([1]*(length+1)))
+    mapped=(ctypes.c_size_t*(length+1))();events=ctypes.POINTER(Event)()
+    count=ctypes.c_size_t();error=ctypes.c_size_t()
+    status=complete(raw,length,1,ends,kinds,1,offsets,indexes,length+1,
+                    ctypes.byref(events),ctypes.byref(count),mapped,ctypes.byref(error))
+    try:
+        assert status==0 and count.value>0,(status,error.value)
+        assert [raw[e.value:e.value+e.flags].decode('ascii') for e in events[:count.value] if e.kind==8]==['phone']
+        assert sum(e.kind==2 and e.value==20 for e in events[:count.value])==5
+        assert list(mapped)==sorted(mapped)
+    finally:dll.eciPersianRelease(events)
     print('Passed shared C Persian/Pinglish and mixed-English analysis without NVDA or eSpeak.')
 
 

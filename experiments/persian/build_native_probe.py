@@ -1696,7 +1696,13 @@ static void persian_auto_h_insert(void *state)
                      (phone==3 && marker==4);
     const char *glot_onset=getenv("RELOQ_FA_PROBE_GLOT_ONSET");
     int use_onset=!glot_onset || (glot_onset[0]=='1' && !glot_onset[1]);
-    if (glot_enabled && glot_carrier && use_onset) {
+    /* Between vowels, retain the short marked glottal closure but do not
+       add a second, forceful onset to the next vowel. This treats hamza and
+       ayn alike while preserving word-initial and post-consonant onsets. */
+    int intervocalic=glot_enabled && glot_carrier && previous &&
+                     persian_auto_h_field(previous,1)==1 &&
+                     !persian_auto_h_word_start(state,STATE_AT(w60,-4));
+    if (glot_enabled && glot_carrier && use_onset && !intervocalic) {
         /* Let Finnish's native glottal onset shape the source at the next
            vowel, instead of approximating it only with a silent K closure. */
         void *fields=TFLDS(EVV_AT(void *,vowel));
@@ -2392,6 +2398,16 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
                 int64_t scaled=((int64_t)STATE(int32_t,f33)*factor+50)/100;
                 STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
             }
+            /* An isolated kasra is spoken as a short vowel, not as the
+               long name used for the letter. The inherited short-E phone
+               is unusually long when it is the entire word; adjust only
+               that context, leaving short E in words and long E intact. */
+            if (us_timing && node && cls==1 && phone==29 && length==1 &&
+                STATE(int32_t,f33)>0 &&
+                persian_probe_lone_vowel(state,STATE_AT(w26,-4),29)) {
+                int64_t scaled=((int64_t)STATE(int32_t,f33)*60+50)/100;
+                STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
+            }
             if (tracing)
                 fprintf(stderr,"FA_NUC phone=%d class=%d stress=%d length=%d before=%d duration=%d final=%d yek=%d\n",
                         phone,cls,stress,length,(int)before,(int)STATE(int32_t,f33),final,short_yek);
@@ -2402,6 +2418,16 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
         'persian_probe_l_word_final(void *state,int32_t token_ref)',
         'persian_probe_vowel_word_final(void *state,int32_t token_ref,unsigned phone)'
     ).replace('testFldeq(d,2,0,21)', 'testFldeq(d,2,0,phone)')
+    lone_helper = helper.replace('persian_probe_vowel_word_final', 'persian_probe_lone_vowel')
+    lone_scan = ('    int final=!setscan_r(d,2) && !testFldeq(d,2,0,phone) &&\n'
+                 '              !advance_tok(d) && advance_tok(d);')
+    if lone_helper.count(lone_scan) != 1:
+        raise RuntimeError('Cannot locate isolated-vowel word-fence scan')
+    lone_helper = lone_helper.replace(lone_scan, r'''    int first=!setscan_l(d,2) && advance_tok(d);
+    memset(EVV_AT(void *,d->fence_marks),0,d->nstmts);
+    lpta_loadp(d,EVV_AT(const delta_token *,token_ref));
+    int final=first && !setscan_r(d,2) && !testFldeq(d,2,0,phone) &&
+              !advance_tok(d) && advance_tok(d);''', 1)
     # next_ref is the scanner node value, not the address of a delta_token.
     # Construct an actual token so lpta_loadp reads the intended /k/ node.
     next_helper = helper.replace(
@@ -2441,7 +2467,7 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
     }
     int final=first && later;''', 1)
     prepare_short_initial_timing(work, first_helper, next_helper)
-    text = text[:begin] + helper + '\n' + next_helper + '\n' + pre_stressed_hiatus_helper() + '\n' + section + text[end:]
+    text = text[:begin] + helper + '\n' + lone_helper + '\n' + next_helper + '\n' + pre_stressed_hiatus_helper() + '\n' + section + text[end:]
     include = '#include "reloq61_rule_calls_fifi.h"\n'
     if text.count(include) != 1:
         raise RuntimeError('Cannot locate duration probe includes')

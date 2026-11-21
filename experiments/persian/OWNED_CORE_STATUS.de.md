@@ -23,6 +23,15 @@ Der bisherige akustische Testpfad verwendet dieselben strukturellen Regeln.
 Die Ereignisplanung allein ist weiterhin keine Synthese und ersetzt den alten
 Pfad noch nicht.
 
+Die vollständige Projektion und die Ereignisanalyse können nun auch im
+Pinglish-Modus unbekannte persische Schrift mit denselben nativen Regeln wie
+der Schriftmodus behandeln. `eciPersianProjectTextCompleteUtf8` und
+`eciPersianProjectRunsCompleteUtf8` sind hostunabhängige Schnittstellen für
+beide Eingabemodi und erhalten Textindizes und explizite Zeichen-/Lautschrift.
+Eindeutig englische Teile bleiben im Ereignisplan als Quelltext markiert.
+Das ergänzt den Parser im Kern; es macht aus dem Plan noch keine vollständige
+plattformunabhängige Stimmwiedergabe.
+
 Die aktuelle Stimme übergibt die Entscheidung über stimmlose Lauteinsätze und
 die Glättung weiterer stimmhafter Sprachwechsel inzwischen an den gemeinsamen
 C-Kern. Der Referenzvergleich erhält bereits passende Übergänge und ihre

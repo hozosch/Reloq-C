@@ -24,7 +24,9 @@ def runtime_tests(library):
         for mode in (PERSIAN_PROBE, PINGLISH_PROBE):
             engines.append(make_language_engine(library, library, None, Path('/unavailable'),
                                                  Path('/unavailable'), language=mode.id))
-        script = ('سلام دنیا؟', 'کتاب و خانه.', 'او آمد.')
+        # The unknown word must use the shared complete native analyzer even
+        # without an eSpeak reference, instead of spelling its characters.
+        script = ('سلام دنیا؟', 'کتاب و خانه.', 'او آمد.', 'ژژژژژ')
         for text in script:
             output = []
             for mode, engine in enumerate(engines):

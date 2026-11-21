@@ -3,6 +3,7 @@
  * is used at runtime. Generated tables retain their individual licenses.
  */
 #include "direct_fa_lexicon.h"
+#include "direct_fa_letters.h"
 #include "reloq_utf8.h"
 #include <stdint.h>
 #include <stdlib.h>
@@ -24,6 +25,7 @@ struct fa_stress_class { uint16_t bank,offset; unsigned char flags; };
 #include "direct_fa_compounds.inc"
 #include "direct_fa_stress_classes.inc"
 #include "direct_fa_adjective_final_y.inc"
+#include "direct_fa_city_stems.inc"
 
 _Static_assert(sizeof fa_stress_adjective_final_y ==
                (sizeof fa_stress_classes / sizeof fa_stress_classes[0] + 7u) / 8u,
@@ -966,7 +968,7 @@ static size_t nominal_compound_primary(const char *word,size_t bytes,const char 
         if(syllables<2 || n<4 || tag[n-1]!=']' || tag[n-2]!='e' ||
            tag[n-4]!='.' || tag[n-3]<'0' || tag[n-3]>'2')return SIZE_MAX;
     }
-    static const char *const suffixes[]={"‌اندازی", "‌سازی", "‌یابی", "‌نویسی"};
+    static const char *const suffixes[]={"‌اندازی", "‌سازی", "‌یابی", "‌نویسی", "‌گذاری"};
     for(size_t i=0;i<sizeof suffixes/sizeof suffixes[0];++i)
         if(ends_with(word,end,suffixes[i],&stem) && stem)
             return syllables-(ezafe?2u:1u);
@@ -1047,11 +1049,70 @@ static void shorten_initial_alif_lam(const char *word,size_t bytes,char *tag)
     tag[3]='0';tag[4]='A';memmove(tag+5,tag+8,strlen(tag+8)+1);
 }
 
+/* An unmarked initial alif can conceal a short vowel. Two primary marks
+ * in one word are not a reason to stretch its initial vowel when another
+ * primary follows. Preserve the vowel identity and let the shared timing
+ * policy select its short nucleus. Explicit long alif madda is untouched. */
+static void unstress_repeated_initial_alif(const char *word,size_t bytes,char *tag)
+{
+    static const char alif[]="ا";
+    if(bytes<=sizeof alif-1 || memcmp(word,alif,sizeof alif-1) ||
+       strncmp(tag,"`[.1'A:'",8))return;
+    for(size_t i=8;tag[i] && tag[i]!=']';++i)
+        if(tag[i]=='.' && tag[i+1]=='1'){tag[3]='0';return;}
+}
+
+/* City names are grammatical evidence for the derivational, stressed -i
+ * in a demonym. The same spelling can also be a verb: a preceding verbal
+ * prefix still supplies its usual stress in the phrase-level rule. */
+static int city_stem(const char *word,size_t bytes)
+{
+    size_t lo=0,hi=sizeof fa_city_stems/sizeof fa_city_stems[0];
+    while(lo<hi) {
+        size_t mid=lo+(hi-lo)/2,n=strlen(fa_city_stems[mid]);
+        size_t common=bytes<n?bytes:n;
+        int order=memcmp(word,fa_city_stems[mid],common);
+        if(!order)order=bytes<n?-1:bytes>n?1:0;
+        if(order<0)hi=mid;
+        else if(order>0)lo=mid+1;
+        else return 1;
+    }
+    return 0;
+}
+
+static int stressed_place_derivative(const char *word,size_t bytes,const char *tag,unsigned kind)
+{
+    size_t stem=0,n=strlen(tag);
+    if(n<4 || (tag[n-2]!='i' && (n<6 || memcmp(tag+n-5,"'i:']",5))))return 0;
+    if(ends_with(word,bytes,"ئی",&stem)) {
+        if(city_stem(word,stem))return 1;
+        /* A separately classified noun derived from a known noun ending in
+         * a vowel can also take this suffix. Unclassified indefinite forms
+         * remain ambiguous and keep their previous accent. */
+        return kind==1u && stress_class(word,stem)==1u;
+    }
+    return ends_with(word,bytes,"ی",&stem) && city_stem(word,stem);
+}
+
+/* Do not use a final-stress default when an independently classified stem
+ * indicates an enclitic or a finite verb ending. */
+static int potentially_weak_ending(const char *word,size_t bytes)
+{
+    static const char *const endings[]={"شان", "تان", "مان", "شون", "تون", "مون",
+        "ایم", "اید", "اند", "یم", "ید", "ند", "ئی", "م", "ت", "ش", "ی", "د"};
+    for(size_t i=0;i<sizeof endings/sizeof endings[0];++i) {
+        size_t stem=0;
+        if(ends_with(word,bytes,endings[i],&stem) && (stress_class(word,stem)&3u))return 1;
+    }
+    return 0;
+}
+
 static void apply_persian_stress(const char *word,size_t bytes,char *tag,int direct)
 {
     size_t syllables=stress_syllables(tag),stem=0;
     if(!syllables || syllables==1)return;
     shorten_initial_alif_lam(word,bytes,tag);
+    unstress_repeated_initial_alif(word,bytes,tag);
     /* This common computer term is absent from the grammatical class list.
      * It is also used as NVDA's Persian name for slash and backslash. */
     if(stress_word_is(word,bytes,"اسلش")) {
@@ -1068,6 +1129,9 @@ static void apply_persian_stress(const char *word,size_t bytes,char *tag,int dir
             stress_primary(tag,syllables-1);return;
         }
     unsigned kind=stress_class(word,bytes);
+    if(stressed_place_derivative(word,bytes,tag,kind)) {
+        stress_primary(tag,syllables-1);return;
+    }
     if(direct && !kind && accent_lexical_i_derivative(word,bytes,tag,syllables)) {
         stress_primary(tag,syllables-1);return;
     }
@@ -1240,6 +1304,22 @@ static void apply_persian_stress(const char *word,size_t bytes,char *tag,int dir
            !(fa_direct_suffix_bases[which][index/8] & (1u<<(index%8))))continue;
         size_t count=stress_syllables(fa_direct_entries[index].tag);
         if(count && count<=syllables){stress_primary(tag,count-1);return;}
+    }
+
+    /* A recorded content word without a grammatical class normally has its
+     * citation accent on the final syllable. Do not change known weak or
+     * verbal endings, and never infer this merely from an arbitrary unknown
+     * reference word. */
+    if(!potentially_weak_ending(word,bytes)) {
+        size_t end=0,n=strlen(tag);
+        int joined=0;
+        for(size_t i=0;i+3<=bytes;++i)
+            if(!memcmp(word+i,"\xe2\x80\x8c",3)){joined=1;break;}
+        int unknown_i=ends_with(word,bytes,"ی",&end) &&
+                      !joined && n>=3 &&
+                      (tag[n-2]=='i' || (n>=5 && !memcmp(tag+n-5,"'i:']",5)));
+        if(direct_index(word,bytes)<reloq_fa_direct_word_count() || unknown_i)
+            stress_primary(tag,syllables-1);
     }
 }
 
@@ -1809,6 +1889,18 @@ static int direct_context_depth(const char *word,size_t bytes,int follows_word,
     if(output && capacity)output[0]=0;
     if(!word || !bytes || bytes==SIZE_MAX || !output || !capacity || memchr(word,0,bytes))return -1;
     if(depth>8)return 0;
+    /* Isolated short-vowel marks are character names, not the long entries
+     * used by the reference lexicon. Attached marks are handled as part of
+     * their word by the vowelled-orthography rules below. */
+    size_t next=0;uint32_t cp=0;
+    if(reloq_utf8_next((const unsigned char *)word,bytes,&next,&cp)==1 && next==bytes &&
+       cp>=0x064e && cp<=0x0650) {
+        const char *name=reloq_fa_direct_letter(cp);
+        if(!name)return 0;
+        size_t n=strlen(name);
+        if(n>=capacity)return -2;
+        memcpy(output,name,n+1);return 1;
+    }
     char bare[5];
     int result=explicit_vowelled_cvc(word,bytes,output,capacity,bare);
     if(result==1) {

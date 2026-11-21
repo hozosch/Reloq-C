@@ -83,7 +83,7 @@ int reloq_fa_spell_for_plan(const char *text,size_t bytes,char **output,
 /* Ask the established Pinglish projector for every byte boundary. All are
  * indexes: a real non-index event is checked after the runs are joined. */
 static int pinglish_text(const char *text,size_t bytes,char **output,size_t **mapping,
-                         size_t *error)
+                         size_t *error,int complete)
 {
     if(bytes==SIZE_MAX || bytes+1>SIZE_MAX/sizeof(size_t))return -2;
     size_t count=bytes+1;
@@ -94,17 +94,19 @@ static int pinglish_text(const char *text,size_t bytes,char **output,size_t **ma
     }
     for(size_t i=0;i<count;++i)positions[i]=i;
     memset(indexes,1,count);
-    int status=reloq_fa_pinglish_project(text,bytes,positions,indexes,count,
-                                         output,map,error);
+    int status=complete ? reloq_fa_pinglish_project_complete(text,bytes,positions,indexes,count,
+                                                               output,map,error) :
+                          reloq_fa_pinglish_project(text,bytes,positions,indexes,count,
+                                                    output,map,error);
     free(positions);free(indexes);
     if(status){free(map);return status;}
     *mapping=map;return 0;
 }
 
-int reloq_fa_project_runs(const char *text,size_t bytes,int mode,
+static int project_runs_mode(const char *text,size_t bytes,int mode,
     const size_t *run_ends,const unsigned char *run_modes,size_t run_count,
     const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
-    char **output,size_t *target_offsets,size_t *error_offset)
+    char **output,size_t *target_offsets,size_t *error_offset,int complete)
 {
     if(output)*output=NULL;
     if(error_offset)*error_offset=0;
@@ -132,8 +134,9 @@ int reloq_fa_project_runs(const char *text,size_t bytes,int mode,
         size_t length=last-first,*local=NULL,error=0;char *tagged=NULL;
         if(spelling_mode==2)status=phonetic(text+first,length,&tagged,&local,&error);
         else if(spelling_mode==1)status=spelling(text+first,length,&tagged,&local,&error,0);
-        else if(mode)status=pinglish_text(text+first,length,&tagged,&local,&error);
-        else status=reloq_fa_direct_text(text+first,length,&tagged,&local,&error);
+        else if(mode)status=pinglish_text(text+first,length,&tagged,&local,&error,complete);
+        else status=complete ? reloq_fa_direct_text_complete(text+first,length,&tagged,&local,&error) :
+                               reloq_fa_direct_text(text+first,length,&tagged,&local,&error);
         if(status) {*error_offset=first+error;free(tagged);free(local);break;}
         size_t output_length=strlen(tagged);
         if(local[length]!=output_length){status=-1;free(tagged);free(local);break;}
@@ -178,3 +181,17 @@ int reloq_fa_project_runs(const char *text,size_t bytes,int mode,
     }
     free(result.data);free(map);free(mapped);return status;
 }
+
+int reloq_fa_project_runs(const char *text,size_t bytes,int mode,
+    const size_t *run_ends,const unsigned char *run_modes,size_t run_count,
+    const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
+    char **output,size_t *target_offsets,size_t *error_offset)
+{return project_runs_mode(text,bytes,mode,run_ends,run_modes,run_count,source_offsets,is_index,
+                          event_count,output,target_offsets,error_offset,0);}
+
+int reloq_fa_project_runs_complete(const char *text,size_t bytes,int mode,
+    const size_t *run_ends,const unsigned char *run_modes,size_t run_count,
+    const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
+    char **output,size_t *target_offsets,size_t *error_offset)
+{return project_runs_mode(text,bytes,mode,run_ends,run_modes,run_count,source_offsets,is_index,
+                          event_count,output,target_offsets,error_offset,1);}

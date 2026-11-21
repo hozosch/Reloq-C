@@ -244,6 +244,19 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
             previous_start=SIZE_MAX;
         } else if(cp==0x066b || cp==0x066c) {
             status=2;break;
+        } else if(cp>=0x064e && cp<=0x0650) {
+            /* A mark at the start of a token has no base letter. Speak the
+             * short character name even when another mark follows; marks
+             * attached to a preceding Persian letter remain inside its
+             * normal word and are never split here. */
+            char tag[128];int kind=0;
+            int found=reloq_fa_character_resolve(cp,tag,sizeof tag,&kind);
+            if(found!=1 || kind){status=found<0?-1:1;break;}
+            if(separate_adjacent_tags(&b)){status=-2;break;}
+            size_t tag_start=b.used;
+            if(append(&b,tag,strlen(tag))){status=-2;break;}
+            for(size_t i=start;i<next;++i)map[i]=tag_start;
+            map[next]=b.used;at=next;preceding_word=0;previous_start=SIZE_MAX;
         } else if(word_character(cp)) {
             size_t end=next;
             while(end<length) {

@@ -308,6 +308,11 @@ ECIAPI int ECICALL eciPersianIgnorableTextCharacter(uint32_t codepoint);
 ECIAPI int ECICALL eciPersianProjectTextUtf8(const char *text,size_t bytes,int mode,
     const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
     char **output,size_t *target_offsets,size_t *error_offset);
+/* Use the same projection and optional Pinglish mode with the native
+ * orthographic fallback for uncovered words. */
+ECIAPI int ECICALL eciPersianProjectTextCompleteUtf8(const char *text,size_t bytes,int mode,
+    const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
+    char **output,size_t *target_offsets,size_t *error_offset);
 /* Project contiguous normal-text (run mode 0), explicit character-name
  * (run mode 1) and phonetic-input (run mode 2) spans together. A malformed
  * phonetic group is named as Persian characters, never passed as raw text to
@@ -317,6 +322,10 @@ ECIAPI int ECICALL eciPersianProjectTextUtf8(const char *text,size_t bytes,int m
  * voice return 1 for the caller to route as a separate language event.
  * Ownership, event mapping and status are as for eciPersianProjectUtf8. */
 ECIAPI int ECICALL eciPersianProjectRunsUtf8(const char *text,size_t bytes,int mode,
+    const size_t *run_ends,const unsigned char *run_modes,size_t run_count,
+    const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
+    char **output,size_t *target_offsets,size_t *error_offset);
+ECIAPI int ECICALL eciPersianProjectRunsCompleteUtf8(const char *text,size_t bytes,int mode,
     const size_t *run_ends,const unsigned char *run_modes,size_t run_count,
     const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
     char **output,size_t *target_offsets,size_t *error_offset);

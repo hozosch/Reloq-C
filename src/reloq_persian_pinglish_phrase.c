@@ -91,7 +91,7 @@ static int enclitic_start(const char *text,size_t bytes)
     return 0;
 }
 static int ordinary(struct output_buffer *b,size_t *mapping,const char *text,
-                    size_t first,size_t last,int follows)
+                    size_t first,size_t last,int follows,int complete)
 {
     if(first==last)return 0;
     const char *prefix=(first && enclitic_start(text+first,last-first))?"سلام":"";
@@ -103,7 +103,8 @@ static int ordinary(struct output_buffer *b,size_t *mapping,const char *text,
     if(!trial)return -2;
     memcpy(trial,prefix,before);memcpy(trial+before,text+first,bytes);
     memcpy(trial+before+bytes,suffix,after+1);
-    int status=reloq_fa_direct_text(trial,length,&tagged,&local,&error);
+    int status=complete ? reloq_fa_direct_text_complete(trial,length,&tagged,&local,&error) :
+                         reloq_fa_direct_text(trial,length,&tagged,&local,&error);
     free(trial);
     if(status){free(tagged);free(local);return status==-2?-2:1;}
     size_t begin=local[before],end=local[before+bytes];
@@ -118,7 +119,7 @@ static int ordinary(struct output_buffer *b,size_t *mapping,const char *text,
     tagged[end]=saved;
     free(tagged);free(local);return status;
 }
-static int mixed_text(const char *text,size_t length,char **tagged,size_t **source_map)
+static int mixed_text(const char *text,size_t length,char **tagged,size_t **source_map,int complete)
 {
     static const char *const letters[]={
         "`[.1ej]","`[.1bi]","`[.1si]","`[.1di]","`[.1i]","`[.1ef]",
@@ -136,7 +137,7 @@ static int mixed_text(const char *text,size_t length,char **tagged,size_t **sour
         if(!ascii_letter((unsigned char)text[at])){++at;continue;}
         size_t first=at;
         while(at<length && ascii_letter((unsigned char)text[at]))++at;
-        status=ordinary(&b,mapping,text,cursor,first,1);
+        status=ordinary(&b,mapping,text,cursor,first,1,complete);
         if(status)break;
         size_t bytes=at-first;char phone[8193];const char *tag=phone;
         if(bytes==1) {
@@ -144,7 +145,8 @@ static int mixed_text(const char *text,size_t length,char **tagged,size_t **sour
             if(c>='A' && c<='Z')c=(unsigned char)(c+('a'-'A'));
             tag=letters[c-'a'];
         } else {
-            int found=reloq_fa_pinglish_word(text+first,bytes,phone,sizeof phone);
+            int found=complete ? reloq_fa_pinglish_word_complete(text+first,bytes,phone,sizeof phone) :
+                                 reloq_fa_pinglish_word(text+first,bytes,phone,sizeof phone);
             if(found!=1){status=found==-2?-2:1;break;}
         }
         status=separate(&b,tag);
@@ -155,14 +157,14 @@ static int mixed_text(const char *text,size_t length,char **tagged,size_t **sour
         for(size_t i=first;i<at;++i)mapping[i]=start;
         mapping[at]=b.length;cursor=at;
     }
-    if(!status)status=ordinary(&b,mapping,text,cursor,length,0);
+    if(!status)status=ordinary(&b,mapping,text,cursor,length,0,complete);
     if(status){free(b.text);free(mapping);return status;}
     *tagged=b.text;*source_map=mapping;return 0;
 }
 
-int reloq_fa_pinglish_project(const char *text,size_t length,
+static int pinglish_project_mode(const char *text,size_t length,
     const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
-    char **output,size_t *target_offsets,size_t *error_offset)
+    char **output,size_t *target_offsets,size_t *error_offset,int complete)
 {
     if(output)*output=NULL;
     if(error_offset)*error_offset=0;
@@ -190,8 +192,8 @@ int reloq_fa_pinglish_project(const char *text,size_t length,
             }
             events[i]=mapping[source_offsets[i]];
         }
-        result=reloq_fa_pinglish_project(filtered,strlen(filtered),events,is_index,event_count,
-                                        output,target_offsets,&error);
+        result=pinglish_project_mode(filtered,strlen(filtered),events,is_index,event_count,
+                                     output,target_offsets,&error,complete);
         if(result) {
             size_t source=0;
             while(source<length && mapping[source]<error)++source;
@@ -264,8 +266,15 @@ int reloq_fa_pinglish_project(const char *text,size_t length,
     normalized[used]=0;
     if(status){*error_offset=at;goto done;}
     size_t inner_error=0;
-    status=reloq_fa_direct_text(normalized,used,&tagged,&map,&inner_error);
-    if(status==1)status=mixed_text(normalized,used,&tagged,&map);
+    /* The complete Persian text path can name an unfamiliar Latin letter.
+     * In Pinglish that would silently spell an English word, so Latin runs
+     * must first go through the Pinglish/English word decision below. */
+    int latin=0;
+    for(size_t i=0;i<used;++i)if(ascii_letter((unsigned char)normalized[i])){latin=1;break;}
+    status=complete && latin ? 1 :
+           complete ? reloq_fa_direct_text_complete(normalized,used,&tagged,&map,&inner_error) :
+                      reloq_fa_direct_text(normalized,used,&tagged,&map,&inner_error);
+    if(status==1)status=mixed_text(normalized,used,&tagged,&map,complete);
     if(status) {
         size_t source=0;
         while(source<length && positions[source]<inner_error)++source;
@@ -299,3 +308,15 @@ int reloq_fa_pinglish_project(const char *text,size_t length,
 done:
     free(normalized);free(positions);free(map);free(mapped);free(tagged);return status;
 }
+
+int reloq_fa_pinglish_project(const char *text,size_t length,
+    const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
+    char **output,size_t *target_offsets,size_t *error_offset)
+{return pinglish_project_mode(text,length,source_offsets,is_index,event_count,
+                              output,target_offsets,error_offset,0);}
+
+int reloq_fa_pinglish_project_complete(const char *text,size_t length,
+    const size_t *source_offsets,const unsigned char *is_index,size_t event_count,
+    char **output,size_t *target_offsets,size_t *error_offset)
+{return pinglish_project_mode(text,length,source_offsets,is_index,event_count,
+                              output,target_offsets,error_offset,1);}

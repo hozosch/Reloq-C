@@ -19,6 +19,10 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 PROVIDER = ROOT / 'vendor/openevv61'
 BUILD = PROVIDER / 'build/windows-release'
+DEV200_BASE = '1a891a6586e5e5f3e500435dbe7ffa5a5122cbf9'
+DEV200_KEY = ('persian-windows-provider-gcc14-v2-'
+              'b79a57ae4c2ae97eeb8bf35dc23cb5bba40ffc28200ae396907ea7bf5fb53d39')
+DEV200_ALLOWED = {'include/reloq_eci.h', 'experiments/persian/build_native_probe.py'}
 DEV191_BASE = '4b2e6bfe7026b1c90e64b5421e102ed9f2df55ba'
 DEV191_KEY = ('persian-windows-provider-gcc14-v2-'
               '5de40772759289fd47368c9f81b7a6276d78aba213423fcb60a098f9fd168b6a')
@@ -250,6 +254,15 @@ def reuse_dev156_generated(expected=frozenset({'delta_rules_c02_fifi.c'}), added
 def main():
     try:
         key = os.environ.get('PERSIAN_PROVIDER_CACHE_KEY', '')
+        if key == DEV200_KEY:
+            changed = set(git('diff', '--name-only', DEV200_BASE, 'HEAD', '--', *INPUTS).splitlines())
+            if changed != DEV200_ALLOWED:
+                raise ValueError('2.0 provider inputs differ from the verified header and timing changes')
+            reuse_dev156_generated(frozenset({'delta_rules_c08_fifi.c', 'delta_rules_c16_fifi.c'}), original_count=22)
+            for dep in BUILD.rglob('*.d'):
+                if 'reloq_eci.h' in dep.read_text(encoding='utf8', errors='replace'):
+                    dep.with_suffix('.o').unlink(missing_ok=True)
+            return
         if key == DEV191_KEY:
             changed = set(git('diff', '--name-only', DEV191_BASE, 'HEAD', '--', *INPUTS).splitlines())
             if changed != DEV191_ALLOWED:

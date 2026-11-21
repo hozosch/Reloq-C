@@ -139,6 +139,20 @@ def main():
         assert inferred[0]==explicit[0]==0 and words(inferred[1])==words(explicit[1]),(inferred,explicit)
         assert sum(e[0]==WORD_BEGIN for e in inferred[1])==1
         assert sum(e[0]==PHONE and e[1]==20 for e in inferred[1])==5
+        mixed='salam '+unknown+' phone donya'
+        raw=mixed.encode('utf8')
+        result,events,mapped,_=analyze(mixed,mode=1,complete=True,offsets=range(len(raw)+1))
+        assert result==0 and mapped==sorted(mapped),(mixed,result,events)
+        assert sum(e[0]==PHONE and e[1]==20 for e in events)==5
+        assert [raw[e[1]:e[1]+e[2]].decode('ascii') for e in events if e[0]==ENGLISH]==['phone']
+        for mark,phone in (('َ',1),('ُ',5),('ِ',3)):
+            result,events,_,_=analyze(mark)
+            phones=[e for e in events if e[0]==PHONE]
+            assert result==0 and len(phones)==1 and phones[0][1]==phone and not (phones[0][2]&1),(mark,events)
+        for text in ('سوئد','سوئدی'):
+            result,events,_,_=analyze(text)
+            assert result==0 and any(e[0]==PHONE and e[1]==14 for e in events),(text,events)
+        assert any(e[0]==PHONE and e[1]==14 for e in analyze('معلوم')[1])
         joined='نمی‌پذیرد'
         result,events,_,_=analyze(joined,complete=True)
         assert analyze(joined)[1]==events

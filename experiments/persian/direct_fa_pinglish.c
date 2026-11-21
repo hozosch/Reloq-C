@@ -36,11 +36,12 @@ static const char *persian_for_roman(const char *key)
 
 /* Use the complete Persian word pipeline: it also recognizes productive
  * compounds which are not direct_context_word entries on their own. */
-static int persian_pinglish_word(const char *word,char *output,size_t capacity)
+static int persian_pinglish_word(const char *word,char *output,size_t capacity,int complete)
 {
     char *tag=NULL;
     size_t *map=NULL,error=0;
-    int status=reloq_fa_direct_text(word,strlen(word),&tag,&map,&error);
+    int status=complete ? reloq_fa_direct_text_complete(word,strlen(word),&tag,&map,&error) :
+                         reloq_fa_direct_text(word,strlen(word),&tag,&map,&error);
     if(status)return status==-2?-2:0;
     size_t bytes=strlen(tag);
     if(bytes>=capacity)status=-2;
@@ -66,11 +67,11 @@ static void pinglish_lookup_key(const char *word,size_t bytes,char *key)
     key[out]=0;
 }
 
-static int persian_dictionary_pinglish(const char *key,char *output,size_t capacity)
+static int persian_dictionary_pinglish(const char *key,char *output,size_t capacity,int complete)
 {
     const char *word=persian_for_roman(key);
     if(word) {
-        int status=persian_pinglish_word(word,output,capacity);
+        int status=persian_pinglish_word(word,output,capacity,complete);
         if(status!=0)return status;
     }
     /* A final silent H is a common Roman spelling of Persian final -e.
@@ -81,7 +82,7 @@ static int persian_dictionary_pinglish(const char *key,char *output,size_t capac
         memcpy(without_h,key,length-1);without_h[length-1]=0;
         word=persian_for_roman(without_h);
         if(word) {
-            int status=persian_pinglish_word(word,output,capacity);
+            int status=persian_pinglish_word(word,output,capacity,complete);
             if(status!=0)return status;
         }
     }
@@ -103,7 +104,7 @@ static int persian_dictionary_pinglish(const char *key,char *output,size_t capac
         size_t extra=strlen(endings[i].persian);
         if(n+extra>=sizeof formed)continue;
         memcpy(formed,word,n);memcpy(formed+n,endings[i].persian,extra+1);
-        int status=persian_pinglish_word(formed,output,capacity);
+        int status=persian_pinglish_word(formed,output,capacity,complete);
         if(status!=0)return status;
     }
     return 0;
@@ -202,7 +203,7 @@ static const char *latin_fold(uint32_t cp)
 /* Return 1 for a candidate, 0 if another text path is needed, -2 for a
  * small buffer, and -1 for malformed input. The bounded stack arrays also
  * keep extremely long input from blocking a speech worker. */
-int reloq_fa_pinglish_word(const char *word,size_t bytes,char *output,size_t capacity)
+static int pinglish_word_mode(const char *word,size_t bytes,char *output,size_t capacity,int complete)
 {
     if(output && capacity)output[0]=0;
     if(!word || !output || !capacity || !bytes || memchr(word,0,bytes))return -1;
@@ -230,9 +231,15 @@ int reloq_fa_pinglish_word(const char *word,size_t bytes,char *output,size_t cap
     }
     char key[1025];
     pinglish_lookup_key(word,bytes,key);
-    int known=persian_dictionary_pinglish(key,output,capacity);
+    int known=persian_dictionary_pinglish(key,output,capacity,complete);
     if(known!=0)return known;
     char spelling[4096];
     int spelled=spelled_persian(word,bytes,spelling,sizeof spelling);
-    return spelled==1 ? persian_pinglish_word(spelling,output,capacity) : spelled;
+    return spelled==1 ? persian_pinglish_word(spelling,output,capacity,complete) : spelled;
 }
+
+int reloq_fa_pinglish_word(const char *word,size_t bytes,char *output,size_t capacity)
+{return pinglish_word_mode(word,bytes,output,capacity,0);}
+
+int reloq_fa_pinglish_word_complete(const char *word,size_t bytes,char *output,size_t capacity)
+{return pinglish_word_mode(word,bytes,output,capacity,1);}

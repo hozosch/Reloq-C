@@ -234,7 +234,9 @@ static int segment(struct plan *p,const char *text,size_t bytes,int variant,int 
         }
         for(size_t i=0;i<num;++i)positions[i]=i;
         memset(indexes,1,num);
-        result=reloq_fa_project_runs(text,bytes,variant,ends,modes,1,
+        result=complete ? reloq_fa_project_runs_complete(text,bytes,variant,ends,modes,1,
+            positions,indexes,num,&tagged,input_map,error) :
+            reloq_fa_project_runs(text,bytes,variant,ends,modes,1,
             positions,indexes,num,&tagged,input_map,error);
         if(result==1 && variant) {
             int punctuation_only=1;
@@ -286,7 +288,7 @@ static int ascii_letter(unsigned char c)
 /* Latin words in Persian text belong to English; in Pinglish they stay in
  * the Persian analyzer whenever its native word rules accept them. Keep the
  * source slice rather than attempting to pronounce English here. */
-static int english_run(const char *text,size_t at,size_t end,int variant,size_t *last)
+static int english_run(const char *text,size_t at,size_t end,int variant,int complete,size_t *last)
 {
     if(at>=end || !ascii_letter((unsigned char)text[at]))return 0;
     size_t p=at;
@@ -301,7 +303,8 @@ static int english_run(const char *text,size_t at,size_t end,int variant,size_t 
     if(variant && !numeric) {
         if(letters==1)return 0; /* the shared Pinglish letter-name rule */
         char phone[8193];
-        int found=reloq_fa_pinglish_word(text+at,letters,phone,sizeof phone);
+        int found=complete ? reloq_fa_pinglish_word_complete(text+at,letters,phone,sizeof phone) :
+                             reloq_fa_pinglish_word(text+at,letters,phone,sizeof phone);
         if(found<0)return found;
         if(found==1)return 0;
     }
@@ -357,7 +360,7 @@ static int analyze_runs(const char *text,size_t bytes,int mode,
                 int parsed=selector(text+at,end-at,&used,&next);
                 if(!parsed) {
                     size_t last=at;
-                    int foreign=english_run(text,at,end,mode,&last);
+                    int foreign=english_run(text,at,end,mode,complete,&last);
                     if(foreign<0){*error_offset=at;result=foreign;break;}
                     if(!foreign){at=last>at?last:at+1;continue;}
                     size_t err=0;

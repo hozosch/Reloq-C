@@ -17,13 +17,17 @@ def main():
     with tempfile.TemporaryDirectory() as temp:
         absent=Path(temp)/'no-espeak-library'
         for profile,cases in ((PERSIAN_PROBE,('سلام دنیا','سلام ژژژژژ دنیا',
-                                             'سلام NVDA دنیا','۱۲۳')),
-                              (PINGLISH_PROBE,('salam donya','salam phone donya'))):
+                                             'سلام NVDA دنیا','ژژژژژ NVDA','۱۲۳')),
+                              (PINGLISH_PROBE,('salam donya','salam phone donya',
+                                               'salam ژژژژژ phone donya'))):
             engine=make_language_engine(args.library,args.library,None,absent,Path(temp),
                                         language=profile.id)
             try:
                 frontend=engine._engines[profile.id]._frontend
                 assert not frontend._reference_available
+                def forbidden_fallback():
+                    raise AssertionError('attempted to use an unavailable eSpeak reference')
+                frontend._fallback=forbidden_fallback
                 for text in cases:
                     middle=len(text)//2
                     pcm,marks=bytearray(),[]

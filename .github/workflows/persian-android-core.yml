@@ -13,6 +13,8 @@ on:
       - experiments/aragonese/build_native_probe.py
       - experiments/persian/build_native_probe.py
       - experiments/persian/test_persian_owned_plan.py
+      - experiments/persian/compile_fa_city_stems.py
+      - reference-persian-cities/**
       - experiments/persian/direct_fa_*.c
       - experiments/persian/direct_fa_*.h
       - experiments/persian/direct_fa_*.inc
@@ -40,7 +42,9 @@ jobs:
       - name: Install the native Android toolchain
         run: sdkmanager 'ndk;30.0.16248370'
       - name: Check the independent Persian language planner
-        run: python3 -B experiments/persian/test_persian_owned_plan.py
+        run: |
+          python3 -B experiments/persian/compile_fa_city_stems.py --check
+          python3 -B experiments/persian/test_persian_owned_plan.py
       - name: Check overlapping phone clocks
         run: |
           cc -std=c11 -Wall -Wextra -Werror -Iinclude tests/test_reloq_trace_clock.c -o /tmp/reloq-trace-clock
@@ -80,6 +84,8 @@ jobs:
           grep -q 'eciPersianAcousticScope' android-symbols.txt
           grep -q 'eciPersianProjectUtf8' android-symbols.txt
           grep -q 'eciPersianProjectTextUtf8' android-symbols.txt
+          grep -q 'eciPersianProjectTextCompleteUtf8' android-symbols.txt
+          grep -q 'eciPersianProjectRunsCompleteUtf8' android-symbols.txt
           grep -q 'eciPersianCharacter' android-symbols.txt
           grep -q 'eciPersianCharacterResolve' android-symbols.txt
           grep -q 'eciPersianNumberEvents' android-symbols.txt

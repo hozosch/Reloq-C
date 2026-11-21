@@ -358,7 +358,20 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
                 tag = analysis.parts[0].text
         except (ValueError, RuntimeError, OSError, UnicodeError):
             check()
-        if tag is None:
+        reference_available = getattr(frontend, '_reference_available', True)
+        if tag is None and not reference_available:
+            # The shared C analyzer can handle an unknown word and its
+            # following-word context in either mode. Do not repeatedly try
+            # to launch a reference which is known to be absent.
+            trial = value + ((' salam' if pinglish else ' سلام') if follows else '')
+            boundary = len(value.encode('utf8'))
+            projected = frontend.project_direct(trial, ((boundary, True),), pinglish=pinglish)
+            if projected is not None:
+                proposed, offsets = projected
+                proposed = proposed[:offsets[0]]
+                if proposed and accepted(proposed):
+                    tag = proposed
+        if tag is None and reference_available:
             # A temporary reference failure must not immediately turn a
             # whole word into character names. Retry once, checking job
             # cancellation before another potentially expensive request.

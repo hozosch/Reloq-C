@@ -16,6 +16,22 @@ import reuse_persian_provider_cache as cache
 
 
 class CacheReuseTests(unittest.TestCase):
+    def test_dev200_checks_inputs_and_rebuilds_only_changed_rules(self):
+        for changed, accepted in ((cache.DEV200_ALLOWED, True),
+                                  (cache.DEV200_ALLOWED | {'include/other.h'}, False),
+                                  (set(), False)):
+            with self.subTest(changed=changed), tempfile.TemporaryDirectory() as tmp:
+                build = Path(tmp) / 'windows-release'; build.mkdir()
+                with patch.object(cache, 'BUILD', build), patch.object(cache, 'git', return_value='\n'.join(changed)), \
+                     patch.object(cache, 'reuse_dev156_generated') as reuse, \
+                     patch.dict(os.environ, {'PERSIAN_PROVIDER_CACHE_KEY': cache.DEV200_KEY}), \
+                     contextlib.redirect_stdout(io.StringIO()):
+                    cache.main()
+                self.assertEqual(reuse.called, accepted)
+                self.assertEqual(build.exists(), accepted)
+                if accepted:
+                    reuse.assert_called_once_with(frozenset({'delta_rules_c08_fifi.c', 'delta_rules_c16_fifi.c'}), original_count=22)
+
     def test_dev191_rebuilds_trace_bridge_and_changed_nasal_rule(self):
         for changed, accepted in ((cache.DEV191_ALLOWED, True),
                                   (cache.DEV191_ALLOWED | {'include/other.h'}, False),

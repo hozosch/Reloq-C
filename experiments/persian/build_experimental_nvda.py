@@ -96,6 +96,8 @@ def add_persian(entries, *, version='1.5.0-dev142'):
     entries[PREFIX + '_persian/__init__.py'] = b'"""Private Persian test frontend."""\n'
     for name in MODULES:
         entries[PREFIX + '_persian/' + name + '.py'] = (HERE / (name + '.py')).read_bytes()
+    entries['doc/licenses/Persian-city-names-NOTICE.txt'] = (
+        ROOT / 'reference-persian-cities/README.md').read_bytes()
     if 'doc/source.json' in entries:
         metadata = json.loads(entries['doc/source.json'])
         metadata['build'] = ('shared Windows Persian acoustic core followed by '
@@ -105,8 +107,8 @@ def add_persian(entries, *, version='1.5.0-dev142'):
     if manifest.count('version = "1.4.1"') != 1:
         raise ValueError('the normal version changed; choose an explicit test version')
     # Keep the existing updater's recognized dev-version grammar.
-    if not re.fullmatch(r'1\.5\.0-dev[0-9]+', version):
-        raise ValueError('the Persian test version must use the 1.5.0-devN form')
+    if not re.fullmatch(r'(?:1\.5\.0|2\.0\.0)-dev[0-9]+', version):
+        raise ValueError('the Persian test version must use the 1.5.0-devN or 2.0.0-devN form')
     manifest = manifest.replace('version = "1.4.1"', f'version = "{version}"', 1)
     manifest = manifest.replace('summary = "Eloquence C: fifteen language variants"',
                                 'summary = "Eloquence C: Persian and Pinglish test"', 1)
@@ -133,7 +135,7 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--version', default='1.5.0-dev142')
     args = parser.parse_args()
-    named_version = re.search(r'(1\.5\.0-dev[0-9]+)\.nvda-addon$', args.output.name)
+    named_version = re.search(r'((?:1\.5\.0|2\.0\.0)-dev[0-9]+)\.nvda-addon$', args.output.name)
     if named_version and named_version.group(1) != args.version:
         parser.error('the output filename and add-on version must agree')
     entries = add_persian(make_entries(args.dll), version=args.version)
