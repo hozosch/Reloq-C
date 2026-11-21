@@ -547,6 +547,20 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                ('fa_IR', 'عکسی', 'issue49_native_new_compound'),
                                ('fa_Latn', 'aks', 'issue49_native_new_compound'),
                                ('fa_Latn', 'aksi', 'issue49_native_new_compound'),
+                               ('fa_Latn', 'bar', 'issue49_native_new_compound'),
+                               ('fa_Latn', 'baar', 'issue49_native_new_compound'),
+                               ('fa_Latn', 'man', 'issue49_native_new_compound'),
+                               ('fa_Latn', 'maan', 'issue49_native_new_compound'),
+                               ('fa_Latn', 'salam', 'issue49_native_new_compound'),
+                               ('fa_Latn', 'salaam', 'issue49_native_new_compound'),
+                               ('fa_Latn', 'iran', 'issue49_native_new_compound'),
+                               ('fa_Latn', 'iraan', 'issue49_native_new_compound'),
+                               ('fa_IR', 'عمومی', 'issue49_native_new_compound'),
+                               ('fa_Latn', 'omumi', 'issue49_native_new_compound'),
+                               ('fa_IR', 'خصوصی', 'issue49_native_new_compound'),
+                               ('fa_Latn', 'khosusi', 'issue49_native_new_compound'),
+                               ('fa_IR', 'تنظیمات عمومی', 'issue49_native_new_compound'),
+                               ('fa_Latn', 'tanzimaat omumi', 'issue49_native_new_compound'),
                                ('fa_IR', 'کوچک', 'issue49_native_new_compound'),
                                ('fa_IR', 'کوچکتر', 'issue49_native_new_compound'),
                                ('fa_IR', 'اصغر', 'issue49_native_new_compound'),
@@ -604,6 +618,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if self.index == len(self.cases):
                 if self.results[0]['pcm_sha256'] != self.results[1]['pcm_sha256']:
                     raise AssertionError('confirmed script and Pinglish words differ')
+                for written, roman in (('عمومی', 'omumi'), ('خصوصی', 'khosusi'),
+                                       ('تنظیمات عمومی', 'tanzimaat omumi')):
+                    rows = [row for row in self.results if row['spelling']=='issue49_native_new_compound'
+                            and row['text'] in (written,roman)]
+                    if len(rows)!=2 or rows[0]['pcm_sha256']!=rows[1]['pcm_sha256']:
+                        raise AssertionError('Persian and Pinglish timing differs: '+ascii((written,roman)))
                 for locale in ('fa_IR', 'fa_Latn'):
                     for requested, prior in (('`[.1qa]', '`[.1Ra]'), ('`[.1xa]', '`[.1Ga]'),
                                              ('`[.1?a]', '`[.1wa]'), ('`[.1h?a]', '`[.1hwa]'),
@@ -1089,7 +1109,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 if spelling == 'issue50_contour_66':
                     expected = '`[.0SAs.0to.1SeS]'
                 else:
-                    expected = '`[.0pA.0ran.1tez] `[.1baz]'
+                    expected = ('`[.0pA.0rAn.1tez] `[.1baz]' if text == 'parantez baaz'
+                                else '`[.0pA.0ran.1tez] `[.1baz]')
                 if expected not in tags or not any(self.syllable_fits[self.before_syllable_fits:]):
                     raise AssertionError('NVDA lost the reported contour or syllable alignment: ' + ascii((text, tags)))
             if spelling == 'issue50_hundred_short':
@@ -1097,7 +1118,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 if not re.search(r'\.[012]sA', tags) or "s'A:'" in tags:
                     raise AssertionError('NVDA elongated the hundred-group vowel: ' + ascii((text, tags)))
             if spelling == 'issue50_plural':
-                expected = ("`[.0Af.0z'u:'.0ne.1ha.0je]" if text == 'افزونه‌های' else
+                expected = ('`[.0Af.0zu.0ne.1ha.0je]' if text == 'افزونه‌های' else
                             "`[.0bAr.0na.0me.1ha.0je]")
                 tags = ' '.join(self.projected[self.before_projected:])
                 if expected not in tags:
@@ -1132,6 +1153,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           'اخگر':'`[.0AG.1gAr]', 'احمد':'`[.0Ah.1mAd]',
                           'عکس':'`[.1Aks]', 'عکسی':'`[.1Ak.0si]',
                           'aks':'`[.1Aks]', 'aksi':'`[.1Ak.0si]',
+                          'bar':'`[.1bAr]', 'baar':'`[.1bar]',
+                          'man':'`[.1mAn]', 'maan':'`[.1man]',
+                          'salam':'`[.0sA.1lam]', 'salaam':'`[.0sA.1lam]',
+                          'iran':"`[.0'i:'.1r'a:'n]", 'iraan':"`[.0'i:'.1r'a:'n]",
+                          'عمومی':'`[.0o.0mu.1mi]', 'omumi':'`[.0o.0mu.1mi]',
+                          'خصوصی':'`[.0Go.0su.1si]', 'khosusi':'`[.0Go.0su.1si]',
+                          'تنظیمات عمومی':'`[.0tAn.0zi.1mat] `[.0o.0mu.1mi]',
+                          'tanzimaat omumi':'`[.0tAn.0zi.1mat] `[.0o.0mu.1mi]',
                           'کودک':"`[.0k'u:'.1dAk]",
                           'دو کودک':"`[.1do] `[.0k'u:'.1dAk]",
                           'مادر کودک':"`[.0ma.1dAr] `[.0k'u:'.1dAk]",

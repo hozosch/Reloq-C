@@ -23,6 +23,9 @@ size_t reloq_fa_direct_word_count(void);
 /* Apply conservative stress rules to a single generated reference tag.
  * The spelling must already be in the native normalized form. */
 int reloq_fa_direct_stress(const char *word,size_t bytes,char *tag,size_t capacity);
+/* Reconcile automatic reference lengths after all word-stress and compound
+ * decisions. This never processes user-supplied phonetic controls. */
+void reloq_fa_direct_normalize_durations(char *tag);
 int reloq_fa_direct_is_verb(const char *word,size_t bytes);
 /* Coarse lexical (1), verbal (2), and other/function (4) evidence; bits may
  * coexist for a homograph. Zero means the spelling is not classified. */

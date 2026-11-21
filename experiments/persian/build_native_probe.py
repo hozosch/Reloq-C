@@ -2177,6 +2177,36 @@ def pre_stressed_hiatus_helper() -> str:
     int final=left_vowel && right_vowel;''', 1)
 
 
+def weak_medial_u_helper() -> str:
+    """Find a medial nucleus followed by primary stress in the same word."""
+    helper = FINNISH_L_WORD_FINAL.replace('persian_probe_l_word_final',
+                                         'persian_probe_weak_medial_u')
+    original = ('    int final=!setscan_r(d,2) && !testFldeq(d,2,0,21) &&\n'
+                '              !advance_tok(d) && advance_tok(d);')
+    if helper.count(original) != 1:
+        raise RuntimeError('Cannot locate medial U word-fence scan')
+    return helper.replace(original, r'''    int earlier=0,later=0;
+    if (!setscan_l(d,2)) {
+        for (;;) {
+            int vowel=!testFldeq(d,2,1,1);
+            if (advance_tok(d)) break;
+            if (vowel) { earlier=1; break; }
+        }
+    }
+    if (earlier) {
+        memset(EVV_AT(void *,d->fence_marks),0,d->nstmts);
+        lpta_loadp(d,EVV_AT(const delta_token *,token_ref));
+        if (!setscan_r(d,2)) {
+            while (!advance_tok(d)) {
+                if (!testFldeq(d,2,1,1) && !testFldeq(d,2,7,1)) {
+                    later=1; break;
+                }
+            }
+        }
+    }
+    int final=earlier && later;''', 1)
+
+
 def prepare_short_initial_timing(work: Path, first_helper: str, next_helper: str) -> Path:
     """Use short nucleus timing in selected contexts without replacing its sound."""
     name = 'delta_rules_c04_fifi.c'
@@ -2419,6 +2449,19 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
                 if(short_u_cluster)scaled=(scaled*9+5)/10;
                 STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
             }
+            /* A short, weak medial U must not disappear when it replaces
+               an imported long marker. Give all short U nuclei in this
+               same structural context a native, bounded duration; the
+               acoustic target and explicit long phonetic input are kept. */
+            if (us_timing && node && cls==1 && phone==32 && length==1 && stress==0 &&
+                STATE(int32_t,f33)>0 &&
+                persian_probe_weak_medial_u(state,STATE_AT(w26,-4))) {
+                int64_t duration=STATE(int32_t,f33);
+                int64_t extra=(3*duration+1)/2;
+                if(extra>400000)extra=400000;
+                int64_t scaled=duration+extra;
+                STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
+            }
             /* A phrase-final /i/ or /o/ needs enough voiced time for the
                contour to reach its end. Weak /i/ can also collapse to just
                a few milliseconds before the next word; give it a smaller
@@ -2526,7 +2569,9 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
     }
     int final=first && later;''', 1)
     prepare_short_initial_timing(work, first_helper, next_helper)
-    text = text[:begin] + helper + '\n' + lone_helper + '\n' + next_helper + '\n' + pre_stressed_hiatus_helper() + '\n' + section + text[end:]
+    text = (text[:begin] + helper + '\n' + lone_helper + '\n' + next_helper + '\n' +
+            pre_stressed_hiatus_helper() + '\n' + weak_medial_u_helper() + '\n' +
+            section + text[end:])
     include = '#include "reloq61_rule_calls_fifi.h"\n'
     if text.count(include) != 1:
         raise RuntimeError('Cannot locate duration probe includes')

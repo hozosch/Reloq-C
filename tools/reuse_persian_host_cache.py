@@ -14,8 +14,12 @@ DEV200_KEY = ('persian-windows-host-gcc14-v2-'
 DEV200_ALLOWED = {'include/reloq_eci.h', 'src/reloq_eci.c', 'src/reloq_persian_direct.h',
                   'src/reloq_persian_mixed_project.c', 'src/reloq_persian_pinglish_phrase.c',
                   'src/reloq_persian_plan.c', 'experiments/persian/direct_fa_lexicon.c',
+                  'experiments/persian/direct_fa_lexicon.h',
                   'experiments/persian/direct_fa_text.c',
                   'experiments/persian/direct_fa_pinglish.c', 'experiments/persian/direct_fa_city_stems.inc',
+                  'experiments/persian/direct_fa_pinglish_aliases.inc',
+                  'experiments/persian/direct_fa_pinglish_lexicon.inc',
+                  'experiments/persian/direct_fa_pinglish_extra.inc',
                   'experiments/persian/build_native_probe.py'}
 DEV191_BASE = '4b2e6bfe7026b1c90e64b5421e102ed9f2df55ba'
 DEV191_KEY = ('persian-windows-host-gcc14-v2-'

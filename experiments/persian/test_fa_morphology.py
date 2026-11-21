@@ -44,7 +44,7 @@ def main():
         assert joined==spaced and joined.startswith('`00 `[.0be] '),(word,joined,spaced)
     assert project('به‌روز')=="`[.0b'e:'.1r'u:'z]"
     assert project('به‌روزرسانی')=="`[.0b'e:'.2r'u:'z.0re.1sa.0ni]"
-    assert project('به‌روزرسانی‌های')=="`[.0b'e:'.0r'u:'z.0re.0sa.0ni.1ha.0je]"
+    assert project('به‌روزرسانی‌های')=="`[.0b'e:'.0ruz.0re.0sa.0ni.1ha.0je]"
 
     # Suffixes are rules over independently spoken stems, including stems
     # absent from the old plural bitmap and additional held-out nouns.

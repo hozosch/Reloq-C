@@ -7,21 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct fa_alias {const char *roman,*persian;};
-static const struct fa_alias aliases[]={
-    {"salam","سلام"},{"salaam","سلام"},{"donya","دنیا"},{"donyaa","دنیا"},
-    {"iran","ایران"},{"iraan","ایران"},{"khub","خوب"},{"khoob","خوب"},
-    {"nokte","نقطه"},{"nokteh","نقطه"},{"noghte","نقطه"},{"noghteh","نقطه"},
-    {"kaghaz","کاغذ"},{"kakhaz","کاغذ"},{"sefr","صفر"},{"yek","یک"},
-    {"soal","سوال"},{"soaal","سوال"},{"sual","سوال"},
-    {"badbakht","بدبخت"},{"badbacht","بدبخت"},
-    {"farsi","فارسی"},{"faarsi","فارسی"},{"ketab","کتاب"},{"ketaab","کتاب"},
-    {"eslash","اسلش"},{"ast","است"},{"man","من"},
-    {"u","او"},{"oo","او"},{"ou","او"},{"amad","آمد"},{"aamad","آمد"},
-    {"va","و"},{"ya","یا"},{"yaa","یا"},{"ke","که"},
-    {"ra","را"},{"raa","را"},{"az","از"},{"be","به"},{"ba","با"},
-    {"dar","در"},{"ta","تا"},{"taa","تا"},{"joz","جز"}
-};
 static int ascii_letter(unsigned char c)
 {return (c>='a' && c<='z') || (c>='A' && c<='Z');}
 static int ascii_digit(unsigned char c)
@@ -37,22 +22,6 @@ static int connected_scalar(uint32_t c)
     return persian_scalar(c) && c!=0x060c && c!=0x061b && c!=0x061f &&
            c!=0x066b && c!=0x066c && c!=0x066a;
 }
-static const char *alias(const char *word,size_t n)
-{
-    for(size_t i=0;i<sizeof aliases/sizeof aliases[0];++i) {
-        const char *p=aliases[i].roman;
-        if(strlen(p)!=n)continue;
-        size_t j=0;
-        for(;j<n;++j) {
-            unsigned char c=(unsigned char)word[j];
-            if(c>='A' && c<='Z')c=(unsigned char)(c+('a'-'A'));
-            if(c!=(unsigned char)p[j])break;
-        }
-        if(j==n)return aliases[i].persian;
-    }
-    return NULL;
-}
-
 struct output_buffer {char *text;size_t length,capacity;};
 static int append(struct output_buffer *b,const char *text,size_t bytes)
 {
@@ -234,7 +203,7 @@ static int pinglish_project_mode(const char *text,size_t length,
              * mixed-word analysis; do not silently split that token. */
             if(connected && ((start && (unsigned char)text[start-1]>=0x80) ||
                (at<length && (unsigned char)text[at]>=0x80))) {status=1;at=start;break;}
-            const char *replacement=connected?NULL:alias(text+start,at-start);
+            const char *replacement=connected?NULL:reloq_fa_pinglish_common_alias(text+start,at-start);
             if(replacement) {
                 for(size_t i=start;i<at;++i)positions[i]=used;
                 size_t n=strlen(replacement);

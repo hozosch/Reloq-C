@@ -1348,11 +1348,36 @@ static void apply_persian_stress(const char *word,size_t bytes,char *tag,int dir
     }
 }
 
+/* Reference-derived long markers are not a separate Persian /u/ quality.
+ * For an unstressed internal nucleus before the word's primary stress,
+ * hand its duration to the Persian timing rule instead. Preserve explicit
+ * phonetic input, initial and final nuclei, stressed /u/ and every other
+ * vowel. Apply this only after the word's accent has been resolved. */
+void reloq_fa_direct_normalize_durations(char *tag)
+{
+    if(!tag)return;
+    size_t n=strlen(tag);
+    if(n<4 || tag[0]!='`' || tag[1]!='[' || tag[n-1]!=']' ||
+       memchr(tag+2,']',n-3))return;
+    for(char *p=tag+2;(p=strstr(p,"'u:'"))!=NULL;) {
+        char *syllable=NULL;unsigned count=0;
+        for(char *q=tag+2;q<p;++q)
+            if(q[0]=='.' && q[1]>='0' && q[1]<='2'){syllable=q;++count;++q;}
+        if(count<2 || !syllable || syllable[1]!='0'){p+=4;continue;}
+        int later_stress=0;
+        for(char *q=p+4;*q && *q!=']';++q)
+            if(q[0]=='.' && q[1]=='1'){later_stress=1;break;}
+        if(!later_stress){p+=4;continue;}
+        *p='u';memmove(p+1,p+4,strlen(p+4)+1);++p;
+    }
+}
+
 int reloq_fa_direct_stress(const char *word,size_t bytes,char *tag,size_t capacity)
 {
     if(!word || !bytes || memchr(word,0,bytes) || !tag || !capacity ||
        !memchr(tag,0,capacity))return -1;
     apply_persian_stress(word,bytes,tag,0);
+    reloq_fa_direct_normalize_durations(tag);
     return 0;
 }
 

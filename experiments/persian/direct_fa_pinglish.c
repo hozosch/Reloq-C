@@ -9,6 +9,7 @@
 struct fa_pinglish_entry {const char *roman,*persian;};
 #include "direct_fa_pinglish_lexicon.inc"
 #include "direct_fa_pinglish_extra.inc"
+#include "direct_fa_pinglish_aliases.inc"
 
 static char lower(char c)
 { return c>='A' && c<='Z' ? (char)(c+('a'-'A')) : c; }
@@ -28,7 +29,12 @@ static const char *find_roman(const struct fa_pinglish_entry *entries,size_t cou
 
 static const char *persian_for_roman(const char *key)
 {
-    const char *word=find_roman(fa_pinglish_entries,
+    const char *word=reloq_fa_pinglish_common_alias(key,strlen(key));
+    if(word)return word;
+    word=lookup_fa_alias(conventional_words,
+        sizeof conventional_words/sizeof conventional_words[0],key,strlen(key));
+    if(word)return word;
+    word=find_roman(fa_pinglish_entries,
         sizeof fa_pinglish_entries/sizeof fa_pinglish_entries[0],key);
     return word?word:find_roman(fa_pinglish_extra,
         sizeof fa_pinglish_extra/sizeof fa_pinglish_extra[0],key);
@@ -58,13 +64,31 @@ static void pinglish_lookup_key(const char *word,size_t bytes,char *key)
     size_t out=0;
     for(size_t i=0;i<bytes;++i) {
         char c=lower(word[i]),n=i+1<bytes?lower(word[i+1]):0;
-        if(c=='a' && n=='a')++i;
-        else if(c=='e' && n=='e'){c='i';++i;}
+        if(c=='e' && n=='e'){c='i';++i;}
         else if(c=='o' && (n=='o'||n=='u')){c='u';++i;}
         else if(c=='j' && n=='h'){key[out++]='z';c='h';++i;}
         key[out++]=c;
     }
     key[out]=0;
+}
+
+/* Reanalyzing an unvocalized Persian stem with a suffix must not silently
+ * change its a quality. A mismatch is left to explicitly vocalized input. */
+static int suffix_preserves_a(const char *stem,const char *formed,char suffix)
+{
+    for(;*stem;++stem) {
+        if(*stem!='a' && *stem!='A')continue;
+        while(*formed && *formed!='a' && *formed!='A')++formed;
+        if(*formed!=*stem)return 0;
+        ++formed;
+    }
+    while(*formed && *formed!='a' && *formed!='A')++formed;
+    if(suffix) {
+        if(*formed!=suffix)return 0;
+        ++formed;
+        while(*formed && *formed!='a' && *formed!='A')++formed;
+    }
+    return !*formed;
 }
 
 static int persian_dictionary_pinglish(const char *key,char *output,size_t capacity,int complete)
@@ -88,9 +112,13 @@ static int persian_dictionary_pinglish(const char *key,char *output,size_t capac
     }
     /* Productive suffixes reuse the same per-stem admissions and stress
      * policy as Persian script. Do not guess an unrecognized base. */
-    static const struct {const char *roman,*persian;} endings[]={
-        {"ash","ش"},{"tar","تر"},{"am","م"},{"at","ت"},
-        {"ha","ها"},{"ye","ی"},{"an","ان"},{"i","ی"}
+    /* -ha is a widespread informal spelling of the plural suffix, alongside
+     * unambiguous -haa. Require -aan for the other plural: automatically
+     * treating every final -an as a suffix changes unrelated single a's. */
+    static const struct {const char *roman,*persian;char a_vowel,joiner;} endings[]={
+        {"ash","ش",'A',0},{"tar","تر",'A',0},{"am","م",'A',0},{"at","ت",'A',0},
+        {"haa","ها",'a',1},{"ha","ها",'a',1},{"ye","ی",0,0},
+        {"aan","ان",'a',0},{"i","ی",0,0}
     };
     for(size_t i=0;i<sizeof endings/sizeof endings[0];++i) {
         size_t suffix=strlen(endings[i].roman);
@@ -101,16 +129,23 @@ static int persian_dictionary_pinglish(const char *key,char *output,size_t capac
         word=persian_for_roman(base);
         if(!word)continue;
         n=strlen(word);
-        size_t extra=strlen(endings[i].persian);
-        if(n+extra>=sizeof formed)continue;
-        memcpy(formed,word,n);memcpy(formed+n,endings[i].persian,extra+1);
+        size_t extra=strlen(endings[i].persian),join=endings[i].joiner?3u:0u;
+        if(n+join+extra>=sizeof formed)continue;
+        memcpy(formed,word,n);
+        if(join){memcpy(formed+n,"\xe2\x80\x8c",join);n+=join;}
+        memcpy(formed+n,endings[i].persian,extra+1);
         /* A bare -i is highly ambiguous in Pinglish. Accept this spelling
          * only if the Persian analyzer already recognizes the complete
          * derived form, rather than letting its last-resort guess create
          * a new word solely from the Roman suffix. */
         int strict_i=suffix==1 && endings[i].roman[0]=='i';
         int status=persian_pinglish_word(formed,output,capacity,strict_i?0:complete);
-        if(status!=0)return status;
+        if(status<0)return status;
+        if(status==1) {
+            char stem_tag[4096];
+            int stem_status=persian_pinglish_word(word,stem_tag,sizeof stem_tag,complete);
+            if(stem_status==1 && suffix_preserves_a(stem_tag,output,endings[i].a_vowel))return 1;
+        }
     }
     return 0;
 }

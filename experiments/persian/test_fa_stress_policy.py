@@ -50,9 +50,9 @@ def main():
         'کتاب‌ها': '`[.0ke.0tab.1ha]',
         'کتابها': '`[.0ke.0tab.1ha]',
         'خانه‌ها': '`[.0Ga.0ne.1ha]',
-        'افزونه‌ها': "`[.0Af.0z'u:'.0ne.1ha]",
-        'افزونه‌های': "`[.0Af.0z'u:'.0ne.1ha.0je]",
-        'افزونه‌هایی': "`[.0Af.0z'u:'.0ne.1ha.0'i:']",
+        'افزونه‌ها': '`[.0Af.0zu.0ne.1ha]',
+        'افزونه‌های': '`[.0Af.0zu.0ne.1ha.0je]',
+        'افزونه‌هایی': "`[.0Af.0zu.0ne.1ha.0'i:']",
         'برنامه‌های': '`[.0bAr.0na.0me.1ha.0je]',
         'انتخاب‌های': '`[.0en.0te.0Gab.1ha.0je]',
         'کتابم': '`[.0ke.1ta.0bAm]',
@@ -143,7 +143,7 @@ def main():
         assert project(joined) == project(spaced), (joined, project(joined), project(spaced))
     assert project('به‌روز') == "`[.0b'e:'.1r'u:'z]"
     assert project('به‌روزرسانی') == "`[.0b'e:'.2r'u:'z.0re.1sa.0ni]"
-    assert project('به‌روزرسانی‌های') == "`[.0b'e:'.0r'u:'z.0re.0sa.0ni.1ha.0je]"
+    assert project('به‌روزرسانی‌های') == "`[.0b'e:'.0ruz.0re.0sa.0ni.1ha.0je]"
     assert project('گزینه زمستانی ما او بود.').find('`[.0ze.0mes.0ta.1ni]') >= 0
     assert project('اِختیاراتِ مدیریتی').endswith('`[.0mo.0di.0ri.0jA.1ti]')
     assert project('اختیاراتِ مدیریتی').endswith('`[.0mo.0di.0ri.0jA.1ti]')

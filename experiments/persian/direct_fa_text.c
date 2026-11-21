@@ -314,6 +314,7 @@ static int direct_normalized_text(const char *text,size_t length,char **output,
                 }
             }
             retain_compound_prosody(text+start,end-start,follows,tag,sizeof tag);
+            reloq_fa_direct_normalize_durations(tag);
             if(separate_adjacent_tags(&b)){status=-2;break;}
             size_t tag_start=b.used;
             /* Only intentionally weak forms receive the phrase control.

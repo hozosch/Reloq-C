@@ -383,8 +383,10 @@ def project_resilient(parts: Sequence[str | EciText | Command], frontend: Direct
                         analysis = frontend.analyze(value)
                     if analysis is not None and len(analysis.parts) == 1 and analysis.parts[0].language == 'fa':
                         proposed = analysis.parts[0].text.lstrip('~')
-                        if not pinglish:
-                            proposed = frontend.reference_stress(value, proposed)
+                        # The native policy also normalizes automatic vowel
+                        # duration in reference-backed Pinglish words. It
+                        # leaves unclassified Latin-word stress untouched.
+                        proposed = frontend.reference_stress(value, proposed)
                         if proposed and accepted(proposed):
                             tag = proposed
                             used_reference = used_reference or analysis.used_fallback

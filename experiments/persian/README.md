@@ -46,6 +46,29 @@ and Pinglish have not yet been registered as native ECI languages or exposed
 as selectable voices in SAPI5 and Android. An Android cross-compilation test
 checks the common native components, not end-to-end Persian playback.
 
+### Automatic duration of weak medial U
+
+In automatically generated words, an unstressed medial /u/ before the word's
+primary stress no longer inherits the reference's long-vowel annotation.
+After stress and compounds are resolved, the shared text core selects the
+same /u/ identity and the acoustic rule supplies a bounded intermediate
+duration. This also prevents an already unmarked medial /u/ from collapsing
+to just a few milliseconds. Persian script and Pinglish share this rule;
+explicitly entered long phonetic input stays under the caller's control.
+Stressed, initial and final vowels retain their existing handling. These are
+listening-test candidates, not a claim that Persian vowel duration is
+invariant; see https://pubmed.ncbi.nlm.nih.gov/28112017/.
+
+### Pinglish A quality
+
+The native Pinglish word lookup distinguishes single `a` (the vowel of
+`haft`) from `aa` (the back vowel). Known Persian spellings are indexed with
+the same distinction; unresolved spellings use the shared Persian text path
+with explicit vowel marks. A small set of established informal spellings,
+including `salam`, `iran`, `farsi`, `ketab`, `khane` and plural `-ha`, is
+retained as exceptions. Pinglish spelling conventions vary, so `aa` remains
+the clear choice when a back vowel is intended.
+
 ### Numbers and character names (dev147 experiment)
 
 The English decimal/version preprocessing applies only to English text in the
