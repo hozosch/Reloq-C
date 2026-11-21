@@ -58,9 +58,10 @@ $(BUILD)/reloq.o: $(OBJECTS) $(RULES)
 	@mkdir -p $(BUILD)
 	cp $(RULES) $(BUILD)/objects.a
 	$(AR) rs $(BUILD)/objects.a $(OBJECTS) >/dev/null
-	printf '_eci*\n_reloq_eci_*\n' > $(BUILD)/exports.txt
-	$(CC) -r -nostdlib $(filter -flto%,$(OPT)) -Wl,-all_load \
-	    -Wl,-exported_symbols_list,$(BUILD)/exports.txt $(BUILD)/objects.a -o $@
+	# Keep each symbol's existing visibility. An exported-symbol wildcard
+	# would also match hidden provider internals such as eci2RealWorld,
+	# which the Apple linker correctly refuses to export.
+	$(CC) -r -nostdlib $(filter -flto%,$(OPT)) -Wl,-all_load $(BUILD)/objects.a -o $@
 	rm -f $(BUILD)/objects.a
 
 $(BUILD)/libreloq.a: $(BUILD)/reloq.o
