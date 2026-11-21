@@ -18,8 +18,11 @@ static void check(const char *input,int mode,int en,const char *wanted)
 int main(void)
 {
     check("Hallo😀Welt",0,0,"Hallo grinsendes Gesicht Welt");
-    check("aαb",0,0,"a Alpha b");check("a\xee\x80\x80" "b",0,0,"a b");
-    check("aΩb",0,1,"a omega b");
+    check("aαb",0,0,"a b");check("a\xee\x80\x80" "b",0,0,"a b");
+    check("aΩb",0,1,"a b");
+    assert(reloq_unicode_is_emoji(0x26bd) && reloq_unicode_is_emoji(0x1f642));
+    assert(reloq_unicode_is_emoji(0x2764) && reloq_unicode_is_emoji(0x1f1e9));
+    assert(!reloq_unicode_is_emoji(0x26ad) && !reloq_unicode_is_emoji(0x03b1));
     check("∰",1,0," Volumenintegral ");
     check("⌘",1,0," Sehenswürdigkeitszeichen ");
     check("⚭",1,0," Ehezeichen ");

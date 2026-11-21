@@ -110,6 +110,31 @@ def main():
                                                        'characterProcessing': api.symbols}):
                         for locale in ('fa_IR', 'fa_Latn'):
                             driver.language = locale
+                            character_mode = sys.modules['speech.commands'].CharacterModeCommand
+                            index = sys.modules['speech.commands'].IndexCommand
+                            for char in ('⚭', 'Ж', 'α', '⚽', '≪'):
+                                expected, _, _ = run([character_mode(True), module.NativeDictionaryWord(char),
+                                                      character_mode(False)])
+                                for enabled in (False, True):
+                                    spelling_config['useSpellingFunctionality'] = enabled
+                                    actual, _, _ = run([index(71), char, index(72)])
+                                    assert actual == expected, (locale, char, enabled)
+                                    checks.append((locale, 'plain single character', char, enabled))
+                            # With NVDA leaving a raw symbol untouched,
+                            # even a recognized Persian name belongs only to
+                            # an isolated character, not a sentence fragment.
+                            before, after = ('سلام ', ' دنیا') if locale == 'fa_IR' else ('salam ', ' donya')
+                            with mock.patch.object(api.symbols, 'processSpeechSymbols',
+                                                   side_effect=lambda loc, text, level: text):
+                                reference, _, _ = run([before, index(73), ' ', index(74), after])
+                                for char in ('⚭', 'α', '≪'):
+                                    actual, _, _ = run([before, index(73), char, index(74), after])
+                                    assert actual == reference, (locale, char, 'running text')
+                                    checks.append((locale, 'raw running text', char))
+                                for char in ('⚽', '🙂', '🌍'):
+                                    actual, _, _ = run([before, index(73), char, index(74), after])
+                                    assert actual != reference, (locale, char, 'emoji in running text')
+                                    checks.append((locale, 'emoji in running text', char))
                             for char in ('⚽', '🙂', 'α', 'Ж', '⚭', '≪'):
                                 on, projects, native = run(spelling(char, locale, True))
                                 off, _, _ = run(spelling(char, locale, False))
@@ -147,6 +172,8 @@ def main():
                                 actual, _, _ = run(spelling('⚭', locale, False))
                                 expected, _, _ = run(['واژه'])
                                 assert actual == expected, locale
+                                actual, _, _ = run(['⚭'])
+                                assert actual == expected, (locale, 'plain character dictionary')
                             finally:
                                 dictionary.processText = original_dict
                             checks.append((locale, 'speech dictionary'))

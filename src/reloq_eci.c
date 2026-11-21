@@ -969,6 +969,9 @@ void ECICALL eciPersianRelease(void *pointer)
 int ECICALL eciPersianIgnorableTextCharacter(uint32_t codepoint)
 {return reloq_fa_ignorable_text_character(codepoint);}
 
+int ECICALL eciUnicodeIsEmoji(uint32_t codepoint)
+{return reloq_unicode_is_emoji(codepoint);}
+
 int ECICALL eciPersianTranslateUtf8(const char *text,size_t bytes,char **output,
     size_t **source_map,size_t *error_offset)
 {return reloq_fa_direct_text(text,bytes,output,source_map,error_offset);}
@@ -1310,6 +1313,15 @@ int ECICALL eciSynthesize(ECIHand handle)
         result=synthesize_languages(e,phrase,text_bytes,modes,guards,unicode_input,
             marks,mark_count,pitches,pitch_count,before);
         goto done;
+    }
+    if(unicode_input && text_bytes && modes) {
+        size_t at=0;uint32_t cp=0;
+        /* An isolated Unicode scalar is a character request, even when the
+         * host did not send a spelling flag. Count the complete queued text,
+         * not the fragments separated by source indexes or voice controls. */
+        if((!guards || !guards[0]) && reloq_utf8_next(phrase,text_bytes,&at,&cp)==1 &&
+           at==text_bytes && cp>127)
+            memset(modes,1,text_bytes);
     }
     if((unicode_input||control_count)&&text_bytes) {
         unsigned char *normalized=NULL;size_t count=0;source_bytes=text_bytes;

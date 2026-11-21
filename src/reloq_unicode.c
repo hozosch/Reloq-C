@@ -329,13 +329,6 @@ static int one(struct buffer *b,uint32_t c,int mode,int en,int tags)
         if(lo<COUNT(unicode_compat)&&unicode_compat[lo].cp==c) {
             const char *fold=STR(unicode_compat[lo].fold);return add(b,fold,strlen(fold));
         }
-        /* Greek is the deliberate exception: letter names are meaningful in
-         * ordinary prose as well as in explicit character navigation. */
-        lo=0;hi=COUNT(unicode_greek);
-        while(lo<hi){size_t m=lo+(hi-lo)/2;if(unicode_greek[m]<c)lo=m+1;else hi=m;}
-        if(lo<COUNT(unicode_greek)&&unicode_greek[lo]==c) {
-            char temp[NAME_CAPACITY];const char *s=name(c,temp,en);if(s)return say(b,s);
-        }
         /* Other symbol names belong to explicit character navigation. */
         return add(b," ",1);
     } else {
@@ -459,6 +452,13 @@ static const char *emoji_label(const unsigned char *text,size_t length,
     }
     return label;
 }
+int reloq_unicode_is_emoji(uint32_t cp)
+{
+    if(!cp || cp>0x10ffffu || (cp>=0xd800u && cp<=0xdfffu))return 0;
+    if(emoji_presentation(cp) || (cp>=0x1f1e6 && cp<=0x1f1ff))return 1;
+    unsigned char text[4];size_t length=encode(text,cp),matched=0;
+    return emoji_label(text,length,NULL,0,cp,1,0,0,1,&matched)!=NULL && matched==length;
+}
 static int language_unknown(struct buffer *b,uint32_t c,int locale)
 {
     static const char *const prefix[]={"Unicode U más","Unicode U plus","Unicode U più","统一码 U 加","Unicode U mais","ユニコード U プラス","Unicode U plus","유니코드 U 플러스","Γιούνικοντ U συν"};
@@ -546,9 +546,9 @@ static int unicode_admit(const unsigned char *text,size_t length,
             }
         }
         {
-            /* Foreign Greek letters have one alphabet-name route in both
-             * sentence and character reading. This includes the CP1252
-             * micro sign, whose Unicode alphabet alias is Greek mu. */
+            /* Foreign Greek letters have an alphabet-name route for an
+             * explicitly requested character. Native Greek text remains
+             * untouched, as do names explicitly supplied by the caller. */
             const char *greek=(c==0xb5||c>=0x370)&&(!language||!language_owns(c,language))?
                 greek_label(c,language?locale:255):NULL;
             if(greek) {
@@ -558,7 +558,8 @@ static int unicode_admit(const unsigned char *text,size_t length,
                 old=b.n;
                 if((native_run||source_spelling)&&add(&b," `ts0 ",6)){rc=-2;goto fail;}
                 native_run=0;
-                if(say(&b,greek)||(source_spelling&&add(&b,source_spelling==1?" `ts1 ":" `ts2 ",6))){rc=-2;goto fail;}
+                if((mode||source_spelling?say(&b,greek):add(&b," ",1)) ||
+                   (source_spelling&&add(&b,source_spelling==1?" `ts1 ":" `ts2 ",6))){rc=-2;goto fail;}
                 offsets[begin]=old;
                 for(size_t j=begin+1;j<end;++j)offsets[j]=b.n;
                 offsets[end]=b.n;i=end;continue;
@@ -628,8 +629,6 @@ static int unicode_admit(const unsigned char *text,size_t length,
                     size_t lo=0,hi=COUNT(unicode_compat);
                     while(lo<hi){size_t m=lo+(hi-lo)/2;if(unicode_compat[m].cp<c)lo=m+1;else hi=m;}
                     if(lo<COUNT(unicode_compat)&&unicode_compat[lo].cp==c)failed=add(&b,STR(unicode_compat[lo].fold),strlen(STR(unicode_compat[lo].fold)));
-                    else if(c>=0x370&&c<=0x3ff){char key[5]={0};encode((unsigned char *)key,c);
-                        const char *s=language_label(key,locale);failed=s?say(&b,s):add(&b," ",1);}
                     else failed=add(&b," ",1);
                 }
                 if(failed){rc=-2;goto fail;}

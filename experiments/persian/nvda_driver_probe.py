@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import replace
 from pathlib import Path
 from bisect import bisect_right
+import ctypes
 import os
 import re
 import unicodedata
@@ -45,6 +46,19 @@ class OwnedPersianEngine(ScopedDirectPersianEngine):
         except BaseException:
             frontend.close()
             raise
+        self._emoji_character = getattr(self._voice._dll, 'eciUnicodeIsEmoji', None)
+        if self._emoji_character is not None:
+            self._emoji_character.argtypes = (ctypes.c_uint32,)
+            self._emoji_character.restype = ctypes.c_int
+
+    def is_emoji_character(self, char):
+        if self._emoji_character is not None:
+            return bool(self._emoji_character(ord(char)))
+        # Compatibility with older test libraries: keep possible emoji rather
+        # than suppressing them when the shared Unicode index is unavailable.
+        cp = ord(char)
+        return unicodedata.category(char) in ('So', 'Sk') and (
+            0x2600 <= cp <= 0x27bf or 0x1f000 <= cp <= 0x1faff)
 
     def set_dictionary_path(self, path):
         self._voice.set_dictionary_path(path)
@@ -380,10 +394,9 @@ class PersianProbeLanguageEngine(LanguageEngine):
                         part = replace(part, text=text) if isinstance(part, EciText) else text
                     filtered.append(part)
                 parts = tuple(filtered)
-        # An isolated character without a Persian label can use the English
-        # Unicode name. In continuous speech an otherwise-unmapped character
-        # must not inject that long fallback name; NVDA's configured symbol
-        # replacements have already been applied before this point.
+        # Use character names only for an isolated character; emoji remain
+        # available in continuous speech. NVDA's configured substitutions
+        # have already been applied before this point.
         visible = ''.join(part if isinstance(part, str) else part.text
                           for part in parts if isinstance(part, str) or
                           isinstance(part, EciText) and not part.is_control).strip()
@@ -397,7 +410,8 @@ class PersianProbeLanguageEngine(LanguageEngine):
                 continue
             text = part if isinstance(part, str) else part.text if isinstance(part, EciText) else None
             if (logical[0] not in (PERSIAN_PROBE.id, PINGLISH_PROBE.id) or not text or '`' in text or
-                    isinstance(part, EciText) and (part.character_mode or part.is_control)):
+                    isinstance(part, EciText) and (part.character_mode or part.is_control or
+                                                   part.segmentation_guarded)):
                 if text is not None:
                     previous_char = None
                 expanded.append(part)
@@ -423,23 +437,27 @@ class PersianProbeLanguageEngine(LanguageEngine):
                         latin_fold(char) is not None or
                         logical[0] == PINGLISH_PROBE.id and unicodedata.category(char).startswith('M')):
                     continue
+                engine = self._activate(logical)
+                emoji = isinstance(engine, OwnedPersianEngine) and engine.is_emoji_character(char)
+                if not isolated and not emoji:
+                    positions.append((at, None, False))
+                    continue
                 if char not in names:
-                    engine = self._activate(logical)
                     if not isinstance(engine, OwnedPersianEngine):
                         names[char] = None
                     else:
                         named = engine._frontend.analyze_character(char).parts[0]
                         names[char] = named.text if named.language == 'en-us' else None
                 if names[char] is not None:
-                    positions.append((at, names[char]))
+                    positions.append((at, names[char], True))
             if not positions:
                 expanded.append(part)
                 continue
             start = 0
-            for at, name in positions:
+            for at, name, announce in positions:
                 if at > start:
                     expanded.append(replace(part, text=text[start:at]) if isinstance(part, EciText) else text[start:at])
-                if isolated:
+                if announce:
                     expanded.extend((EciLanguage(US_ENGLISH.id, logical[1]), name, EciLanguage(*logical)))
                 else:
                     expanded.append(replace(part, text=' ') if isinstance(part, EciText) else ' ')

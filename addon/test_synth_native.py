@@ -156,6 +156,39 @@ def main():
                 speech_dictionary = api.speak.__globals__['speechDictHandler']
                 with mock.patch.dict(sys.modules, {'speechDictHandler': speech_dictionary,
                                                    'characterProcessing': api.symbols}):
+                    # A plain one-character utterance has no spelling or
+                    # normalization command. It must still use the same
+                    # native name as an explicit protected character.
+                    char_mode = sys.modules['speech.commands'].CharacterModeCommand
+                    index = sys.modules['speech.commands'].IndexCommand
+                    direct = module._parts([index(71), '⚭', index(72)])
+                    assert next(part for part in direct if isinstance(part, module.EciText)).character_mode
+                    guarded = module._parts([module.SegmentationGuard(True), '⚭', module.SegmentationGuard(False)])
+                    assert not next(part for part in guarded if isinstance(part, module.EciText)).character_mode
+                    for locale in (entry.locale for entry in driver._languages.values()):
+                        driver.language = locale
+                        for char in ('⚭', 'Ж', '≪'):
+                            expected = run([char_mode(True), module.NativeDictionaryWord(char), char_mode(False)])
+                            for enabled in (False, True):
+                                spelling_config['useSpellingFunctionality'] = enabled
+                                actual = run([index(71), char, index(72)])
+                                assert actual == expected, (locale, char, enabled)
+                                report['checks'] += 1
+                    # If NVDA leaves a raw Unicode symbol in running text,
+                    # an index does not turn that fragment into an isolated
+                    # character. Emoji retain the existing CLDR handling.
+                    original_symbols = api.symbols.processSpeechSymbols
+                    with mock.patch.object(api.symbols, 'processSpeechSymbols',
+                                           side_effect=lambda locale, text, level: text):
+                        for locale in ('de_DE', 'en_US'):
+                            driver.language = locale
+                            reference = run(['Hallo ', index(73), ' ', index(74), ' Welt'])
+                            for char in ('⚭', 'α'):
+                                assert run(['Hallo ', index(73), char, index(74), ' Welt']) == reference, (locale, char)
+                                report['checks'] += 1
+                            assert run(['Hallo ', index(73), '🙂', index(74), ' Welt']) != reference
+                            report['checks'] += 1
+                    driver.language = 'de_DE'
                     for use_spelling in (True, False):
                         spelling_config['useSpellingFunctionality'] = use_spelling
                         for char, name in (('∰', 'Volumenintegral'), ('⌘', 'Sehenswürdigkeitszeichen'),
@@ -182,6 +215,7 @@ def main():
                         submitted = received[-1]
                         expected = run(['Benutzerwort'])
                         assert actual == expected, (sequence, submitted, len(actual), len(expected))
+                        assert run([unknown]) == expected, 'plain isolated character bypassed a personal dictionary'
                     finally:
                         speech_dictionary.processText = original_process
                     report['checks'] += 1
@@ -197,6 +231,11 @@ def main():
                             assert unknown in prepared
                             assert not any(type(part).__name__ == 'NativeDictionaryWord' and part.text == unknown
                                            for part in prepared)
+                            plain = driver._prepare_speech_sequence([unknown])
+                            driver._protect_before_speech(plain, symbolLevel=0)
+                            assert unknown in plain
+                            assert not any(type(part).__name__ == 'NativeDictionaryWord' and part.text == unknown
+                                           for part in plain)
                             report['checks'] += 1
                     finally:
                         speech_dictionary.processText = original_process
@@ -211,6 +250,7 @@ def main():
                     try:
                         sequence = list(api.getSpellingSpeech(unknown, locale='de_DE', endsUtterance=False))
                         assert run(sequence) == run(['Benutzerwort'])
+                        assert run([unknown]) == run(['Benutzerwort'])
                     finally:
                         driver._imported_dictionaries = original_imported
                     report['checks'] += 1

@@ -59,6 +59,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             from synthDrivers.reloqC._reloq_eci_transport import EciTextTransport
             from synthDrivers.reloqC._reloq_persian_frames import FrameCapture
             self.speech, self.character, self.index_command = speech, CharacterModeCommand, IndexCommand
+            self.native_word = reloq.NativeDictionaryWord
             self.symbol_tags = {key: re.sub(r"'([Aaeiou]):'", r"\1", value)
                                 for key, value in SYMBOL_TAGS.items()}
             # Reproduce dev136's donor mapping inside the same real NVDA
@@ -638,6 +639,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                               for locale in ('de_DE', 'en_US', 'fa_IR', 'fa_Latn')
                               for char in ('⚭', '⊖', '≪', 'Ж', 'α', '⚽', '🙂')
                               for mode in ('unicode_spelling_on', 'unicode_spelling_off'))
+            self.cases.extend((locale, char, mode)
+                              for locale in ('de_DE', 'en_US', 'fa_IR', 'fa_Latn')
+                              for char in ('⚭', '≪', 'Ж', 'α', '🙂')
+                              for mode in ('unicode_single_on', 'unicode_single_off', 'unicode_single_direct',
+                                           'unicode_single_reference'))
             self.cases.extend((locale, text, mode) for locale, original, reference in (
                 ('fa_IR', 'سلام ⚭ دنیا', 'سلام   دنیا'),
                 ('fa_Latn', 'salam ⚭ donya', 'salam   donya'))
@@ -857,6 +863,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     for char in ('⚭', '⊖', '≪', 'Ж', 'α', '⚽', '🙂'):
                         if sound(locale, char, 'unicode_spelling_on') != sound(locale, char, 'unicode_spelling_off'):
                             raise AssertionError('NVDA lost the Unicode name while spelling: ' + ascii((locale, char)))
+                    for char in ('⚭', '≪', 'Ж', 'α', '🙂'):
+                        reference = sound(locale, char, 'unicode_single_reference')
+                        for mode in ('unicode_single_on', 'unicode_single_off', 'unicode_single_direct'):
+                            if sound(locale, char, mode) != reference:
+                                raise AssertionError('NVDA lost an isolated Unicode name: ' + ascii((locale, char, mode)))
                 import speechDictHandler
                 for locale, original, reference in (('fa_IR', 'سلام ⚭ دنیا', 'سلام   دنیا'),
                                                     ('fa_Latn', 'salam ⚭ donya', 'salam   donya')):
@@ -894,6 +905,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.synth.language = locale
             if spelling in ('unicode_spelling_on', 'unicode_spelling_off'):
                 self.spelling_config['useSpellingFunctionality'] = spelling == 'unicode_spelling_on'
+            if spelling in ('unicode_single_on', 'unicode_single_off'):
+                self.spelling_config['useSpellingFunctionality'] = spelling == 'unicode_single_on'
             self.nav_stale_case = spelling == 'issue49_weak_us_stale'
             self.nav_stale_injected = False
             self.before_us_fits = len(self.us_fits)
@@ -944,6 +957,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                             for part in (word + ' ', self.index_command(i))]
             elif spelling in ('unicode_spelling_on', 'unicode_spelling_off'):
                 sequence = list(self.speech.getSpellingSpeech(text, locale=locale, endsUtterance=False))
+            elif spelling in ('unicode_single_on', 'unicode_single_off'):
+                sequence = [text, self.index_command(19000 + self.index)]
+            elif spelling == 'unicode_single_direct':
+                sequence = [text, self.index_command(19000 + self.index)]
+            elif spelling == 'unicode_single_reference':
+                sequence = [self.character(True), self.native_word(text), self.character(False),
+                            self.index_command(19000 + self.index)]
             elif spelling in ('unicode_flow', 'unicode_flow_reference'):
                 sequence = [text]
             elif spelling == 'issue49_korean_spelling':
@@ -1008,6 +1028,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.pipeline = self.pipeline or spelling in ('issue49_preposition', 'issue49_final_accent',
                                                           'issue49_character_navigation',
                                                           'unicode_spelling_on', 'unicode_spelling_off',
+                                                          'unicode_single_on', 'unicode_single_off', 'unicode_single_reference',
                                                           'unicode_flow', 'unicode_flow_reference')
             self.pipeline = self.pipeline or spelling in ('issue49_version_some', 'issue49_version_split',
                                                            'issue49_emoji_some', 'issue49_emoji_split',

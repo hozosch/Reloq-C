@@ -276,7 +276,10 @@ ECIAPI int ECICALL eciUpdateDictA(ECIHand handle,ECIDictHand dictionary,int volu
  * thread, never during a callback. 1 success, 0 failure. It only affects the
  * experimental generic text frontend; the exact voice remains unchanged. */
 /* Length-aware native Unicode input. Mode 1 names characters in the selected
- * language; mode 0 reads text. Successive fragments are analyzed together. */
+ * language; mode 0 reads text. Successive fragments are analyzed together.
+ * If the complete queued UTF-8 text is one non-ASCII scalar, mode 0 also
+ * names that character unless it is dictionary-protected; indexes and voice
+ * controls do not make it text. */
 /* Mode bit 0 requests character spelling; bit 1 protects the text from the
  * optional word/CamelCase segmenter (for host-side dictionary substitutions). */
 ECIAPI int ECICALL eciAddTextUtf8(ECIHand handle, const void *text, size_t bytes, int character_mode);
@@ -300,6 +303,8 @@ ECIAPI void ECICALL eciPersianRelease(void *pointer);
 /* True for presentation-only characters ignored in ordinary running text;
  * explicit character spelling can still request their Unicode names. */
 ECIAPI int ECICALL eciPersianIgnorableTextCharacter(uint32_t codepoint);
+/* Recognize Unicode/CLDR emoji components without requiring a host library. */
+ECIAPI int ECICALL eciUnicodeIsEmoji(uint32_t codepoint);
 
 /* Shared Persian text frontend. mode 0 reads Persian script; mode 1 accepts
  * Persian script and Pinglish. Both use the same lexical/stress rules and
