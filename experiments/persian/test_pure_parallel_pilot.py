@@ -26,7 +26,7 @@ def main():
     continuous_driver.os.cpu_count = lambda: 2
     engine = make_language_engine(args.library, args.library, None, Path('/unavailable'), Path('/unavailable'))
     submit, capture_proxy = ParallelPilot.submit_proxy, ParallelPilot._capture_proxy
-    probe, capture = _CaptureVoice._phonemes_for_probe, FrameCapture.capture
+    capture = FrameCapture.capture
     samples = (
         'استفاده از تنظیماتِ ذخیره‌شده‌ی فعلی هنگامِ ورود به ویندوز و دیگر صفحاتِ امن (به اِختیاراتِ مدیریتی نیاز دارد)',
         'برای راه‌اندازی رایانه باید این گزینه انتخاب شود.',
@@ -57,21 +57,23 @@ def main():
         parts = (EciIndex(1), samples[0], EciIndex(2))
         expected = render(parts, False)
         worker_started, main_started = threading.Event(), threading.Event()
-        def worker_probe(voice, text):
+        # The worker now constructs the proxy in C, so observing the old
+        # Python phoneme probe would no longer observe the real worker path.
+        def synchronized_proxy(worker, *args, **kwargs):
             worker_started.set()
             if not main_started.wait(5):
                 raise RuntimeError('Persian capture did not start concurrently')
-            return probe(voice, text)
+            return capture_proxy(worker, *args, **kwargs)
         def main_capture(api, voice, parts, **kwargs):
             if not isinstance(voice, _CaptureVoice) and not kwargs.get('audio', True):
                 assert worker_started.wait(5), 'US proxy did not start concurrently'
                 main_started.set()
             return capture(api, voice, parts, **kwargs)
-        _CaptureVoice._phonemes_for_probe, FrameCapture.capture = worker_probe, main_capture
+        ParallelPilot._capture_proxy, FrameCapture.capture = synchronized_proxy, main_capture
         try:
             assert render(parts) == expected and worker_started.is_set() and main_started.is_set()
         finally:
-            _CaptureVoice._phonemes_for_probe, FrameCapture.capture = probe, capture
+            ParallelPilot._capture_proxy, FrameCapture.capture = capture_proxy, capture
 
         def failed_submit(_worker, **_kwargs):
             raise OSError('injected submission failure')
@@ -89,12 +91,12 @@ def main():
             ParallelPilot._capture_proxy = capture_proxy
 
         started = threading.Event()
-        def blocked(voice, text):
+        def blocked(_worker, _tagged, _marks, _prefix, _parameters, _dictionary, cancelled, *_args):
             started.set()
-            if not voice.cancelled.wait(5):
+            if not cancelled.wait(5):
                 raise RuntimeError('cancellation timed out')
             raise InterruptedError('cancelled')
-        _CaptureVoice._phonemes_for_probe = blocked
+        ParallelPilot._capture_proxy = blocked
         def stop():
             assert started.wait(5)
             engine.cancel()
@@ -104,12 +106,12 @@ def main():
             stale = bytearray()
             assert not engine.speak(parts, stale.extend, lambda _: None) and not stale
         finally:
-            _CaptureVoice._phonemes_for_probe = probe
+            ParallelPilot._capture_proxy = capture_proxy
             stopper.join(5)
         assert not stopper.is_alive() and render(parts) == expected
     finally:
         ParallelPilot.submit_proxy, ParallelPilot._capture_proxy = submit, capture_proxy
-        _CaptureVoice._phonemes_for_probe, FrameCapture.capture = probe, capture
+        FrameCapture.capture = capture
         continuous_driver.os.cpu_count = cpu_count
         engine.close()
         if previous_stream is None:
