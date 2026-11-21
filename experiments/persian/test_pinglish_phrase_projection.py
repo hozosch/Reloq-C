@@ -34,16 +34,23 @@ def main():
     count=0
     def compare(parts):
         nonlocal count
-        frontend._project_pinglish=None
-        frontend._project_text=None
+        # Compare the strict path with the old tokenizer. The separate
+        # no-reference tests cover the intentionally broader complete path.
+        available=frontend._reference_available
+        frontend._reference_available=True
         try:
-            try: old=project(parts,frontend,pinglish=True)
-            except (UnsupportedPronunciation,ValueError) as error: old=type(error)
+            frontend._project_pinglish=None
+            frontend._project_text=None
+            try:
+                try: old=project(parts,frontend,pinglish=True)
+                except (UnsupportedPronunciation,ValueError) as error: old=type(error)
+            finally:
+                frontend._project_pinglish=native
+                frontend._project_text=shared
+            try: new=project(parts,frontend,pinglish=True)
+            except (UnsupportedPronunciation,ValueError) as error: new=type(error)
         finally:
-            frontend._project_pinglish=native
-            frontend._project_text=shared
-        try: new=project(parts,frontend,pinglish=True)
-        except (UnsupportedPronunciation,ValueError) as error: new=type(error)
+            frontend._reference_available=available
         assert old==new,(parts,old,new)
         count+=1
     try:
