@@ -49,6 +49,23 @@ NAMES = {
     '\u0655': 'همزه پایین',
 }
 
+# Common nonprinting characters need localized names too. The Persian
+# labels use the native word rules below, so regenerating this table keeps
+# their current pronunciation instead of importing a reference voice's
+# duration or stress choices.
+NATIVE_CONTROL_NAMES = {
+    '\x08': 'بک اسپیس',
+    '\x0b': 'تب عمودی',
+    '\x0c': 'پایان صفحه',
+    '\x7f': 'حذف',
+    '\x85': 'خط بعدی',
+    '\u00a0': 'فاصله بدون شکست',
+    '\u00ad': 'خط تیره نرم',
+    '\u200b': 'فاصله بدون عرض',
+    '\u202f': 'فاصله باریک بدون شکست',
+}
+NAMES.update(NATIVE_CONTROL_NAMES)
+
 GREEK = (
     ('Α', 'α', 'آلفا'), ('Β', 'β', 'بتا'), ('Γ', 'γ', 'گاما'),
     ('Δ', 'δ', 'دلتا'), ('Ε', 'ε', 'اپسیلون'), ('Ζ', 'ζ', 'زتا'),
@@ -207,6 +224,11 @@ def main():
                     names[chr(start + i)] = word
             with DirectFirstPersian(args.probe, None, None, None) as frontend:
                 values = restress_known_names(values, names, frontend)
+                for char, label in NATIVE_CONTROL_NAMES.items():
+                    analysis = frontend.analyze_direct(label)
+                    if not analysis or len(analysis.parts) != 1 or analysis.parts[0].language != 'fa':
+                        raise RuntimeError(f'unsupported native control name {label!r}')
+                    values[char] = analysis.parts[0].text
             for name, tag in [*values.items(), ('unicode', unicode_name)]:
                 native_text = tag.replace('~', ' ')
                 if not native_sequence_accepted(native_text, native._phonemes_for_probe(native_text)):

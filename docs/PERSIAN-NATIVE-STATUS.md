@@ -27,6 +27,13 @@ rates, including cancellation. A further experimental C entry point now
 prepares ordinary Persian or Pinglish text, derives word boundaries and
 syllable counts, captures both contexts, applies the selected U-to-A glide,
 fits the US contour and replays source indexes without NVDA or eSpeak. The
+extended C sentence entry point accepts separate normal, character-name and
+explicit Persian phonetic runs, including the `l20.0/`l20.1 switches between
+Persian script and Pinglish. Its US donor is constructed from the same owned
+phone events, preserving geminated affricates and glottal boundaries. The
+extended renderer rejects English language events and English-only character
+names, as well as phonetic groups with ambiguous implicit syllables, before
+sending output; the established driver retains those cases. The
 native complete Pinglish analysis also accepts bracket boundaries directly.
 These paths still use the accepted Finnish-based acoustic bridge and the US
 prosody pilot; they do not constitute an independently registered voice.

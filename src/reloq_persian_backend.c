@@ -69,9 +69,9 @@ static int add_mark(uint32_t **marks,size_t *count,uint32_t value)
     *marks=next;(*marks)[(*count)++]=value;return 0;
 }
 
-int reloq_fa_backend_prepare(const char *source,size_t source_bytes,
+static int backend_prepare(const char *source,size_t source_bytes,
     const struct reloq_fa_plan_event *events,size_t count,
-    struct reloq_fa_backend_plan *result,size_t *error_event)
+    struct reloq_fa_backend_plan *result,size_t *error_event,int donor)
 {
     if(error_event)*error_event=0;
     if(!result || !error_event || (!source && source_bytes) || (!events && count) ||
@@ -114,7 +114,7 @@ int reloq_fa_backend_prepare(const char *source,size_t source_bytes,
                 if((status=append(&b,marker,2)))break;
                 syllable=e->syllable;stress=e->stress;
             } else if(e->stress!=stress){status=1;break;}
-            int doubled=e->value==RELOQ_FA_PHONE_J && !explicit_input && !ambiguous_word && !skip_pair &&
+            int doubled=!donor && e->value==RELOQ_FA_PHONE_J && !explicit_input && !ambiguous_word && !skip_pair &&
                 i+1<count && events[i+1].kind==RELOQ_FA_PLAN_PHONE &&
                 events[i+1].value==RELOQ_FA_PHONE_J;
             if(doubled) {
@@ -144,13 +144,18 @@ int reloq_fa_backend_prepare(const char *source,size_t source_bytes,
         case RELOQ_FA_PLAN_GLOTTAL_ONSET:
             if(in_word || english || !b.used || b.data[b.used-1]!=']' || word>=32767)
                 {status=1;break;}
-            if((status=add_mark(&onsets,&onset_count,word+1)))break;
-            status=append(&b," ",1);break;
+            if(donor)status=append(&b,"~",1);
+            else {
+                if((status=add_mark(&onsets,&onset_count,word+1)))break;
+                status=append(&b," ",1);
+            }
+            break;
         case RELOQ_FA_PLAN_INPUT_VARIANT:
             if(in_word || e->value>1)status=1;
             break;
         case RELOQ_FA_PLAN_ENGLISH_TEXT: {
             size_t from=e->value,bytes=e->flags;
+            if(donor){status=1;break;}
             if(in_word || !bytes || from>source_bytes || bytes>source_bytes-from ||
                memchr(source+from,0,bytes)){status=1;break;}
             if((status=gap(&b)) || (status=append(&b,"`l1.0 ",6)) ||
@@ -168,3 +173,13 @@ int reloq_fa_backend_prepare(const char *source,size_t source_bytes,
     *result=(struct reloq_fa_backend_plan){b.data,b.used,offsets,
         onsets,geminates,onset_count,geminate_count};return 0;
 }
+
+int reloq_fa_backend_prepare(const char *source,size_t source_bytes,
+    const struct reloq_fa_plan_event *events,size_t count,
+    struct reloq_fa_backend_plan *result,size_t *error_event)
+{return backend_prepare(source,source_bytes,events,count,result,error_event,0);}
+
+int reloq_fa_backend_prepare_donor(const char *source,size_t source_bytes,
+    const struct reloq_fa_plan_event *events,size_t count,
+    struct reloq_fa_backend_plan *result,size_t *error_event)
+{return backend_prepare(source,source_bytes,events,count,result,error_event,1);}

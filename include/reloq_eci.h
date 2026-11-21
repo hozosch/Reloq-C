@@ -588,6 +588,19 @@ ECIAPI int ECICALL eciPersianReplayUsCapture(ECIHand voice,
 ECIAPI int ECICALL eciPersianSpeakUsNativeUtf8(ECIHand voice,ECIHand pilot,
     const char *text,size_t bytes,int mode,const size_t *source_offsets,
     const int *index_values,size_t index_count,size_t maximum_frames,size_t *error_offset);
+/* Experimental extended sentence route. run_ends and run_modes have the
+ * eciPersianAnalyzeRunsCompleteUtf8 contract: normal text (0), character
+ * names (1), or one explicit Persian phonetic group (2). Normal runs also
+ * accept `l20.0 and `l20.1 input-variant selectors. A name requiring a
+ * separate English voice, mixed English prose, unsupported controls and
+ * phonetic groups whose multiple nuclei lack explicit syllable markers
+ * return 1 without output; invalid arrays return -1. This uses the same accepted
+ * acoustic bridge and US contour as eciPersianSpeakUsNativeUtf8, and is not
+ * a registered voice. Unknown words still require linguistic validation. */
+ECIAPI int ECICALL eciPersianSpeakUsNativeRunsUtf8(ECIHand voice,ECIHand pilot,
+    const char *text,size_t bytes,int mode,const size_t *run_ends,
+    const unsigned char *run_modes,size_t run_count,const size_t *source_offsets,
+    const int *index_values,size_t index_count,size_t maximum_frames,size_t *error_offset);
 /* Keep the original pitch except near language-switch edges. Bit 0 selects
  * the beginning and bit 1 the end; window is in the frame clock's ms. */
 ECIAPI int ECICALL eciPersianFitPitchEdges(struct reloq_fa_frame *rows,size_t count,

@@ -21,6 +21,11 @@ struct reloq_fa_backend_plan {
 int reloq_fa_backend_prepare(const char *source,size_t source_bytes,
     const struct reloq_fa_plan_event *events,size_t count,
     struct reloq_fa_backend_plan *result,size_t *error_event);
+/* The US-contour donor needs the original phone sequence, including both
+ * phones of an affricate and an explicit glottal boundary. */
+int reloq_fa_backend_prepare_donor(const char *source,size_t source_bytes,
+    const struct reloq_fa_plan_event *events,size_t count,
+    struct reloq_fa_backend_plan *result,size_t *error_event);
 void reloq_fa_backend_clear(struct reloq_fa_backend_plan *plan);
 
 #endif

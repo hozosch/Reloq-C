@@ -159,7 +159,7 @@ def main():
                                                        index(78), ') ' + right])
                                 assert quoted == bracketed, (locale, 'running quotes')
                                 checks.append((locale, 'running quotes'))
-                            for char in ('⚽', '🙂', 'α', 'Ж', '⚭', '≪'):
+                            for char in ('⚽', '🙂', 'α', 'Ж', '⚭', '≪', '\x7f', '\u00a0', '\u200b'):
                                 on, projects, native = run(spelling(char, locale, True))
                                 off, _, _ = run(spelling(char, locale, False))
                                 assert on == off, (locale, char, len(on), len(off))
@@ -170,6 +170,9 @@ def main():
                                     expected = {'Ж': 'cyrillic capital letter zhe',
                                                 '⚭': 'marriage symbol'}[char]
                                     assert expected in ' '.join(native).lower(), (locale, char, native)
+                                if char == '\x7f':
+                                    assert '`[.1hAzf]' in ' '.join(tag for _, tag in projects), (locale, char, projects)
+                                    assert 'delete' not in ' '.join(native).lower(), (locale, char, native)
                                 checks.append((locale, char))
 
                             # The same unlisted Unicode character in a running

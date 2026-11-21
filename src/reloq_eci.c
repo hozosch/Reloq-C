@@ -2622,9 +2622,11 @@ static int reloq_fa_sample_tick(uint64_t sample,unsigned rate,int64_t *tick)
     *tick=(int64_t)whole;return 0;
 }
 
-int ECICALL eciPersianSpeakUsNativeUtf8(ECIHand handle,ECIHand pilot_handle,
-    const char *text,size_t bytes,int mode,const size_t *source_offsets,
-    const int *index_values,size_t index_count,size_t maximum_frames,size_t *error_offset)
+static int reloq_fa_speak_us_native(ECIHand handle,ECIHand pilot_handle,
+    const char *text,size_t bytes,int mode,const size_t *run_ends,
+    const unsigned char *run_modes,size_t run_count,int use_runs,
+    const size_t *source_offsets,const int *index_values,size_t index_count,
+    size_t maximum_frames,size_t *error_offset)
 {
     struct reloq_eci_engine *e=handle,*pilot=pilot_handle;
     if(error_offset)*error_offset=0;
@@ -2646,20 +2648,24 @@ int ECICALL eciPersianSpeakUsNativeUtf8(ECIHand handle,ECIHand pilot_handle,
     unsigned char *pauses=NULL;uint64_t *word_samples=NULL;
     struct reloq_fa_frame_mark *replay_marks=NULL;
     struct reloq_fa_glide_candidate *glides=NULL;
-    int status=reloq_fa_prepare_native(text,bytes,mode,source_offsets,index_count,error_offset,&prepared);
+    int status=use_runs ? reloq_fa_prepare_native_runs(text,bytes,mode,run_ends,run_modes,run_count,
+        source_offsets,index_count,error_offset,&prepared,&donor_text) :
+        reloq_fa_prepare_native(text,bytes,mode,source_offsets,index_count,error_offset,&prepared);
     if(status)goto done;
     status=reloq_fa_native_words_make(prepared.backend.text,prepared.backend.length,&words);
     if(status)goto done;
     /* The target plan collapses and marks geminated affricates for the
      * acoustic provider. The established US pilot instead uses the original
      * pronunciation, including both phones; preserve that contour input. */
-    size_t donor_error=0;
-    status=eciPersianProjectTextCompleteUtf8(text,bytes,mode,NULL,NULL,0,
-        &donor_text,NULL,&donor_error);
-    if(status) {
-        if(donor_error<=bytes)*error_offset=donor_error;
-        if(status>0)status=1;
-        goto done;
+    if(!use_runs) {
+        size_t donor_error=0;
+        status=eciPersianProjectTextCompleteUtf8(text,bytes,mode,NULL,NULL,0,
+            &donor_text,NULL,&donor_error);
+        if(status) {
+            if(donor_error<=bytes)*error_offset=donor_error;
+            if(status>0)status=1;
+            goto done;
+        }
     }
     if(!donor_text){status=1;goto done;}
     size_t word_count=words.count-1;
@@ -2732,6 +2738,23 @@ done:
     free(positions);free(pauses);free(source_slots);free(word_slots);free(word_samples);
     free(replay_marks);free(glides);
     return status;
+}
+
+int ECICALL eciPersianSpeakUsNativeUtf8(ECIHand handle,ECIHand pilot,
+    const char *text,size_t bytes,int mode,const size_t *source_offsets,
+    const int *index_values,size_t index_count,size_t maximum_frames,size_t *error_offset)
+{
+    return reloq_fa_speak_us_native(handle,pilot,text,bytes,mode,NULL,NULL,0,0,
+        source_offsets,index_values,index_count,maximum_frames,error_offset);
+}
+
+int ECICALL eciPersianSpeakUsNativeRunsUtf8(ECIHand handle,ECIHand pilot,
+    const char *text,size_t bytes,int mode,const size_t *run_ends,
+    const unsigned char *run_modes,size_t run_count,const size_t *source_offsets,
+    const int *index_values,size_t index_count,size_t maximum_frames,size_t *error_offset)
+{
+    return reloq_fa_speak_us_native(handle,pilot,text,bytes,mode,run_ends,run_modes,run_count,1,
+        source_offsets,index_values,index_count,maximum_frames,error_offset);
 }
 int ECICALL eciPersianFitPitchEdges(struct reloq_fa_frame *rows,size_t count,
     const float *pilot,size_t length,const float *original,int64_t start,int64_t end,

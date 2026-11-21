@@ -14,7 +14,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT / 'experiments/persian'), str(ROOT / 'nvda')]
-from _reloq_eci_direct import EciIndex, SAMPLE_RATE
+from _reloq_eci_direct import EciIndex, EciText, SAMPLE_RATE
 from nvda_driver_probe import PERSIAN_PROBE, PINGLISH_PROBE, US_ENGLISH, make_language_engine
 
 
@@ -32,6 +32,8 @@ def main():
         ('eciSetOutputBuffer', I, (H, I, c.POINTER(c.c_int16))),
         ('eciPersianSpeakUsNativeUtf8', I, (H, H, c.c_char_p, S, I, c.POINTER(S),
                                          c.POINTER(I), S, S, c.POINTER(S))),
+        ('eciPersianSpeakUsNativeRunsUtf8', I, (H, H, c.c_char_p, S, I, c.POINTER(S),
+            c.POINTER(c.c_ubyte), S, c.POINTER(S), c.POINTER(I), S, S, c.POINTER(S))),
     )
     for name, result, parameters in functions:
         fn = getattr(dll, name); fn.restype, fn.argtypes = result, parameters
@@ -120,6 +122,52 @@ def main():
                                                                      indices, expected_indices)
                                 assert not pilot_audio
                                 checks += 1
+            # Compare actual current NVDA-planner behavior for an explicit
+            # character or phonetic group, including a spelling run between
+            # normal words. The C route owns the same source-index contract.
+            run_cases = (
+                (PERSIAN_PROBE, 0, ((1, 'ب'),)),
+                (PERSIAN_PROBE, 0, ((1, 'َ'),)),
+                (PERSIAN_PROBE, 0, ((1, '\x7f'),)),
+                (PERSIAN_PROBE, 0, ((1, '\u200b'),)),
+                (PINGLISH_PROBE, 1, ((1, 'a'),)),
+                (PINGLISH_PROBE, 1, ((1, '\x7f'),)),
+                (PERSIAN_PROBE, 0, ((2, '`[.0sA.1lam]'),)),
+                (PERSIAN_PROBE, 0, ((0, 'سلام '), (1, 'ب'), (0, ' دنیا'))),
+            )
+            for profile, mode, runs in run_cases:
+                for rate in (1, 3, 6):
+                    for preset in ('1', '2'):
+                        owner.select_voice(profile.id, preset)
+                        owner.set_parameter(SAMPLE_RATE, rate)
+                        owner.set_parameter(0x1007, 85)
+                        fa = owner._activate(owner._key(profile.id, preset))
+                        us = owner._activate(owner._key(US_ENGLISH.id, preset))
+                        for handle, engine in ((voice, fa), (pilot, us)):
+                            source = engine._voice if hasattr(engine, '_voice') else engine
+                            for parameter in (5, 0x1007, 0x1008, 0x1009, 0x100a, 0x100b,
+                                              0x100c, 0x100d, 0x100e, 0x100f, 0x1010, 0x1011, 0x1015):
+                                value = dll.eciGetParam(source._handle, parameter)
+                                if value >= 0:
+                                    assert dll.eciSetParam(handle, parameter, value) >= 0
+                        parts = tuple(text if kind == 0 else EciText(text, character_mode=True) if kind == 1
+                                      else EciText(text, tag_control=text) for kind, text in runs)
+                        expected, expected_indices = bytearray(), []
+                        assert owner.speak((EciIndex(90), *parts, EciIndex(92)), expected.extend,
+                            lambda value: expected_indices.append((value, len(expected) // 2)))
+                        raw = ''.join(text for _, text in runs).encode('utf8')
+                        ends, at = [], 0
+                        for _, text in runs:
+                            at += len(text.encode('utf8')); ends.append(at)
+                        end_array = (S * len(runs))(*ends)
+                        mode_array = (c.c_ubyte * len(runs))(*(kind for kind, _ in runs))
+                        offsets, values = (S * 2)(0, len(raw)), (I * 2)(90, 92)
+                        error = S(); pcm.clear(); indices.clear()
+                        status = dll.eciPersianSpeakUsNativeRunsUtf8(voice, pilot, raw, len(raw), mode,
+                            end_array, mode_array, len(runs), offsets, values, 2, 30000, c.byref(error))
+                        assert status == 0 and bytes(pcm) == bytes(expected) and indices == expected_indices, (
+                            profile.locale, rate, preset, runs, status, error.value, len(pcm), len(expected))
+                        checks += 1
             # Compare the new complete Pinglish bracket analysis with the
             # previous no-reference fallback, including marks inside words.
             owner.select_voice(PINGLISH_PROBE.id, '1')

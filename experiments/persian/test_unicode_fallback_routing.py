@@ -45,6 +45,22 @@ def main():
             assert render((EciIndex(4), EciText(char, character_mode=True), EciIndex(5))) == render(
                 (EciIndex(4), EciLanguage(US_ENGLISH.id, '1'), name, EciIndex(5))), ascii(char)
         assert render(('سلام\u00a0دنیا',)) == render(('سلام دنیا',))
+        # These controls and spacing marks have localized Persian names.
+        # U+007F was reported as falling back to US English in NVDA.
+        for char, label in (('\x08', 'بک اسپیس'), ('\x0b', 'تب عمودی'),
+                            ('\x0c', 'پایان صفحه'), ('\x7f', 'حذف'),
+                            ('\x85', 'خط بعدی'), ('\u00a0', 'فاصله بدون شکست'),
+                            ('\u00ad', 'خط تیره نرم'), ('\u200b', 'فاصله بدون عرض'),
+                            ('\u202f', 'فاصله باریک بدون شکست')):
+            named = frontend.analyze_character(char)
+            written = frontend.analyze_direct(label)
+            assert named and written and named.parts == written.parts, (ascii(char), named, written)
+            for profile in (PERSIAN_PROBE, PINGLISH_PROBE):
+                engine.select_voice(profile.id, '1')
+                actual = render((EciIndex(40), EciText(char, character_mode=True), EciIndex(41)))
+                expected = render((EciIndex(40), label, EciIndex(41)))
+                assert actual == expected, (profile.locale, ascii(char))
+            engine.select_voice(PERSIAN_PROBE.id, '1')
         assert render(('سلام ❤', EciIndex(7), '\ufe0f', ' دنیا')) == render(
             ('سلام ❤', EciIndex(7), ' دنیا'))
         for char in ('\u200b', '\u2060', '\ufeff'):
@@ -55,10 +71,11 @@ def main():
                            EciIndex(62), ' دنیا', EciIndex(63))) == render(
                 (EciIndex(60), 'سلام', EciIndex(61), '',
                  EciIndex(62), ' دنیا', EciIndex(63))), ascii(char)
-            name = unicodedata.name(char).lower()
-            assert render((char,)) == render((EciLanguage(US_ENGLISH.id, '1'), name)), ascii(char)
-            assert render((EciIndex(64), EciText(char, character_mode=True), EciIndex(65))) == render(
-                (EciIndex(64), EciLanguage(US_ENGLISH.id, '1'), name, EciIndex(65))), ascii(char)
+            if char != '\u200b':
+                name = unicodedata.name(char).lower()
+                assert render((char,)) == render((EciLanguage(US_ENGLISH.id, '1'), name)), ascii(char)
+                assert render((EciIndex(64), EciText(char, character_mode=True), EciIndex(65))) == render(
+                    (EciIndex(64), EciLanguage(US_ENGLISH.id, '1'), name, EciIndex(65))), ascii(char)
         engine.select_voice(PINGLISH_PROBE.id, '1')
         assert render(('fa\u0304rsi',)) == render(('farsi',))
         for char in ('\u200b', '\u2060', '\ufeff'):
