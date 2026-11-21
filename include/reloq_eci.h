@@ -510,6 +510,15 @@ ECIAPI int ECICALL eciPersianTransferUsWords(struct reloq_fa_frame *target,size_
     const int64_t *donor_bounds,size_t word_count,const struct reloq_fa_syllable *target_syllables,
     size_t target_syllable_count,const struct reloq_fa_syllable *donor_syllables,
     size_t donor_syllable_count,const uint32_t *syllables_per_word);
+/* As above, with word bounds in captured audio samples. Both arrays contain
+ * word_count+1 positions, including the beginning and end of the phrase.
+ * Conversion and last-frame clamping are performed in the common C core. */
+ECIAPI int ECICALL eciPersianTransferUsSamples(struct reloq_fa_frame *target,size_t target_count,
+    const struct reloq_fa_frame *donor,size_t donor_count,const uint64_t *target_samples,
+    const uint64_t *donor_samples,size_t word_count,unsigned sample_rate,
+    const struct reloq_fa_syllable *target_syllables,size_t target_syllable_count,
+    const struct reloq_fa_syllable *donor_syllables,size_t donor_syllable_count,
+    const uint32_t *syllables_per_word);
 /* Keep the original pitch except near language-switch edges. Bit 0 selects
  * the beginning and bit 1 the end; window is in the frame clock's ms. */
 ECIAPI int ECICALL eciPersianFitPitchEdges(struct reloq_fa_frame *rows,size_t count,

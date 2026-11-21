@@ -42,6 +42,12 @@ int reloq_fa_transfer_us_words(struct reloq_fa_frame *target,size_t target_count
     const int64_t *donor_bounds,size_t word_count,const struct reloq_fa_syllable *target_syllables,
     size_t target_syllable_count,const struct reloq_fa_syllable *donor_syllables,
     size_t donor_syllable_count,const uint32_t *syllables_per_word);
+int reloq_fa_transfer_us_samples(struct reloq_fa_frame *target,size_t target_count,
+    const struct reloq_fa_frame *donor,size_t donor_count,const uint64_t *target_samples,
+    const uint64_t *donor_samples,size_t word_count,unsigned sample_rate,
+    const struct reloq_fa_syllable *target_syllables,size_t target_syllable_count,
+    const struct reloq_fa_syllable *donor_syllables,size_t donor_syllable_count,
+    const uint32_t *syllables_per_word);
 int reloq_fa_fit_pitch_edges(struct reloq_fa_frame *rows,size_t count,const float *pilot,
     size_t length,const float *original,int64_t start,int64_t end,int64_t a,int64_t b,
     unsigned edges,int64_t window);

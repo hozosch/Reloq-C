@@ -3,6 +3,20 @@
 
 #include <stddef.h>
 #include "reloq_eci.h"
+#include "reloq_persian_backend.h"
+
+/* Reusable request-local preparation for the native sentence renderer.
+ * Source positions are mapped to acoustic-plan byte offsets; the caller
+ * releases the plan after capture or rendering, even after a failed job. */
+struct reloq_fa_prepared {
+    struct reloq_fa_backend_plan backend;
+    size_t *positions;
+    size_t index_count;
+};
+int reloq_fa_prepare_native(const char *text,size_t bytes,int variant,
+    const size_t *source_offsets,size_t index_count,size_t *error_offset,
+    struct reloq_fa_prepared *result);
+void reloq_fa_prepared_clear(struct reloq_fa_prepared *prepared);
 
 /* Development-only shared C route. The caller supplies an idle, otherwise
  * empty 0x90000 ECI handle with its callback, output buffer and desired voice

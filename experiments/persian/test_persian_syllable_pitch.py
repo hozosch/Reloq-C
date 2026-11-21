@@ -47,6 +47,16 @@ class ObservedApi:
             self.anchored += 1
         return result
 
+    @property
+    def transfer_us_samples(self):
+        return self._transfer_us_samples if getattr(self.wrapped, 'transfer_us_samples', None) is not None else None
+
+    def _transfer_us_samples(self, *args):
+        result = self.wrapped.transfer_us_samples(*args)
+        if result == 0 and args[-1] is not None and any(args[-1][i] > 1 for i in range(args[6])):
+            self.anchored += 1
+        return result
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)

@@ -134,3 +134,37 @@ int reloq_fa_transfer_us_words(struct reloq_fa_frame *target,size_t nt,
 done:
     free(curve);free(first);free(last);free(te);free(de);return status;
 }
+
+/* Captured callback positions are samples. Convert them to the frame clock
+ * without floating-point rounding differences at half-millisecond ties. */
+static int fa_sample_milliseconds(uint64_t sample,unsigned rate,int64_t *milliseconds)
+{
+    if(!rate || sample>UINT64_MAX/1000u)return -1;
+    uint64_t scaled=sample*1000u,whole=scaled/rate,remainder=scaled%rate;
+    if(remainder*2u>rate || (remainder*2u==rate && (whole&1u)))++whole;
+    if(whole>INT64_MAX)return -1;
+    *milliseconds=(int64_t)whole;return 0;
+}
+
+int reloq_fa_transfer_us_samples(struct reloq_fa_frame *target,size_t nt,
+    const struct reloq_fa_frame *donor,size_t nd,const uint64_t *target_samples,
+    const uint64_t *donor_samples,size_t words,unsigned rate,
+    const struct reloq_fa_syllable *ts,size_t nts,const struct reloq_fa_syllable *ds,
+    size_t nds,const uint32_t *counts)
+{
+    if(!target || !nt || !donor || !nd || !target_samples || !donor_samples ||
+       !words || words>4096 || !rate || target[nt-1].tick<0 || donor[nd-1].tick<0 ||
+       target[nt-1].tick>=120000 || donor[nd-1].tick>=120000)return -1;
+    size_t bounds=words+1;
+    int64_t *storage=malloc(bounds*2*sizeof *storage);
+    if(!storage)return -1;
+    int64_t *tb=storage,*db=storage+bounds;int status=-1;
+    for(size_t i=0;i<bounds;++i)
+        if(fa_sample_milliseconds(target_samples[i],rate,tb+i) ||
+           fa_sample_milliseconds(donor_samples[i],rate,db+i))goto done;
+    if(tb[words]>target[nt-1].tick+1)tb[words]=target[nt-1].tick+1;
+    if(db[words]>donor[nd-1].tick+1)db[words]=donor[nd-1].tick+1;
+    status=reloq_fa_transfer_us_words(target,nt,donor,nd,tb,db,words,ts,nts,ds,nds,counts);
+done:
+    free(storage);return status;
+}

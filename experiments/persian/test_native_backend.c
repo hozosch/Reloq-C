@@ -2,6 +2,7 @@
  * Link the normal ECI library: no NVDA or eSpeak is loaded by this test. */
 #include "reloq_eci.h"
 #include "reloq_persian_backend.h"
+#include "reloq_persian_speak.h"
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -100,6 +101,18 @@ static void exercise(const char *source,int variant,int compare)
     for(size_t i=0;i<count;++i)assert(plan.offsets[i]<=plan.offsets[i+1]);
     size_t marks[4]={0};
     for(size_t i=0;i<mark_count;++i)marks[i]=plan.offsets[event_marks[i]];
+    /* Preparation is reusable by a C-only contour renderer and maps the
+     * same source positions as the existing event and acoustic pipeline. */
+    struct reloq_fa_prepared prepared={0};
+    assert(!reloq_fa_prepare_native(source,bytes,variant,source_marks,mark_count,&error,&prepared));
+    assert(prepared.index_count==mark_count && prepared.backend.length==plan.length);
+    assert(!strcmp(prepared.backend.text,plan.text));
+    assert(prepared.backend.onset_count==plan.onset_count &&
+           prepared.backend.geminate_count==plan.geminate_count);
+    for(size_t i=0;i<mark_count;++i)assert(prepared.positions[i]==marks[i]);
+    for(size_t i=0;i<plan.onset_count;++i)assert(prepared.backend.onsets[i]==plan.onsets[i]);
+    for(size_t i=0;i<plan.geminate_count;++i)assert(prepared.backend.geminates[i]==plan.geminates[i]);
+    reloq_fa_prepared_clear(&prepared);
     struct output actual=speak(plan.text,marks,mark_count,&plan);
     struct output native=speak_native(source,variant,source_marks,mark_count,3,0);
     assert(actual.samples==native.samples && actual.hash==native.hash);

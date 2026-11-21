@@ -11,6 +11,10 @@ The NVDA planner uses that implementation when the matching ECI library is
 available; the Python implementation remains for older libraries. It does not
 change the Persian phones. Word boundaries, weak words, punctuation and the
 full generated proxy are compared against the previous implementation.
+Sample-clock word bounds are also converted and fitted in C, including the
+same rounding and syllable alignment. Native text preparation is reusable
+independently of the synthesis call, so a future C renderer can capture and
+replay the prepared event plan without an NVDA object.
 
 The language is not yet a normal, independent ECI voice. The remaining work
 includes registering Persian and Pinglish dialects, moving target/donor frame
@@ -44,6 +48,8 @@ The in-tree Apple build can be invoked on a Mac with
 `make -f tools/apple/Makefile xcframework`. It prepares iOS, iOS simulator
 and Apple-silicon macOS static libraries and the public ECI headers.
 `.github/workflows/apple-native-build.yml` is prepared to build the same
-framework on a GitHub-hosted Mac and run a native ECI smoke test. The source
-selection, headers and smoke test were checked on Linux; this new Apple build
-has not yet run on a Mac or iPhone.
+framework on a GitHub-hosted Mac and run a native ECI smoke test. A hosted
+Mac has successfully built all three library slices; the separate native Mac
+smoke test is still being investigated. The source selection, headers and
+smoke test also passed on Linux. No test of the resulting app on a Mac or
+iPhone has been completed.

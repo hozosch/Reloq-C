@@ -705,6 +705,29 @@ def fit_us_word_pitch(item, bounds, donor, donor_bounds, target_markers, donor_m
     count = len(target_markers) + 1
     if len(donor_markers) + 1 != count:
         raise ValueError('US/Persian word markers differ')
+    native_samples = getattr(capture_api, 'transfer_us_samples', None)
+    if native_samples is not None:
+        if check:
+            check()
+        target_samples = (ctypes.c_uint64 * (count + 1))(
+            bounds[0], *(item.indexes[m] for m in target_markers), bounds[1])
+        donor_samples = (ctypes.c_uint64 * (count + 1))(
+            donor_bounds[0], *(donor.indexes[m] for m in donor_markers), donor_bounds[1])
+        target_syllables = (NativeSyllable * len(item.syllables))(
+            *(NativeSyllable(a, b) for a, b in item.syllables)) if item.syllables else None
+        donor_syllables = (NativeSyllable * len(donor.syllables))(
+            *(NativeSyllable(a, b) for a, b in donor.syllables)) if donor.syllables else None
+        counts = ((ctypes.c_uint32 * count)(*syllable_counts)
+                  if len(syllable_counts) == count else None)
+        status = native_samples(item.frames, len(item.frames), donor.frames, len(donor.frames),
+                                target_samples, donor_samples, count, rate,
+                                target_syllables, len(item.syllables), donor_syllables,
+                                len(donor.syllables), counts)
+        if check:
+            check()
+        if status < 0:
+            raise RuntimeError('invalid native US/Persian contour alignment')
+        return status == 0
     target = [round(bounds[0] * 1000 / rate)]
     target.extend(round(item.indexes[m] * 1000 / rate) for m in target_markers)
     target.append(min(round(bounds[1] * 1000 / rate), item.ticks[-1] + 1))

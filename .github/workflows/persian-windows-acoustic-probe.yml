@@ -30,6 +30,7 @@ on:
       - src/reloq_persian_us_proxy.c
       - include/reloq_persian_us_proxy.h
       - eci/test_persian_us_proxy_api.py
+      - eci/test_persian_us_samples.py
       - experiments/persian/test_native_us_proxy.py
       - experiments/persian/test_us_proxy_audio_parity.py
       - include/reloq_persian_timing.h
@@ -297,6 +298,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Standalone Persian C speech API failed' }
           python -B eci/test_persian_us_proxy_api.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Native Persian US proxy API failed' }
+          python -B eci/test_persian_us_samples.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Native Persian sample-clock alignment failed' }
           python -B experiments/persian/test_native_us_proxy.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Native Persian US proxy diverged from the established planner' }
           python -B experiments/persian/test_us_proxy_audio_parity.py --library eci/eci.dll

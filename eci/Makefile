@@ -221,8 +221,8 @@ test_reloq_hearing_profiles: ../tests/test_reloq_hearing_profiles.c build/posix/
 test_reloq_classic_body: ../tests/test_reloq_classic_body.c ../src/reloq_session.c $(HEADERS) build/posix/reloq_core.o build/posix/reloq_rate_transfer.o build/posix/reloq_noise_profile.o build/posix/reloq_frame_adapter.o build/posix/reloq_german_voice_defaults.o build/posix/reloq_voice_controls.o
 	$(CC) $(CFLAGS) $(SECTIONS) -ffp-contract=off -I../include $< build/posix/reloq_core.o build/posix/reloq_rate_transfer.o build/posix/reloq_noise_profile.o build/posix/reloq_frame_adapter.o build/posix/reloq_german_voice_defaults.o build/posix/reloq_voice_controls.o -Wl,--gc-sections -lm -o $@
 
-test_persian_native_backend: ../experiments/persian/test_native_backend.c ../src/reloq_persian_backend.c ../src/reloq_persian_backend.h libreloq_eci.so
-	$(CC) $(CFLAGS) -I../include -I../src ../experiments/persian/test_native_backend.c ../src/reloq_persian_backend.c -L. -lreloq_eci -Wl,-rpath,'$$ORIGIN' -lm -o $@
+test_persian_native_backend: ../experiments/persian/test_native_backend.c ../src/reloq_persian_backend.c ../src/reloq_persian_backend.h ../src/reloq_persian_speak.c ../src/reloq_persian_speak.h libreloq_eci.so
+	$(CC) $(CFLAGS) -I../include -I../src ../experiments/persian/test_native_backend.c ../src/reloq_persian_backend.c ../src/reloq_persian_speak.c -L. -lreloq_eci -Wl,-rpath,'$$ORIGIN' -lm -o $@
 
 test: test_reloq_eci test_reloq_german_context test_reloq_german_cancel test_reloq_hash_delete test_reloq_rate_dispatch test_reloq_silence_cut test_reloq_classic_source test_persian_native_backend libreloq_eci.so
 	./test_reloq_eci

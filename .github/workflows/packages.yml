@@ -108,6 +108,7 @@ jobs:
           python3 -B nvda/test_eci_inline_queue.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_inline_queue_digits.py --library eci/libreloq_eci.so
           python3 -B eci/test_persian_us_proxy_api.py --library eci/libreloq_eci.so
+          python3 -B eci/test_persian_us_samples.py --library eci/libreloq_eci.so
           python3 -B experiments/persian/test_native_us_proxy.py --library eci/libreloq_eci.so
           python3 -B experiments/persian/test_us_proxy_audio_parity.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_hz_adapter.py

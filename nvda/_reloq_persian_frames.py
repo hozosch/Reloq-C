@@ -119,6 +119,14 @@ class FrameCapture:
                 ctypes.POINTER(NativeSyllable), ctypes.c_size_t, ctypes.POINTER(NativeSyllable),
                 ctypes.c_size_t, ctypes.POINTER(ctypes.c_uint32))
             self.transfer_us_words.restype = ctypes.c_int
+        self.transfer_us_samples = getattr(dll, 'eciPersianTransferUsSamples', None)
+        if self.transfer_us_samples is not None:
+            self.transfer_us_samples.argtypes = (
+                ctypes.POINTER(NativeFrame), ctypes.c_size_t, ctypes.POINTER(NativeFrame), ctypes.c_size_t,
+                ctypes.POINTER(ctypes.c_uint64), ctypes.POINTER(ctypes.c_uint64), ctypes.c_size_t,
+                ctypes.c_uint, ctypes.POINTER(NativeSyllable), ctypes.c_size_t,
+                ctypes.POINTER(NativeSyllable), ctypes.c_size_t, ctypes.POINTER(ctypes.c_uint32))
+            self.transfer_us_samples.restype = ctypes.c_int
         self.fit_pitch_edges = _native_function(dll, 'eciPersianFitPitchEdges', 'reloq_fa_fit_pitch_edges')
         if self.fit_pitch_edges is not None:
             self.fit_pitch_edges.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,

@@ -36,6 +36,15 @@ def main():
         assert voice.speak(parts, audio.extend, lambda mark: marks.append((mark, len(audio))))
         assert audio and [x for x, _ in marks] == [11, 12, 13]
         return bytes(audio), tuple(marks)
+    original_fit = continuous_plan.fit_us_word_pitch
+    def old_clock_fit(*args, **kwargs):
+        capture = args[7]
+        previous = capture.transfer_us_samples
+        capture.transfer_us_samples = None
+        try:
+            return original_fit(*args, **kwargs)
+        finally:
+            capture.transfer_us_samples = previous
     try:
         # Keep the target and donor on the same thread in both versions, so
         # the comparison covers the planner and not worker scheduling.
@@ -45,7 +54,9 @@ def main():
                 with patch.object(continuous_driver, 'indexed_us_proxy',
                                   continuous_plan._indexed_us_proxy_python), \
                      patch.object(continuous_plan, 'indexed_us_proxy',
-                                  continuous_plan._indexed_us_proxy_python):
+                                  continuous_plan._indexed_us_proxy_python), \
+                     patch.object(continuous_driver, 'fit_us_word_pitch', old_clock_fit), \
+                     patch.object(continuous_plan, 'fit_us_word_pitch', old_clock_fit):
                     previous = speak(text)
                 assert native == previous, (text, len(native[0]), len(previous[0]),
                                             native[1], previous[1])
