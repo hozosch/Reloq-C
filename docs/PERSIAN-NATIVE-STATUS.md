@@ -56,8 +56,8 @@ The in-tree Apple build can be invoked on a Mac with
 and Apple-silicon macOS static libraries and the public ECI headers.
 `.github/workflows/apple-native-build.yml` is prepared to build the same
 framework on a GitHub-hosted Mac and run a native ECI smoke test. A hosted
-Mac has successfully built all three library slices. Linking the separate
-native Mac smoke test revealed a missing fixed-point table; both Apple build
-recipes now include the small existing table, pending another Mac run. The
-source selection, headers and smoke test also passed on Linux. No test of the
+Mac has successfully built all three library slices and passed the native
+Mac ECI smoke test after both Apple build recipes gained the small existing
+fixed-point table. The source selection, headers and smoke test also passed
+on Linux. A separate workflow builds the unsigned app; no test of the
 resulting app on a Mac or iPhone has been completed.
