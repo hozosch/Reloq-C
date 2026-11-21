@@ -8,7 +8,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
 from _reloq_eci_direct import GENDER, HEAD_SIZE, NATIVE_SPEED, SAMPLE_RATE
-from test_persian_r_after_i_contexts import capture
+from test_persian_r_after_i_contexts import at_fraction, capture
 from test_us_articulation import voice
 
 
@@ -78,23 +78,47 @@ def main():
                         assert capture(engine, scope, tag).pcm == capture(previous, old_scope, tag).pcm, (
                             tag, rate, gender, speed, 'short vowel in word changed')
                     for word in ('سوئد', 'سوئدی', 'ساعت'):
-                        # Hamza and ayn retain the same short audible closure,
-                        # without the second prolonged onset on the next vowel.
+                        # Preserve the previously accepted glottal closure
+                        # and its gradual voice onset for both hamza and ayn.
                         tag = project(engine, word)
                         pronunciation = capture(engine, scope, tag)
                         a, b = (x / 10000.0 for x in pronunciation.syllables[2])
                         rows = pronunciation.frames()
                         closure = [row.controls[2] for row in rows if a < row.tick <= b]
-                        after = next((row.controls[2] for row in rows if row.tick > b), 0)
-                        assert 0 < b-a <= 10 and closure and min(closure) == 0 and after >= 30, (
-                            word, rate, gender, speed, 'unrecognizable or prolonged glottal transition')
+                        after = next((row.controls[2] for row in rows if row.tick > b and row.controls[2] > 0), 0)
+                        assert 0 < b-a <= 10 and closure and min(closure) == 0 and 0 < after < 10, (
+                            word, rate, gender, speed, 'glottal closure or voice onset changed')
+                        if word != 'ساعت':
+                            # The E target used to pull the preceding U all
+                            # the way up during a short, voiced transition.
+                            # Its glottal midpoint should instead remain
+                            # between the U and E nuclei.
+                            u, edge, e = (at_fraction(pronunciation, i, .5, 13) for i in (1, 2, 3))
+                            assert u < edge < e and 4 * (edge-u) < 3 * (e-u), (
+                                word, rate, gender, speed, 'sharp E transition', u, edge, e)
                         if previous:
-                            assert pronunciation.pcm != capture(previous, old_scope, tag).pcm, (
-                                word, rate, gender, speed, 'intervocalic onset unchanged')
+                            before = capture(previous, old_scope, tag)
+                            assert pronunciation.syllables == before.syllables, (word, rate, gender, speed, 'timing changed')
+                            old_rows = before.frames()
+                            assert len(rows) == len(old_rows)
+                            for new, old in zip(rows, old_rows):
+                                assert new.tick == old.tick and all(
+                                    new.controls[i] == old.controls[i] for i in (0, 1, 2, 7, 8)), (
+                                        word, rate, gender, speed, 'glottal source changed')
+                            if word == 'ساعت':
+                                assert pronunciation.pcm == before.pcm, (word, rate, gender, speed, 'ayn changed')
+                            else:
+                                assert pronunciation.pcm != before.pcm, (word, rate, gender, speed, 'E edge unchanged')
+                                for segment in (1, 3):
+                                    for column in (9, 13, 15, 17):
+                                        assert abs(at_fraction(pronunciation, segment, .5, column) -
+                                                   at_fraction(before, segment, .5, column)) < .01, (
+                                            word, rate, gender, speed, 'vowel nucleus changed', segment, column)
                     if previous:
                         # Explicit initial closure and hamza after a
                         # consonant keep their existing glottal attack.
-                        for tag in ('`[.1wa]', "`[.0mAs.1w'u:'l]"):
+                        for tag in ('`[.1wa]', '`[.1we]', "`[.0s'u:'.1wad]",
+                                    "`[.1'u:'] `[.1we]", "`[.0mAs.1w'u:'l]"):
                             assert capture(engine, scope, tag).pcm == capture(previous, old_scope, tag).pcm, (
                                 tag, rate, gender, speed, 'unrelated glottal changed')
                     count += 1
@@ -102,7 +126,7 @@ def main():
         engine.close()
         if previous:
             previous.close()
-    print(f'Passed {count} vowel-duration and recognizable, softened hamza/ayn onset comparisons.')
+    print(f'Passed {count} vowel-duration, restored glottal and contextual E comparisons.')
 
 
 if __name__ == '__main__':

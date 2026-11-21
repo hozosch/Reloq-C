@@ -258,7 +258,7 @@ def main():
             changed = set(git('diff', '--name-only', DEV200_BASE, 'HEAD', '--', *INPUTS).splitlines())
             if changed != DEV200_ALLOWED:
                 raise ValueError('2.0 provider inputs differ from the verified header and timing changes')
-            reuse_dev156_generated(frozenset({'delta_rules_c08_fifi.c', 'delta_rules_c16_fifi.c'}), original_count=22)
+            reuse_dev156_generated(frozenset({'delta_rules_c08_fifi.c', 'delta_rules_c22_fifi.c'}), original_count=22)
             for dep in BUILD.rglob('*.d'):
                 if 'reloq_eci.h' in dep.read_text(encoding='utf8', errors='replace'):
                     dep.with_suffix('.o').unlink(missing_ok=True)

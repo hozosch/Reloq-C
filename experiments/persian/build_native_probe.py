@@ -91,6 +91,33 @@ static int persian_probe_neighbour_vowel(void *state,int32_t position,int backwa
     }
     return (int)phone;
 }
+/* The preceding vowel must belong to this word. Restore the native scanner
+   completely so no subsequent acoustic rule sees a modified fence. */
+static int persian_probe_previous_phone_in_word(void *state,int32_t token_ref)
+{
+    delta_state *d=state;
+    if (!d || !d->vars || d->nstmts<5 || d->nstmts>256 || !token_ref) return 0;
+    delta_vars *v=EVV_AT(delta_vars *,d->vars);
+    delta_tpos left=d->lpta,right=d->rpta;
+    unsigned char scan[8],index[256],marks[256],chars[256];
+    int8_t compared=v->compared_equal,fences=v->fence_count,testing=v->testing;
+    memcpy(scan,&v->scan_ptr,sizeof scan);
+    memcpy(index,EVV_AT(const void *,d->fence_index),d->nstmts);
+    memcpy(marks,EVV_AT(const void *,d->fence_marks),d->nstmts);
+    memcpy(chars,EVV_AT(const void *,d->fence_chars),d->nstmts);
+    v->testing=0;
+    const uint8_t word_fence[]={4};
+    fence(d,1,word_fence);
+    memset(EVV_AT(void *,d->fence_marks),0,d->nstmts);
+    lpta_loadp(d,EVV_AT(const delta_token *,token_ref));
+    int previous=!setscan_l(d,2) && !advance_tok(d);
+    d->lpta=left; d->rpta=right; memcpy(&v->scan_ptr,scan,sizeof scan);
+    v->compared_equal=compared; v->fence_count=fences; v->testing=testing;
+    memcpy(EVV_AT(void *,d->fence_index),index,d->nstmts);
+    memcpy(EVV_AT(void *,d->fence_marks),marks,d->nstmts);
+    memcpy(EVV_AT(void *,d->fence_chars),chars,d->nstmts);
+    return previous;
+}
 '''
 
 US_A_PATCH = r'''
@@ -993,9 +1020,20 @@ Q_PATCH = r'''
             int h_tract=end_h && end_h[0]=='1' && !end_h[1] &&
                         persian_probe_marked_stop(state,STATE(int32_t,w61),5);
             int f1,f2,f3;
-            if ((glot_tract || h_tract) &&
+            int following=(glot_tract || h_tract) ?
                 persian_probe_neighbour_vowel(state,h_tract ? STATE(int32_t,w60) : STATE(int32_t,w61),
-                                               h_tract,&f1,&f2,&f3)) {
+                                               h_tract,&f1,&f2,&f3) : 0;
+            if (following) {
+                int p1=0,p2=0,p3=0;
+                if (glot_tract && following==29 &&
+                    persian_probe_neighbour_vowel(state,STATE(int32_t,w60),1,&p1,&p2,&p3) &&
+                    persian_probe_previous_phone_in_word(state,STATE_AT(w60,-4))) {
+                    /* Keep the established glottal closure and source onset.
+                       Its tract sits midway between the two vowels, so E
+                       no longer pulls the preceding vowel all the way to
+                       its bright target in a few milliseconds. */
+                    f1=(f1+p1+1)/2; f2=(f2+p2+1)/2; f3=(f3+p3+1)/2;
+                }
                 STATE(int16_t,s448)=f1; STATE(int16_t,s449)=f1;
                 STATE(int16_t,s450)=f2; STATE(int16_t,s451)=f2;
                 STATE(int16_t,s452)=f3; STATE(int16_t,s453)=f3;
@@ -1696,13 +1734,7 @@ static void persian_auto_h_insert(void *state)
                      (phone==3 && marker==4);
     const char *glot_onset=getenv("RELOQ_FA_PROBE_GLOT_ONSET");
     int use_onset=!glot_onset || (glot_onset[0]=='1' && !glot_onset[1]);
-    /* Between vowels, retain the short marked glottal closure but do not
-       add a second, forceful onset to the next vowel. This treats hamza and
-       ayn alike while preserving word-initial and post-consonant onsets. */
-    int intervocalic=glot_enabled && glot_carrier && previous &&
-                     persian_auto_h_field(previous,1)==1 &&
-                     !persian_auto_h_word_start(state,STATE_AT(w60,-4));
-    if (glot_enabled && glot_carrier && use_onset && !intervocalic) {
+    if (glot_enabled && glot_carrier && use_onset) {
         /* Let Finnish's native glottal onset shape the source at the next
            vowel, instead of approximating it only with a silent K closure. */
         void *fields=TFLDS(EVV_AT(void *,vowel));

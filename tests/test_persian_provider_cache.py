@@ -30,7 +30,7 @@ class CacheReuseTests(unittest.TestCase):
                 self.assertEqual(reuse.called, accepted)
                 self.assertEqual(build.exists(), accepted)
                 if accepted:
-                    reuse.assert_called_once_with(frozenset({'delta_rules_c08_fifi.c', 'delta_rules_c16_fifi.c'}), original_count=22)
+                    reuse.assert_called_once_with(frozenset({'delta_rules_c08_fifi.c', 'delta_rules_c22_fifi.c'}), original_count=22)
 
     def test_dev191_rebuilds_trace_bridge_and_changed_nasal_rule(self):
         for changed, accepted in ((cache.DEV191_ALLOWED, True),
