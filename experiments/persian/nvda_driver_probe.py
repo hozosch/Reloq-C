@@ -380,22 +380,40 @@ class PersianProbeLanguageEngine(LanguageEngine):
                         part = replace(part, text=text) if isinstance(part, EciText) else text
                     filtered.append(part)
                 parts = tuple(filtered)
-        # Names without a Persian translation belong to the real English
-        # engine, including when they occur inside a larger Persian run. Do
-        # this before script routing so indexes and the surrounding text keep
-        # their normal language boundaries. Do not reinterpret ASCII letters,
-        # numbers, Arabic-script text, joiners, or explicit ECI controls.
-        expanded, logical, names = [], self._home, {}
+        # An isolated character without a Persian label can use the English
+        # Unicode name. In continuous speech an otherwise-unmapped character
+        # must not inject that long fallback name; NVDA's configured symbol
+        # replacements have already been applied before this point.
+        visible = ''.join(part if isinstance(part, str) else part.text
+                          for part in parts if isinstance(part, str) or
+                          isinstance(part, EciText) and not part.is_control).strip()
+        isolated = len(visible) == 1
+        expanded, logical, names, previous_char = [], self._home, {}, None
         for part in parts:
             if isinstance(part, EciLanguage):
                 logical = self._key(part.language, part.voice)
+                previous_char = None
                 expanded.append(part)
                 continue
             text = part if isinstance(part, str) else part.text if isinstance(part, EciText) else None
             if (logical[0] not in (PERSIAN_PROBE.id, PINGLISH_PROBE.id) or not text or '`' in text or
                     isinstance(part, EciText) and (part.character_mode or part.is_control)):
+                if text is not None:
+                    previous_char = None
                 expanded.append(part)
                 continue
+            normalized_chars = []
+            for char in text:
+                if (char == '\ufe0f' and previous_char is not None and
+                        not (isinstance(part, EciText) and part.segmentation_guarded) and
+                        (0x2600 <= ord(previous_char) <= 0x27bf or 0x1f000 <= ord(previous_char) <= 0x1faff)):
+                    continue
+                normalized_chars.append(' ' if ord(char) > 127 and char.isspace() else char)
+                previous_char = char
+            normalized = ''.join(normalized_chars)
+            if normalized != text:
+                text = normalized
+                part = replace(part, text=text) if isinstance(part, EciText) else text
             positions = []
             for at, char in enumerate(text):
                 cp = ord(char)
@@ -421,7 +439,10 @@ class PersianProbeLanguageEngine(LanguageEngine):
             for at, name in positions:
                 if at > start:
                     expanded.append(replace(part, text=text[start:at]) if isinstance(part, EciText) else text[start:at])
-                expanded.extend((EciLanguage(US_ENGLISH.id, logical[1]), name, EciLanguage(*logical)))
+                if isolated:
+                    expanded.extend((EciLanguage(US_ENGLISH.id, logical[1]), name, EciLanguage(*logical)))
+                else:
+                    expanded.append(replace(part, text=' ') if isinstance(part, EciText) else ' ')
                 start = at + 1
             if start < len(text):
                 expanded.append(replace(part, text=text[start:]) if isinstance(part, EciText) else text[start:])

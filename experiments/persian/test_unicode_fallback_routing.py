@@ -1,4 +1,4 @@
-"""Keep English Unicode names and source indexes in mixed Persian text."""
+"""Name isolated Unicode characters and keep ordinary Persian text flowing."""
 from __future__ import annotations
 
 import argparse
@@ -37,12 +37,10 @@ def main():
                            ('\ud800', 'replacement character'),
                            ('\u202e', 'right-to-left override'),
                            ('Ж', 'cyrillic capital letter zhe')):
-            # An uncovered Persian word requires reference validation. The
-            # Unicode name must not be passed into the Persian phone parser.
+            # An uncovered word still needs reference validation. Unknown
+            # Unicode names are for explicit character reading, not prose.
             before = (EciIndex(1), 'نمی‌آراست ', EciIndex(2), char + ' سلام', EciIndex(3))
-            explicit = (EciIndex(1), 'نمی‌آراست ', EciIndex(2),
-                        EciLanguage(US_ENGLISH.id, '1'), name,
-                        EciLanguage(PERSIAN_PROBE.id, '1'), ' سلام', EciIndex(3))
+            explicit = (EciIndex(1), 'نمی‌آراست ', EciIndex(2), '  سلام', EciIndex(3))
             assert render(before) == render(explicit), ascii(char)
             assert render((EciIndex(4), EciText(char, character_mode=True), EciIndex(5))) == render(
                 (EciIndex(4), EciLanguage(US_ENGLISH.id, '1'), name, EciIndex(5))), ascii(char)
@@ -66,14 +64,12 @@ def main():
         for char in ('\u200b', '\u2060', '\ufeff'):
             assert render(('sa' + char + 'lam donya',)) == render(('salam donya',)), ascii(char)
         before = (EciIndex(4), 'salam ', EciIndex(5), '\0 donya', EciIndex(6))
-        explicit = (EciIndex(4), 'salam ', EciIndex(5),
-                    EciLanguage(US_ENGLISH.id, '1'), 'symbol for null',
-                    EciLanguage(PINGLISH_PROBE.id, '1'), ' donya', EciIndex(6))
+        explicit = (EciIndex(4), 'salam ', EciIndex(5), '  donya', EciIndex(6))
         assert render(before) == render(explicit)
     finally:
         frontend.analyze = original
         engine.close()
-    print('Passed mixed Persian/Pinglish Unicode names, recovery and indexes.')
+    print('Passed isolated Unicode names and Persian/Pinglish text with preserved indexes.')
 
 
 if __name__ == '__main__':

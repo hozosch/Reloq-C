@@ -185,6 +185,21 @@ def main():
                     finally:
                         speech_dictionary.processText = original_process
                     report['checks'] += 1
+                    # An explicit dictionary deletion also has priority;
+                    # it must not be mistaken for symbol-level suppression.
+                    speech_dictionary.processText = lambda text: '' if text == unknown else text
+                    try:
+                        for enabled in (True, False):
+                            spelling_config['useSpellingFunctionality'] = enabled
+                            sequence = list(api.getSpellingSpeech(unknown, locale='de_DE', endsUtterance=False))
+                            prepared = driver._prepare_speech_sequence(sequence)
+                            driver._protect_before_speech(prepared, symbolLevel=0)
+                            assert unknown in prepared
+                            assert not any(type(part).__name__ == 'NativeDictionaryWord' and part.text == unknown
+                                           for part in prepared)
+                            report['checks'] += 1
+                    finally:
+                        speech_dictionary.processText = original_process
                     original_imported = driver._imported_dictionaries
                     class ImportedSymbolDictionary:
                         records = (object(),)
@@ -213,6 +228,33 @@ def main():
                                                                        endsUtterance=False)), level=level)
                                 assert actual == expected, (locale, char, level)
                                 report['checks'] += 1
+                    # Unicode letters are not all punctuation or symbols.
+                    # A non-ASCII scalar in NVDA's explicit spelling path
+                    # must reach the same native name in every voice, even
+                    # when synthesizer spelling functionality is disabled.
+                    for locale in (entry.locale for entry in driver._languages.values()):
+                        driver.language = locale
+                        for char in ('Ж', 'א', 'ꜩ', '⚭'):
+                            spelling_config['useSpellingFunctionality'] = True
+                            expected = run(list(api.getSpellingSpeech(char, locale=locale, endsUtterance=False)))
+                            spelling_config['useSpellingFunctionality'] = False
+                            actual = run(list(api.getSpellingSpeech(char, locale=locale, endsUtterance=False)))
+                            assert actual == expected, (locale, char)
+                            report['checks'] += 1
+                    # NVDA still runs symbol processing in character mode.
+                    # Simulate a raw symbol which its current level suppresses.
+                    driver.language = 'de_DE'
+                    spelling_config['useSpellingFunctionality'] = True
+                    expected = run(list(api.getSpellingSpeech(unknown, locale='de_DE', endsUtterance=False)))
+                    original_symbols = api.symbols.processSpeechSymbols
+                    def hide_unknown(locale, text, level):
+                        return '' if text == unknown else original_symbols(locale, text, level)
+                    with mock.patch.object(api.symbols, 'processSpeechSymbols', side_effect=hide_unknown):
+                        for enabled in (True, False):
+                            spelling_config['useSpellingFunctionality'] = enabled
+                            actual = run(list(api.getSpellingSpeech(unknown, locale='de_DE', endsUtterance=False)))
+                            assert actual == expected, (enabled, unknown)
+                            report['checks'] += 1
                     driver.language = 'de_DE'
                 spelling_config['useSpellingFunctionality'] = True
                 if args.spelling_only:

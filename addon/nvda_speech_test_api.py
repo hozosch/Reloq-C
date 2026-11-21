@@ -39,9 +39,11 @@ def speech_api(driver, on_sequence):
         lambda n: isinstance(n, ast.ClassDef) and n.name in (
             "LocaleDataMap", "SymbolLevel", "SpeechSymbol", "SpeechSymbols", "SpeechSymbolProcessor"), ns)
     sources = {}
-    for locale in ("en", "de", "es", "fr"):
+    for locale in ("en", "de", "es", "fr", "fa"):
         data = ns["SpeechSymbols"]()
-        data.load(str(SOURCE / "locale" / locale / "symbols.dic"))
+        path = (SOURCE.parents[2] / "experiments/persian/reference-nvda/fa_symbols_2026_3_1.dic"
+                if locale == "fa" else SOURCE / "locale" / locale / "symbols.dic")
+        data.load(str(path))
         sources[locale] = (data, ns["SpeechSymbols"]())
     ns["SpeechSymbolProcessor"].localeSymbols = ns["LocaleDataMap"](lambda locale: sources[locale])
     processors = {locale: ns["SpeechSymbolProcessor"](locale) for locale in sources}

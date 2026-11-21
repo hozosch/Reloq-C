@@ -1,0 +1,176 @@
+"""Exercise packaged Persian Unicode names through NVDA's actual speech code."""
+from __future__ import annotations
+
+import argparse
+from contextlib import nullcontext
+import ctypes
+from pathlib import Path
+import re
+import sys
+import threading
+from unittest import mock
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / 'addon'))
+from nvda_speech_test_api import speech_api
+from test_synth import main as test_package
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--library', type=Path, required=True)
+    parser.add_argument('--addon', type=Path, required=True)
+    args = parser.parse_args()
+    library, addon = args.library.resolve(), args.addon.resolve()
+    original_sizeof = ctypes.sizeof
+    original_windll = getattr(ctypes, 'WinDLL', None)
+    checks = []
+
+    def inspect(module):
+        probe = sys.modules[module.__name__ + '._persian.nvda_driver_probe']
+        sequence = sys.modules[module.__name__ + '._persian.direct_fa_sequence']
+        symbols = sys.modules[module.__name__ + '._persian.persian_symbols'].SYMBOL_TAGS
+        done, players, errors, received, projected, native_text = threading.Event(), [], [], [], [], []
+        original_prepared = sequence.ScopedDirectPersianEngine._speak_prepared
+        original_native = probe.DirectEciEngine.speak
+
+        def observe_prepared(instance, prepared, *args, **kwargs):
+            projected.append((prepared.source, prepared.tagged))
+            return original_prepared(instance, prepared, *args, **kwargs)
+
+        def observe_native(instance, parts, *args, **kwargs):
+            native_text.extend(p if isinstance(p, str) else p.text
+                               for p in parts if isinstance(p, str) or hasattr(p, 'text'))
+            return original_native(instance, parts, *args, **kwargs)
+
+        class Player:
+            def __init__(self, hz):
+                self.buffers = []
+                players.append(self)
+            def feed(self, pcm, onDone=None):
+                self.buffers.append(pcm)
+                if onDone:
+                    onDone()
+            def idle(self): pass
+            def pause(self, switch): pass
+            def stop(self): pass
+            def close(self): pass
+
+        class Driver(module.SynthDriver):
+            @staticmethod
+            def _make_player(hz): return Player(hz)
+            def _on_done(self, job): done.set()
+            def _on_error(self, error): errors.append(error); done.set()
+
+        module.add_profiles = lambda languages, _: {
+            **languages, probe.PERSIAN_PROBE.id: probe.PERSIAN_PROBE,
+            probe.PINGLISH_PROBE.id: probe.PINGLISH_PROBE}
+        module.make_engine = lambda _, *, languages, language, voice: probe.make_language_engine(
+            library, library, None, Path('/unavailable-espeak'), Path('/unavailable'),
+            languages=languages, language=language, voice=voice)
+        sequence.ScopedDirectPersianEngine._speak_prepared = observe_prepared
+        probe.DirectEciEngine.speak = observe_native
+        patches = [mock.patch.object(ctypes, 'sizeof', original_sizeof)]
+        if original_windll is not None:
+            patches.append(mock.patch.object(ctypes, 'WinDLL', original_windll))
+        with patches[0], (patches[1] if len(patches) > 1 else nullcontext()):
+            driver = Driver()
+            with mock.patch.object(sys.modules['synthDriverHandler'], 'getSynth', return_value=driver):
+                api = speech_api(driver, lambda value: (received.append(value), driver.speak(value)))
+                speech_config = sys.modules['config'].conf['speech']
+                try:
+                    spelling_config = speech_config[driver.name]
+                except KeyError:
+                    speech_config[driver.name] = {}
+                    spelling_config = speech_config[driver.name]
+                for key, value in dict(useSpellingFunctionality=True, capPitchChange=0,
+                                       sayCapForCapitals=False, beepForCapitals=False).items():
+                    spelling_config[key] = value
+                dictionary = api.speak.__globals__['speechDictHandler']
+
+                def run(items, *, level=0):
+                    done.clear(); projected.clear(); native_text.clear()
+                    before = {id(player): len(player.buffers) for player in players}
+                    api.speak(items, symbolLevel=level)
+                    assert done.wait(30), (items, errors)
+                    if errors:
+                        raise errors[-1]
+                    audio = b''.join(chunk for player in players
+                                     for chunk in player.buffers[before.get(id(player), 0):])
+                    assert audio, (items, received[-1], projected, native_text)
+                    return audio, tuple(projected), tuple(native_text)
+
+                def spelling(char, locale, enabled):
+                    spelling_config['useSpellingFunctionality'] = enabled
+                    return list(api.getSpellingSpeech(char, locale=locale, endsUtterance=False))
+
+                try:
+                    driver.sampleRate = '3'
+                    with mock.patch.dict(sys.modules, {'speechDictHandler': dictionary,
+                                                       'characterProcessing': api.symbols}):
+                        for locale in ('fa_IR', 'fa_Latn'):
+                            driver.language = locale
+                            for char in ('⚽', '🙂', 'α', 'Ж', '⚭', '≪'):
+                                on, projects, native = run(spelling(char, locale, True))
+                                off, _, _ = run(spelling(char, locale, False))
+                                assert on == off, (locale, char, len(on), len(off))
+                                if char in ('⚽', '🙂', 'α'):
+                                    expected = re.sub(r"'([Aaeiou]):'", r"\1", symbols[char])
+                                    assert expected in ' '.join(tag for _, tag in projects), (locale, char, projects)
+                                if char in ('Ж', '⚭'):
+                                    expected = {'Ж': 'cyrillic capital letter zhe',
+                                                '⚭': 'marriage symbol'}[char]
+                                    assert expected in ' '.join(native).lower(), (locale, char, native)
+                                checks.append((locale, char))
+
+                            # The same unlisted Unicode character in a running
+                            # sentence must not inject an English Unicode name.
+                            text = 'سلام ⚭ دنیا' if locale == 'fa_IR' else 'salam ⚭ donya'
+                            audio, _, native = run([text])
+                            assert 'marriage symbol' not in ' '.join(native).lower(), (locale, native)
+                            without_name, _, _ = run([text.replace('⚭', ' ')])
+                            assert audio == without_name, locale
+                            checks.append((locale, 'running text'))
+
+                            # Indexes do not turn a single fragment inside a
+                            # larger sentence into a character-navigation job.
+                            index = sys.modules['speech.commands'].IndexCommand
+                            before, after = ('سلام ', ' دنیا') if locale == 'fa_IR' else ('salam ', ' donya')
+                            _, _, native = run([before, index(17), '⚭', index(18), after])
+                            assert 'marriage symbol' not in ' '.join(native).lower(), (locale, native)
+                            checks.append((locale, 'indexed running text'))
+
+                            # Keep the user's explicit NVDA dictionary mapping.
+                            original_dict = dictionary.processText
+                            dictionary.processText = lambda text: 'واژه' if text == '⚭' else text
+                            try:
+                                actual, _, _ = run(spelling('⚭', locale, False))
+                                expected, _, _ = run(['واژه'])
+                                assert actual == expected, locale
+                            finally:
+                                dictionary.processText = original_dict
+                            checks.append((locale, 'speech dictionary'))
+
+                            # NVDA can suppress even a character-mode symbol
+                            # during its symbol-level preprocessing.
+                            spelling_config['useSpellingFunctionality'] = True
+                            expected, _, _ = run(spelling('⚭', locale, True))
+                            original_symbols = api.symbols.processSpeechSymbols
+                            def hide_symbol(loc, text, level):
+                                return '' if text == '⚭' else original_symbols(loc, text, level)
+                            with mock.patch.object(api.symbols, 'processSpeechSymbols', side_effect=hide_symbol):
+                                for enabled in (True, False):
+                                    actual, _, _ = run(spelling('⚭', locale, enabled))
+                                    assert actual == expected, (locale, enabled)
+                                    checks.append((locale, 'suppressed spelling', enabled))
+                finally:
+                    driver.terminate()
+                    sequence.ScopedDirectPersianEngine._speak_prepared = original_prepared
+                    probe.DirectEciEngine.speak = original_native
+
+    test_package(inspect, inspect_only=True, package_path=addon, persian_package=True)
+    print(f'Passed {len(checks)} packaged Persian/Pinglish NVDA Unicode checks.')
+
+
+if __name__ == '__main__':
+    main()

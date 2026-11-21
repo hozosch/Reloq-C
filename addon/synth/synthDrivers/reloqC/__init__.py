@@ -14,7 +14,6 @@ import math
 from pathlib import Path
 import threading
 import re
-import unicodedata
 
 import addonHandler
 addonHandler.initTranslation()
@@ -394,7 +393,7 @@ class SynthDriver(BaseSynthDriver):
             return sequence
         needs_processing = (self._voiceTags or self._wordSegmentation or self._camelCase or
                             self._imported_dictionaries.records or
-                            self._has_unmarked_spelled_unicode(sequence) or
+                            self._has_spelled_unicode(sequence) or
                             any(isinstance(item, str) and _BUILTIN_BOUNDARY.search(item) for item in sequence))
         if not needs_processing:
             return sequence
@@ -413,26 +412,23 @@ class SynthDriver(BaseSynthDriver):
         speechSequence[:] = self._protect_tags(prepared, symbolLevel=symbolLevel)
 
     @staticmethod
-    def _has_unmarked_spelled_unicode(sequence):
-        # NVDA surrounds spelling with this command even when the user has
-        # disabled the synthesizer's normal character-mode functionality.
-        spelling, character_mode = False, False
+    def _has_spelled_unicode(sequence):
+        # This command identifies NVDA character navigation and spelling even
+        # when the synthesizer's spelling functionality is disabled.
+        spelling = False
         for item in sequence:
             if type(item).__name__ == 'SuppressUnicodeNormalizationCommand':
                 spelling = bool(item.state)
-            elif isinstance(item, CharacterModeCommand):
-                character_mode = bool(item.state)
-            elif (spelling and not character_mode and isinstance(item, str) and len(item) == 1 and
-                  ord(item) > 127 and unicodedata.category(item)[0] in 'SPMC'):
+            elif spelling and isinstance(item, str) and len(item) == 1 and ord(item) > 127:
                 return True
         return False
 
     def _preserve_spelled_unicode(self, sequence, symbol_level):
-        if not self._has_unmarked_spelled_unicode(sequence):
+        if not self._has_spelled_unicode(sequence):
             return sequence
-        # Do not override a user speech-dictionary replacement or NVDA's own
-        # configured symbol reading. Only supply character mode when those
-        # processors would otherwise pass the original symbol unchanged.
+        # Preserve user replacements and NVDA's own configured name. If the
+        # processors leave a character raw or suppress it at this verbosity,
+        # character navigation must still reach the synth's name lookup.
         try:
             import characterProcessing
             import globalVars
@@ -455,19 +451,30 @@ class SynthDriver(BaseSynthDriver):
             elif isinstance(item, LangChangeCommand):
                 locale = item.lang or self._languages[home].locale
                 selected = language_for(item.lang, home, self._languages) or selected
-            elif (spelling and not character_mode and isinstance(item, str) and len(item) == 1 and
-                  ord(item) > 127 and unicodedata.category(item)[0] in 'SPMC'):
+            elif spelling and isinstance(item, str) and len(item) == 1 and ord(item) > 127:
                 try:
-                    if (getattr(globalVars, 'speechDictionaryProcessing', True) and
-                            self._imported_dictionaries.matches(item, selected, voice)):
+                    dictionaries_enabled = getattr(globalVars, 'speechDictionaryProcessing', True)
+                    if dictionaries_enabled and self._imported_dictionaries.matches(item, selected, voice):
                         processed = None
                     else:
-                        processed = speechDictHandler.processText(item)
-                        processed = characterProcessing.processSpeechSymbols(locale, processed, level).strip()
+                        processed = speechDictHandler.processText(item) if dictionaries_enabled else item
+                        if processed == item:
+                            processed = characterProcessing.processSpeechSymbols(locale, processed, level).strip()
+                        else:
+                            # A dictionary is allowed to replace a character
+                            # with an empty string as well as with a word.
+                            processed = None
                 except (AttributeError, KeyError, LookupError, TypeError, ValueError):
                     processed = None
-                if processed == item:
-                    result.extend((CharacterModeCommand(True), item, CharacterModeCommand(False)))
+                if processed == item or processed == '':
+                    # NVDA's symbol processor still runs in character mode and
+                    # can remove a raw character at the selected symbol level.
+                    # A synth command protects it until the native name lookup.
+                    if not character_mode:
+                        result.append(CharacterModeCommand(True))
+                    result.append(NativeDictionaryWord(item))
+                    if not character_mode:
+                        result.append(CharacterModeCommand(False))
                     continue
             result.append(item)
         return result

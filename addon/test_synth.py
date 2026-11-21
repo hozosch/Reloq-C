@@ -126,7 +126,7 @@ class Engine:
         self.closed = True
 
 
-def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=None):
+def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=None, persian_package=False):
     # ctypes keeps a loaded Windows module mapped until process exit, even
     # after all ECI handles/threads are closed. The native fixture must not
     # turn that expected file lock into a failed behavioural test.
@@ -168,9 +168,14 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
             assert not any("openevv" in name.lower() for name in names if name not in licenses)
             assert "locale/de/LC_MESSAGES/nvda.mo" in names
             assert "locale/de/manifest.ini" in names
-            assert b"fifteen language variants" in archive.read("manifest.ini")
-            assert "Japanisch" in archive.read("locale/de/manifest.ini").decode("utf-8")
-            assert "Griechisch" in archive.read("locale/de/manifest.ini").decode("utf-8")
+            if persian_package:
+                assert b"Persian and Pinglish test" in archive.read("manifest.ini")
+                assert "Persisch- und Pinglish-Test" in archive.read("locale/de/manifest.ini").decode("utf-8")
+                assert "synthDrivers/reloqC/_persian/nvda_driver_probe.py" in names
+            else:
+                assert b"fifteen language variants" in archive.read("manifest.ini")
+                assert "Japanisch" in archive.read("locale/de/manifest.ini").decode("utf-8")
+                assert "Griechisch" in archive.read("locale/de/manifest.ini").decode("utf-8")
             assert "globalPlugins/reloqCDictionaries/__init__.py" in names
             assert not any("__pycache__" in name or name.endswith(".pyc")
                            for name in names)

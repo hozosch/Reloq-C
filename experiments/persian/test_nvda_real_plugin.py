@@ -635,9 +635,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.cases.extend(('fa_IR', 'سلام دنیا خوب.', 'comparison_' + kind + '_pitch')
                               for kind in ('finnish', 'plain'))
             self.cases.extend((locale, char, mode)
-                              for locale in ('de_DE', 'en_US')
-                              for char in ('⚭', '⊖', '≪')
+                              for locale in ('de_DE', 'en_US', 'fa_IR', 'fa_Latn')
+                              for char in ('⚭', '⊖', '≪', 'Ж', 'α', '⚽', '🙂')
                               for mode in ('unicode_spelling_on', 'unicode_spelling_off'))
+            self.cases.extend((locale, text, mode) for locale, original, reference in (
+                ('fa_IR', 'سلام ⚭ دنیا', 'سلام   دنیا'),
+                ('fa_Latn', 'salam ⚭ donya', 'salam   donya'))
+                for text, mode in ((original, 'unicode_flow'), (reference, 'unicode_flow_reference')))
             self.next()
         except BaseException:
             self.fail()
@@ -849,10 +853,17 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     return next(row['pcm_sha256'] for row in self.results
                                 if row['locale'] == locale and row['text'] == text and row['spelling'] == mode)
                 self.spelling_config['useSpellingFunctionality'] = self.saved_spelling_functionality
-                for locale in ('de_DE', 'en_US'):
-                    for char in ('⚭', '⊖', '≪'):
+                for locale in ('de_DE', 'en_US', 'fa_IR', 'fa_Latn'):
+                    for char in ('⚭', '⊖', '≪', 'Ж', 'α', '⚽', '🙂'):
                         if sound(locale, char, 'unicode_spelling_on') != sound(locale, char, 'unicode_spelling_off'):
                             raise AssertionError('NVDA lost the Unicode name while spelling: ' + ascii((locale, char)))
+                import speechDictHandler
+                for locale, original, reference in (('fa_IR', 'سلام ⚭ دنیا', 'سلام   دنیا'),
+                                                    ('fa_Latn', 'salam ⚭ donya', 'salam   donya')):
+                    if (self.symbols.processSpeechSymbols(locale, '⚭', self.symbols.SymbolLevel.NONE).strip() == '⚭'
+                            and speechDictHandler.processText('⚭') == '⚭'
+                            and sound(locale, original, 'unicode_flow') != sound(locale, reference, 'unicode_flow_reference')):
+                        raise AssertionError('unmapped Unicode name was spoken in running text: ' + locale)
                 for symbol, label in (('-', 'خطِ تیره'), ('_', 'زیرخط')):
                     if sound('fa_IR', symbol, True) != sound('fa_IR', label, False):
                         raise AssertionError('NVDA symbol differs from its written Persian name: ' + symbol)
@@ -933,6 +944,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                             for part in (word + ' ', self.index_command(i))]
             elif spelling in ('unicode_spelling_on', 'unicode_spelling_off'):
                 sequence = list(self.speech.getSpellingSpeech(text, locale=locale, endsUtterance=False))
+            elif spelling in ('unicode_flow', 'unicode_flow_reference'):
+                sequence = [text]
             elif spelling == 'issue49_korean_spelling':
                 sequence = [self.character(True), text, self.character(False)]
             elif spelling == 'english_exception':
@@ -994,7 +1007,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.pipeline = self.pipeline or spelling in ('issue49_quotes', 'issue49_numeric', 'issue49_own_vowel', 'issue49_nominal_compound', 'issue49_native_new_compound')
             self.pipeline = self.pipeline or spelling in ('issue49_preposition', 'issue49_final_accent',
                                                           'issue49_character_navigation',
-                                                          'unicode_spelling_on', 'unicode_spelling_off')
+                                                          'unicode_spelling_on', 'unicode_spelling_off',
+                                                          'unicode_flow', 'unicode_flow_reference')
             self.pipeline = self.pipeline or spelling in ('issue49_version_some', 'issue49_version_split',
                                                            'issue49_emoji_some', 'issue49_emoji_split',
                                                            'issue49_heading', 'issue49_heading_split',
