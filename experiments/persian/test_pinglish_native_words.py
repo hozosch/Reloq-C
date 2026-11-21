@@ -91,6 +91,8 @@ def main():
         check_a_quality(roman, pinglish(roman)[1])
     aliases = Path(__file__).with_name('direct_fa_pinglish_aliases.inc').read_text(encoding='utf8')
     for roman in re.findall(r'\{"([a-z]+)","', aliases):
+        if len(roman) == 1:
+            continue  # Single letters are handled by the phrase/character path.
         status, tag = pinglish(roman)
         assert status == 1, roman
         check_a_quality(roman, tag)
