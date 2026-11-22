@@ -55,6 +55,30 @@ def fake_routing_test():
     assert language_for('fa-IR', US_ENGLISH.id, PROFILES) == PERSIAN_PROBE.id
     assert language_for('fa-Latn', US_ENGLISH.id, PROFILES) == PINGLISH_PROBE.id
     assert language_for('fa', PINGLISH_PROBE.id, PROFILES) == PINGLISH_PROBE.id
+    # Selecting English also constructs Persian before any Persian utterance,
+    # but keeps English active and does not emit speech during selection.
+    english_home = PersianProbeLanguageEngine(Path('/unused'), language=US_ENGLISH.id,
+                                               languages=PROFILES, engine_factory=FakeEngine)
+    try:
+        assert PERSIAN_PROBE.id in english_home._engines
+        assert english_home._active is english_home._engines[US_ENGLISH.id]
+        assert english_home._home[0] == US_ENGLISH.id
+    finally:
+        english_home.close()
+    class FailingPersian(FakeEngine):
+        def __init__(self, dll, *, dialect, encoding, native_voice):
+            if dialect == PERSIAN_PROBE.id:
+                raise OSError('simulated Persian preload failure')
+            super().__init__(dll, dialect=dialect, encoding=encoding, native_voice=native_voice)
+    english_home = PersianProbeLanguageEngine(Path('/unused'), language=US_ENGLISH.id,
+                                               languages=PROFILES, engine_factory=FailingPersian)
+    try:
+        assert english_home._active is english_home._engines[US_ENGLISH.id]
+        pcm = bytearray()
+        assert english_home.speak(('Hello',), pcm.extend, lambda _: None)
+        assert pcm == bytes([(US_ENGLISH.id >> 16) & 0xff])
+    finally:
+        english_home.close()
     engine = PersianProbeLanguageEngine(Path('/unused'), language=PERSIAN_PROBE.id,
                                         languages=PROFILES, engine_factory=FakeEngine)
     persian_byte = bytes([(PERSIAN_PROBE.id >> 16) & 0xff])

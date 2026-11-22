@@ -24,6 +24,7 @@ on:
       - experiments/persian/test_persian_decimals.py
       - experiments/persian/test_persian_joiners.py
       - experiments/persian/test_nvda_driver_probe.py
+      - experiments/persian/test_english_persian_preload.py
       - experiments/persian/reference-nvda/fa_symbols_2026_3_1.dic
       - experiments/persian/test_decimal_routing.py
       - experiments/persian/test_direct_fa_numbers.py
@@ -289,6 +290,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian NVDA punctuation and joiner preprocessing failed' }
           python -B experiments/persian/test_nvda_driver_probe.py
           if ($LASTEXITCODE -ne 0) { throw 'Persian NVDA language routing failed' }
+          python -B experiments/persian/test_english_persian_preload.py --library "$dll"
+          if ($LASTEXITCODE -ne 0) { throw 'US English/Persian voice preload failed' }
           python -B experiments/persian/test_persian_number_events.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Structured native Persian number analysis failed' }
           python -B experiments/persian/test_persian_hundred.py --library "$dll"

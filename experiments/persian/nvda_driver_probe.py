@@ -394,6 +394,23 @@ class PersianProbeLanguageEngine(LanguageEngine):
 
     def select_voice(self, language, voice):
         super().select_voice(language, voice)
+        if self._home[0] == US_ENGLISH.id and PERSIAN_PROBE.id in self._languages:
+            # US/Persian switches are expected in both directions. Create
+            # the Persian frontend during selection, rather than on the
+            # first Persian word in an otherwise English utterance. Restore
+            # English as the active voice before accepting speech.
+            home = self._home
+            try:
+                persian = self._activate(self._key(PERSIAN_PROBE.id, home[1]))
+                if isinstance(persian, ScopedDirectPersianEngine):
+                    probe = 'سلام'
+                    persian._frontend.project_direct(probe, ((0, True), (len(probe.encode('utf-8')), True)))
+            except (AttributeError, OSError, RuntimeError, UnicodeError, ValueError):
+                # A failed optional warm-up must not make English unusable.
+                pass
+            finally:
+                self._activate(home)
+            return
         if (self._home[0] not in (PERSIAN_PROBE.id, PINGLISH_PROBE.id) or
                 not isinstance(self._engines.get(self._home[0]), ScopedDirectPersianEngine)):
             return
