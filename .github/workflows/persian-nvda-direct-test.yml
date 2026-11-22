@@ -403,6 +403,24 @@ jobs:
           archive: false
           if-no-files-found: error
           retention-days: 30
+      # Artifact metadata can take a moment to appear in the run listing,
+      # even after upload-artifact has returned its ID. Wait for that exact
+      # ID before asking download-artifact to verify the uploaded file.
+      - name: Wait for the direct artifact to appear
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ steps.direct-addon.outputs.artifact-id }}
+        run: |
+          case "$ARTIFACT_ID" in *[!0-9]*|'') echo 'Invalid artifact ID' >&2; exit 1;; esac
+          for attempt in $(seq 1 30); do
+            found=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" \
+              --jq ".artifacts[] | select(.id == $ARTIFACT_ID) | .id" 2>/dev/null || true)
+            if [ "$found" = "$ARTIFACT_ID" ]; then exit 0; fi
+            sleep 2
+          done
+          echo 'The direct add-on artifact did not appear in the run listing' >&2
+          exit 1
       - name: Download the direct add-on artifact
         uses: actions/download-artifact@v8
         with:
