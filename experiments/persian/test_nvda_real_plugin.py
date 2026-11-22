@@ -716,10 +716,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             # case: settings must change audible Persian and mixed text, then
             # restore the identical original output when switched back.
             self.cases.extend((locale, text, 'clock_' + kind + '_' + setting)
-                              for locale, pure, mixed in (
-                                  ('fa_IR', 'تغییر در پیکربندیِ زبان.', 'سلام دنیا NVDA'),
-                                  ('fa_Latn', 'salaam donyaa.', 'salaam NVDA donyaa'))
-                              for kind, text in (('pure', pure), ('mixed', mixed))
+                              for locale, pure, long_text, mixed in (
+                                  ('fa_IR', 'ظهور ناگهانی', 'تغییر در پیکربندیِ زبان.', 'سلام دنیا NVDA'),
+                                  ('fa_Latn', 'salaam donyaa.', 'salaam donyaa mamnun kheyli.', 'salaam NVDA donyaa'))
+                              for kind, text in (('pure', pure), ('long', long_text), ('mixed', mixed))
                               for setting in ('fine_first', 'original', 'fine_again'))
             self.cases.extend((locale, text, mode)
                               for locale, text in (('fa_IR', 'فوری'),
@@ -735,7 +735,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if self.index == len(self.cases):
                 self.synth._acousticClockMask = self.saved_clock_test_mask
                 for locale in ('fa_IR', 'fa_Latn'):
-                    for kind in ('pure', 'mixed'):
+                    for kind in ('pure', 'long', 'mixed'):
                         def sound_for(setting):
                             return next(row['pcm_sha256'] for row in self.results
                                         if row['locale'] == locale and
