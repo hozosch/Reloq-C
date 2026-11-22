@@ -290,10 +290,10 @@ int reloq_persian_match_stop_nasal(struct reloq_fa_frame *frames,size_t count,
 
 /* Find a voiced sibilant's rising part, without crossing into a later phone. */
 static int z_onset(const struct reloq_fa_frame *frames,size_t start,size_t end,
-    size_t *peak_index,double *peak_time)
+    double limit_ms,size_t *peak_index,double *peak_time)
 {
     double elapsed=0;float peak=0;size_t selected=start;int seen=0;
-    for(size_t i=start;i<end && elapsed<35;++i) {
+    for(size_t i=start;i<end && elapsed<limit_ms;++i) {
         const float *c=frames[i].controls;
         if(!isfinite(c[0]) || c[0]<=0 || c[0]>20 || !isfinite(c[2]) ||
            !isfinite(c[7]) || !isfinite(c[8]))return -1;
@@ -322,8 +322,8 @@ int reloq_persian_match_us_z_onset(struct reloq_fa_frame *frames,size_t count,
        (left<right+right_bytes && right<left+left_bytes))return -1;
     if(frames[boundary].controls[8]>10 || reference[reference_boundary].controls[8]>10)return 0;
     size_t target_peak=0,donor_peak=0;double target_time=0,donor_time=0;
-    int a=z_onset(frames,boundary,end,&target_peak,&target_time);
-    int b=z_onset(reference,reference_boundary,reference_count,&donor_peak,&donor_time);
+    int a=z_onset(frames,boundary,end,35,&target_peak,&target_time);
+    int b=z_onset(reference,reference_boundary,reference_count,35,&donor_peak,&donor_time);
     if(a<0 || b<0)return -1;
     if(!a || !b || donor_time<=target_time+1 || donor_time>30 ||
        fabs(frames[target_peak].controls[8]-reference[donor_peak].controls[8])>8)return 0;
@@ -376,15 +376,18 @@ int reloq_persian_match_h_to_us_z(struct reloq_fa_frame *frames,size_t count,
     }
     if(!h)return 0;
     size_t tp=0,rp=0;double tt=0,rt=0;
-    int ta=z_onset(frames,boundary,end,&tp,&tt);
-    int ra=z_onset(reference,reference_boundary,reference_count,&rp,&rt);
+    /* At slow rates the same US fricative can need more than 35 ms just
+     * to reach its normal noise level. Verify the real onset for its whole
+     * natural duration, rather than silently skipping those rates. */
+    int ta=z_onset(frames,boundary,end,150,&tp,&tt);
+    int ra=z_onset(reference,reference_boundary,reference_count,150,&rp,&rt);
     if(ta<0 || ra<0)return -1;
     if(!ta || !ra || fabs(tt-rt)>3 ||
        fabs(frames[tp].controls[8]-reference[rp].controls[8])>5)return 0;
     size_t stop=boundary,ref=reference_boundary;double elapsed=0,ref_time=0;
     /* Verify every sample against the same US Z before making any changes,
      * and stop only where the two existing voicing trajectories converge. */
-    while(stop<end && elapsed<=90) {
+    while(stop<end && elapsed<=300) {
         while(ref<reference_count && ref_time+reference[ref].controls[0]<=elapsed+1e-6) {
             ref_time+=reference[ref].controls[0];++ref;
         }
@@ -399,7 +402,7 @@ int reloq_persian_match_h_to_us_z(struct reloq_fa_frame *frames,size_t count,
         if(elapsed>tt && t[8]<20)return 0;
         elapsed+=t[0];++stop;
     }
-    if(stop==boundary || stop>=end || elapsed>90)return 0;
+    if(stop==boundary || stop>=end || elapsed>300)return 0;
     ref=reference_boundary;elapsed=ref_time=0;
     for(size_t i=boundary;i<stop;++i) {
         while(ref+1<reference_count && ref_time+reference[ref].controls[0]<=elapsed+1e-6) {
@@ -408,6 +411,45 @@ int reloq_persian_match_h_to_us_z(struct reloq_fa_frame *frames,size_t count,
         frames[i].controls[2]=reference[ref].controls[2];
         frames[i].controls[7]=reference[ref].controls[7];
         elapsed+=frames[i].controls[0];
+    }
+    return 1;
+}
+
+int reloq_persian_smooth_final_r_join(struct reloq_fa_frame *frames,size_t count,
+    size_t boundary,size_t end)
+{
+    static const unsigned columns[]={9,13,15,17};
+    if(!frames || !boundary || boundary>=end || end>count || count>120000)return -1;
+    const float *before=frames[boundary-1].controls,*first=frames[boundary].controls;
+    if((before[2]<=0 && before[7]<=0 && before[8]<=0) ||
+       (first[2]<=0 && first[7]<=0 && first[8]<=0))return 0;
+    unsigned active=0;float anchor[4];
+    for(unsigned j=0;j<4;++j) {
+        unsigned col=columns[j];
+        if(!isfinite(before[col]) || !isfinite(first[col]) || before[col]<=0 || first[col]<=0)return 0;
+        anchor[j]=before[col];
+        if(fabs(first[col]-before[col])>=150)active|=1u<<j;
+    }
+    if(!active)return 0;
+    /* Check the complete interval before editing it. Silence stops the
+     * correction; its length and all source columns remain exactly the same. */
+    size_t stop=boundary;double duration=0;
+    while(stop<end && duration<10) {
+        const float *c=frames[stop].controls;
+        if(!isfinite(c[0]) || c[0]<=0 || c[0]>20)return -1;
+        if(c[2]<=0 && c[7]<=0 && c[8]<=0)break;
+        for(unsigned j=0;j<4;++j)
+            if((active&(1u<<j)) && (!isfinite(c[columns[j]]) || c[columns[j]]<=0))return 0;
+        duration+=c[0];++stop;
+    }
+    if(stop-boundary<3 || duration<4)return 0;
+    double elapsed=0;
+    for(size_t i=boundary;i<stop;++i) {
+        float *c=frames[i].controls;
+        double x=fmin(1.0,(elapsed+c[0])/duration),weight=x*x*(3-2*x);
+        for(unsigned j=0;j<4;++j)if(active&(1u<<j))
+            c[columns[j]]=(float)(anchor[j]+(c[columns[j]]-anchor[j])*weight);
+        elapsed+=c[0];
     }
     return 1;
 }

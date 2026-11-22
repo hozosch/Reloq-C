@@ -1288,7 +1288,9 @@ struct rule_plan {
     struct rule_control *controls;size_t control_count,control_capacity;
     struct rule_fa_phone *fa_phones;size_t fa_phone_count,fa_phone_capacity,fa_phone_next;
     size_t fa_h_level_phone;float fa_h_level;int fa_h_level_set;
-    float fa_previous_noise,fa_previous_voice,fa_previous_aspiration;
+    float fa_r_previous_f4,fa_r_previous_voice,fa_r_previous_noise;
+    float fa_r_previous_band3,fa_r_previous_band4;
+    int fa_r_previous_valid,fa_r_release_active;
     int fa_phone_failed;
     struct reloq_session *session;
     int memory,retracted_filter,retracted_st,word_volume,cjk_volume,managed_voice_controls,word_pitch,native_pitch,word_speed,german_af_markers,original_clock;
@@ -1331,15 +1333,6 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
     int32_t to=s->fa_phone_next+1<s->fa_phone_count?p->to:INT32_MAX;
     if(p->phone && native>=p->from && native<to) {
         int rate=reloq_session_sample_rate(s->session);
-        if((p->phone==RELOQ_FA_TUNE_R || p->phone==RELOQ_FA_TUNE_R_BEFORE_I ||
-            p->phone==RELOQ_FA_TUNE_R_BEFORE_BACK_A) &&
-           s->fa_phone_next+1<s->fa_phone_count)
-            reloq_fa_tuning_r_sources(controls,s->fa_previous_noise,
-                s->fa_previous_voice,s->fa_previous_aspiration,
-                p->from/10000.0,p->articulation_end/10000.0,to/10000.0,(double)tick,duration);
-        /* The R source transition is a language rule, independent of the
-         * saved sound-project bypass. The formant/filter tuning below still
-         * follows the normal comparison scope. */
         if(tuning && p->phone==RELOQ_FA_TUNE_BEFORE_FINAL_H) {
             if(s->fa_h_level_phone!=s->fa_phone_next) {
                 s->fa_h_level_phone=s->fa_phone_next;s->fa_h_level_set=0;
@@ -1375,9 +1368,32 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
                                     (double)tick,duration,rate);
         }
     }
-    s->fa_previous_noise=controls[8];
-    s->fa_previous_voice=controls[2];
-    s->fa_previous_aspiration=controls[7];
+    /* The selected word-final R has its own distinctive coda source. Its
+     * R-to-next-phone F4 can traverse 700 Hz in five milliseconds even
+     * though its actual R is steady. Limit only that resonant release and
+     * keep following until it rejoins the original curve. Never change the
+     * R source, pitch, duration or steady-state targets. The source guard
+     * also keeps medial R and other consonants on their existing paths. */
+    if(s->fa_r_previous_valid && isfinite(duration) && duration>0 &&
+       isfinite(controls[17]) && controls[17]>0) {
+        double delta=controls[17]-s->fa_r_previous_f4;
+        if(!s->fa_r_release_active && p->phone==RELOQ_FA_TUNE_R &&
+           s->fa_phone_next+1<s->fa_phone_count && native>p->articulation_end &&
+           s->fa_r_previous_voice>=15 && s->fa_r_previous_voice<=30 &&
+           s->fa_r_previous_noise>=45 && s->fa_r_previous_band3>=60 &&
+           s->fa_r_previous_band4>=35 && s->fa_r_previous_band4<55 &&
+           fabs(delta)>100.0*duration)
+            s->fa_r_release_active=1;
+        if(s->fa_r_release_active) {
+            double step=80.0*duration;
+            if(fabs(delta)<=step)s->fa_r_release_active=0;
+            else controls[17]=(float)(s->fa_r_previous_f4+(delta>0?step:-step));
+        }
+    } else s->fa_r_release_active=0;
+    s->fa_r_previous_f4=controls[17];
+    s->fa_r_previous_voice=controls[2];s->fa_r_previous_noise=controls[8];
+    s->fa_r_previous_band3=controls[37];s->fa_r_previous_band4=controls[38];
+    s->fa_r_previous_valid=isfinite(controls[17]) && controls[17]>0;
 }
 static struct rule_span *new_span(struct rule_plan *s)
 {

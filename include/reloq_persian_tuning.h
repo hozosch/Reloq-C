@@ -47,9 +47,6 @@ void reloq_fa_tuning_targets(float controls[62],unsigned phone,double from_ms,do
                              double frame_ms,double duration_ms,int rate);
 void reloq_fa_tuning_r_to_back_a(float controls[62],double from_ms,double to_ms,
                                 double frame_ms,int rate);
-void reloq_fa_tuning_r_sources(float controls[62],float previous_noise,
-    float previous_voice,float previous_aspiration,
-    double from_ms,double end_ms,double next_ms,double frame_ms,double duration_ms);
 void reloq_fa_tuning_prepare(struct reloq_fa_tuning_filter *,const float controls[62],int rate);
 double reloq_fa_tuning_sample(struct reloq_fa_tuning_filter *,double sample);
 

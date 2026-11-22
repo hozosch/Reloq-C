@@ -105,6 +105,33 @@ def main():
                     continue
                 assert target[i].controls[column] == old[i].controls[column], (i, column)
         assert bytes(donor) == reference
+        # At slow speech the sibilant's noise and voicing develop over much
+        # longer than 35 and 90 ms respectively. It must still use the
+        # genuine H-to-Z trajectory, without changing the noise or timing.
+        target, donor = (NativeFrame * 260)(), (NativeFrame * 260)()
+        for i in range(260):
+            for rows in (target, donor):
+                c = rows[i].controls
+                c[0], c[1] = 1, 1200
+                c[8] = max(0, min(65, round((i-20)*65/64)))
+                c[38] = c[39] = round(c[8]*50/65)
+            if 10 <= i < 19:
+                target[i].controls[7] = donor[i].controls[7] = 52
+            if i >= 20:
+                target[i].controls[2] = max(38, 57-(i-20)*19/175)
+                target[i].controls[7] = 34 if i < 84 else 0
+                donor[i].controls[2] = min(38, (i-20)*38/175)
+        before, reference = bytes(target), bytes(donor)
+        assert reverse(target, 260, 20, 260, donor, 260, 20) == 1
+        old = (NativeFrame * 260).from_buffer_copy(before)
+        assert target[20].controls[2] == 0
+        assert target[120].controls[2] < old[120].controls[2]
+        for i in range(260):
+            for column in range(62):
+                if 20 <= i < 220 and column in (2, 7):
+                    continue
+                assert target[i].controls[column] == old[i].controls[column], (i, column)
+        assert bytes(donor) == reference
         for alter in ('no_h', 'wrong_band', 'already_unvoiced', 'no_convergence'):
             target, donor = h_to_z()
             if alter == 'no_h':

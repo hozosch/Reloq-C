@@ -2501,6 +2501,9 @@ int ECICALL eciPersianMatchHToUsZ(struct reloq_fa_frame *frames,size_t count,
     size_t boundary,size_t end,const struct reloq_fa_frame *reference,
     size_t reference_count,size_t reference_boundary)
 {return reloq_persian_match_h_to_us_z(frames,count,boundary,end,reference,reference_count,reference_boundary);}
+int ECICALL eciPersianSmoothFinalRJoin(struct reloq_fa_frame *frames,size_t count,
+    size_t boundary,size_t end)
+{return reloq_persian_smooth_final_r_join(frames,count,boundary,end);}
 int ECICALL eciPersianPlanUnvoicedOnsets(struct reloq_fa_frame *frames,size_t count,
     const size_t *ends,size_t segments,const unsigned char *onsets,
     const struct reloq_fa_frame *reference,size_t reference_count,

@@ -220,6 +220,11 @@ class FrameCapture:
                 ctypes.c_size_t, ctypes.c_size_t, ctypes.POINTER(NativeFrame),
                 ctypes.c_size_t, ctypes.c_size_t)
             self.match_h_to_us_z.restype = ctypes.c_int
+        self.smooth_final_r_join = getattr(dll, 'eciPersianSmoothFinalRJoin', None)
+        if self.smooth_final_r_join is not None:
+            self.smooth_final_r_join.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,
+                ctypes.c_size_t, ctypes.c_size_t)
+            self.smooth_final_r_join.restype = ctypes.c_int
         self.plan_unvoiced_onsets = getattr(dll, 'eciPersianPlanUnvoicedOnsets', None)
         if self.plan_unvoiced_onsets is not None:
             self.plan_unvoiced_onsets.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,

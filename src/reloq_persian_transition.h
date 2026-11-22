@@ -53,6 +53,11 @@ int reloq_persian_match_h_to_us_z(struct reloq_fa_frame *frames,size_t count,
     size_t boundary,size_t end,const struct reloq_fa_frame *reference,
     size_t reference_count,size_t reference_boundary);
 
+/* Smooth only a discontinuous formant at an already identified final-R
+ * language join. Do not alter the R's source, timing or steady state. */
+int reloq_persian_smooth_final_r_join(struct reloq_fa_frame *frames,size_t count,
+    size_t boundary,size_t end);
+
 /* Plan and compact voiceless onsets in-place. onsets contains an ASCII phone
  * (f, s, S, t, p, k or h), zero for a skipped segment, and bit 7 when the
  * continuous English reference is to be checked before removing its lead.

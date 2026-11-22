@@ -880,6 +880,7 @@ class SentencePlan:
     _native_match_stop_nasal: object = None
     _native_match_us_z_onset: object = None
     _native_match_h_to_us_z: object = None
+    _native_smooth_final_r_join: object = None
     _native_plan_unvoiced_onsets: object = None
 
     def timeline(self):
@@ -1335,6 +1336,7 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
                         _native_match_stop_nasal=getattr(capture_api, 'match_stop_nasal', None),
                         _native_match_us_z_onset=getattr(capture_api, 'match_us_z_onset', None),
                         _native_match_h_to_us_z=getattr(capture_api, 'match_h_to_us_z', None),
+                        _native_smooth_final_r_join=getattr(capture_api, 'smooth_final_r_join', None),
                         _native_plan_unvoiced_onsets=getattr(capture_api, 'plan_unvoiced_onsets', None))
 
 
@@ -1468,6 +1470,27 @@ def match_h_to_us_z(plan, parts, en, rate):
                         donor.frames, len(donor.frames), reference)
         if result < 0:
             raise RuntimeError('invalid Persian-to-US fricative context')
+        if result:
+            changed.append(edge)
+    return tuple(changed)
+
+
+def smooth_final_r_joins(plan, parts):
+    """Smooth abrupt filter jumps after an actual Persian word-final R."""
+    native = getattr(plan, '_native_smooth_final_r_join', None)
+    if native is None:
+        return ()
+    bounds = _edges_by_count(plan.counts)
+    changed = []
+    for edge in range(1, len(parts)):
+        if (parts[edge-1].language != 'fa' or parts[edge].language != 'en-us' or
+                _bracket_boundary(parts, edge) or
+                not re.search(r'r\]\s*$', parts[edge-1].text) or
+                re.match(r'^\s*[.,?!:;()\[\]{}]', parts[edge].text)):
+            continue
+        result = native(plan.frames, len(plan.frames), bounds[edge-1], bounds[edge])
+        if result < 0:
+            raise RuntimeError('invalid final-R resonance transition')
         if result:
             changed.append(edge)
     return tuple(changed)
@@ -2032,6 +2055,7 @@ def selected_sentence(plan, parts, en, german, rate, *, check=None):
     glides = apply_persian_u_a(plan, parts, rate, original_counts)
     match_us_z_onsets(plan, parts, rate)
     match_h_to_us_z(plan, parts, en, rate)
+    smooth_final_r_joins(plan, parts)
     if check: check()
     # Source filters depend on the edited noise-band values, not on the
     # values from the unmodified context capture.

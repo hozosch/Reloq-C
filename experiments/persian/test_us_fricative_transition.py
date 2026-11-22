@@ -75,23 +75,26 @@ def main():
             assert before[at][2] >= 20 and plan.frames[at].controls[2] <= 5
             for i in range(len(plan.frames)):
                 for column in range(62):
-                    if at <= i < min(at + 91, len(plan.frames)) and column in (2, 7):
+                    if at <= i < min(at + 301, len(plan.frames)) and column in (2, 7):
                         continue
                     assert plan.frames[i].controls[column] == before[i][column], (i, column)
             reverse_observed.append(edge)
         return selected
     try:
-        for rate, gender, speed in ((1, 0, 40), (3, 0, 82), (6, 1, 100)):
+        for rate, gender, speed in ((1, 0, 40), (3, 0, 65), (3, 0, 82), (6, 1, 100)):
             for key, value in ((SAMPLE_RATE, rate), (GENDER, gender), (NATIVE_SPEED, speed)):
                 voice.set_parameter(key, value)
             for text in ('قرمز heading', 'مصاف غول‌های قرمز heading level 2 link',
                          'heading زرد', 'روح zero', 'روح zebra', 'روح singer'):
                 pcm, marks = bytearray(), []
+                old_reverse_count = len(reverse_observed)
                 with patch.object(continuous_plan, 'match_us_z_onsets', new=inspect), \
                      patch.object(continuous_plan, 'match_h_to_us_z', new=inspect_reverse):
                     assert voice.speak((EciIndex(11), text, EciIndex(12)), pcm.extend,
                                        lambda value: marks.append((value, len(pcm))))
                 assert pcm and marks == [(11, 0), (12, len(pcm))], (rate, gender, speed, text, marks)
+                if text in ('روح zero', 'روح zebra'):
+                    assert len(reverse_observed) > old_reverse_count, (rate, gender, speed, text)
         assert observed, 'the native US /z/ onset was not exercised'
         assert reverse_observed, 'the actual Persian /h/ to English /z/ was not exercised'
     finally:
