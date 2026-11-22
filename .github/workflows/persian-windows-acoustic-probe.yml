@@ -188,11 +188,10 @@ jobs:
               --jq '.artifacts[] | select(.id == 14712393088 and .expired == false and .digest == "sha256:8af4080dcc2ba10759ae6ae6d9438e566cf7142056bc4dcf18e076f2659f04c1" and .workflow_run.head_sha == "c1f884b21f409792f0987978aaa516cb9f114f94") | .id' || true)
             if [ "$id" = "14712393088" ]; then reusable=true; reuse_run=44916929623; fi
           fi
-          # This run built both DLLs before the old short-A test expectation
-          # failed. Reuse only that exact artifact and only if every binary
-          # input still matches; all tests below run again at the new head.
+          # Reuse the fully tested predecessor's exact DLLs only when every
+          # binary input still matches; all tests below run again at this head.
           if [ "$GITHUB_REF_NAME" = "codex/persian-native-u-20261121" ] &&
-             git diff --quiet 5d642543a40a261ec2fad3ec637f04879fe4cc5e HEAD -- \
+             git diff --quiet 8d4c340fcf745f89a2d76430131a31c7e3068c16 HEAD -- \
                eci/Makefile eci/reloq_eci_fixed_math.c src include vendor/openevv61 \
                tools/prepare_persian_provider.py tools/reuse_persian_provider_cache.py \
                experiments/aragonese/build_native_probe.py experiments/persian/build_native_probe.py \
@@ -201,9 +200,9 @@ jobs:
                experiments/persian/continuous_replay.inc experiments/persian/scoped_acoustics_probe.c \
                'experiments/persian/direct_fa_*.c' 'experiments/persian/direct_fa_*.h' \
                'experiments/persian/direct_fa_*.inc'; then
-            id=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/45041056974/artifacts?per_page=100" \
-              --jq '.artifacts[] | select(.id == 14761488164 and .expired == false and .digest == "sha256:7331af50d5952471f40e4cfa494d2e33c06eb53b82eec9dc14c4b78a4b5e4ba2" and .workflow_run.head_sha == "5d642543a40a261ec2fad3ec637f04879fe4cc5e") | .id' || true)
-            if [ "$id" = "14761488164" ]; then reusable=true; reuse_run=45041056974; fi
+            id=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/45044878820/artifacts?per_page=100" \
+              --jq '.artifacts[] | select(.id == 14764040558 and .expired == false and .digest == "sha256:3bdd9fa766b75e0715fe1efd29a541d7019e659559edc67807cd8108d75d2914" and .workflow_run.head_sha == "8d4c340fcf745f89a2d76430131a31c7e3068c16") | .id' || true)
+            if [ "$id" = "14764040558" ]; then reusable=true; reuse_run=45044878820; fi
           fi
           echo "reusable=$reusable" >> "$GITHUB_OUTPUT"
           echo "run_id=$reuse_run" >> "$GITHUB_OUTPUT"

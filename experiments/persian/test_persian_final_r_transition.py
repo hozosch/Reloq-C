@@ -16,6 +16,7 @@ from _reloq_eci_direct import EciIndex, GENDER, NATIVE_SPEED, SAMPLE_RATE
 from _reloq_persian_frames import NativeFrame
 from nvda_driver_probe import make_language_engine
 from test_persian_r_after_i_contexts import capture
+from test_persian_final_r_connected import actual_sentence, r_frames
 from test_us_articulation import voice
 
 
@@ -61,7 +62,9 @@ def connected_release(library, previous):
                         if engine:
                             for key, value in ((SAMPLE_RATE,rate),(GENDER,gender),(NATIVE_SPEED,speed)):
                                 engine.set_parameter(key,value)
-                    tag = '`[.0zo.1hur] `[.0nA.0ge.1hA.0ni]'
+                    # No short /æ/ here: the older reference predates the
+                    # user's separately approved short-æ duration change.
+                    tag = '`[.0zo.1hur] `[.0nu.0ge.1hi.0ni]'
                     result = capture(current, scope, tag)
                     start, end = (round(x/10000) for x in result.syllables[3])
                     rows = result.frames()
@@ -93,7 +96,9 @@ def connected_release(library, previous):
     finally:
         current.close()
         if prior: prior.close()
-    print(f'Passed {checks} connected final-R releases and source/timing preservation.')
+    sentence = actual_sentence(library, 'ظهور ناگهانی')
+    assert len(r_frames(sentence)) >= 5, 'the reported sentence lost its final R'
+    print(f'Passed {checks} connected final-R releases, source/timing preservation and the reported sentence.')
 
 
 def integration(library):
