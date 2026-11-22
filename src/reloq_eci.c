@@ -2492,6 +2492,15 @@ int ECICALL eciPersianMatchStopNasal(struct reloq_fa_frame *frames,size_t count,
     size_t boundary,size_t end,const struct reloq_fa_frame *reference,
     size_t reference_count,size_t reference_boundary)
 {return reloq_persian_match_stop_nasal(frames,count,boundary,end,reference,reference_count,reference_boundary);}
+int ECICALL eciPersianMatchUsZOnset(struct reloq_fa_frame *frames,size_t count,
+    size_t boundary,size_t end,const struct reloq_fa_frame *reference,
+    size_t reference_count,size_t reference_boundary)
+{return reloq_persian_match_us_z_onset(frames,count,boundary,end,reference,reference_count,reference_boundary);}
+
+int ECICALL eciPersianMatchHToUsZ(struct reloq_fa_frame *frames,size_t count,
+    size_t boundary,size_t end,const struct reloq_fa_frame *reference,
+    size_t reference_count,size_t reference_boundary)
+{return reloq_persian_match_h_to_us_z(frames,count,boundary,end,reference,reference_count,reference_boundary);}
 int ECICALL eciPersianPlanUnvoicedOnsets(struct reloq_fa_frame *frames,size_t count,
     const size_t *ends,size_t segments,const unsigned char *onsets,
     const struct reloq_fa_frame *reference,size_t reference_count,

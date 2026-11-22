@@ -286,6 +286,61 @@ def _spelling_proxy(text, segment, spelling_spans):
                    for pos, char in enumerate(text))
 
 
+def _english_transition_proxy(text, en, *, initial=False, final=False):
+    """Keep real boundary fricatives in the English context when possible.
+
+    This context is used for native cross-language acoustics, not the US
+    sentence-pitch pilot. An otherwise unsupported Persian word may need a
+    neutral vowel proxy; at a language boundary that proxy must not erase the
+    adjacent /z/, /s/, /h/ or other fricative. Validate every changed tag
+    against the US parser before using it as a timing/acoustic reference.
+    """
+    proxy = persian_proxy_for_english(text, en)
+    source, target = tuple(_TAG.finditer(text)), tuple(_TAG.finditer(proxy))
+    if not source or len(source) != len(target):
+        return proxy
+    edits = {}
+    for index, at_start in ((0, True), (len(source) - 1, False)):
+        if not (initial if at_start else final):
+            continue
+        original, mapped = source[index], target[index]
+        gap = text[:original.start()] if at_start else text[original.end():]
+        if any(char in gap for char in '.,?!:;()[]{}'):
+            continue
+        tag = edits.get(index, mapped.group())
+        # Only neutral fallback words are eligible. For a single boundary
+        # word, an earlier edit is already known to have started neutral.
+        if index not in edits and not re.fullmatch(r'`\[(?:\.[012]m[AaEeiou])+\]', tag):
+            continue
+        syllables = _SYLLABLE.findall(original.group(1))
+        if not syllables:
+            continue
+        body = syllables[0 if at_start else -1][1]
+        phone = body[0 if at_start else -1] if body else ''
+        if phone not in 'fsvzSZh' or not phone:
+            continue
+        if at_start:
+            tag = tag[:4] + _FA_TO_EN[phone] + tag[5:]
+        else:
+            tag = tag[:-1] + _FA_TO_EN[phone] + ']'
+        edits[index] = tag
+    if not edits:
+        return proxy
+    indices = sorted(edits)
+    displayed = tuple(_TAG.finditer(en._phonemes_for_probe(' '.join(edits[i] for i in indices))))
+    if len(displayed) != len(indices):
+        return proxy
+    # An omitted final /h/ is normally tolerated by the generic Finnish
+    # display check. Here the boundary sound itself must actually survive.
+    accepted = {i: edits[i] for i, shown in zip(indices, displayed)
+                if edits[i] == shown.group()}
+    for i in reversed(indices):
+        if i in accepted:
+            match = target[i]
+            proxy = proxy[:match.start()] + accepted[i] + proxy[match.end():]
+    return proxy
+
+
 def _context(parts, language, en, fa, word_markers, source_marks=(), guarded_spans=(), spelling_spans=()):
     result = []
     for i, part in enumerate(parts):
@@ -329,7 +384,9 @@ def _context(parts, language, en, fa, word_markers, source_marks=(), guarded_spa
         elif language == 'fa':
             result.append(english_phone_proxy(en, fa, _spelling_proxy(part.text, i, spelling_spans)))
         else:
-            result.append(persian_proxy_for_english(part.text, en))
+            result.append(_english_transition_proxy(part.text, en,
+                initial=i > 0 and not _bracket_boundary(parts, i),
+                final=i + 1 < len(parts) and not _bracket_boundary(parts, i + 1)))
     return result
 
 
@@ -821,6 +878,8 @@ class SentencePlan:
     _native_bridge_stop_onsets: object = None
     _native_bridge_remaining: object = None
     _native_match_stop_nasal: object = None
+    _native_match_us_z_onset: object = None
+    _native_match_h_to_us_z: object = None
     _native_plan_unvoiced_onsets: object = None
 
     def timeline(self):
@@ -1274,6 +1333,8 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
                         _native_bridge_stop_onsets=getattr(capture_api, 'bridge_stop_onsets', None),
                         _native_bridge_remaining=getattr(capture_api, 'bridge_remaining', None),
                         _native_match_stop_nasal=getattr(capture_api, 'match_stop_nasal', None),
+                        _native_match_us_z_onset=getattr(capture_api, 'match_us_z_onset', None),
+                        _native_match_h_to_us_z=getattr(capture_api, 'match_h_to_us_z', None),
                         _native_plan_unvoiced_onsets=getattr(capture_api, 'plan_unvoiced_onsets', None))
 
 
@@ -1353,6 +1414,60 @@ def bridge_stop_onsets(plan, parts, en, rate):
                         len(donor.frames), reference)
         if result < 0:
             raise RuntimeError('invalid native stop-to-nasal context')
+        if result:
+            changed.append(edge)
+    return tuple(changed)
+
+
+def match_us_z_onsets(plan, parts, rate):
+    """Use the actual US frication onset at an English-to-Persian /z/."""
+    native = getattr(plan, '_native_match_us_z_onset', None)
+    if native is None or 'en-us' not in plan.contexts:
+        return ()
+    bounds = _edges_by_count(plan.counts)
+    donor = plan.contexts['en-us']
+    changed = []
+    for edge in range(1, len(parts)):
+        if (parts[edge-1].language != 'en-us' or parts[edge].language != 'fa' or
+                _bracket_boundary(parts, edge) or
+                not re.match(r'^\s*(?:`00\s*)?`\[\.[012]z', parts[edge].text)):
+            continue
+        reference = bisect_left(donor.ticks, round(plan.edges['en-us'][edge] * 1000 / rate))
+        if reference >= len(donor.frames):
+            continue
+        result = native(plan.frames, len(plan.frames), bounds[edge-1], bounds[edge],
+                        donor.frames, len(donor.frames), reference)
+        if result < 0:
+            raise RuntimeError('invalid US-to-Persian fricative context')
+        if result:
+            changed.append(edge)
+    return tuple(changed)
+
+
+def match_h_to_us_z(plan, parts, en, rate):
+    """Carry the real /h/ to an English /z/ through the native context."""
+    native = getattr(plan, '_native_match_h_to_us_z', None)
+    if native is None or 'fa' not in plan.contexts:
+        return ()
+    bounds = _edges_by_count(plan.counts)
+    donor = plan.contexts['fa']
+    changed = []
+    for edge in range(1, len(parts)):
+        if (parts[edge-1].language != 'fa' or parts[edge].language != 'en-us' or
+                _bracket_boundary(parts, edge) or
+                not re.search(r'hw?\]\s*$', parts[edge-1].text) or
+                re.match(r'^\s*[.,?!:;()\[\]{}]', parts[edge].text)):
+            continue
+        shown = _TAG.search(en._phonemes_for_probe(parts[edge].text))
+        if shown is None or not re.match(r'`\[\.[012]z', shown.group()):
+            continue
+        reference = bisect_left(donor.ticks, round(plan.edges['fa'][edge] * 1000 / rate))
+        if reference >= len(donor.frames):
+            continue
+        result = native(plan.frames, len(plan.frames), bounds[edge-1], bounds[edge],
+                        donor.frames, len(donor.frames), reference)
+        if result < 0:
+            raise RuntimeError('invalid Persian-to-US fricative context')
         if result:
             changed.append(edge)
     return tuple(changed)
@@ -1915,6 +2030,8 @@ def selected_sentence(plan, parts, en, german, rate, *, check=None):
     f3 = apply_german_f3(plan, ach, template) if ach else ()
     faded = fade_english_voice(plan, parts, ach, en) if ach else ()
     glides = apply_persian_u_a(plan, parts, rate, original_counts)
+    match_us_z_onsets(plan, parts, rate)
+    match_h_to_us_z(plan, parts, en, rate)
     if check: check()
     # Source filters depend on the edited noise-band values, not on the
     # values from the unmodified context capture.

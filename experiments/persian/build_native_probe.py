@@ -2364,7 +2364,8 @@ static void persian_short_initial_end(int32_t node)
     if text.count(marker) != 1:
         raise RuntimeError('Cannot locate Finnish nucleus timing dispatcher')
     text = text.replace(marker, first_helper + '\n' + next_helper + '\n' + medial_helper + '\n' +
-                        long_word_helper + '\n' + helper + '\n' + marker, 1)
+                        long_word_helper + '\n' +
+                        '_Thread_local int32_t reloq_fa_adjusted_long_node;\n' + helper + '\n' + marker, 1)
     begin = text.index(marker)
     end = text.index('\nstatic int32_t evv_assign_fin_nuc_durs(', begin)
     section = text[begin:end]
@@ -2373,12 +2374,15 @@ static void persian_short_initial_end(int32_t node)
     if section.count(declaration) != 1 or section.count(start) != 1:
         raise RuntimeError('Cannot locate Finnish nucleus timing setup')
     section = section.replace(declaration, declaration +
-                              '    int32_t persian_short_node=0;\n', 1)
-    section = section.replace(start, '    persian_short_node=persian_short_initial_begin(state);\n' + start, 1)
+                              '    int32_t persian_short_node=0;\n'
+                              '    int32_t persian_previous_long_node=reloq_fa_adjusted_long_node;\n', 1)
+    section = section.replace(start, '    persian_short_node=persian_short_initial_begin(state);\n'
+                              '    reloq_fa_adjusted_long_node=persian_short_node;\n' + start, 1)
     for label in ('L212:;\n', 'L231:;\n'):
         if section.count(label) != 1:
             raise RuntimeError('Cannot locate Finnish nucleus timing return')
-        section = section.replace(label, label + '    persian_short_initial_end(persian_short_node);\n', 1)
+        section = section.replace(label, label + '    persian_short_initial_end(persian_short_node);\n'
+                                  '    reloq_fa_adjusted_long_node=persian_previous_long_node;\n', 1)
     text = text[:begin] + section + text[end:]
     include = '#include "reloq61_rule_calls_fifi.h"\n'
     if text.count(include) != 1:
@@ -2523,6 +2527,16 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
                 if(short_u_cluster)scaled=(scaled*9+5)/10;
                 STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
             }
+            /* The short front /æ/ itself is too long, including outside
+               tak. Correct its shared base timing in all contexts instead
+               of making a spelling- or stop-specific exception. Preserve
+               explicitly long vowels and the vowel's acoustic identity. */
+            if (us_timing && node && node!=reloq_fa_adjusted_long_node &&
+                cls==1 && phone==31 && length==1 &&
+                STATE(int32_t,f33)>0) {
+                int64_t scaled=((int64_t)STATE(int32_t,f33)*85+50)/100;
+                STATE(int32_t,f33)=scaled>INT32_MAX ? INT32_MAX : (int32_t)scaled;
+            }
             /* A weak medial short U must remain audible, without bringing
                back the duration of an imported long vowel. */
             if (us_timing && node && cls==1 && phone==32 && length==1 && stress==0 &&
@@ -2648,7 +2662,8 @@ def prepare_vowel_duration_probe(work: Path) -> Path:
     if text.count(include) != 1:
         raise RuntimeError('Cannot locate duration probe includes')
     text = text.replace(include, include + '#include <stdlib.h>\n#include <stdio.h>\n#include <stdint.h>\n'
-                        '#include "reloq_persian_timing.h"\n', 1)
+                        '#include "reloq_persian_timing.h"\n'
+                        'extern _Thread_local int32_t reloq_fa_adjusted_long_node;\n', 1)
     dest = work / name
     dest.write_text(text, encoding='utf8')
     return dest
@@ -3642,7 +3657,8 @@ static void persian_open_vowel(void *state,int phone)
                 current==29?RELOQ_FA_TUNE_E:current==33?RELOQ_FA_TUNE_O:
                 current==32?RELOQ_FA_TUNE_U:
                 current==19 && following==27?RELOQ_FA_TUNE_R_BEFORE_I:
-                current==19 && following==34?RELOQ_FA_TUNE_R_BEFORE_BACK_A:RELOQ_FA_TUNE_OTHER;
+                current==19 && following==34?RELOQ_FA_TUNE_R_BEFORE_BACK_A:
+                current==19?RELOQ_FA_TUNE_R:RELOQ_FA_TUNE_OTHER;
             reloq61_fa_phone_emit(state,STATE(int32_t,f10),STATE(int32_t,f11),target);
         }
     }

@@ -38,6 +38,10 @@ on:
       - eci/test_persian_native_characters.py
       - eci/test_persian_native_direct_stream.py
       - experiments/persian/test_native_us_sentence_parity.py
+      - experiments/persian/test_native_us_z_onset.py
+      - experiments/persian/test_us_fricative_transition.py
+      - experiments/persian/test_persian_front_a_duration.py
+      - experiments/persian/test_persian_r_source.py
       - eci/test_persian_native_pipeline.py
       - eci/test_persian_nucleus_clock.py
       - include/reloq_persian_clock.h
@@ -330,6 +334,14 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Incremental Persian run rendering failed' }
           python -B experiments/persian/test_native_us_sentence_parity.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Native Persian sentence differs from the current voice' }
+          python -B experiments/persian/test_native_us_z_onset.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Native Persian US fricative transition failed' }
+          python -B experiments/persian/test_us_fricative_transition.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Mixed Persian US fricative transition failed' }
+          python -B experiments/persian/test_persian_front_a_duration.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Persian short A timing failed' }
+          python -B experiments/persian/test_persian_r_source.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Persian R source transition failed' }
           python -B eci/test_persian_native_pipeline.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Independent Persian planning components failed' }
           python -B eci/test_persian_nucleus_clock.py --library eci/eci.dll

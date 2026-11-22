@@ -5,6 +5,7 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor
 from itertools import groupby
 from pathlib import Path
+from statistics import median
 import threading
 
 from test_us_articulation import capture, voice
@@ -78,11 +79,16 @@ def main():
                         _, rows = capture(fa, scope, tag, True)
                         _, donor = capture(pt, pt_scope, tag, False)
                         current, reference = frication(rows), frication(donor)
-                        assert current and reference and len(current) == len(reference), (
+                        assert len(current) >= 5 and len(reference) >= 5, (
                             gender, rate, speed, tag, len(current), len(reference))
-                        for left, right in zip(current, reference):
-                            for col in (2, 7, 8, 9, 13, 15, 17, 35, 36, 37, 38):
-                                assert abs(left[col]-right[col]) <= 2, (gender, rate, speed, tag, col)
+                        # The noise onset may be gradual instead of jumping
+                        # instantly. The sustained R must still have the
+                        # same source level, voicing and formant profile.
+                        for col in (2, 7, 9, 13, 15, 17, 35, 36, 37, 38):
+                            assert abs(median(row[col] for row in current) -
+                                       median(row[col] for row in reference)) <= 2, (gender, rate, speed, tag, col)
+                        assert abs(max(row[8] for row in current) - max(row[8] for row in reference)) <= 2, (
+                            gender, rate, speed, tag, 'R source level')
                         if old and vowel != 'u':
                             after_pcm, _ = capture(fa, scope, tag, True)
                             before_pcm, _ = capture(old, old_scope, tag, True)

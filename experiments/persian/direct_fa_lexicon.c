@@ -272,6 +272,41 @@ static int fully_vowelled_word(const char *word,size_t bytes,char *output,size_t
 
 static int guessed_joined_word(const char *word,size_t bytes,char *output,size_t capacity);
 
+/* The two Unicode spellings of a final heh with written ezafe are
+ * canonically equivalent. Keep the base intact so known pronunciations and
+ * their stress can be reused; never turn an isolated combining mark into a
+ * suffix. The bound is the same as the orthographic word fallback. */
+static size_t heh_ezafe_stem(const char *word,size_t bytes,char *stem,size_t capacity)
+{
+    static const char decomposed[]="هٔ",composed[]="ۀ",heh[]="ه";
+    size_t n=0;
+    if(bytes>sizeof decomposed-1 &&
+       !memcmp(word+bytes-(sizeof decomposed-1),decomposed,sizeof decomposed-1)) {
+        n=bytes-(sizeof "ٔ"-1);
+        if(n>=capacity)return 0;
+        memcpy(stem,word,n);
+    } else if(bytes>sizeof composed-1 &&
+              !memcmp(word+bytes-(sizeof composed-1),composed,sizeof composed-1)) {
+        n=bytes-(sizeof composed-1);
+        if(capacity<sizeof heh || n>capacity-sizeof heh)return 0;
+        memcpy(stem,word,n);memcpy(stem+n,heh,sizeof heh-1);n+=sizeof heh-1;
+    } else return 0;
+    stem[n]=0;return n;
+}
+
+static int append_heh_ezafe(const char *base,char *output,size_t capacity)
+{
+    size_t n=strlen(base),copy;
+    if(n<5 || base[0]!='`' || base[1]!='[' || base[n-1]!=']')return 0;
+    if(n>=5 && !memcmp(base+n-5,"'e:']",5))copy=n-5;
+    else if(base[n-2]=='e')copy=n-2;
+    else return 0;
+    /* Final /e/ belongs to the stem, followed by unstressed /ye/. */
+    if(copy>capacity || sizeof "e.0je]">capacity-copy)return -2;
+    memcpy(output,base,copy);memcpy(output+copy,"e.0je]",sizeof "e.0je]");
+    return 1;
+}
+
 /* Orthographic fallback for a previously unseen word. Persian short vowels
  * are usually omitted, so this is an approximation, never a dictionary
  * override. The general consonant+short-a pattern follows fa_rules' basic
@@ -285,6 +320,13 @@ int reloq_fa_direct_guess_word(const char *word,size_t bytes,char *output,size_t
     if(!word || !bytes || !output || !capacity || memchr(word,0,bytes))return -1;
     int joined=guessed_joined_word(word,bytes,output,capacity);
     if(joined)return joined;
+    char ezafe_stem[1025],ezafe_base[2048];
+    size_t ezafe_bytes=heh_ezafe_stem(word,bytes,ezafe_stem,sizeof ezafe_stem);
+    if(ezafe_bytes) {
+        int found=reloq_fa_direct_guess_word(ezafe_stem,ezafe_bytes,ezafe_base,sizeof ezafe_base);
+        if(found!=1)return found;
+        return append_heh_ezafe(ezafe_base,output,capacity);
+    }
     while(at<bytes) {
         size_t next=at;uint32_t cp=0;
         if(reloq_utf8_next((const unsigned char *)word,bytes,&next,&cp)!=1)return -1;
@@ -1437,6 +1479,19 @@ static int single_phone_tag(const char *tag)
     return stress_syllables(tag)>0;
 }
 
+/* Compose explicitly written heh ezafe from a known word, including the
+ * precomposed Unicode form. Keep its existing pronunciation and accent. */
+static int known_heh_ezafe(const char *word,size_t bytes,int follows_word,
+                           char *output,size_t capacity,unsigned depth)
+{
+    char stem[1025],base[2048];
+    size_t n=heh_ezafe_stem(word,bytes,stem,sizeof stem);
+    if(!n)return 0;
+    int result=direct_context_depth(stem,n,follows_word,base,sizeof base,depth+1);
+    if(result!=1)return result;
+    return append_heh_ezafe(base,output,capacity);
+}
+
 static int append_phone_tags(const char *left,const char *right,char *output,size_t capacity)
 {
     size_t a=strlen(left),b=strlen(right);
@@ -2021,6 +2076,12 @@ static int direct_context_depth(const char *word,size_t bytes,int follows_word,
     if(result)return result;
     result=unspaced_agent_plural(word,bytes,follows_word,output,capacity,depth);
     if(result)return result;
+    /* A precomposed heh is the same written suffix as ه + U+0654. Test it
+     * before an exact lookup so both forms receive the base word's stress. */
+    if(bytes>=sizeof "ۀ"-1 && !memcmp(word+bytes-(sizeof "ۀ"-1),"ۀ",sizeof "ۀ"-1)) {
+        result=known_heh_ezafe(word,bytes,follows_word,output,capacity,depth);
+        if(result)return result;
+    }
     result=direct_context_word_exact(word,bytes,follows_word,output,capacity);
     if(result==1) {
         apply_persian_stress(word,bytes,output,1);
@@ -2028,6 +2089,8 @@ static int direct_context_depth(const char *word,size_t bytes,int follows_word,
         stress_fused_function_compound(word,bytes,output,depth);
         shorten_verified_compound(word,bytes,output,depth);
     }
+    if(result)return result;
+    result=known_heh_ezafe(word,bytes,follows_word,output,capacity,depth);
     if(result)return result;
     result=known_in_stem_plus_a(word,bytes,output,capacity);
     if(result)return result;

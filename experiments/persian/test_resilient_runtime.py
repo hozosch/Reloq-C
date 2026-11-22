@@ -85,6 +85,21 @@ def main():
             assert render((text,))[0]
             assert frontend._worker is None, text
         assert frontend.analyze_direct('متوقف').parts[0].text == '`[.0mo.0te.0vAR.1Ref]'
+        # NVDA's CLDR expands ⏺ to this phrase even at symbol level NONE.
+        # Preserve the explicit ezafe and finish the utterance across indexes.
+        cldr = 'دکمهٔ ضبط پزشکیان: روحانیون به کمک دولت بیان'
+        job = project_resilient((EciIndex(94), cldr[:5], EciIndex(95), cldr[5:], EciIndex(96)),
+                                frontend, validate=engine._engines[PERSIAN_PROBE.id]._voice._phonemes_for_probe)
+        assert '`[.0dok.1me.0je]' in job.tagged and '`[.1zAbt]' in job.tagged, job.tagged
+        sound, marks = render((EciIndex(94), cldr[:5], EciIndex(95), cldr[5:], EciIndex(96)))
+        assert sound and [number for number, _ in marks] == [94, 95, 96]
+        assert frontend._worker is None
+        # A previously unknown stem still uses the shared orthographic
+        # fallback, and the explicit suffix remains weak in both encodings.
+        for word in ('ژژژژهٔ', 'ژژژژۀ'):
+            tag = frontend.project_fallback_word(word)
+            assert tag and tag.endswith('.0je]'), (word, tag)
+            assert native_sequence_accepted(tag, engine._engines[PERSIAN_PROBE.id]._voice._phonemes_for_probe(tag))
         import unicodedata
         log_label = 'نمایشِ اِتِّفاقاتِ ثبت‌شده (Log)'
         normalized = unicodedata.normalize('NFC', log_label)

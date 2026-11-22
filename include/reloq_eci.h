@@ -578,6 +578,12 @@ ECIAPI int ECICALL eciPersianBridgeRemaining(const struct reloq_fa_frame *input,
 ECIAPI int ECICALL eciPersianMatchStopNasal(struct reloq_fa_frame *frames,size_t count,
     size_t boundary,size_t end,const struct reloq_fa_frame *reference,
     size_t reference_count,size_t reference_boundary);
+ECIAPI int ECICALL eciPersianMatchUsZOnset(struct reloq_fa_frame *frames,size_t count,
+    size_t boundary,size_t end,const struct reloq_fa_frame *reference,
+    size_t reference_count,size_t reference_boundary);
+ECIAPI int ECICALL eciPersianMatchHToUsZ(struct reloq_fa_frame *frames,size_t count,
+    size_t boundary,size_t end,const struct reloq_fa_frame *reference,
+    size_t reference_count,size_t reference_boundary);
 ECIAPI int ECICALL eciPersianPlanUnvoicedOnsets(struct reloq_fa_frame *frames,size_t count,
     const size_t *ends,size_t segments,const unsigned char *onsets,
     const struct reloq_fa_frame *reference,size_t reference_count,

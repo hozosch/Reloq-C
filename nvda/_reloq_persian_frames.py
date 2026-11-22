@@ -208,6 +208,18 @@ class FrameCapture:
                 ctypes.c_size_t, ctypes.c_size_t, ctypes.POINTER(NativeFrame),
                 ctypes.c_size_t, ctypes.c_size_t)
             self.match_stop_nasal.restype = ctypes.c_int
+        self.match_us_z_onset = getattr(dll, 'eciPersianMatchUsZOnset', None)
+        if self.match_us_z_onset is not None:
+            self.match_us_z_onset.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,
+                ctypes.c_size_t, ctypes.c_size_t, ctypes.POINTER(NativeFrame),
+                ctypes.c_size_t, ctypes.c_size_t)
+            self.match_us_z_onset.restype = ctypes.c_int
+        self.match_h_to_us_z = getattr(dll, 'eciPersianMatchHToUsZ', None)
+        if self.match_h_to_us_z is not None:
+            self.match_h_to_us_z.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,
+                ctypes.c_size_t, ctypes.c_size_t, ctypes.POINTER(NativeFrame),
+                ctypes.c_size_t, ctypes.c_size_t)
+            self.match_h_to_us_z.restype = ctypes.c_int
         self.plan_unvoiced_onsets = getattr(dll, 'eciPersianPlanUnvoicedOnsets', None)
         if self.plan_unvoiced_onsets is not None:
             self.plan_unvoiced_onsets.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,

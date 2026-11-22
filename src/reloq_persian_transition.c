@@ -288,6 +288,130 @@ int reloq_persian_match_stop_nasal(struct reloq_fa_frame *frames,size_t count,
     return 1;
 }
 
+/* Find a voiced sibilant's rising part, without crossing into a later phone. */
+static int z_onset(const struct reloq_fa_frame *frames,size_t start,size_t end,
+    size_t *peak_index,double *peak_time)
+{
+    double elapsed=0;float peak=0;size_t selected=start;int seen=0;
+    for(size_t i=start;i<end && elapsed<35;++i) {
+        const float *c=frames[i].controls;
+        if(!isfinite(c[0]) || c[0]<=0 || c[0]>20 || !isfinite(c[2]) ||
+           !isfinite(c[7]) || !isfinite(c[8]))return -1;
+        for(unsigned j=35;j<=42;++j)if(!isfinite(c[j]))return -1;
+        if(c[8]>=20)seen=1;
+        if(seen && c[8]<10)break;
+        if(c[8]>peak){peak=c[8];selected=i;*peak_time=elapsed;}
+        elapsed+=c[0];
+    }
+    const float *c=frames[selected].controls;
+    if(peak<40 || c[2]<=0 ||
+       !(c[38]>c[37]+10 || c[39]>c[37]+10))return 0;
+    *peak_index=selected;return 1;
+}
+
+int reloq_persian_match_us_z_onset(struct reloq_fa_frame *frames,size_t count,
+    size_t boundary,size_t end,const struct reloq_fa_frame *reference,
+    size_t reference_count,size_t reference_boundary)
+{
+    if(!frames || !reference || !boundary || boundary>=end || end>count ||
+       count>120000 || reference_count>120000 || reference_boundary>=reference_count ||
+       count>SIZE_MAX/sizeof *frames || reference_count>SIZE_MAX/sizeof *reference)return -1;
+    uintptr_t left=(uintptr_t)frames,right=(uintptr_t)reference;
+    size_t left_bytes=count*sizeof *frames,right_bytes=reference_count*sizeof *reference;
+    if(left>UINTPTR_MAX-left_bytes || right>UINTPTR_MAX-right_bytes ||
+       (left<right+right_bytes && right<left+left_bytes))return -1;
+    if(frames[boundary].controls[8]>10 || reference[reference_boundary].controls[8]>10)return 0;
+    size_t target_peak=0,donor_peak=0;double target_time=0,donor_time=0;
+    int a=z_onset(frames,boundary,end,&target_peak,&target_time);
+    int b=z_onset(reference,reference_boundary,reference_count,&donor_peak,&donor_time);
+    if(a<0 || b<0)return -1;
+    if(!a || !b || donor_time<=target_time+1 || donor_time>30 ||
+       fabs(frames[target_peak].controls[8]-reference[donor_peak].controls[8])>8)return 0;
+    for(unsigned j=35;j<=42;++j)
+        if(fabs(frames[target_peak].controls[j]-reference[donor_peak].controls[j])>12)return 0;
+    /* Verify the complete replacement interval before modifying anything. */
+    size_t ref=reference_boundary,stop=boundary;double elapsed=0,ref_time=0;
+    while(stop<end && elapsed<=donor_time) {
+        while(ref<reference_count && ref_time+reference[ref].controls[0]<=elapsed+1e-6) {
+            ref_time+=reference[ref].controls[0];++ref;
+        }
+        if(ref>=reference_count || (stop>target_peak && frames[stop].controls[8]<20))return 0;
+        elapsed+=frames[stop].controls[0];++stop;
+    }
+    if(elapsed<=donor_time)return 0;
+    ref=reference_boundary;elapsed=ref_time=0;
+    for(size_t i=boundary;i<stop;++i) {
+        while(ref+1<reference_count && ref_time+reference[ref].controls[0]<=elapsed+1e-6) {
+            ref_time+=reference[ref].controls[0];++ref;
+        }
+        frames[i].controls[8]=reference[ref].controls[8];
+        for(unsigned j=35;j<=42;++j)frames[i].controls[j]=reference[ref].controls[j];
+        elapsed+=frames[i].controls[0];
+    }
+    return 1;
+}
+
+int reloq_persian_match_h_to_us_z(struct reloq_fa_frame *frames,size_t count,
+    size_t boundary,size_t end,const struct reloq_fa_frame *reference,
+    size_t reference_count,size_t reference_boundary)
+{
+    if(!frames || !reference || boundary<3 || boundary>=end || end>count ||
+       count>120000 || reference_count>120000 || reference_boundary>=reference_count ||
+       count>SIZE_MAX/sizeof *frames || reference_count>SIZE_MAX/sizeof *reference)return -1;
+    uintptr_t left=(uintptr_t)frames,right=(uintptr_t)reference;
+    size_t a=count*sizeof *frames,b=reference_count*sizeof *reference;
+    if(left>UINTPTR_MAX-a || right>UINTPTR_MAX-b ||
+       (left<right+b && right<left+a))return -1;
+    /* The first source frame must continue the actual final H without an
+     * inserted voiced vowel. Confirm its aspiration immediately before the
+     * boundary and the same unvoiced reference start. */
+    if(frames[boundary-1].controls[2]>5 || reference[reference_boundary].controls[2]>5 ||
+       frames[boundary].controls[2]<20 || reference[reference_boundary].controls[7]>5)return 0;
+    int h=0;double prior=0;
+    for(size_t i=boundary;i>0 && prior<20;) {
+        const float *c=frames[--i].controls;
+        if(!isfinite(c[0]) || c[0]<=0 || c[0]>20 || !isfinite(c[2]) || !isfinite(c[7]))return -1;
+        if(c[2]<=5 && c[7]>=20){h=1;break;}
+        prior+=c[0];
+    }
+    if(!h)return 0;
+    size_t tp=0,rp=0;double tt=0,rt=0;
+    int ta=z_onset(frames,boundary,end,&tp,&tt);
+    int ra=z_onset(reference,reference_boundary,reference_count,&rp,&rt);
+    if(ta<0 || ra<0)return -1;
+    if(!ta || !ra || fabs(tt-rt)>3 ||
+       fabs(frames[tp].controls[8]-reference[rp].controls[8])>5)return 0;
+    size_t stop=boundary,ref=reference_boundary;double elapsed=0,ref_time=0;
+    /* Verify every sample against the same US Z before making any changes,
+     * and stop only where the two existing voicing trajectories converge. */
+    while(stop<end && elapsed<=90) {
+        while(ref<reference_count && ref_time+reference[ref].controls[0]<=elapsed+1e-6) {
+            ref_time+=reference[ref].controls[0];++ref;
+        }
+        if(ref>=reference_count)return 0;
+        const float *t=frames[stop].controls,*r=reference[ref].controls;
+        if(!isfinite(t[0]) || t[0]<=0 || t[0]>20 || !isfinite(r[0]) || r[0]<=0 || r[0]>20 ||
+           !isfinite(t[2]) || !isfinite(r[2]) || !isfinite(t[7]) || !isfinite(r[7]) ||
+           !isfinite(t[8]) || !isfinite(r[8]) || fabs(t[8]-r[8])>5)return 0;
+        for(unsigned j=35;j<=42;++j)
+            if(!isfinite(t[j]) || !isfinite(r[j]) || fabs(t[j]-r[j])>5)return 0;
+        if(elapsed>tt && t[8]>=20 && fabs(t[2]-r[2])<=2 && fabs(t[7]-r[7])<=2)break;
+        if(elapsed>tt && t[8]<20)return 0;
+        elapsed+=t[0];++stop;
+    }
+    if(stop==boundary || stop>=end || elapsed>90)return 0;
+    ref=reference_boundary;elapsed=ref_time=0;
+    for(size_t i=boundary;i<stop;++i) {
+        while(ref+1<reference_count && ref_time+reference[ref].controls[0]<=elapsed+1e-6) {
+            ref_time+=reference[ref].controls[0];++ref;
+        }
+        frames[i].controls[2]=reference[ref].controls[2];
+        frames[i].controls[7]=reference[ref].controls[7];
+        elapsed+=frames[i].controls[0];
+    }
+    return 1;
+}
+
 int reloq_persian_bridge_stop_onsets(const struct reloq_fa_frame *input,
     struct reloq_fa_frame *output,const double *times,const size_t *ends,
     const unsigned char *skip,size_t frame_count,size_t segment_count,

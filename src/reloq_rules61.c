@@ -1288,6 +1288,7 @@ struct rule_plan {
     struct rule_control *controls;size_t control_count,control_capacity;
     struct rule_fa_phone *fa_phones;size_t fa_phone_count,fa_phone_capacity,fa_phone_next;
     size_t fa_h_level_phone;float fa_h_level;int fa_h_level_set;
+    float fa_previous_noise,fa_previous_voice,fa_previous_aspiration;
     int fa_phone_failed;
     struct reloq_session *session;
     int memory,retracted_filter,retracted_st,word_volume,cjk_volume,managed_voice_controls,word_pitch,native_pitch,word_speed,german_af_markers,original_clock;
@@ -1301,7 +1302,7 @@ static void take_fa_phone(void *context,int32_t from,int32_t to,unsigned phone)
 {
     struct rule_plan *s=context;
     if(s->fa_phone_failed)return;
-    if(from<0 || to<=from || phone>RELOQ_FA_TUNE_U ||
+    if(from<0 || to<=from || phone>RELOQ_FA_TUNE_R ||
        (s->fa_phone_count && from<s->fa_phones[s->fa_phone_count-1].from)) {
         s->fa_phone_failed=1;return;
     }
@@ -1329,6 +1330,12 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
     int32_t to=s->fa_phone_next+1<s->fa_phone_count?p->to:INT32_MAX;
     if(p->phone && native>=p->from && native<to) {
         int rate=reloq_session_sample_rate(s->session);
+        if((p->phone==RELOQ_FA_TUNE_R || p->phone==RELOQ_FA_TUNE_R_BEFORE_I ||
+            p->phone==RELOQ_FA_TUNE_R_BEFORE_BACK_A) &&
+           s->fa_phone_next+1<s->fa_phone_count)
+            reloq_fa_tuning_r_sources(controls,s->fa_previous_noise,
+                s->fa_previous_voice,s->fa_previous_aspiration,
+                p->from/10000.0,p->articulation_end/10000.0,to/10000.0,(double)tick,duration);
         if(p->phone==RELOQ_FA_TUNE_BEFORE_FINAL_H) {
             if(s->fa_h_level_phone!=s->fa_phone_next) {
                 s->fa_h_level_phone=s->fa_phone_next;s->fa_h_level_set=0;
@@ -1364,6 +1371,9 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
                                     (double)tick,duration,rate);
         }
     }
+    s->fa_previous_noise=controls[8];
+    s->fa_previous_voice=controls[2];
+    s->fa_previous_aspiration=controls[7];
 }
 static struct rule_span *new_span(struct rule_plan *s)
 {

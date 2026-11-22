@@ -20,7 +20,8 @@ enum reloq_fa_tuned_phone {
     RELOQ_FA_TUNE_OTHER=0, RELOQ_FA_TUNE_FRONT_A=1, RELOQ_FA_TUNE_BACK_A=2,
     RELOQ_FA_TUNE_E=3, RELOQ_FA_TUNE_O=4, RELOQ_FA_TUNE_R_BEFORE_I=5,
     RELOQ_FA_TUNE_R_BEFORE_BACK_A=6, RELOQ_FA_TUNE_BACK_A_AFTER_R=7,
-    RELOQ_FA_TUNE_BEFORE_FINAL_H=8, RELOQ_FA_TUNE_U=9
+    RELOQ_FA_TUNE_BEFORE_FINAL_H=8, RELOQ_FA_TUNE_U=9,
+    RELOQ_FA_TUNE_R=10
 };
 
 /* Slots 11 and 12 are unused by the acoustic frame adapter. They carry
@@ -46,6 +47,9 @@ void reloq_fa_tuning_targets(float controls[62],unsigned phone,double from_ms,do
                              double frame_ms,double duration_ms,int rate);
 void reloq_fa_tuning_r_to_back_a(float controls[62],double from_ms,double to_ms,
                                 double frame_ms,int rate);
+void reloq_fa_tuning_r_sources(float controls[62],float previous_noise,
+    float previous_voice,float previous_aspiration,
+    double from_ms,double end_ms,double next_ms,double frame_ms,double duration_ms);
 void reloq_fa_tuning_prepare(struct reloq_fa_tuning_filter *,const float controls[62],int rate);
 double reloq_fa_tuning_sample(struct reloq_fa_tuning_filter *,double sample);
 

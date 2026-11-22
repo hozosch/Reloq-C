@@ -38,6 +38,21 @@ int reloq_persian_match_stop_nasal(struct reloq_fa_frame *frames,size_t count,
     size_t boundary,size_t end,const struct reloq_fa_frame *reference,
     size_t reference_count,size_t reference_boundary);
 
+/* Use a matching US /z/ onset at an English-to-Persian boundary. Only the
+ * frication source and bands are copied; pitch, voicing, timings and source
+ * indexes remain the Persian segment's own. Return 1 when applied, 0 when a
+ * matching onset cannot be verified, and -1 for invalid input. */
+int reloq_persian_match_us_z_onset(struct reloq_fa_frame *frames,size_t count,
+    size_t boundary,size_t end,const struct reloq_fa_frame *reference,
+    size_t reference_count,size_t reference_boundary);
+
+/* Retain the actual H-to-Z voicing trajectory when the same English Z is
+ * present in the Persian context. The US frication, timing and pitch stay
+ * untouched. Refuse unrelated or unaligned context captures. */
+int reloq_persian_match_h_to_us_z(struct reloq_fa_frame *frames,size_t count,
+    size_t boundary,size_t end,const struct reloq_fa_frame *reference,
+    size_t reference_count,size_t reference_boundary);
+
 /* Plan and compact voiceless onsets in-place. onsets contains an ASCII phone
  * (f, s, S, t, p, k or h), zero for a skipped segment, and bit 7 when the
  * continuous English reference is to be checked before removing its lead.

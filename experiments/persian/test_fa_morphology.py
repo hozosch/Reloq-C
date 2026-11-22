@@ -59,6 +59,16 @@ def main():
     assert project('خانه‌ای')=="`[.0Ga.1ne.0i]"
     assert project('پدیده‌ای')=="`[.0pA.0di.1de.0i]"
     assert project('پدیده‌ی')=="`[.0pA.0di.1de.0je]"
+    # Both canonically equivalent written heh-ezafe forms reuse a known
+    # stem and keep its accent, including CLDR's دکمهٔ in emoji names.
+    for stem in ('دکمه', 'خانه', 'پرده', 'پنجره', 'جعبه'):
+        base = project(stem)
+        assert base.endswith('e]'), (stem, base)
+        decomposed = stem + 'ٔ'
+        composed = stem[:-1] + 'ۀ'
+        assert project(decomposed) == project(composed) == base[:-1] + '.0je]', stem
+        assert project(decomposed + ' ضبط').startswith(base[:-1] + '.0je] '), stem
+    project('کتابٔ', covered=False)
     assert project('آماده‌سازی')=='`[.0a.0ma.0de.0sa.1zi]'
     assert project('عجیب‌ترین').endswith('.0tA.1rin]')
     assert project('نیم‌فاصله').endswith(".0fa.0se.1le]")

@@ -80,6 +80,32 @@ void reloq_fa_tuning_r_to_back_a(float c[62],double from,double to,double at,int
     }
 }
 
+/* Avoid instantaneous source changes on the actual R phone and its
+ * release. Preserve silence and steady-state sources, and leave the vowel
+ * targets, pitch, duration and other languages untouched. */
+void reloq_fa_tuning_r_sources(float c[62],float previous_noise,float previous_voice,
+    float previous_aspiration,double from,double end,
+    double next,double at,double duration)
+{
+    if(fa_tuning_on!=1 || !c || !isfinite(duration) || from<0 || end-from<12 ||
+       next<end || at<from || at>=next || duration<=0)return;
+    /* The generator's source can jump directly from silence to full R
+     * frication; use the immediately preceding actual frame as the anchor.
+     * Its steady-state level stays unchanged. */
+    double step=8.0*duration;
+    if(isfinite(c[8]) && isfinite(previous_noise) && c[8]>0)
+        c[8]=(float)nearbyint(fmin((double)c[8],fmax(0.0,(double)previous_noise)+step));
+    const unsigned columns[]={2,7};
+    const float previous[]={previous_voice,previous_aspiration};
+    for(unsigned i=0;i<2;++i) {
+        unsigned col=columns[i];
+        if(isfinite(c[col]) && isfinite(previous[i]) && c[col]>0 && previous[i]>0) {
+            double value=fmax((double)previous[i]-step,fmin((double)c[col],(double)previous[i]+step));
+            c[col]=(float)nearbyint(value);
+        }
+    }
+}
+
 static void tuning_prepare(struct reloq_fa_tuning_filter *f,const float c[62],int rate,int revision)
 {
     static const int gains[6][5]={
