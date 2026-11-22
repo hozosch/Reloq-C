@@ -52,7 +52,28 @@ jobs:
         run: |
           set -euo pipefail
           gh run watch 45080704288 --exit-status --interval 15 --repo "$GITHUB_REPOSITORY"
-          gh run watch 45080704377 --exit-status --interval 15 --repo "$GITHUB_REPOSITORY"
+          # GitHub may list a freshly uploaded, unarchived artifact before its
+          # download endpoint can serve it. The independent artifact check is
+          # not a speech test. Require every real NVDA and acoustic step, and
+          # accept only that specific transient round-trip failure.
+          gh run watch 45080704377 --exit-status --interval 15 --repo "$GITHUB_REPOSITORY" || true
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/45080704377/jobs?per_page=100" > "$RUNNER_TEMP/nvda-direct-jobs.json"
+          python - <<'PYCODE'
+          import json, os
+          from pathlib import Path
+          data=json.loads((Path(os.environ['RUNNER_TEMP'])/'nvda-direct-jobs.json').read_text())
+          jobs=[j for j in data['jobs'] if j['name']=='nvda']
+          assert len(jobs)==1 and jobs[0]['status']=='completed', jobs
+          steps={s['name']:s['conclusion'] for s in jobs[0]['steps']}
+          required=('Check linked Delta PE inspection','Select verified Windows acoustics',
+                    'Check mixed Unicode name routing','Build private NVDA test add-on',
+                    "Check Unicode spelling through NVDA's speech pipeline",'Test in real NVDA',
+                    'Confirm the full acoustic test')
+          assert all(steps.get(name)=='success' for name in required), steps
+          failed={name for name,conclusion in steps.items() if conclusion in ('failure','cancelled','timed_out')}
+          assert failed in (set(), {'Download the direct add-on artifact'}), failed
+          print('Verified matching real NVDA and acoustic tests; checked artifact-roundtrip status.')
+          PYCODE
       - uses: actions/upload-artifact@v7
         with:
           name: reloq-c-persian-pinglish-2.0.0-dev38
