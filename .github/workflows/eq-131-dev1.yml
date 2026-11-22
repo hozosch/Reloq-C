@@ -9,14 +9,14 @@ jobs:
   dictionaries:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Resolve current complete dictionary snapshot
         env:
           RELOQ_BUILD_GITHUB_TOKEN: ${{ github.token }}
         run: python3 -c "import sys; sys.path.insert(0, 'addon'); from build_synth import refresh_community_dictionaries; refresh_community_dictionaries()"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: eq131-dictionaries
           path: data/community/
@@ -31,11 +31,11 @@ jobs:
       matrix:
         arch: [x64, x86]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: eq131-dictionaries
           path: data/community
@@ -55,7 +55,7 @@ jobs:
             vendor/openevv61/ src/reloq_voice_filter.c src/reloq_orthography.c \
             src/reloq_german_word_edges.c src/reloq_english_word_edges.c include/ \
             ':(exclude)include/reloq_eci.h' ':(exclude)include/reloq_equalizer.h'
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         id: rules
         with:
           path: vendor/openevv61/build
@@ -69,7 +69,7 @@ jobs:
           if [ '${{ matrix.arch }}' = x64 ]; then prefix=x86_64; else prefix=i686; fi
           make -C eci -j2 windows-${{ matrix.arch }} PROVIDER_LTO=-flto=2 WINDOWS_CC=$prefix-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=$prefix-w64-mingw32-objdump
           python3 sapi/build.py --arch '${{ matrix.arch }}' --cc $prefix-w64-mingw32-gcc-posix --objdump $prefix-w64-mingw32-objdump
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: eq131-native-${{ matrix.arch }}
           path: dist/reloq-c-sapi5-${{ matrix.arch }}-1.3.1-dev1-payload.zip
@@ -81,14 +81,14 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: eq131-dictionaries
           path: data/community
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: eq131-native-x64
           path: dist
@@ -115,7 +115,7 @@ jobs:
           for language in en de; do
             PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.3.1-dev1.nvda-addon"))' "$language"
           done
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: eq131-addon-candidate
           path: dist/reloq-c-synth-x64-1.3.1-dev1.nvda-addon
@@ -127,10 +127,10 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: eq131-addon-candidate
           path: candidate
@@ -162,7 +162,7 @@ jobs:
           if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw 'NVDA portable install failed' }
           python -B addon/test_nvda_real_settings.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.3.1-dev1.nvda-addon --work settings-results
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA settings probe failed' }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: nvda-eq131-dev1
           path: candidate/reloq-c-synth-x64-1.3.1-dev1.nvda-addon
@@ -174,10 +174,10 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: eq131-native-*
           path: dist
@@ -224,7 +224,7 @@ jobs:
           $p = Start-Process (Join-Path $install 'unins000.exe') -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw 'Uninstall failed' }
           if (!(Test-Path $dictionary) -or (Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'User dictionary lost during uninstall' }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sapi-eq131-dev1
           path: |
@@ -238,18 +238,18 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: eq131-dictionaries
           path: data/community
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
         with:
           packages: platform-tools
           log-accepted-android-sdk-licenses: false
@@ -267,7 +267,7 @@ jobs:
         run: gh release download v1.3.0 --repo "$GITHUB_REPOSITORY" --pattern 'reloq-c-android-arm64-1.3.0.apk' --dir previous
       - name: Build and verify ARM64 APK
         run: python3 android/build.py --sdk "$ANDROID_HOME" --ndk "$ANDROID_HOME/ndk/30.0.16248370" --java-home "$JAVA_HOME" --verified-dictionaries --replace-from previous/reloq-c-android-arm64-1.3.0.apk --jobs 2
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: android-eq131-dev1
           path: dist/reloq-c-android-arm64-1.3.1-dev1.apk
@@ -278,10 +278,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'

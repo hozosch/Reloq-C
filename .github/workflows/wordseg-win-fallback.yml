@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Verify generated data and native segmentation
@@ -30,10 +30,10 @@ jobs:
     env:
       RELOQ_BUILD_EPOCH: '1700000000'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         id: rules
         with:
           path: vendor/openevv61/build/windows-release
@@ -54,7 +54,7 @@ jobs:
           command -v objdump
           make -C eci -j2 eci.dll SHELL=C:/msys64/usr/bin/bash.exe PROVIDER_LTO=-flto=2 WINDOWS_CC=gcc WINDOWS_OBJDUMP=objdump
           python eci/verify_pe_exports.py eci/eci.dll --objdump objdump --header include/reloq_eci.h
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dictionary-snapshot
           run-id: 43029669789
@@ -76,7 +76,7 @@ jobs:
           from build_synth import build
           build(Path('dist/reloq-c-synth-x64-1.4.0-dev2.nvda-addon'), Path('eci/eci.dll'), refresh_dictionaries=False)
           PY
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wordseg-windows-candidate
           path: |
@@ -115,10 +115,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
@@ -134,10 +134,10 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: wordseg-windows-candidate
           path: candidate
@@ -161,7 +161,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA segmentation failed' }
           python -B addon/test_nvda_real_settings.py --nvda portable-nvda/nvda.exe --addon $addon --work settings-probe
           if ($LASTEXITCODE -ne 0) { throw 'NVDA dictionary controls failed' }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: wordseg-windows-nvda-results

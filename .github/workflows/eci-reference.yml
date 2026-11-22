@@ -11,10 +11,10 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
           architecture: x86
@@ -39,7 +39,7 @@ jobs:
         shell: bash
       - name: Observe original public ECI behaviour in x86 Python
         run: python tools/observe_eci_contract.py --library reference/ECI.DLL --output eci-original.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: eloquence64-original-eci-observations
           path: eci-original.json

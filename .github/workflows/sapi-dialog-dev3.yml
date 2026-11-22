@@ -14,16 +14,16 @@ jobs:
       matrix:
         arch: [x64, x86]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: sapi-native-${{ matrix.arch }}
           run-id: 42861433404
           github-token: ${{ github.token }}
           path: previous-native
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dictionary-snapshot
           run-id: 42861433404
@@ -60,7 +60,7 @@ jobs:
         run: |
           if [ '${{ matrix.arch }}' = x64 ]; then prefix=x86_64; else prefix=i686; fi
           python3 sapi/build.py --arch '${{ matrix.arch }}' --cc "$prefix-w64-mingw32-gcc-posix" --objdump "$prefix-w64-mingw32-objdump"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sapi-dialog-native-${{ matrix.arch }}
           path: dist/reloq-c-sapi5-${{ matrix.arch }}-1.3.0-dev3-payload.zip
@@ -71,15 +71,15 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: sapi-dialog-native-*
           path: dist
           merge-multiple: true
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: sapi-installer
           run-id: 42861433404
@@ -124,7 +124,7 @@ jobs:
           $p = Start-Process (Join-Path $install 'unins000.exe') -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "Uninstall failed: $($p.ExitCode)" }
           if (!(Test-Path $dictionary) -or (Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'User dictionary lost during uninstall' }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: sapi-dialog-installer-dev3

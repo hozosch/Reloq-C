@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           fetch-depth: 0
@@ -40,7 +40,7 @@ jobs:
           set -euo pipefail
           sudo apt-get -o Acquire::Retries=2 update -qq
           sudo apt-get -o Acquire::Retries=2 install -y --no-install-recommends gcc-mingw-w64-x86-64-posix gettext
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         id: rules
         with:
           path: vendor/openevv61/build
@@ -62,7 +62,7 @@ jobs:
           fi
       - name: Build x64 native core
         run: make -C eci -j2 windows-x64 PROVIDER_LTO=-flto=2 WINDOWS_CC=x86_64-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=x86_64-w64-mingw32-objdump
-      - uses: actions/cache/save@v4
+      - uses: actions/cache/save@v6
         if: steps.rules.outputs.cache-hit != 'true'
         with:
           path: vendor/openevv61/build
@@ -118,7 +118,7 @@ jobs:
               'package':files[0].name,'sha256':hashlib.sha256(files[0].read_bytes()).hexdigest(),
               'version':version,'official_release':False,'high_rate_tuning':'C'},indent=2)+'\n')
           PY
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: nvda-candidate-unvalidated
           path: |
@@ -137,10 +137,10 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: nvda-candidate-unvalidated
           path: candidate
@@ -243,7 +243,7 @@ jobs:
           Get-ChildItem candidate -Recurse -Filter source.json | Copy-Item -Destination validated
           Copy-Item streaming*.json validated
           Copy-Item packaged-driver-native.json validated
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: nvda-german-streaming-test
           path: validated/
