@@ -70,6 +70,14 @@ def main():
     def check_a_quality(roman, tag):
         assert matches_a_quality(roman, tag), (roman, tag)
 
+    def matches_written_vowels(roman, tag):
+        choices = {'aa': 'a', 'a': 'A', 'ee': 'i', 'oo': 'u', 'ou': 'u'}
+        expected = ''.join(choices.get(match.group(), match.group())
+                           for match in re.finditer(r'aa|ee|oo|ou|a|e|i|o|u', roman.lower()))
+        phones = ''.join(re.findall(r'`\[([^\]]*)\]', tag))
+        actual = ''.join('e' if phone == 'E' else phone for phone in phones if phone in 'aAeEiou')
+        return actual == expected
+
     table = Path(__file__).with_name('direct_fa_pinglish_lexicon.inc').read_text(encoding='utf8')
     entries = re.findall(r'^\s*\{"([a-z]+)", "([^"\\]+)"\},', table, re.M)
     assert len(entries) > 25000
@@ -81,14 +89,19 @@ def main():
         script_tag = persian(script)
         # A Latin vowel is explicit; a Persian-script homograph may have a
         # different correct reading. Otherwise keep the shared word path.
-        if matches_a_quality(roman, script_tag):
+        if matches_written_vowels(roman, script_tag):
             assert result == (1, script_tag), (roman, script, result, script_tag)
         else:
             assert result[0] == 1, (roman, script, result, script_tag)
         check_a_quality(roman, result[1])
+        assert matches_written_vowels(roman, result[1]), (roman, result[1])
         checked += 1
     assert 'mAr' in pinglish('mardand')[1]
     assert 'mor' in persian('مردند')
+    assert pinglish('mimard')[1] == '`[.1mi.0mArd]'
+    assert pinglish('mimardom')[1] == '`[.1mi.0mAr.0dom]'
+    assert pinglish('neshastam')[1] == '`[.1ne.0SAs.0tAm]'
+    assert pinglish('migozaaradand')[1] == '`[.1mi.0go.0za.0rA.0dAnd]'
     # Exercise unresolved and inflected words too: no stored spelling or
     # productive ending is allowed to change an individual a into aa.
     rng = random.Random(20261121)

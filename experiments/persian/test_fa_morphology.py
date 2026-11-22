@@ -46,7 +46,8 @@ def main():
     # homographs with an extra vowel must not be collapsed into past forms.
     for word, tag in (('بدید', '`[.1be.0did]'), ('بدم', '`[.0be.1dAm]'),
                       ('می‌گذارد', '`[.1mi.0go.0za.0rAd]'),
-                      ('می‌فشاند', '`[.1mi.0fe.0Sa.0nAd]')):
+                      ('می‌فشاند', '`[.1mi.0fe.0Sa.0nAd]'),
+                      ('نشستم', '`[.1ne.0SAs.0tAm]')):
         assert project(word)==tag, (word, project(word))
     assert project('به‌روز')=="`[.0be.1ruz]"
     assert project('به‌روزرسانی')=="`[.0be.2ruz.0re.1sa.0ni]"
@@ -175,11 +176,10 @@ def main():
     assert project('کتاب، تخصصی').endswith(unchanged)
 
     # An unambiguous finite past form uses the vowel of a known infinitive,
-    # including negative and imperfective prefixes. Bare homographs remain
+    # including imperfective prefixes. Bare homographs remain
     # lexical until the context or an explicitly written vowel disambiguates.
     for text, tag in (
             ('مردند', '`[.1mor.0dAnd]'), ('مردیم', '`[.1mor.0dim]'),
-            ('نمردم', '`[.1nA.0mor.0dAm]'), ('نمردند', '`[.1nA.0mor.0dAnd]'),
             ('می‌مرد', '`[.1mi.0mord]'), ('می‌مردند', '`[.1mi.0mor.0dAnd]'),
             ('نمی‌مردند', '`[.1ne.0mi.0mor.0dAnd]'),
             ('می مرد', '`[.1mi] `00 `[.0mord]'),

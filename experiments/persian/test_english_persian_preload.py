@@ -5,6 +5,7 @@ import argparse
 import os
 from pathlib import Path
 import sys
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
 import nvda_driver_probe as driver
@@ -26,6 +27,14 @@ def main():
     prepared = driver.make_language_engine(library, library, None, missing, missing,
                                            language=driver.US_ENGLISH.id, native_sentences=True)
     baseline = LanguageEngine(library, language=driver.US_ENGLISH.id, languages=driver.PROFILES)
+    select = driver.PersianProbeLanguageEngine.select_voice
+    def previous_selection(owner, language, voice):
+        if language == driver.US_ENGLISH.id:
+            return LanguageEngine.select_voice(owner, language, voice)
+        return select(owner, language, voice)
+    with patch.object(driver.PersianProbeLanguageEngine, 'select_voice', new=previous_selection):
+        previous = driver.make_language_engine(library, library, None, missing, missing,
+                                              language=driver.US_ENGLISH.id, native_sentences=True)
     try:
         persian = prepared._engines[driver.PERSIAN_PROBE.id]
         assert not persian._frontend._reference_available
@@ -40,6 +49,7 @@ def main():
                  'سلام دنیا', EciLanguage(driver.US_ENGLISH.id, '1'), ' world', EciIndex(4))
         audio, indices = render(prepared, mixed)
         assert audio and indices == (3, 4)
+        assert (audio, indices) == render(previous, mixed)
         assert prepared._engines[driver.PERSIAN_PROBE.id] is persian
         assert prepared._active is prepared._engines[driver.US_ENGLISH.id]
         prepared.select_voice(driver.PERSIAN_PROBE.id, '1')
@@ -48,6 +58,7 @@ def main():
         audio, indices = render(prepared, (EciIndex(5), 'سلام دنیا', EciIndex(6)))
         assert audio and indices == (5, 6)
     finally:
+        previous.close()
         baseline.close()
         prepared.close()
     print('Passed English/Persian preload, English isolation and mixed-text indexes.')

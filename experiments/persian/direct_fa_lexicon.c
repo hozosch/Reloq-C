@@ -2097,10 +2097,10 @@ static int known_past_verb(const char *word,size_t bytes,int after_prefix,
         if(length>=3 && !memcmp(base,"\xe2\x80\x8c",3)){base+=3;length-=3;}
         break;
     }
-    if(!after_prefix && !prefix && length>sizeof "ن"-1 &&
-       !memcmp(base,"ن",sizeof "ن"-1)) {
-        base+=sizeof "ن"-1;length-=sizeof "ن"-1;prefix=3;
-    }
+    /* Initial ن can be a negative prefix or part of another verb stem
+     * (نشستم: sat / did not wash). Without syntactic context preserve the
+     * established reading instead of selecting one by stripping the letter. */
+    if(length>=sizeof "ن"-1 && !memcmp(base,"ن",sizeof "ن"-1))return 0;
     static const struct {const char *written,*phones;} endings[]={
         {"ند","And"},{"ید","id"},{"یم","im"},{"م","Am"},{"ی","i"},{"",""}
     };
@@ -2139,10 +2139,17 @@ static int known_past_verb(const char *word,size_t bytes,int after_prefix,
            stress_syllables(attested) && stress_syllables(attested)!=stress_syllables(finite))
             continue;
         if(prefix) {
-            const char *lead=prefix==1?"`[.1mi]":prefix==2?"`[.1ne.0mi]":"`[.1nA]";
-            int result=append_phone_tags(lead,finite,output,capacity);
-            if(result==1 && stress_syllables(output))stress_primary(output,0);
-            return result;
+            const char *lead=prefix==1?"`[.1mi]":"`[.1ne.0mi]";
+            char combined[4096];
+            int result=append_phone_tags(lead,finite,combined,sizeof combined);
+            if(result!=1)return result;
+            if(stress_syllables(combined))stress_primary(combined,0);
+            if(direct_context_word_exact(word,bytes,0,attested,sizeof attested)==1 &&
+               stress_syllables(attested) && stress_syllables(attested)!=stress_syllables(combined))
+                continue;
+            size_t complete=strlen(combined);
+            if(complete>=capacity)return -2;
+            memcpy(output,combined,complete+1);return 1;
         }
         if(at>=capacity)return -2;
         memcpy(output,finite,at+1);return 1;
