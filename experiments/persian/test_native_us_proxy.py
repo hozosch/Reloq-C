@@ -97,6 +97,9 @@ def main():
         '`[.2ABC.0Go] `[.0q.0x]', '`[.0a] `[.0u]',
         '`[.1ba]\u00a0`[.1di]\u2009`[.1go].',
         '`[.1ba] `00 `[.0di] `[.1go], `[.1u].',
+        # Repeated words used to cause the same isolated pronunciation probe
+        # once per occurrence, even within one uncached sentence.
+        ' '.join(('`[.0sA.1lam]', '`[.1ir]', '`[.0sA.1lam]', '`[.1ir]') * 5),
     )
     texts = (
         'برای راه‌اندازی رایانه باید این گزینه انتخاب شود.',

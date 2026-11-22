@@ -19,6 +19,9 @@ int reloq_fa_direct_guess_word(const char *word,size_t bytes,char *output,size_t
 /* Use a classified finite verb and an independently known stem after a
  * confirmed verbal prefix; 0 means no safe morphological analysis. */
 int reloq_fa_direct_guess_prefixed_verb(const char *word,size_t bytes,char *output,size_t capacity);
+/* Derive a classified past verb from its known infinitive. A preceding
+ * separate verbal prefix permits an otherwise ambiguous finite spelling. */
+int reloq_fa_direct_prefixed_past(const char *word,size_t bytes,char *output,size_t capacity);
 size_t reloq_fa_direct_word_count(void);
 /* Apply conservative stress rules to a single generated reference tag.
  * The spelling must already be in the native normalized form. */

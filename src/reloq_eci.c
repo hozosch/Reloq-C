@@ -2014,7 +2014,7 @@ int ECICALL eciPersianUsProxyUtf8(ECIHand handle,const char *text,size_t bytes,
         return -1;
     }
     eciRegisterCallback(handle,persian_us_phonemes,&p);
-    int status=reloq_fa_us_proxy_make(text,bytes,persian_us_probe_word,&p,result);
+    int status=reloq_fa_us_proxy_make_reusing(text,bytes,persian_us_probe_word,&p,result);
     if(epoch_get(&e->stop_epoch)!=p.epoch && !status){reloq_fa_us_proxy_clear(result);status=-1;}
     (void)eciClearInput(handle);
     (void)eciSetParam(handle,RELOQ_ECI_SYNTH_MODE,mode);

@@ -95,6 +95,37 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             ring=globalVars.settingsRing
             ring_clock=next(item for item in ring.settings if item.setting.id=='originalAcousticClock')
             ring_language=next(item for item in ring.settings if item.setting.id=='language')
+            # Experimental Persian profiles use two additional per-language
+            # bits. Exercise the actual NVDA ring and wx dialog for each,
+            # including cancellation, preview, Apply and reload.
+            saved_language, saved_mask = synth.language, synth._acousticClockMask
+            try:
+                for locale in ('fa_IR', 'fa_Latn'):
+                    if locale not in synth.availableLanguages:
+                        continue
+                    synth.language=locale
+                    synth.originalAcousticClock=False
+                    voice_panel=VoiceSettingsPanel(frame)
+                    clock=voice_panel.originalAcousticClockCheckbox
+                    check(not clock.GetValue(), locale+' clock checkbox did not reflect fine timing')
+                    clock.SetValue(True);event(clock,wx.wxEVT_CHECKBOX)
+                    check(synth.originalAcousticClock, locale+' clock dialog preview failed')
+                    voice_panel.onSave()
+                    clock.SetValue(False);event(clock,wx.wxEVT_CHECKBOX)
+                    check(not synth.originalAcousticClock, locale+' clock dialog live switch failed')
+                    voice_panel.onDiscard()
+                    check(synth.originalAcousticClock, locale+' clock dialog Cancel failed')
+                    voice_panel.Destroy();wx.Yield()
+                    ring_clock.value=0
+                    check(not synth.originalAcousticClock, locale+' clock ring did not disable')
+                    ring_clock.value=1
+                    check(synth.originalAcousticClock, locale+' clock ring did not enable')
+                    synth.loadSettings()
+                    check(synth.language==locale and synth.originalAcousticClock,
+                          locale+' clock ring choice did not survive reload')
+            finally:
+                synth._acousticClockMask=saved_mask
+                synth.language=saved_language
             ring_clock.value=1
             check(synth.originalAcousticClock and section['_acousticClockMask']==synth._acousticClockMask,
                   'ring choice was not persisted per language')

@@ -2076,6 +2076,75 @@ static int known_in_stem_plus_a(const char *word,size_t bytes,char *output,size_
     memcpy(output,tag,n+4);return 1;
 }
 
+/* Derive regular finite past forms only from a separately known infinitive.
+ * Several generated frequency entries copied the vowel of a homographic
+ * noun into an inflection (e.g. noun mard versus past stem mord). Do not
+ * guess at a bare homograph unless an explicit verbal prefix disambiguates
+ * it, and leave forms without a verified infinitive to the existing reader. */
+static int known_past_verb(const char *word,size_t bytes,int after_prefix,
+                           char *output,size_t capacity)
+{
+    unsigned classes=stress_class(word,bytes);
+    if(!(classes&2u) || (!after_prefix && (classes&5u)))return 0;
+    const char *base=word;size_t length=bytes;unsigned prefix=0;
+    static const struct {const char *written;unsigned kind;} prefixes[]={
+        {"نمی",2},{"می",1}
+    };
+    if(!after_prefix)for(size_t i=0;i<sizeof prefixes/sizeof prefixes[0];++i) {
+        size_t n=strlen(prefixes[i].written);
+        if(length<=n || memcmp(base,prefixes[i].written,n))continue;
+        base+=n;length-=n;prefix=prefixes[i].kind;
+        if(length>=3 && !memcmp(base,"\xe2\x80\x8c",3)){base+=3;length-=3;}
+        break;
+    }
+    if(!after_prefix && !prefix && length>sizeof "ن"-1 &&
+       !memcmp(base,"ن",sizeof "ن"-1)) {
+        base+=sizeof "ن"-1;length-=sizeof "ن"-1;prefix=3;
+    }
+    static const struct {const char *written,*phones;} endings[]={
+        {"ند","And"},{"ید","id"},{"یم","im"},{"م","Am"},{"ی","i"},{"",""}
+    };
+    for(size_t i=0;i<sizeof endings/sizeof endings[0];++i) {
+        size_t n=strlen(endings[i].written);
+        if(length<=n || (n && memcmp(base+length-n,endings[i].written,n)))continue;
+        size_t stem=length-n;
+        if(stem<2 || (memcmp(base+stem-2,"د",2) && memcmp(base+stem-2,"ت",2)))continue;
+        if(stem+sizeof "ن">1025)continue;
+        char infinitive[1025],tag[2048],finite[2048];
+        memcpy(infinitive,base,stem);memcpy(infinitive+stem,"ن",sizeof "ن");
+        int found=reloq_fa_direct_word(infinitive,stem+sizeof "ن"-1,tag,sizeof tag);
+        if(found<0)return found;
+        if(found!=1 || !single_phone_tag(tag))continue;
+        size_t t=strlen(tag);
+        /* The final consonant begins the infinitive's -an syllable. */
+        if(t<8 || tag[t-6]!='.' || tag[t-5]<'0' || tag[t-5]>'2' ||
+           (tag[t-4]!='d' && tag[t-4]!='t') || tag[t-3]!='A' ||
+           tag[t-2]!='n' || tag[t-1]!=']')continue;
+        size_t at=t-6,suffix=strlen(endings[i].phones);
+        if(at+suffix+5>sizeof finite)return -2;
+        memcpy(finite,tag,at);
+        if(suffix){finite[at++]='.';finite[at++]='0';}
+        finite[at++]=tag[t-4];
+        memcpy(finite+at,endings[i].phones,suffix);at+=suffix;
+        finite[at++]=']';finite[at]=0;
+        if(prefix) {
+            const char *lead=prefix==1?"`[.1mi]":prefix==2?"`[.1ne.0mi]":"`[.1nA]";
+            int result=append_phone_tags(lead,finite,output,capacity);
+            if(result==1 && stress_syllables(output))stress_primary(output,0);
+            return result;
+        }
+        if(at>=capacity)return -2;
+        memcpy(output,finite,at+1);return 1;
+    }
+    return 0;
+}
+
+int reloq_fa_direct_prefixed_past(const char *word,size_t bytes,char *output,size_t capacity)
+{
+    if(!word || !bytes || !output || !capacity || memchr(word,0,bytes))return -1;
+    return known_past_verb(word,bytes,1,output,capacity);
+}
+
 static int direct_context_depth(const char *word,size_t bytes,int follows_word,
                                 char *output,size_t capacity,unsigned depth)
 {
@@ -2119,6 +2188,8 @@ static int direct_context_depth(const char *word,size_t bytes,int follows_word,
         result=known_heh_ezafe(word,bytes,follows_word,output,capacity,depth);
         if(result)return result;
     }
+    result=known_past_verb(word,bytes,0,output,capacity);
+    if(result)return result;
     result=direct_context_word_exact(word,bytes,follows_word,output,capacity);
     if(result==1) {
         apply_persian_stress(word,bytes,output,1);

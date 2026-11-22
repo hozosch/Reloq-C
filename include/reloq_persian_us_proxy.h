@@ -26,6 +26,10 @@ struct reloq_fa_us_proxy {
  * required. */
 int reloq_fa_us_proxy_make(const char *input,size_t length,
     reloq_fa_proxy_probe probe,void *context,struct reloq_fa_us_proxy *result);
+/* For the dedicated, deterministic ECI worker only: reuse an isolated
+ * candidate check within this request. Nothing survives the request. */
+int reloq_fa_us_proxy_make_reusing(const char *input,size_t length,
+    reloq_fa_proxy_probe probe,void *context,struct reloq_fa_us_proxy *result);
 void reloq_fa_us_proxy_clear(struct reloq_fa_us_proxy *result);
 
 #endif

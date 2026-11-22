@@ -4,7 +4,7 @@
 #include <string.h>
 
 struct buf {char *s;size_t n,cap;};
-struct word {size_t start,end;char *candidate;size_t candidate_len;int safe;};
+struct word {size_t start,end;char *candidate;size_t candidate_len;int safe,checked;};
 struct syllable {char stress;const char *body;size_t len;};
 
 static int append(struct buf *b,const char *s,size_t n)
@@ -188,8 +188,8 @@ static int append_gap(struct buf *b,const char *s,size_t n)
 void reloq_fa_us_proxy_clear(struct reloq_fa_us_proxy *p)
 {if(p){free(p->text);free(p->word_offsets);*p=(struct reloq_fa_us_proxy){0};}}
 
-int reloq_fa_us_proxy_make(const char *s,size_t n,reloq_fa_proxy_probe probe,void *ctx,
-    struct reloq_fa_us_proxy *result)
+static int proxy_make(const char *s,size_t n,reloq_fa_proxy_probe probe,void *ctx,
+    struct reloq_fa_us_proxy *result,int reuse)
 {
     if(!result)return 1;
     *result=(struct reloq_fa_us_proxy){0};
@@ -225,6 +225,13 @@ int reloq_fa_us_proxy_make(const char *s,size_t n,reloq_fa_proxy_probe probe,voi
         }
     }
     for(size_t i=0;i<count;++i)if(w[i].candidate && !w[i].safe) {
+        if(reuse)for(size_t j=0;j<i;++j) {
+            if(w[j].checked && w[j].candidate_len==w[i].candidate_len &&
+               !memcmp(w[j].candidate,w[i].candidate,w[i].candidate_len)) {
+                w[i].safe=w[j].safe;w[i].checked=1;break;
+            }
+        }
+        if(w[i].checked)continue;
         struct buf one={0};status=run_probe(probe,ctx,w[i].candidate,w[i].candidate_len,&one);
         if(status){free(one.s);goto done;}
         size_t a,b,next_start,next_end;
@@ -232,7 +239,7 @@ int reloq_fa_us_proxy_make(const char *s,size_t n,reloq_fa_proxy_probe probe,voi
             int ok=compatible(w[i].candidate+2,w[i].candidate_len-3,one.s+a+2,b-a-3);
             if(ok<0){free(one.s);status=ok;goto done;}w[i].safe=ok;
         }
-        free(one.s);
+        free(one.s);w[i].checked=1;
     }
     if(count>1) {offsets=malloc((count-1)*sizeof *offsets);if(!offsets){status=-2;goto done;}}
     cursor=0;
@@ -272,3 +279,11 @@ done:
     for(size_t i=0;i<count;++i)free(w[i].candidate);
     free(w);free(joined.s);free(display.s);free(out.s);free(offsets);return status;
 }
+
+int reloq_fa_us_proxy_make(const char *s,size_t n,reloq_fa_proxy_probe probe,void *ctx,
+    struct reloq_fa_us_proxy *result)
+{return proxy_make(s,n,probe,ctx,result,0);}
+
+int reloq_fa_us_proxy_make_reusing(const char *s,size_t n,reloq_fa_proxy_probe probe,void *ctx,
+    struct reloq_fa_us_proxy *result)
+{return proxy_make(s,n,probe,ctx,result,1);}

@@ -168,6 +168,23 @@ def main():
     assert project('یک تخصصی').endswith(unchanged)
     assert project('کتاب، تخصصی').endswith(unchanged)
 
+    # An unambiguous finite past form uses the vowel of a known infinitive,
+    # including negative and imperfective prefixes. Bare homographs remain
+    # lexical until the context or an explicitly written vowel disambiguates.
+    for text, tag in (
+            ('مردند', '`[.1mor.0dAnd]'), ('مردیم', '`[.1mor.0dim]'),
+            ('نمردم', '`[.1nA.0mor.0dAm]'), ('نمردند', '`[.1nA.0mor.0dAnd]'),
+            ('می‌مرد', '`[.1mi.0mord]'), ('می‌مردند', '`[.1mi.0mor.0dAnd]'),
+            ('نمی‌مردند', '`[.1ne.0mi.0mor.0dAnd]'),
+            ('می مرد', '`[.1mi] `00 `[.0mord]'),
+            ('می مردند', '`[.1mi] `00 `[.0mor.0dAnd]'),
+            ('بردند', '`[.1bor.0dAnd]'), ('می‌بردند', '`[.1mi.0bor.0dAnd]'),
+            ('خوابیدند', '`[.0Ga.1bi.0dAnd]'), ('می‌خوابیدند', '`[.1mi.0Ga.0bi.0dAnd]'),
+            ('گرفتند', '`[.0ge.1ref.0tAnd]'), ('می‌گرفتند', '`[.1mi.0ge.0ref.0tAnd]'),
+            ('مرد', '`[.1mArd]'), ('مردم', '`[.1mAr.0dom]'),
+            ('مُرد', '`[.1mord]'), ('مَرد', '`[.1mArd]')):
+        assert project(text) == tag, (text, project(text), tag)
+
     # All vowels in these synthetic words are explicitly marked. An
     # unmarked internal consonant or shadda is not guessed.
     for word,tag in (('کُنَد','`[.0ko.1nAd]'),('پَرَپ','`[.0pA.1rAp]'),

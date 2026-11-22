@@ -699,6 +699,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                               for locale, left, right in (('fa_IR', 'سلام ', ' دنیا'),
                                                           ('fa_Latn', 'salam ', ' donya'))
                               for char in ('\x7f', '\x01', '\x1c'))
+            # Real NVDA playback, including its cancellation before every
+            # case: settings must change audible Persian and mixed text, then
+            # restore the identical original output when switched back.
+            self.cases.extend((locale, text, 'clock_' + kind + '_' + setting)
+                              for locale, pure, mixed in (
+                                  ('fa_IR', 'تغییر در پیکربندیِ زبان.', 'سلام دنیا NVDA'),
+                                  ('fa_Latn', 'salaam donyaa.', 'salaam NVDA donyaa'))
+                              for kind, text in (('pure', pure), ('mixed', mixed))
+                              for setting in ('fine_first', 'original', 'fine_again'))
             self.next()
         except BaseException:
             self.fail()
@@ -706,6 +715,17 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
     def next(self):
         try:
             if self.index == len(self.cases):
+                self.synth._acousticClockMask = self.saved_clock_test_mask
+                for locale in ('fa_IR', 'fa_Latn'):
+                    for kind in ('pure', 'mixed'):
+                        def sound_for(setting):
+                            return next(row['pcm_sha256'] for row in self.results
+                                        if row['locale'] == locale and
+                                        row['spelling'] == 'clock_' + kind + '_' + setting)
+                        if sound_for('fine_first') == sound_for('original'):
+                            raise AssertionError('NVDA clock did not change speech: ' + locale + ' ' + kind)
+                        if sound_for('fine_first') != sound_for('fine_again'):
+                            raise AssertionError('NVDA clock did not restore speech: ' + locale + ' ' + kind)
                 if self.results[0]['pcm_sha256'] == self.results[1]['pcm_sha256']:
                     raise AssertionError('single-a Pinglish lost its short vowel')
                 matching = next(row for row in self.results if row['locale']=='fa_Latn'
@@ -973,6 +993,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 self.synth.rate = old_rate
                 self.saved_rate_for_r_test = None
             self.synth.language = locale
+            if isinstance(spelling, str) and spelling.startswith('clock_'):
+                if not hasattr(self, 'saved_clock_test_mask'):
+                    self.saved_clock_test_mask = self.synth._acousticClockMask
+                self.synth.originalAcousticClock = spelling.endswith('_original')
             if spelling in ('unicode_spelling_on', 'unicode_spelling_off'):
                 self.spelling_config['useSpellingFunctionality'] = spelling == 'unicode_spelling_on'
             if spelling in ('unicode_single_on', 'unicode_single_off'):
@@ -1101,7 +1125,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = [text, 'کادرِ علامت‌زدنی', status]
             elif isinstance(spelling, str) and spelling.startswith('tags_'):
                 sequence = [text]
-            elif self.sample_case or (isinstance(spelling, str) and spelling.startswith(('issue49_weak_', 'issue49_grouped_', 'issue50_'))) or spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'issue49_quotes', 'issue49_numeric', 'issue49_version_some', 'issue49_emoji_some', 'issue49_heading', 'issue49_korean', 'issue49_korean_word', 'issue49_persian_unicode', 'issue49_persian_unicode_none', 'issue49_persian_unicode_all', 'issue49_korean_english', 'issue49_hamza_line', 'issue49_hamza_line_none', 'issue49_own_vowel', 'issue49_nominal_compound', 'issue49_native_new_compound'):
+            elif self.sample_case or (isinstance(spelling, str) and spelling.startswith(('clock_', 'issue49_weak_', 'issue49_grouped_', 'issue50_'))) or spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'issue49_quotes', 'issue49_numeric', 'issue49_version_some', 'issue49_emoji_some', 'issue49_heading', 'issue49_korean', 'issue49_korean_word', 'issue49_persian_unicode', 'issue49_persian_unicode_none', 'issue49_persian_unicode_all', 'issue49_korean_english', 'issue49_hamza_line', 'issue49_hamza_line_none', 'issue49_own_vowel', 'issue49_nominal_compound', 'issue49_native_new_compound'):
                 sequence = [text]
             else:
                 sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
@@ -1111,6 +1135,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.started = time.perf_counter()
             self.pipeline = spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most', 'decimal_pipeline', 'decimal_indexed_pipeline', 'decimal_grouped_pipeline', 'decimal_signed_pipeline')
             self.pipeline = self.pipeline or self.sample_case or (isinstance(spelling, str) and spelling.startswith('tags_'))
+            self.pipeline = self.pipeline or (isinstance(spelling, str) and spelling.startswith('clock_'))
             self.pipeline = self.pipeline or (isinstance(spelling, str) and spelling.startswith('issue49_weak_'))
             self.pipeline = self.pipeline or spelling in ('issue49_grouped_none', 'issue49_grouped_some')
             self.pipeline = self.pipeline or (isinstance(spelling, str) and spelling.startswith('issue50_'))
