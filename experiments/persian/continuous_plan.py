@@ -72,7 +72,7 @@ def _converted(text, table):
     return result or None
 
 
-def _display_punctuation(display, tags):
+def _display_punctuation(display, tags, source):
     matches = list(_TAG.finditer(display))
     if len(matches) != len(tags):
         raise ValueError('proxy word count does not match native display')
@@ -81,7 +81,13 @@ def _display_punctuation(display, tags):
         marks = ''.join(c for c in display[previous:match.start()] if c in '.,?!:;')
         result.append((marks + ' ' if index else marks) + tag)
         previous = match.end()
-    result.append(''.join(c for c in display[previous:] if c in '.,?!:;'))
+    # The native English phoneme display can add a trailing comma to a
+    # grouped number such as 1,900,000, even though the source has no
+    # punctuation after that number. Copying the artificial comma into the
+    # Persian timing proxy makes the following language index arrive after
+    # part of the first Persian word. Only preserve real source punctuation.
+    if _punctuation(source):
+        result.append(''.join(c for c in display[previous:] if c in '.,?!:;'))
     return ''.join(result)
 
 
@@ -126,7 +132,7 @@ def english_proxy(en, text):
                                      for stress, body in syllables) + ']')
     if not result:
         raise ValueError('English proxy has no words')
-    return (_display_punctuation(shown, result) if re.search(r'[.?!,;:]\s*\S', text)
+    return (_display_punctuation(shown, result, text) if re.search(r'[.?!,;:]\s*\S', text)
             else ' '.join(result) + _punctuation(text))
 
 
@@ -147,7 +153,7 @@ def english_phone_proxy(en, fa, text):
     else:
         accepted = False
     if accepted:
-        return (_display_punctuation(shown, tags) if re.search(r'[.?!,;:]\s*\S', text)
+        return (_display_punctuation(shown, tags, text) if re.search(r'[.?!,;:]\s*\S', text)
                 else ' '.join(tags) + _punctuation(text))
     return english_proxy(en, text)
 

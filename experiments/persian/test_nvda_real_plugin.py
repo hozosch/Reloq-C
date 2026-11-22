@@ -162,6 +162,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.user_controls = []
             self.continuous = []
             self.us_fits = []
+            self.grouped_case = False
+            self.grouped_bounds = []
             self.nav_stale_case = False
             self.nav_stale_injected = False
             old_project_part = continuous_driver._project_part
@@ -169,6 +171,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             old_continuous = nvda_driver_probe.try_continuous
             old_glides = nvda_driver_probe.try_persian_glides
             old_us_fit = continuous_driver.fit_us_word_pitch
+            old_context_plan = continuous_driver.context_plan
             old_runs = nvda_driver_probe._script_runs
             def observe_runs(text):
                 result = old_runs(text)
@@ -203,6 +206,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 result = old_us_fit(*args, **kwargs)
                 self.us_fits.append(result)
                 return result
+            def observe_grouped_plan(parts, *args, **kwargs):
+                plan = old_context_plan(parts, *args, **kwargs)
+                if (self.grouped_case and len(parts) >= 2 and parts[-1].language == 'fa' and
+                        parts[-1].text.rstrip().endswith('`[.0ri.1al]')):
+                    syllables = plan.contexts['fa'].syllables
+                    if len(syllables) >= 2:
+                        self.grouped_bounds.append((plan.edges['fa'][-2], plan.edges['fa'][-1],
+                                                    syllables[-2][0], syllables[-1][1], args[2]))
+                return plan
             def inject_stale_us_stop(owner, *args, **kwargs):
                 if self.nav_stale_case and not self.nav_stale_injected:
                     # The previous job was stopped on the English handle;
@@ -214,6 +226,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 return old_glides(owner, *args, **kwargs)
             continuous_driver._project_part = observe_project
             continuous_driver.fit_us_word_pitch = observe_us_fit
+            continuous_driver.context_plan = observe_grouped_plan
             direct_fa_sequence.ScopedDirectPersianEngine._speak_prepared = observe_prepared
             nvda_driver_probe.try_continuous = observe_continuous
             nvda_driver_probe.try_persian_glides = inject_stale_us_stop
@@ -399,6 +412,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('fa_IR', 'سلام (دنیا) خوب', 'issue49_quotes'),
                           ('fa_IR', '4 of 14', 'issue49_numeric'),
                           ('en_US', '4 of 14', 'issue49_numeric'),
+                          *(( 'fa_IR', 'heading    level 3  ۱,۹۰۰,۰۰۰ ریال', mode)
+                            for mode in ('issue49_grouped_driver', 'issue49_grouped_none',
+                                         'issue49_grouped_some')),
+                          ('fa_IR', 'heading level 3 1,900,000 ریال', 'issue49_grouped_driver'),
                           *((locale, text, mode) for text in (
                               'Google Chrome, version 157.0.8103.79 (AMD64)',
                               'BlindRadio, version 0.2.100',
@@ -935,6 +952,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 raise AssertionError('language selection did not stick: ' + locale)
             self.before = {id(player): len(player.chunks) for player in self.players}
             self.before_projected = len(self.projected)
+            self.grouped_case = isinstance(spelling, str) and spelling.startswith('issue49_grouped_')
+            self.before_grouped = len(self.grouped_bounds)
             self.before_projected_sources = len(self.projected_sources)
             self.before_user_controls = len(self.user_controls)
             if spelling == 'mixed':
@@ -1018,7 +1037,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = [text, 'کادرِ علامت‌زدنی', status]
             elif isinstance(spelling, str) and spelling.startswith('tags_'):
                 sequence = [text]
-            elif self.sample_case or (isinstance(spelling, str) and spelling.startswith(('issue49_weak_', 'issue50_'))) or spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'issue49_quotes', 'issue49_numeric', 'issue49_version_some', 'issue49_emoji_some', 'issue49_heading', 'issue49_korean', 'issue49_korean_word', 'issue49_persian_unicode', 'issue49_persian_unicode_none', 'issue49_persian_unicode_all', 'issue49_korean_english', 'issue49_hamza_line', 'issue49_hamza_line_none', 'issue49_own_vowel', 'issue49_nominal_compound', 'issue49_native_new_compound'):
+            elif self.sample_case or (isinstance(spelling, str) and spelling.startswith(('issue49_weak_', 'issue49_grouped_', 'issue50_'))) or spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'issue49_quotes', 'issue49_numeric', 'issue49_version_some', 'issue49_emoji_some', 'issue49_heading', 'issue49_korean', 'issue49_korean_word', 'issue49_persian_unicode', 'issue49_persian_unicode_none', 'issue49_persian_unicode_all', 'issue49_korean_english', 'issue49_hamza_line', 'issue49_hamza_line_none', 'issue49_own_vowel', 'issue49_nominal_compound', 'issue49_native_new_compound'):
                 sequence = [text]
             else:
                 sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
@@ -1029,6 +1048,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.pipeline = spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most', 'decimal_pipeline', 'decimal_indexed_pipeline', 'decimal_grouped_pipeline', 'decimal_signed_pipeline')
             self.pipeline = self.pipeline or self.sample_case or (isinstance(spelling, str) and spelling.startswith('tags_'))
             self.pipeline = self.pipeline or (isinstance(spelling, str) and spelling.startswith('issue49_weak_'))
+            self.pipeline = self.pipeline or spelling in ('issue49_grouped_none', 'issue49_grouped_some')
             self.pipeline = self.pipeline or (isinstance(spelling, str) and spelling.startswith('issue50_'))
             self.pipeline = self.pipeline or spelling in ('issue49_quotes', 'issue49_numeric', 'issue49_own_vowel', 'issue49_nominal_compound', 'issue49_native_new_compound')
             self.pipeline = self.pipeline or spelling in ('issue49_preposition', 'issue49_final_accent',
@@ -1056,7 +1076,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if self.pipeline:
                 self.speech.speak([self.index_command(self.index + 1), *sequence],
                                   symbolLevel=(self.symbols.SymbolLevel.MOST if isinstance(spelling, str) and spelling.startswith('issue50_') and spelling.endswith('_most') else
-                                               self.symbols.SymbolLevel.SOME if self.sample_case or (isinstance(spelling, str) and spelling.startswith('issue50_') and not spelling.endswith('_none')) or spelling in (
+                                               self.symbols.SymbolLevel.SOME if self.sample_case or spelling == 'issue49_grouped_some' or (isinstance(spelling, str) and spelling.startswith('issue50_') and not spelling.endswith('_none')) or spelling in (
                                                'issue49_quotes', 'issue49_preposition', 'issue49_final_accent', 'issue49_character_navigation', 'issue49_version_some', 'issue49_version_split',
                                                'issue49_emoji_some', 'issue49_emoji_split',
                                                'issue49_heading', 'issue49_heading_split',
@@ -1102,6 +1122,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
     def capture(self):
         try:
             locale, text, spelling = self.cases[self.index]
+            if self.grouped_case:
+                tags = ' '.join(self.projected[self.before_projected:])
+                if '`[.0ri.1al]' not in tags:
+                    raise AssertionError('NVDA lost the Persian currency word: ' + ascii(tags))
+                boundaries = self.grouped_bounds[self.before_grouped:]
+                if spelling == 'issue49_grouped_driver' and not boundaries:
+                    raise AssertionError('NVDA did not exercise the mixed sentence plan: ' + ascii(text))
+                for first, last, syllable_start, syllable_end, rate in boundaries:
+                    if not first * 10000000 <= syllable_start * rate <= syllable_end * rate <= last * 10000000:
+                        raise AssertionError('NVDA cut a Persian word after a grouped number: ' + ascii(boundaries))
             if self.emoji_case:
                 submitted = self.emoji_submissions[self.before_emoji:]
                 if not submitted or any('\ufe0f' in part for sequence in submitted for part in sequence):
