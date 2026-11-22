@@ -32,6 +32,12 @@ MANIFEST_MESSAGES = {
     "description": N_("Native C synthesizer with fifteen language variants at 8 to 48 kHz, including Aragonese, Japanese, Korean, Chinese and Greek."),
 }
 
+# The private development package has its own, explicitly labelled manifest.
+PERSIAN_TEST_MESSAGES = {
+    "summary": N_("Eloquence C: Persian and Pinglish test"),
+    "description": N_("Test build with Persian and Pinglish."),
+}
+
 
 def manifest_values() -> dict[str, str]:
     parser = configparser.ConfigParser(interpolation=None)
@@ -75,6 +81,7 @@ def update_template() -> Path:
         "--output=" + str(output),
         "addon/synth/synthDrivers/reloqC/__init__.py",
         "nvda/_reloq_languages.py", "addon/build_translations.py",
+        "experiments/persian/nvda_driver_probe.py",
         "addon/synth/globalPlugins/reloqCDictionaries/__init__.py",
     ], cwd=ROOT, check=True)
     return output

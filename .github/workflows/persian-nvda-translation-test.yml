@@ -1,0 +1,62 @@
+name: Persian NVDA localization test
+on:
+  push:
+    branches: [codex/persian-nvda-locales-dev38-20261122]
+    paths: [.github/workflows/persian-nvda-translation-test.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  package:
+    runs-on: windows-2022
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: persian-windows-baseline-early
+          run-id: 45080704288
+          github-token: ${{ github.token }}
+          path: candidate
+      - uses: actions/download-artifact@v8
+        with:
+          name: persian-windows-baseline-early
+          run-id: 45076960840
+          github-token: ${{ github.token }}
+          path: previous
+      - name: Check catalog and language isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
+          python -B addon/test_translation_catalogs.py
+          python -B experiments/persian/test_persian_acoustic_clock.py --library candidate/eci.dll
+          python -B experiments/persian/test_other_language_isolation.py --previous previous/eci.dll --candidate candidate/eci.dll
+      - name: Build and check translated NVDA add-on
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
+          python -B experiments/persian/build_experimental_nvda.py --dll candidate/eci.dll --version 2.0.0-dev38 --output dist/reloq-c-persian-pinglish-2.0.0-dev38.nvda-addon
+          export RELOQ_NORMAL_ADDON="$RUNNER_TEMP/reloq-normal-locales.nvda-addon"
+          python -B -c 'import os,sys;from pathlib import Path;sys.path.insert(0,"addon");from build_synth import build;build(Path(os.environ["RELOQ_NORMAL_ADDON"]),Path("candidate/eci.dll"),refresh_dictionaries=False)'
+          for ui_locale in de fa es fr it fi el ja ko pt_BR zh_CN zh_TW an; do
+            RELOQ_UI_LOCALE="$ui_locale" python -B -c 'import os,sys;from pathlib import Path;sys.path.insert(0,"addon");import test_synth;sys.argv=["test_synth.py",os.environ["RELOQ_UI_LOCALE"]];test_synth.main(package_path=Path(os.environ["RELOQ_NORMAL_ADDON"]))'
+          done
+      - name: Require the matching acoustic and real NVDA tests
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run watch 45080704288 --exit-status --interval 15 --repo "$GITHUB_REPOSITORY"
+          gh run watch 45080704377 --exit-status --interval 15 --repo "$GITHUB_REPOSITORY"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: reloq-c-persian-pinglish-2.0.0-dev38
+          path: dist/reloq-c-persian-pinglish-2.0.0-dev38.nvda-addon
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14

@@ -1,0 +1,503 @@
+# Translations reuse ReLoq C platform UI wording and standard locale names.
+# Untranslated strings fall back to English until reviewed.
+msgid ""
+msgstr "Project-Id-Version: Eloquence C 1.4.1\nLanguage: it\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n"
+
+msgid "&Add file…"
+msgstr "&Aggiungi…"
+
+msgid "&Breathiness"
+msgstr "&Soffio"
+
+msgid "&Head size"
+msgstr "Dimensione &testa"
+
+msgid "&Mellow mode (16 kHz and above)"
+msgstr "&Modalità morbida (da 16 kHz)"
+
+msgid "&Own dictionaries (NVDA and Eloquence):"
+msgstr ""
+
+msgid "&Remove"
+msgstr "&Rimuovi"
+
+msgid "&Sample rate"
+msgstr "Frequenza di &campionamento:"
+
+msgid "&Update dictionaries now"
+msgstr "&Aggiorna dizionari"
+
+msgid "100% is one octave. Frequencies at or above half the sample rate are inactive."
+msgstr "Il 100% equivale a un’ottava. Le frequenze dalla metà del campionamento non sono attive."
+
+msgid "11.025 kHz"
+msgstr "11.025 kHz"
+
+msgid "16 kHz"
+msgstr "16 kHz"
+
+msgid "22.05 kHz"
+msgstr "22.05 kHz"
+
+msgid "32 kHz"
+msgstr "32 kHz"
+
+msgid "44.1 kHz"
+msgstr "44.1 kHz"
+
+msgid "48 kHz"
+msgstr "48 kHz"
+
+msgid "8 kHz"
+msgstr "8 kHz"
+
+msgid "Abbreviations"
+msgstr "Abbreviazioni"
+
+msgid "Add-on updates"
+msgstr ""
+
+msgid "Advanced equalizer filters"
+msgstr "Filtri avanzati equalizzatore"
+
+msgid "Advanced filters…"
+msgstr "Filtri avanzati…"
+
+msgid "All voices"
+msgstr "Tutte le voci"
+
+msgid "Alternative IBM TTS Dictionaries"
+msgstr "Dizionari alternativi IBM TTS"
+
+msgid "Always"
+msgstr "Sempre"
+
+msgid "American English"
+msgstr "inglese (Stati Uniti)"
+
+msgid "Apply to which voices?"
+msgstr ""
+
+msgid "Aragonese"
+msgstr "aragonese"
+
+msgid "Automatically check for add-on updates"
+msgstr ""
+
+msgid "Balanced"
+msgstr "Bilanciato"
+
+msgid "Bandwidth (% of an octave, 10–400):"
+msgstr ""
+
+msgid "Base pitch in hertz (1–24000):"
+msgstr ""
+
+msgid "Bass (250 Hz, -12 to +12 dB):"
+msgstr ""
+
+msgid "Brazilian Portuguese"
+msgstr "portoghese (Brasile)"
+
+msgid "Bright"
+msgstr "Brillante"
+
+msgid "British English"
+msgstr "inglese (Regno Unito)"
+
+msgid "Castilian Spanish"
+msgstr "spagnolo (Spagna)"
+
+msgid "Changing NVDA's normal pitch slider switches back to the ECI scale."
+msgstr ""
+
+msgid "Changing NVDA's normal rate or rate boost switches back to the normal rate scale."
+msgstr ""
+
+msgid "Check for add-on updates"
+msgstr "Cerca aggiornamenti"
+
+msgid "Checking for updates…"
+msgstr "Ricerca degli aggiornamenti…"
+
+msgid "Choose a format…"
+msgstr ""
+
+msgid "Choose a pronunciation dictionary"
+msgstr "Scegli un dizionario di pronuncia"
+
+msgid "Could not detect the format. Choose the dictionary format:"
+msgstr ""
+
+msgid "Custom"
+msgstr "Personalizzato"
+
+#, python-format
+msgid "Dictionaries updated. Community revision: %s"
+msgstr ""
+
+msgid "Dictionary &source:"
+msgstr "&Fonte dizionari:"
+
+msgid "Dictionary files (*.dic)|*.dic|All files (*.*)|*.*"
+msgstr ""
+
+#, python-format
+msgid "Dictionary files in total: %s"
+msgstr "File del dizionario totali: %s"
+
+msgid "Dictionary format"
+msgstr "Formato del dizionario"
+
+msgid "Dictionary format:"
+msgstr "Formato del dizionario"
+
+#, python-format
+msgid "Dictionary import failed: %s"
+msgstr ""
+
+msgid "Dictionary language"
+msgstr ""
+
+#, python-format
+msgid "Dictionary loaded for the first time. Entries: %s"
+msgstr "Dizionario caricato per la prima volta. Voci: %s"
+
+msgid "Dictionary type"
+msgstr "Tipo di dizionario:"
+
+msgid "Dictionary type:"
+msgstr "Tipo di dizionario:"
+
+#, python-format
+msgid "Dictionary update complete. New entries: %s"
+msgstr "Aggiornamento completato. Nuove voci: %s"
+
+msgid "Dictionary update complete. The number of new entries could not be determined."
+msgstr "Aggiornamento completato. Impossibile determinare il numero di nuove voci."
+
+#, python-format
+msgid "Dictionary update failed: %s"
+msgstr "Aggiornamento del dizionario non riuscito: %s"
+
+msgid "Download and install update"
+msgstr ""
+
+msgid "Downloading update…"
+msgstr ""
+
+msgid "Edit NVDA dictionary…"
+msgstr ""
+
+msgid "Eloquence"
+msgstr "Eloquence"
+
+msgid "Eloquence C"
+msgstr "Eloquence C"
+
+#, python-format
+msgid "Eloquence C version %s is available. Download and install it?"
+msgstr ""
+
+msgid "Eloquence C: Persian and Pinglish test"
+msgstr "Eloquence C: prova del persiano e del pinglish"
+
+msgid "Eloquence C: fifteen language variants"
+msgstr ""
+
+msgid "Eloquence files are saved with OK or Apply. NVDA imports and edits take effect immediately."
+msgstr ""
+
+msgid "Eloquence pronunciation dictionary"
+msgstr "Dizionario Eloquence"
+
+msgid "Enable &equalizer"
+msgstr "&Attiva equalizzatore"
+
+msgid "Enable equalizer"
+msgstr "Attiva equalizzatore"
+
+msgid "Enable filter"
+msgstr "Attiva filtro"
+
+msgid "Equalizer"
+msgstr "Equalizzatore"
+
+msgid "Equalizer &preset:"
+msgstr "&Preimpostazione equalizzatore:"
+
+msgid "Equalizer bass"
+msgstr ""
+
+msgid "Equalizer filter bandwidth"
+msgstr ""
+
+msgid "Equalizer filter enabled"
+msgstr ""
+
+msgid "Equalizer filter frequency"
+msgstr ""
+
+msgid "Equalizer filter gain"
+msgstr ""
+
+msgid "Equalizer midrange"
+msgstr ""
+
+msgid "Equalizer preset"
+msgstr "Preimpostazione equalizzatore"
+
+msgid "Equalizer treble"
+msgstr ""
+
+msgid "Exact base pitch"
+msgstr ""
+
+msgid "Exact speech rate"
+msgstr ""
+
+#, python-format
+msgid "Filter %s"
+msgstr ""
+
+msgid "Filter:"
+msgstr "Filtro"
+
+msgid "Finnish"
+msgstr "finlandese"
+
+msgid "French"
+msgstr "francese"
+
+msgid "French Canadian"
+msgstr "francese (Canada)"
+
+msgid "Frequency in hertz (1–24000):"
+msgstr ""
+
+msgid "Gain in dB (-12 to +12):"
+msgstr ""
+
+msgid "German"
+msgstr "tedesco"
+
+msgid "Greek"
+msgstr "greco"
+
+msgid "Hertz pitch off; using the ECI pitch scale."
+msgstr ""
+
+msgid "IBM TTS Dictionaries"
+msgstr "Dizionari IBM TTS"
+
+msgid "Imported NVDA dictionary"
+msgstr ""
+
+#, python-format
+msgid "Imported NVDA dictionary entries: %s"
+msgstr ""
+
+#, python-format
+msgid "Installed version: %s"
+msgstr "Versione installata: %s"
+
+msgid "Italian"
+msgstr "italiano"
+
+msgid "Japanese"
+msgstr "giapponese"
+
+msgid "Korean"
+msgstr "coreano"
+
+msgid "Language of the dictionary:"
+msgstr ""
+
+msgid "Latin American Spanish"
+msgstr "spagnolo (America Latina)"
+
+msgid "Main words"
+msgstr "Parole principali"
+
+msgid "Mandarin Chinese"
+msgstr "cinese mandarino"
+
+msgid "Midrange (1200 Hz, -12 to +12 dB):"
+msgstr ""
+
+msgid "Move &down"
+msgstr "Sposta &giù"
+
+msgid "Move &up"
+msgstr "Sposta &su"
+
+msgid "NVDA"
+msgstr "NVDA"
+
+msgid "NVDA cannot save dictionaries in this mode."
+msgstr ""
+
+#, python-format
+msgid "NVDA dictionary edit failed: %s"
+msgstr ""
+
+#, python-format
+msgid "NVDA dictionary removal failed: %s"
+msgstr ""
+
+msgid "NVDA dictionary voice"
+msgstr ""
+
+msgid "NVDA speech dictionaries"
+msgstr ""
+
+msgid "NVDA speech dictionary"
+msgstr "Dizionario vocale NVDA"
+
+msgid "Native C synthesizer with fifteen language variants at 8 to 48 kHz, including Aragonese, Japanese, Korean, Chinese and Greek."
+msgstr ""
+
+msgid "Never"
+msgstr "Mai"
+
+#, python-format
+msgid "New dictionary files: %s"
+msgstr "Nuovi file del dizionario: %s"
+
+msgid "No newer published add-on package is available."
+msgstr ""
+
+msgid "Only at text end"
+msgstr "Alla fine di una frase"
+
+msgid "Open dictionary &folder"
+msgstr "&Apri cartella"
+
+msgid "Own dictionaries updated."
+msgstr ""
+
+msgid "Own entries override community entries. Original files are kept unchanged."
+msgstr ""
+
+msgid "Per-language acoustic timing"
+msgstr ""
+
+msgid "Persian"
+msgstr "persiano"
+
+msgid "Persian (Pinglish)"
+msgstr "persiano (Pinglish)"
+
+msgid "Phrase &prediction"
+msgstr "&Previsione delle frasi"
+
+msgid "Pitch in hertz"
+msgstr ""
+
+msgid "Process &ECI tags"
+msgstr "Elabora tag &ECI"
+
+msgid "Pronunciation dictionaries"
+msgstr "Dizionari di pronuncia"
+
+msgid "Rate in words per minute"
+msgstr ""
+
+msgid "Remove this imported copy? The original dictionary is kept."
+msgstr ""
+
+msgid "Rou&ghness"
+msgstr "&Ruvidezza"
+
+msgid "Select Eloquence C as the synthesizer first."
+msgstr ""
+
+msgid "Shorten pa&uses"
+msgstr "Accorcia &pause:"
+
+msgid "Smooth"
+msgstr "Morbido"
+
+msgid "Speech rate in words per minute (1–6000):"
+msgstr ""
+
+msgid "Split &camel-case words (all languages)"
+msgstr "&Suddividi parole camelCase (tutte le lingue)"
+
+msgid "Split camel case"
+msgstr ""
+
+msgid "Split unfamiliar &English words"
+msgstr "&Suddividi parole inglesi sconosciute"
+
+msgid "Split unfamiliar English words"
+msgstr "Suddividi le parole inglesi sconosciute"
+
+msgid "Test build with Persian and Pinglish."
+msgstr "Versione di prova con persiano e pinglish."
+
+msgid "The number of new dictionary files could not be determined."
+msgstr "Impossibile determinare il numero dei nuovi file del dizionario."
+
+msgid "The selected pronunciation dictionaries could not be loaded. Speech will resume when they are available. Check the dictionary settings, or select another synthesizer."
+msgstr ""
+
+#, python-format
+msgid "This NVDA dictionary was already imported. Entries: %s"
+msgstr ""
+
+msgid "Treble (3000 Hz, -12 to +12 dB):"
+msgstr ""
+
+#, python-format
+msgid "Update failed: %s"
+msgstr "Aggiornamento non riuscito: %s"
+
+msgid "Update handed to NVDA."
+msgstr ""
+
+msgid "Update installation cancelled."
+msgstr ""
+
+msgid "Updating pronunciation dictionaries…"
+msgstr "Download dei dizionari…"
+
+msgid "Use &abbreviation dictionary"
+msgstr "Usa dizionario &abbreviazioni"
+
+msgid "Use &community pronunciation dictionaries"
+msgstr "Usa i &dizionari della comunità"
+
+msgid "Use &original Eloquence acoustic timing (5 ms)"
+msgstr "Ritmo &originale (5 ms)"
+
+msgid "Use base pitch in &hertz"
+msgstr ""
+
+msgid "Use original &question intonation"
+msgstr "&Usa l’intonazione originale delle domande"
+
+msgid "Use pitch in hertz"
+msgstr "Usa altezza in hertz"
+
+msgid "Use rate in words per minute"
+msgstr ""
+
+msgid "Use speech rate in &words per minute"
+msgstr ""
+
+#, python-format
+msgid "Version %s is available."
+msgstr "È disponibile la versione %s."
+
+msgid "WPM rate off; using the normal rate scale."
+msgstr ""
+
+msgid "Wait for the dictionary update to finish."
+msgstr ""
+
+msgid "Warm"
+msgstr "Caldo"
+
+msgid "Word roots"
+msgstr "Radici"

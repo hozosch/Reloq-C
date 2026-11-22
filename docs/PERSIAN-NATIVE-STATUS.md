@@ -71,6 +71,18 @@ native complete Pinglish analysis also accepts bracket boundaries directly.
 These paths still use the accepted Finnish-based acoustic bridge and the US
 prosody pilot; they do not constitute an independently registered voice.
 
+The C-only US-contour transaction now uses the Persian voice's effective
+acoustic clock for its pilot, restoring the caller's independently selected
+English clock afterwards, including on cancellation. The current NVDA mixed
+route likewise applies the Persian choice to its US parts while a Persian or
+Pinglish voice owns the utterance. This fixes inconsistent clock changes but
+does not merge the providers or remove the existing Python mixed-sentence
+planner. US English and Persian selection both finish preparing their
+background workers before accepting speech. The final voiced R after U has a
+small scoped source-filter adjustment; the accepted R after O, R before I and
+unvoiced R contexts retain their previous sound. These changes need listening
+validation and do not establish Persian as a finished platform voice.
+
 The language is not yet a normal, independent ECI voice. The remaining work
 includes registering Persian and Pinglish dialects, completing the C sentence
 renderer for mixed languages, controls, full contour rules and streaming, and

@@ -731,7 +731,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                     " normal"]) == [driver_module.EciText("CD", True), driver_module.EciPitch(70),
                                    driver_module.EciText(" "), driver_module.EciText("LM", True), driver_module.EciPitch(50), driver_module.EciText(" normal")]
                 assert driver_module._parts([PitchCommand(offset=30), "A"], base_pitch=0) == [
-                    driver_module.EciPitch(30), driver_module.EciText("A")]
+                    driver_module.EciPitch(30), driver_module.EciText("A", True)]
                 driver.speak([PitchCommand(multiplier=1.4), CharacterModeCommand(True),
                               "A", CharacterModeCommand(False),
                               PitchCommand(), "b", IndexCommand(4)])

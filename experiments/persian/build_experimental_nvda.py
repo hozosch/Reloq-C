@@ -8,6 +8,8 @@ checks. This script does not publish or replace a release.
 from __future__ import annotations
 
 import argparse
+import gettext
+import io
 import json
 from pathlib import Path
 import re
@@ -119,9 +121,16 @@ def add_persian(entries, *, version='1.5.0-dev142'):
         if not name.startswith('locale/') or not name.endswith('/manifest.ini'):
             continue
         german = name.startswith('locale/de/')
-        summary = 'Eloquence C: Persisch- und Pinglish-Test' if german else 'Eloquence C: Persian and Pinglish test'
-        description = ('Testversion mit Persisch und Pinglish.' if german
-                       else 'Test build with Persian and Pinglish.')
+        catalog = entries.get(name.replace('/manifest.ini', '/LC_MESSAGES/nvda.mo'))
+        if catalog:
+            translate = gettext.GNUTranslations(io.BytesIO(catalog)).gettext
+            summary = translate('Eloquence C: Persian and Pinglish test')
+            description = translate('Test build with Persian and Pinglish.')
+        else:
+            # Tests may construct only the manifest without a compiled catalog.
+            summary = 'Eloquence C: Persisch- und Pinglish-Test' if german else 'Eloquence C: Persian and Pinglish test'
+            description = ('Testversion mit Persisch und Pinglish.' if german
+                           else 'Test build with Persian and Pinglish.')
         localized = entries[name].decode('utf8')
         localized = re.sub(r'(?m)^summary = .*$', 'summary = ' + json.dumps(summary, ensure_ascii=False), localized)
         localized = re.sub(r'(?m)^description = .*$', 'description = ' + json.dumps(description, ensure_ascii=False), localized)

@@ -1,0 +1,503 @@
+# Translations reuse ReLoq C platform UI wording and standard locale names.
+# Untranslated strings fall back to English until reviewed.
+msgid ""
+msgstr "Project-Id-Version: Eloquence C 1.4.1\nLanguage: fa\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n"
+
+msgid "&Add file…"
+msgstr "&افزودن پرونده…"
+
+msgid "&Breathiness"
+msgstr "&نفس‌آلودگی صدا"
+
+msgid "&Head size"
+msgstr "اندازهٔ &سر"
+
+msgid "&Mellow mode (16 kHz and above)"
+msgstr "حالت &ملایم (۱۶ کیلوهرتز و بالاتر)"
+
+msgid "&Own dictionaries (NVDA and Eloquence):"
+msgstr "واژه‌نامه‌های &شخصی (NVDA و Eloquence):"
+
+msgid "&Remove"
+msgstr "&حذف"
+
+msgid "&Sample rate"
+msgstr "نرخ &نمونه‌برداری"
+
+msgid "&Update dictionaries now"
+msgstr "اکنون واژه‌نامه‌ها را &به‌روزرسانی کن"
+
+msgid "100% is one octave. Frequencies at or above half the sample rate are inactive."
+msgstr "۱۰۰٪ برابر با یک اکتاو است. فرکانس‌های برابر یا بالاتر از نصف نرخ نمونه‌برداری غیرفعال‌اند."
+
+msgid "11.025 kHz"
+msgstr "11.025 kHz"
+
+msgid "16 kHz"
+msgstr "16 kHz"
+
+msgid "22.05 kHz"
+msgstr "22.05 kHz"
+
+msgid "32 kHz"
+msgstr "32 kHz"
+
+msgid "44.1 kHz"
+msgstr "44.1 kHz"
+
+msgid "48 kHz"
+msgstr "48 kHz"
+
+msgid "8 kHz"
+msgstr "8 kHz"
+
+msgid "Abbreviations"
+msgstr "اختصارات"
+
+msgid "Add-on updates"
+msgstr "به‌روزرسانی افزونه"
+
+msgid "Advanced equalizer filters"
+msgstr "فیلترهای پیشرفتهٔ اکولایزر"
+
+msgid "Advanced filters…"
+msgstr "فیلترهای پیشرفته…"
+
+msgid "All voices"
+msgstr "همهٔ صداها"
+
+msgid "Alternative IBM TTS Dictionaries"
+msgstr "واژه‌نامه‌های جایگزین IBM TTS"
+
+msgid "Always"
+msgstr "همیشه"
+
+msgid "American English"
+msgstr "انگلیسی (ایالات متحده)"
+
+msgid "Apply to which voices?"
+msgstr "برای کدام صداها اعمال شود؟"
+
+msgid "Aragonese"
+msgstr "آراگونی"
+
+msgid "Automatically check for add-on updates"
+msgstr "بررسی خودکار به‌روزرسانی افزونه"
+
+msgid "Balanced"
+msgstr "متعادل"
+
+msgid "Bandwidth (% of an octave, 10–400):"
+msgstr "پهنای باند (درصدی از یک اکتاو، ۱۰ تا ۴۰۰):"
+
+msgid "Base pitch in hertz (1–24000):"
+msgstr "زیروبمی پایه بر حسب هرتز (۱ تا ۲۴۰۰۰):"
+
+msgid "Bass (250 Hz, -12 to +12 dB):"
+msgstr "باس (۲۵۰ هرتز، منفی ۱۲ تا مثبت ۱۲ دسی‌بل):"
+
+msgid "Brazilian Portuguese"
+msgstr "پرتغالی (برزیل)"
+
+msgid "Bright"
+msgstr "روشن"
+
+msgid "British English"
+msgstr "انگلیسی (بریتانیا)"
+
+msgid "Castilian Spanish"
+msgstr "اسپانیایی (اسپانیا)"
+
+msgid "Changing NVDA's normal pitch slider switches back to the ECI scale."
+msgstr "تغییر لغزندهٔ معمول زیروبمی NVDA مقیاس را به ECI بازمی‌گرداند."
+
+msgid "Changing NVDA's normal rate or rate boost switches back to the normal rate scale."
+msgstr "تغییر سرعت معمول یا افزایش سرعت NVDA، مقیاس سرعت را به حالت معمول بازمی‌گرداند."
+
+msgid "Check for add-on updates"
+msgstr "بررسی به‌روزرسانی افزونه"
+
+msgid "Checking for updates…"
+msgstr "در حال بررسی به‌روزرسانی‌ها…"
+
+msgid "Choose a format…"
+msgstr "انتخاب قالب…"
+
+msgid "Choose a pronunciation dictionary"
+msgstr "انتخاب واژه‌نامهٔ تلفظ"
+
+msgid "Could not detect the format. Choose the dictionary format:"
+msgstr "قالب شناسایی نشد. قالب واژه‌نامه را انتخاب کنید:"
+
+msgid "Custom"
+msgstr "سفارشی"
+
+#, python-format
+msgid "Dictionaries updated. Community revision: %s"
+msgstr "واژه‌نامه‌ها به‌روزرسانی شدند. نسخهٔ جامعه: %s"
+
+msgid "Dictionary &source:"
+msgstr "&منبع واژه‌نامه:"
+
+msgid "Dictionary files (*.dic)|*.dic|All files (*.*)|*.*"
+msgstr "پرونده‌های واژه‌نامه (*.dic)|*.dic|همهٔ پرونده‌ها (*.*)|*.*"
+
+#, python-format
+msgid "Dictionary files in total: %s"
+msgstr "تعداد کل پرونده‌های واژه‌نامه: %s"
+
+msgid "Dictionary format"
+msgstr "قالب واژه‌نامه"
+
+msgid "Dictionary format:"
+msgstr "قالب واژه‌نامه:"
+
+#, python-format
+msgid "Dictionary import failed: %s"
+msgstr "وارد کردن واژه‌نامه ناموفق بود: %s"
+
+msgid "Dictionary language"
+msgstr "زبان واژه‌نامه"
+
+#, python-format
+msgid "Dictionary loaded for the first time. Entries: %s"
+msgstr "واژه‌نامه برای نخستین بار بارگذاری شد. مدخل‌ها: %s"
+
+msgid "Dictionary type"
+msgstr "نوع واژه‌نامه"
+
+msgid "Dictionary type:"
+msgstr "نوع واژه‌نامه:"
+
+#, python-format
+msgid "Dictionary update complete. New entries: %s"
+msgstr "به‌روزرسانی واژه‌نامه انجام شد. مدخل‌های جدید: %s"
+
+msgid "Dictionary update complete. The number of new entries could not be determined."
+msgstr "به‌روزرسانی واژه‌نامه انجام شد. تعداد مدخل‌های جدید قابل تعیین نبود."
+
+#, python-format
+msgid "Dictionary update failed: %s"
+msgstr "به‌روزرسانی واژه‌نامه ناموفق بود: %s"
+
+msgid "Download and install update"
+msgstr "دانلود و نصب به‌روزرسانی"
+
+msgid "Downloading update…"
+msgstr "در حال دانلود به‌روزرسانی…"
+
+msgid "Edit NVDA dictionary…"
+msgstr "ویرایش واژه‌نامهٔ NVDA…"
+
+msgid "Eloquence"
+msgstr "Eloquence"
+
+msgid "Eloquence C"
+msgstr "Eloquence C"
+
+#, python-format
+msgid "Eloquence C version %s is available. Download and install it?"
+msgstr "نسخهٔ %s از Eloquence C در دسترس است. دانلود و نصب شود؟"
+
+msgid "Eloquence C: Persian and Pinglish test"
+msgstr "Eloquence C: آزمایش فارسی و پینگلیش"
+
+msgid "Eloquence C: fifteen language variants"
+msgstr "Eloquence C: پانزده گونهٔ زبانی"
+
+msgid "Eloquence files are saved with OK or Apply. NVDA imports and edits take effect immediately."
+msgstr "پرونده‌های Eloquence با تأیید یا اعمال ذخیره می‌شوند. وارد کردن و ویرایش واژه‌نامه‌های NVDA بلافاصله اعمال می‌شود."
+
+msgid "Eloquence pronunciation dictionary"
+msgstr "واژه‌نامهٔ تلفظ Eloquence"
+
+msgid "Enable &equalizer"
+msgstr "فعال کردن &اکولایزر"
+
+msgid "Enable equalizer"
+msgstr "فعال کردن اکولایزر"
+
+msgid "Enable filter"
+msgstr "فعال کردن فیلتر"
+
+msgid "Equalizer"
+msgstr "اکولایزر"
+
+msgid "Equalizer &preset:"
+msgstr "پیش‌تنظیم &اکولایزر:"
+
+msgid "Equalizer bass"
+msgstr "باس اکولایزر"
+
+msgid "Equalizer filter bandwidth"
+msgstr "پهنای باند فیلتر اکولایزر"
+
+msgid "Equalizer filter enabled"
+msgstr "فیلتر اکولایزر فعال"
+
+msgid "Equalizer filter frequency"
+msgstr "فرکانس فیلتر اکولایزر"
+
+msgid "Equalizer filter gain"
+msgstr "بهرهٔ فیلتر اکولایزر"
+
+msgid "Equalizer midrange"
+msgstr "صدای میانی اکولایزر"
+
+msgid "Equalizer preset"
+msgstr "پیش‌تنظیم اکولایزر"
+
+msgid "Equalizer treble"
+msgstr "صدای زیر اکولایزر"
+
+msgid "Exact base pitch"
+msgstr "زیروبمی پایهٔ دقیق"
+
+msgid "Exact speech rate"
+msgstr "سرعت گفتار دقیق"
+
+#, python-format
+msgid "Filter %s"
+msgstr "فیلتر %s"
+
+msgid "Filter:"
+msgstr "فیلتر:"
+
+msgid "Finnish"
+msgstr "فنلاندی"
+
+msgid "French"
+msgstr "فرانسوی"
+
+msgid "French Canadian"
+msgstr "فرانسوی (کانادا)"
+
+msgid "Frequency in hertz (1–24000):"
+msgstr "فرکانس بر حسب هرتز (۱ تا ۲۴۰۰۰):"
+
+msgid "Gain in dB (-12 to +12):"
+msgstr "بهره بر حسب دسی‌بل (منفی ۱۲ تا مثبت ۱۲):"
+
+msgid "German"
+msgstr "آلمانی"
+
+msgid "Greek"
+msgstr "یونانی"
+
+msgid "Hertz pitch off; using the ECI pitch scale."
+msgstr "زیروبمی بر حسب هرتز خاموش شد؛ از مقیاس زیروبمی ECI استفاده می‌شود."
+
+msgid "IBM TTS Dictionaries"
+msgstr "واژه‌نامه‌های IBM TTS"
+
+msgid "Imported NVDA dictionary"
+msgstr "واژه‌نامهٔ واردشدهٔ NVDA"
+
+#, python-format
+msgid "Imported NVDA dictionary entries: %s"
+msgstr "مدخل‌های واردشدهٔ واژه‌نامهٔ NVDA: %s"
+
+#, python-format
+msgid "Installed version: %s"
+msgstr "نسخهٔ نصب‌شده: %s"
+
+msgid "Italian"
+msgstr "ایتالیایی"
+
+msgid "Japanese"
+msgstr "ژاپنی"
+
+msgid "Korean"
+msgstr "کره‌ای"
+
+msgid "Language of the dictionary:"
+msgstr "زبان واژه‌نامه:"
+
+msgid "Latin American Spanish"
+msgstr "اسپانیایی (امریکای لاتین)"
+
+msgid "Main words"
+msgstr "واژه‌های اصلی"
+
+msgid "Mandarin Chinese"
+msgstr "چینی ماندارین"
+
+msgid "Midrange (1200 Hz, -12 to +12 dB):"
+msgstr "صدای میانی (۱۲۰۰ هرتز، منفی ۱۲ تا مثبت ۱۲ دسی‌بل):"
+
+msgid "Move &down"
+msgstr "حرکت به &پایین"
+
+msgid "Move &up"
+msgstr "حرکت به &بالا"
+
+msgid "NVDA"
+msgstr "NVDA"
+
+msgid "NVDA cannot save dictionaries in this mode."
+msgstr "NVDA نمی‌تواند واژه‌نامه‌ها را در این حالت ذخیره کند."
+
+#, python-format
+msgid "NVDA dictionary edit failed: %s"
+msgstr "ویرایش واژه‌نامهٔ NVDA ناموفق بود: %s"
+
+#, python-format
+msgid "NVDA dictionary removal failed: %s"
+msgstr "حذف واژه‌نامهٔ NVDA ناموفق بود: %s"
+
+msgid "NVDA dictionary voice"
+msgstr "صدای واژه‌نامهٔ NVDA"
+
+msgid "NVDA speech dictionaries"
+msgstr "واژه‌نامه‌های گفتاری NVDA"
+
+msgid "NVDA speech dictionary"
+msgstr "واژه‌نامهٔ گفتاری NVDA"
+
+msgid "Native C synthesizer with fifteen language variants at 8 to 48 kHz, including Aragonese, Japanese, Korean, Chinese and Greek."
+msgstr "موتور گفتار بومی C با پانزده گونهٔ زبانی و نرخ نمونه‌برداری ۸ تا ۴۸ کیلوهرتز، شامل آراگونی، ژاپنی، کره‌ای، چینی و یونانی."
+
+msgid "Never"
+msgstr "هرگز"
+
+#, python-format
+msgid "New dictionary files: %s"
+msgstr "پرونده‌های جدید واژه‌نامه: %s"
+
+msgid "No newer published add-on package is available."
+msgstr "بستهٔ افزونهٔ منتشرشدهٔ جدیدتری در دسترس نیست."
+
+msgid "Only at text end"
+msgstr "فقط در پایان متن"
+
+msgid "Open dictionary &folder"
+msgstr "باز کردن &پوشهٔ واژه‌نامه"
+
+msgid "Own dictionaries updated."
+msgstr "واژه‌نامه‌های شخصی به‌روزرسانی شدند."
+
+msgid "Own entries override community entries. Original files are kept unchanged."
+msgstr "مدخل‌های شخصی بر مدخل‌های جامعه اولویت دارند. پرونده‌های اصلی بدون تغییر نگه داشته می‌شوند."
+
+msgid "Per-language acoustic timing"
+msgstr "زمان‌بندی آوایی برای هر زبان"
+
+msgid "Persian"
+msgstr "فارسی"
+
+msgid "Persian (Pinglish)"
+msgstr "فارسی (پینگلیش)"
+
+msgid "Phrase &prediction"
+msgstr "&پیش‌بینی عبارت"
+
+msgid "Pitch in hertz"
+msgstr "زیروبمی بر حسب هرتز"
+
+msgid "Process &ECI tags"
+msgstr "پردازش برچسب‌های &ECI"
+
+msgid "Pronunciation dictionaries"
+msgstr "واژه‌نامه‌های تلفظ"
+
+msgid "Rate in words per minute"
+msgstr "سرعت بر حسب واژه در دقیقه"
+
+msgid "Remove this imported copy? The original dictionary is kept."
+msgstr "این نسخهٔ واردشده حذف شود؟ واژه‌نامهٔ اصلی نگه داشته می‌شود."
+
+msgid "Rou&ghness"
+msgstr "&خشونت صدا"
+
+msgid "Select Eloquence C as the synthesizer first."
+msgstr "ابتدا Eloquence C را به عنوان موتور گفتار انتخاب کنید."
+
+msgid "Shorten pa&uses"
+msgstr "کوتاه کردن &مکث‌ها"
+
+msgid "Smooth"
+msgstr "نرم"
+
+msgid "Speech rate in words per minute (1–6000):"
+msgstr "سرعت گفتار بر حسب واژه در دقیقه (۱ تا ۶۰۰۰):"
+
+msgid "Split &camel-case words (all languages)"
+msgstr "تقسیم واژه‌های &camelCase (همهٔ زبان‌ها)"
+
+msgid "Split camel case"
+msgstr "تقسیم camelCase"
+
+msgid "Split unfamiliar &English words"
+msgstr "تقسیم واژه‌های &انگلیسی ناآشنا"
+
+msgid "Split unfamiliar English words"
+msgstr "تقسیم واژه‌های انگلیسی ناآشنا"
+
+msgid "Test build with Persian and Pinglish."
+msgstr "نسخهٔ آزمایشی با فارسی و پینگلیش."
+
+msgid "The number of new dictionary files could not be determined."
+msgstr "تعداد پرونده‌های جدید واژه‌نامه قابل تعیین نبود."
+
+msgid "The selected pronunciation dictionaries could not be loaded. Speech will resume when they are available. Check the dictionary settings, or select another synthesizer."
+msgstr "واژه‌نامه‌های تلفظ انتخاب‌شده بارگذاری نشدند. گفتار پس از دسترسی به آن‌ها از سر گرفته می‌شود. تنظیمات واژه‌نامه را بررسی کنید یا موتور گفتار دیگری انتخاب کنید."
+
+#, python-format
+msgid "This NVDA dictionary was already imported. Entries: %s"
+msgstr "این واژه‌نامهٔ NVDA قبلاً وارد شده است. مدخل‌ها: %s"
+
+msgid "Treble (3000 Hz, -12 to +12 dB):"
+msgstr "صدای زیر (۳۰۰۰ هرتز، منفی ۱۲ تا مثبت ۱۲ دسی‌بل):"
+
+#, python-format
+msgid "Update failed: %s"
+msgstr "به‌روزرسانی ناموفق بود: %s"
+
+msgid "Update handed to NVDA."
+msgstr "به‌روزرسانی به NVDA سپرده شد."
+
+msgid "Update installation cancelled."
+msgstr "نصب به‌روزرسانی لغو شد."
+
+msgid "Updating pronunciation dictionaries…"
+msgstr "در حال به‌روزرسانی واژه‌نامه‌های تلفظ…"
+
+msgid "Use &abbreviation dictionary"
+msgstr "استفاده از واژه‌نامهٔ &اختصارات"
+
+msgid "Use &community pronunciation dictionaries"
+msgstr "استفاده از واژه‌نامه‌های تلفظ &جامعه"
+
+msgid "Use &original Eloquence acoustic timing (5 ms)"
+msgstr "استفاده از زمان‌بندی آوایی &اصلی Eloquence (۵ میلی‌ثانیه)"
+
+msgid "Use base pitch in &hertz"
+msgstr "استفاده از زیروبمی پایه بر حسب &هرتز"
+
+msgid "Use original &question intonation"
+msgstr "استفاده از آهنگ اصلی &پرسش"
+
+msgid "Use pitch in hertz"
+msgstr "استفاده از زیروبمی بر حسب هرتز"
+
+msgid "Use rate in words per minute"
+msgstr "استفاده از سرعت بر حسب واژه در دقیقه"
+
+msgid "Use speech rate in &words per minute"
+msgstr "استفاده از سرعت گفتار بر حسب &واژه در دقیقه"
+
+#, python-format
+msgid "Version %s is available."
+msgstr "نسخهٔ %s در دسترس است."
+
+msgid "WPM rate off; using the normal rate scale."
+msgstr "سرعت بر حسب واژه در دقیقه خاموش شد؛ از مقیاس سرعت معمول استفاده می‌شود."
+
+msgid "Wait for the dictionary update to finish."
+msgstr "تا پایان به‌روزرسانی واژه‌نامه صبر کنید."
+
+msgid "Warm"
+msgstr "گرم"
+
+msgid "Word roots"
+msgstr "ریشهٔ واژه‌ها"

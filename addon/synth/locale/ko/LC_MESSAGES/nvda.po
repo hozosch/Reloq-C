@@ -1,0 +1,503 @@
+# Translations reuse ReLoq C platform UI wording and standard locale names.
+# Untranslated strings fall back to English until reviewed.
+msgid ""
+msgstr "Project-Id-Version: Eloquence C 1.4.1\nLanguage: ko\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n"
+
+msgid "&Add file…"
+msgstr "추가(&A)…"
+
+msgid "&Breathiness"
+msgstr "숨소리(&B)"
+
+msgid "&Head size"
+msgstr "머리 크기(&H)"
+
+msgid "&Mellow mode (16 kHz and above)"
+msgstr "&부드러운 모드 (16 kHz 이상)"
+
+msgid "&Own dictionaries (NVDA and Eloquence):"
+msgstr ""
+
+msgid "&Remove"
+msgstr "제거(&R)"
+
+msgid "&Sample rate"
+msgstr "샘플링 주파수(&R):"
+
+msgid "&Update dictionaries now"
+msgstr "사전 업데이트(&U)"
+
+msgid "100% is one octave. Frequencies at or above half the sample rate are inactive."
+msgstr "100%는 1옥타브입니다. 샘플 속도의 절반 이상인 주파수는 적용되지 않습니다."
+
+msgid "11.025 kHz"
+msgstr "11.025 kHz"
+
+msgid "16 kHz"
+msgstr "16 kHz"
+
+msgid "22.05 kHz"
+msgstr "22.05 kHz"
+
+msgid "32 kHz"
+msgstr "32 kHz"
+
+msgid "44.1 kHz"
+msgstr "44.1 kHz"
+
+msgid "48 kHz"
+msgstr "48 kHz"
+
+msgid "8 kHz"
+msgstr "8 kHz"
+
+msgid "Abbreviations"
+msgstr "약어"
+
+msgid "Add-on updates"
+msgstr ""
+
+msgid "Advanced equalizer filters"
+msgstr "고급 이퀄라이저 필터"
+
+msgid "Advanced filters…"
+msgstr "고급 필터…"
+
+msgid "All voices"
+msgstr "모든 음성"
+
+msgid "Alternative IBM TTS Dictionaries"
+msgstr "대체 IBM TTS 사전"
+
+msgid "Always"
+msgstr "항상"
+
+msgid "American English"
+msgstr "영어(미국)"
+
+msgid "Apply to which voices?"
+msgstr ""
+
+msgid "Aragonese"
+msgstr "아라곤어"
+
+msgid "Automatically check for add-on updates"
+msgstr ""
+
+msgid "Balanced"
+msgstr "균형"
+
+msgid "Bandwidth (% of an octave, 10–400):"
+msgstr ""
+
+msgid "Base pitch in hertz (1–24000):"
+msgstr ""
+
+msgid "Bass (250 Hz, -12 to +12 dB):"
+msgstr ""
+
+msgid "Brazilian Portuguese"
+msgstr "포르투갈어(브라질)"
+
+msgid "Bright"
+msgstr "밝음"
+
+msgid "British English"
+msgstr "영어(영국)"
+
+msgid "Castilian Spanish"
+msgstr "스페인어(스페인)"
+
+msgid "Changing NVDA's normal pitch slider switches back to the ECI scale."
+msgstr ""
+
+msgid "Changing NVDA's normal rate or rate boost switches back to the normal rate scale."
+msgstr ""
+
+msgid "Check for add-on updates"
+msgstr "업데이트 확인(C)"
+
+msgid "Checking for updates…"
+msgstr "업데이트 확인 중…"
+
+msgid "Choose a format…"
+msgstr ""
+
+msgid "Choose a pronunciation dictionary"
+msgstr "발음 사전 선택"
+
+msgid "Could not detect the format. Choose the dictionary format:"
+msgstr ""
+
+msgid "Custom"
+msgstr "사용자 지정"
+
+#, python-format
+msgid "Dictionaries updated. Community revision: %s"
+msgstr ""
+
+msgid "Dictionary &source:"
+msgstr "사전 출처(&S):"
+
+msgid "Dictionary files (*.dic)|*.dic|All files (*.*)|*.*"
+msgstr ""
+
+#, python-format
+msgid "Dictionary files in total: %s"
+msgstr "전체 사전 파일: %s"
+
+msgid "Dictionary format"
+msgstr "사전 형식"
+
+msgid "Dictionary format:"
+msgstr "사전 형식"
+
+#, python-format
+msgid "Dictionary import failed: %s"
+msgstr ""
+
+msgid "Dictionary language"
+msgstr ""
+
+#, python-format
+msgid "Dictionary loaded for the first time. Entries: %s"
+msgstr "사전을 처음 불러왔습니다. 항목 수: %s"
+
+msgid "Dictionary type"
+msgstr "사전 유형(T):"
+
+msgid "Dictionary type:"
+msgstr "사전 유형(T):"
+
+#, python-format
+msgid "Dictionary update complete. New entries: %s"
+msgstr "사전 업데이트 완료. 새 항목: %s"
+
+msgid "Dictionary update complete. The number of new entries could not be determined."
+msgstr "사전 업데이트를 완료했지만 새 항목 수를 확인할 수 없습니다."
+
+#, python-format
+msgid "Dictionary update failed: %s"
+msgstr "사전 업데이트 실패: %s"
+
+msgid "Download and install update"
+msgstr ""
+
+msgid "Downloading update…"
+msgstr ""
+
+msgid "Edit NVDA dictionary…"
+msgstr ""
+
+msgid "Eloquence"
+msgstr "Eloquence"
+
+msgid "Eloquence C"
+msgstr "Eloquence C"
+
+#, python-format
+msgid "Eloquence C version %s is available. Download and install it?"
+msgstr ""
+
+msgid "Eloquence C: Persian and Pinglish test"
+msgstr "Eloquence C: 페르시아어 및 핑글리시 테스트"
+
+msgid "Eloquence C: fifteen language variants"
+msgstr ""
+
+msgid "Eloquence files are saved with OK or Apply. NVDA imports and edits take effect immediately."
+msgstr ""
+
+msgid "Eloquence pronunciation dictionary"
+msgstr "Eloquence 사전"
+
+msgid "Enable &equalizer"
+msgstr "&이퀄라이저 사용"
+
+msgid "Enable equalizer"
+msgstr "이퀄라이저 사용"
+
+msgid "Enable filter"
+msgstr "필터 사용"
+
+msgid "Equalizer"
+msgstr "이퀄라이저"
+
+msgid "Equalizer &preset:"
+msgstr "&이퀄라이저 프리셋:"
+
+msgid "Equalizer bass"
+msgstr ""
+
+msgid "Equalizer filter bandwidth"
+msgstr ""
+
+msgid "Equalizer filter enabled"
+msgstr ""
+
+msgid "Equalizer filter frequency"
+msgstr ""
+
+msgid "Equalizer filter gain"
+msgstr ""
+
+msgid "Equalizer midrange"
+msgstr ""
+
+msgid "Equalizer preset"
+msgstr "이퀄라이저 프리셋"
+
+msgid "Equalizer treble"
+msgstr ""
+
+msgid "Exact base pitch"
+msgstr ""
+
+msgid "Exact speech rate"
+msgstr ""
+
+#, python-format
+msgid "Filter %s"
+msgstr ""
+
+msgid "Filter:"
+msgstr "필터"
+
+msgid "Finnish"
+msgstr "핀란드어"
+
+msgid "French"
+msgstr "프랑스어"
+
+msgid "French Canadian"
+msgstr "프랑스어(캐나다)"
+
+msgid "Frequency in hertz (1–24000):"
+msgstr ""
+
+msgid "Gain in dB (-12 to +12):"
+msgstr ""
+
+msgid "German"
+msgstr "독일어"
+
+msgid "Greek"
+msgstr "그리스어"
+
+msgid "Hertz pitch off; using the ECI pitch scale."
+msgstr ""
+
+msgid "IBM TTS Dictionaries"
+msgstr "IBM TTS 사전"
+
+msgid "Imported NVDA dictionary"
+msgstr ""
+
+#, python-format
+msgid "Imported NVDA dictionary entries: %s"
+msgstr ""
+
+#, python-format
+msgid "Installed version: %s"
+msgstr "설치된 버전: %s"
+
+msgid "Italian"
+msgstr "이탈리아어"
+
+msgid "Japanese"
+msgstr "일본어"
+
+msgid "Korean"
+msgstr "한국어"
+
+msgid "Language of the dictionary:"
+msgstr ""
+
+msgid "Latin American Spanish"
+msgstr "스페인어(라틴 아메리카)"
+
+msgid "Main words"
+msgstr "기본 단어"
+
+msgid "Mandarin Chinese"
+msgstr "중국어(표준 중국어)"
+
+msgid "Midrange (1200 Hz, -12 to +12 dB):"
+msgstr ""
+
+msgid "Move &down"
+msgstr "아래로(&D)"
+
+msgid "Move &up"
+msgstr "위로(&U)"
+
+msgid "NVDA"
+msgstr "NVDA"
+
+msgid "NVDA cannot save dictionaries in this mode."
+msgstr ""
+
+#, python-format
+msgid "NVDA dictionary edit failed: %s"
+msgstr ""
+
+#, python-format
+msgid "NVDA dictionary removal failed: %s"
+msgstr ""
+
+msgid "NVDA dictionary voice"
+msgstr ""
+
+msgid "NVDA speech dictionaries"
+msgstr ""
+
+msgid "NVDA speech dictionary"
+msgstr "NVDA 음성 사전"
+
+msgid "Native C synthesizer with fifteen language variants at 8 to 48 kHz, including Aragonese, Japanese, Korean, Chinese and Greek."
+msgstr ""
+
+msgid "Never"
+msgstr "줄이지 않음"
+
+#, python-format
+msgid "New dictionary files: %s"
+msgstr "새 사전 파일: %s"
+
+msgid "No newer published add-on package is available."
+msgstr ""
+
+msgid "Only at text end"
+msgstr "발화 끝에서만"
+
+msgid "Open dictionary &folder"
+msgstr "폴더 열기(&F)"
+
+msgid "Own dictionaries updated."
+msgstr ""
+
+msgid "Own entries override community entries. Original files are kept unchanged."
+msgstr ""
+
+msgid "Per-language acoustic timing"
+msgstr ""
+
+msgid "Persian"
+msgstr "페르시아어"
+
+msgid "Persian (Pinglish)"
+msgstr "페르시아어 (Pinglish)"
+
+msgid "Phrase &prediction"
+msgstr "&구문 예측"
+
+msgid "Pitch in hertz"
+msgstr ""
+
+msgid "Process &ECI tags"
+msgstr "ECI 태그 처리(&E)"
+
+msgid "Pronunciation dictionaries"
+msgstr "발음 사전"
+
+msgid "Rate in words per minute"
+msgstr ""
+
+msgid "Remove this imported copy? The original dictionary is kept."
+msgstr ""
+
+msgid "Rou&ghness"
+msgstr "거친 정도(&G)"
+
+msgid "Select Eloquence C as the synthesizer first."
+msgstr ""
+
+msgid "Shorten pa&uses"
+msgstr "쉼 줄이기(&U):"
+
+msgid "Smooth"
+msgstr "부드러움"
+
+msgid "Speech rate in words per minute (1–6000):"
+msgstr ""
+
+msgid "Split &camel-case words (all languages)"
+msgstr "&카멜 케이스 단어 분리 (모든 언어)"
+
+msgid "Split camel case"
+msgstr ""
+
+msgid "Split unfamiliar &English words"
+msgstr "&알 수 없는 영어 단어 분리"
+
+msgid "Split unfamiliar English words"
+msgstr "알 수 없는 영어 단어 분리"
+
+msgid "Test build with Persian and Pinglish."
+msgstr "페르시아어와 핑글리시가 포함된 테스트 빌드입니다."
+
+msgid "The number of new dictionary files could not be determined."
+msgstr "새 사전 파일 수를 확인할 수 없습니다."
+
+msgid "The selected pronunciation dictionaries could not be loaded. Speech will resume when they are available. Check the dictionary settings, or select another synthesizer."
+msgstr ""
+
+#, python-format
+msgid "This NVDA dictionary was already imported. Entries: %s"
+msgstr ""
+
+msgid "Treble (3000 Hz, -12 to +12 dB):"
+msgstr ""
+
+#, python-format
+msgid "Update failed: %s"
+msgstr "업데이트 실패: %s"
+
+msgid "Update handed to NVDA."
+msgstr ""
+
+msgid "Update installation cancelled."
+msgstr ""
+
+msgid "Updating pronunciation dictionaries…"
+msgstr "사전 다운로드 중…"
+
+msgid "Use &abbreviation dictionary"
+msgstr "약어 사전 사용(&A)"
+
+msgid "Use &community pronunciation dictionaries"
+msgstr "커뮤니티 사전 사용(&D)"
+
+msgid "Use &original Eloquence acoustic timing (5 ms)"
+msgstr "&원래 음향 타이밍(5ms)"
+
+msgid "Use base pitch in &hertz"
+msgstr ""
+
+msgid "Use original &question intonation"
+msgstr "&원래의 질문 억양 사용"
+
+msgid "Use pitch in hertz"
+msgstr "음높이를 헤르츠로 설정"
+
+msgid "Use rate in words per minute"
+msgstr ""
+
+msgid "Use speech rate in &words per minute"
+msgstr ""
+
+#, python-format
+msgid "Version %s is available."
+msgstr "버전 %s을 사용할 수 있습니다."
+
+msgid "WPM rate off; using the normal rate scale."
+msgstr ""
+
+msgid "Wait for the dictionary update to finish."
+msgstr ""
+
+msgid "Warm"
+msgstr "따뜻함"
+
+msgid "Word roots"
+msgstr "어근"
