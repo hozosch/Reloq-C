@@ -2109,6 +2109,10 @@ static int known_past_verb(const char *word,size_t bytes,int after_prefix,
         if(length<=n || (n && memcmp(base+length-n,endings[i].written,n)))continue;
         size_t stem=length-n;
         if(stem<2 || (memcmp(base+stem-2,"د",2) && memcmp(base+stem-2,"ت",2)))continue;
+        /* A spelling ending in -dan/-tan is not sufficient evidence of an
+         * infinitive: بدن, for example, is the noun "body". Require the
+         * remaining past stem to be independently classified as a verb. */
+        if(!(stress_class(base,stem)&2u))continue;
         if(stem+sizeof "ن">1025)continue;
         char infinitive[1025],tag[2048],finite[2048];
         memcpy(infinitive,base,stem);memcpy(infinitive+stem,"ن",sizeof "ن");
@@ -2127,6 +2131,13 @@ static int known_past_verb(const char *word,size_t bytes,int after_prefix,
         finite[at++]=tag[t-4];
         memcpy(finite+at,endings[i].phones,suffix);at+=suffix;
         finite[at++]=']';finite[at]=0;
+        /* An attested finite form with a different number of syllables can
+         * be a present-tense homograph of the inferred past form. Preserve
+         * it rather than collapsing a vowel based on spelling alone. */
+        char attested[2048];
+        if(direct_context_word_exact(base,length,0,attested,sizeof attested)==1 &&
+           stress_syllables(attested) && stress_syllables(attested)!=stress_syllables(finite))
+            continue;
         if(prefix) {
             const char *lead=prefix==1?"`[.1mi]":prefix==2?"`[.1ne.0mi]":"`[.1nA]";
             int result=append_phone_tags(lead,finite,output,capacity);

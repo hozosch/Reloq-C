@@ -61,11 +61,14 @@ def main():
         finally:
             dll.eciPersianRelease(output)
 
-    def check_a_quality(roman, tag):
+    def matches_a_quality(roman, tag):
         expected = ''.join('a' if match.group() == 'aa' else 'A'
                            for match in re.finditer(r'aa|a', roman.lower()))
         actual = ''.join(phone for phone in tag if phone in 'aA')
-        assert actual == expected, (roman, tag, expected, actual)
+        return actual == expected
+
+    def check_a_quality(roman, tag):
+        assert matches_a_quality(roman, tag), (roman, tag)
 
     table = Path(__file__).with_name('direct_fa_pinglish_lexicon.inc').read_text(encoding='utf8')
     entries = re.findall(r'^\s*\{"([a-z]+)", "([^"\\]+)"\},', table, re.M)
@@ -75,9 +78,17 @@ def main():
         if 'ph' in roman or 'th' in roman or 'ooo' in roman:
             continue  # Existing explicit English/fallback routing.
         result = pinglish(roman)
-        assert result == (1, persian(script)), (roman, script, result, persian(script))
+        script_tag = persian(script)
+        # A Latin vowel is explicit; a Persian-script homograph may have a
+        # different correct reading. Otherwise keep the shared word path.
+        if matches_a_quality(roman, script_tag):
+            assert result == (1, script_tag), (roman, script, result, script_tag)
+        else:
+            assert result[0] == 1, (roman, script, result, script_tag)
         check_a_quality(roman, result[1])
         checked += 1
+    assert 'mAr' in pinglish('mardand')[1]
+    assert 'mor' in persian('مردند')
     # Exercise unresolved and inflected words too: no stored spelling or
     # productive ending is allowed to change an individual a into aa.
     rng = random.Random(20261121)

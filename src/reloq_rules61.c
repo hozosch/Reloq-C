@@ -1291,8 +1291,9 @@ struct rule_plan {
     float fa_r_previous_resonance[3],fa_r_previous_voice,fa_r_previous_noise;
     float fa_r_previous_band3,fa_r_previous_band4;
     unsigned fa_r_previous_valid,fa_r_release_active;
-    float fa_vr_previous_resonance[2],fa_vr_limit[2];
+    float fa_vr_previous_resonance[2],fa_vr_back_anchor[2];
     unsigned fa_vr_previous_valid,fa_vr_active;
+    size_t fa_vr_back_phone;int fa_vr_back_set;
     int fa_phone_failed;
     struct reloq_session *session;
     int memory,retracted_filter,retracted_st,word_volume,cjk_volume,managed_voice_controls,word_pitch,native_pitch,word_speed,german_af_markers,original_clock;
@@ -1382,11 +1383,10 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
                                     (double)tick,duration,rate,release_ms);
         }
     }
-    /* Limit only the resonance trajectories at the actual vowel/R edges.
-     * Back vowels can approach R very abruptly; a following I can make F2
-     * move abruptly again. Start at the provider's articulation end and
-     * catch up with its unchanged target as soon as possible. The vowel and
-     * R bodies, voice source, pitch and phone durations are not retuned. */
+    /* Round the vowel-to-R edge within the provider's existing transition.
+     * The small, smoothly disappearing blend does not delay the target into
+     * the R body or force a sharp catch-up at its onset. A following I has
+     * a separate rate limit starting at the end of R's articulation. */
     int has_next=s->fa_phone_next+1<s->fa_phone_count;
     unsigned following=has_next?s->fa_phones[s->fa_phone_next+1].phone:0;
     int back_to_r=tuning && has_next && native>=p->articulation_end &&
@@ -1396,18 +1396,25 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
     int r_to_i=tuning && has_next && native>=p->articulation_end &&
         p->phone==RELOQ_FA_TUNE_R_BEFORE_I;
     static const unsigned vr_resonance[2]={13,17};
+    if(back_to_r && (!s->fa_vr_back_set || s->fa_vr_back_phone!=s->fa_phone_next)) {
+        s->fa_vr_back_phone=s->fa_phone_next;s->fa_vr_back_set=1;
+        for(unsigned i=0;i<2;++i)
+            s->fa_vr_back_anchor[i]=(s->fa_vr_previous_valid&(1u<<i))
+                ? s->fa_vr_previous_resonance[i] : controls[vr_resonance[i]];
+    }
     for(unsigned i=0;i<2;++i) {
         unsigned bit=1u<<i,column=vr_resonance[i];
+        if(back_to_r && to>p->articulation_end && isfinite(controls[column])) {
+            double progress=(double)(native-p->articulation_end)/(to-p->articulation_end);
+            double weight=0.25*fmax(0.0,1.0-progress);
+            controls[column]+=(float)((s->fa_vr_back_anchor[i]-controls[column])*weight);
+        }
         if(tuning && (s->fa_vr_previous_valid&bit) && isfinite(duration) && duration>0 &&
            isfinite(controls[column]) && controls[column]>0) {
             double delta=controls[column]-s->fa_vr_previous_resonance[i];
-            double limit=i?30.0:(r_to_i?12.0:22.0);
-            if((back_to_r || (!i && r_to_i)) && fabs(delta)>limit*duration) {
-                if(!(s->fa_vr_active&bit) || limit<s->fa_vr_limit[i])s->fa_vr_limit[i]=(float)limit;
-                s->fa_vr_active|=bit;
-            }
+            double step=12.0*duration;
+            if(!i && r_to_i && fabs(delta)>step)s->fa_vr_active|=bit;
             if(s->fa_vr_active&bit) {
-                double step=s->fa_vr_limit[i]*duration;
                 if(fabs(delta)<=step)s->fa_vr_active&=~bit;
                 else controls[column]=(float)(s->fa_vr_previous_resonance[i]+(delta>0?step:-step));
             }

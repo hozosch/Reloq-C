@@ -88,6 +88,23 @@ static int suffix_preserves_a(const char *stem,const char *formed,char suffix)
     return !*formed;
 }
 
+/* A dictionary spelling may be a homograph of the explicitly written
+ * Pinglish pronunciation. Keep single a and double aa from the input, even
+ * when the Persian-script reader now resolves the homograph differently. */
+static int pinglish_preserves_a(const char *roman,const char *tag)
+{
+    for(size_t i=0;roman[i];++i) {
+        if(lower(roman[i])!='a')continue;
+        char expected='A';
+        if(lower(roman[i+1])=='a'){expected='a';++i;}
+        while(*tag && *tag!='a' && *tag!='A')++tag;
+        if(*tag!=expected)return 0;
+        ++tag;
+    }
+    while(*tag && *tag!='a' && *tag!='A')++tag;
+    return !*tag;
+}
+
 static int persian_dictionary_pinglish(const char *key,char *output,size_t capacity,int complete)
 {
     const char *word=persian_for_roman(key);
@@ -286,7 +303,8 @@ static int pinglish_word_mode(const char *word,size_t bytes,char *output,size_t 
     char key[1025];
     pinglish_lookup_key(word,bytes,key);
     int known=persian_dictionary_pinglish(key,output,capacity,complete);
-    if(known!=0)return known;
+    if(known<0)return known;
+    if(known==1 && pinglish_preserves_a(word,output))return 1;
     char spelling[4096];
     int spelled=spelled_persian(word,bytes,spelling,sizeof spelling);
     return spelled==1 ? persian_pinglish_word(spelling,output,capacity,complete) : spelled;

@@ -42,18 +42,22 @@ def main():
                             new = capture(current, scope, tag)
                             if (rate, gender, speed, clock) == (3, 0, 82, 0):
                                 if tag == CASES[0]:
-                                    assert max_slope(new, 2, 3, 13) <= 22.1
-                                    assert max_slope(new, 2, 3, 17) <= 30.1
+                                    # Do not trade a softened onset for an
+                                    # abrupt catch-up at the start of R.
+                                    assert max_slope(new, 2, 3, 13) <= 60
+                                    assert max_slope(new, 2, 3, 17) <= 80
                                 elif tag == CASES[1]:
-                                    assert max_slope(new, 1, 2, 13) <= 22.1
+                                    assert max_slope(new, 1, 2, 13) <= 15
                                     assert max_slope(new, 2, 3, 13) <= 12.1
                             if old:
                                 before = capture(old, old_scope, tag)
                                 assert new.syllables == before.syllables and len(new.pcm) == len(before.pcm)
+                                r_index = (4, 2, 1)[CASES.index(tag)]
+                                r_start, r_end = (value / 10000 for value in new.syllables[r_index])
                                 for x, y in zip(new.frames(), before.frames()):
                                     assert x.tick == y.tick
                                     for col in range(62):
-                                        if col not in (13, 17):
+                                        if col not in (13, 17) or r_start <= x.tick < r_end:
                                             assert x.controls[col] == y.controls[col], (tag, rate, gender, speed, clock, x.tick, col)
                                 assert capture(current, scope, tag, False).pcm == capture(old, old_scope, tag, False).pcm
                             checks += 1

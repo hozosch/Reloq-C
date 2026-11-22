@@ -42,6 +42,12 @@ def main():
                  'شرط','صورت','عنوان','راحتی','علاوه','نظر'):
         joined=project('به‌'+word);spaced=project('به '+word)
         assert joined==spaced and joined.startswith('`00 `[.0be] '),(word,joined,spaced)
+    # The noun بدن is not evidence for a past stem بد, and present-tense
+    # homographs with an extra vowel must not be collapsed into past forms.
+    for word, tag in (('بدید', '`[.1be.0did]'), ('بدم', '`[.0be.1dAm]'),
+                      ('می‌گذارد', '`[.1mi.0go.0za.0rAd]'),
+                      ('می‌فشاند', '`[.1mi.0fe.0Sa.0nAd]')):
+        assert project(word)==tag, (word, project(word))
     assert project('به‌روز')=="`[.0be.1ruz]"
     assert project('به‌روزرسانی')=="`[.0be.2ruz.0re.1sa.0ni]"
     assert project('به‌روزرسانی‌های')=="`[.0be.0ruz.0re.0sa.0ni.1ha.0je]"
