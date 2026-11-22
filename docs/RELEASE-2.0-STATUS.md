@@ -27,9 +27,10 @@ In the Persian NVDA development voice, grouped numbers could cause the first
 following Persian word to be cut at an English/Persian switch. The planner
 now discards trailing punctuation introduced only by the English phoneme display;
 `test_mixed_number_word_boundaries.py` checks the reported heading and related
-numbers, source indexes, voices and both streaming modes. The reported case
-still needs listening confirmation from users. Issue #49 remains open for the
-rest of Persian development and release validation.
+numbers, source indexes, voices and both streaming modes. Karl confirmed that
+Dev-18 speaks the reported example fully; the original reporter's independent
+confirmation is still pending. Issue #49 remains open for the rest of Persian
+development and release validation.
 
 Persian is not yet an independent registered voice or integrated on all
 platforms. See [PERSIAN-NATIVE-STATUS.md](PERSIAN-NATIVE-STATUS.md) for the
