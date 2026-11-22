@@ -50,6 +50,9 @@ on:
       - experiments/persian/test_fa_stress_policy.py
       - nvda/test_eci_english_currency_case.py
       - nvda/test_eci_unicode_single.py
+      - nvda/test_eci_unicode_switch.py
+      - nvda/_reloq_eci_direct.py
+      - nvda/_reloq_languages.py
       - src/reloq_english_currency.h
       - experiments/persian/test_persian_worker_reuse.py
       - src/reloq_persian_frame_internal.h
@@ -358,6 +361,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'English currency magnitude failed' }
           python -B nvda/test_eci_unicode_single.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Unicode character or text context failed' }
+          python -B nvda/test_eci_unicode_switch.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Unicode context across language switches failed' }
           python -B experiments/persian/test_native_us_word_contour.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Native Persian US contour differed from the established planner' }
           python -B experiments/persian/test_persian_worker_reuse.py --library eci/eci.dll

@@ -19,6 +19,16 @@ source indexes and following weak words. This removes the optional eSpeak
 pronunciation fallback from that test package; it does not remove its Python
 contour orchestration or register an independent ECI voice.
 
+The native analyzer also composes a written numeral and an independently
+known, classified nominal component when their unspaced compound is not
+already in the lexicon. This covers the form `دونقطه` used by NVDA for the
+colon while preserving admitted whole words and rejecting short ambiguous
+verb endings. The shared ECI UTF-8 input can carry original utterance context
+across a host language switch. A single ordinary symbol in that larger source
+is then not mistaken for an isolated character, while explicit spelling,
+genuinely isolated characters and emoji remain available. Older ECI DLLs use
+the existing single-character protection as a compatibility fallback.
+
 The silent US contour proxy and its pronunciation checks now run in shared C.
 The NVDA planner uses that implementation when the matching ECI library is
 available; the Python implementation remains for older libraries. It does not
@@ -80,6 +90,12 @@ two-pass route the normal voice merely because it has been moved out of
 Python. `experiments/persian/benchmark_native_streaming.py --library <path>`
 compares first PCM for the direct and current US-contour C paths with English
 and German; its measurements have no hardware-independent pass threshold.
+`experiments/persian/benchmark_active_vs_native.py --library <path>` also
+compares the active no-eSpeak planner with the two-pass C renderer after
+requiring matching PCM and source indexes. It reports mixed text separately,
+because that C renderer cannot yet process it. On a local warm-run comparison,
+the C-only two-pass path did not consistently reduce first-audio latency;
+this is not a measurement of NVDA, Windows audio or a user's hardware.
 
 The US melody needs to be fixed in the Persian core itself, with Persian
 syllables, lexical stress, weak words and punctuation as its inputs. A direct

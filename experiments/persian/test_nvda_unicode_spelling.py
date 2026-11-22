@@ -112,6 +112,13 @@ def main():
                             driver.language = locale
                             character_mode = sys.modules['speech.commands'].CharacterModeCommand
                             index = sys.modules['speech.commands'].IndexCommand
+                            if locale == 'fa_IR':
+                                for text, level in (('سلام:دنیا', api.symbols.SymbolLevel.MOST),
+                                                    ('سلام دونقطه. دنیا', api.symbols.SymbolLevel.NONE)):
+                                    _, projected_colon, _ = run([text], level=level)
+                                    tags = ' '.join(tag for _, tag in projected_colon)
+                                    assert '`[.0do.0noR.1te]' in tags, (text, tags)
+                                    checks.append((locale, 'connected colon name', text))
                             single_character_audio = {}
                             for char in ('⚭', 'Ж', 'α', '⚽', '≪', '«', '»', '€', '×', '→', '∑', '\u00a0', '\u200b',
                                          '\u202a', '\u202b', '\u202c', '\u202d', '\u202e', '✓', '➔',
@@ -207,6 +214,29 @@ def main():
                             _, _, native = run([before, index(17), '⚭', index(18), after])
                             assert 'marriage symbol' not in ' '.join(native).lower(), (locale, native)
                             checks.append((locale, 'indexed running text'))
+
+                            # NVDA may put just a symbol between language
+                            # commands. Its new ECI handle must receive the
+                            # context of the complete original speech request.
+                            language = sys.modules['speech.commands'].LangChangeCommand
+                            before, after = ('سلام ', ' دنیا') if locale == 'fa_IR' else ('salam ', ' donya')
+                            def switched(char, *, explicit=False):
+                                marker = ([character_mode(True), char, character_mode(False)]
+                                          if explicit else [char])
+                                return [before, index(31), language('en_US'), *marker, index(32),
+                                        language(locale), after]
+                            with mock.patch.object(api.symbols, 'processSpeechSymbols',
+                                                   side_effect=lambda loc, text, level: text):
+                                reference, _, _ = run(switched(' '))
+                                for char in ('⚭', 'Ж', 'α', '\u200b'):
+                                    actual, _, _ = run(switched(char))
+                                    assert actual == reference, (locale, char, 'language boundary')
+                                    spelled, _, _ = run(switched(char, explicit=True))
+                                    assert spelled != reference, (locale, char, 'explicit character mode')
+                                    checks.append((locale, 'language boundary', char))
+                                emoji, _, _ = run(switched('🙂'))
+                                assert emoji != reference, (locale, 'emoji at language boundary')
+                                checks.append((locale, 'emoji at language boundary'))
 
                             # Keep the user's explicit NVDA dictionary mapping.
                             original_dict = dictionary.processText

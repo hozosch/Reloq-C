@@ -135,6 +135,8 @@ enum {
     /* Optional shared text analysis controls; disabled by default. */
     RELOQ_ECI_WORD_SEGMENTATION = 0x101c,
     RELOQ_ECI_CAMEL_CASE = 0x101d,
+    /* Read-only UTF-8 input mode bits supported by eciAddTextUtf8. */
+    RELOQ_ECI_UTF8_INPUT_MODES = 0x101e,
     /* Five optional peaking filters, each with four consecutive parameters:
      * enabled 0/1, frequency 1..24000 Hz, gain 0..24 (-12..+12 dB),
      * and bandwidth 10..400 percent of an octave. */
@@ -281,7 +283,10 @@ ECIAPI int ECICALL eciUpdateDictA(ECIHand handle,ECIDictHand dictionary,int volu
  * names that character unless it is dictionary-protected; indexes and voice
  * controls do not make it text. */
 /* Mode bit 0 requests character spelling; bit 1 protects the text from the
- * optional word/CamelCase segmenter (for host-side dictionary substitutions). */
+ * optional word/CamelCase segmenter (for host-side dictionary substitutions).
+ * Bit 2 says this text belongs to a larger utterance, even if a host language
+ * switch requires a separate synthesis call. It suppresses only the implicit
+ * single-character request; explicit spelling and emoji handling still apply. */
 ECIAPI int ECICALL eciAddTextUtf8(ECIHand handle, const void *text, size_t bytes, int character_mode);
 
 /* Project directly covered Persian UTF-8 text and ordered source-byte

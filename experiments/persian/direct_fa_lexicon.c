@@ -1801,6 +1801,36 @@ static int joined_compound_word(const char *word,size_t bytes,char *output,size_
     return 1;
 }
 
+/* A written numeral can be attached directly to a known nominal component.
+ * Give already recorded words precedence, and never guess either component:
+ * only a classified nominal tail with its own native pronunciation is used.
+ * The same stress and short connected vowel rules apply with a half-space. */
+static int joined_numeral_word(const char *word,size_t bytes,char *output,size_t capacity,unsigned depth)
+{
+    static const char *const numerals[]={"یک","دو","سه","چهار","پنج","شش","هفت","هشت","نه","ده"};
+    static const char joiner[]="\xe2\x80\x8c";
+    for(size_t i=0;i<sizeof numerals/sizeof numerals[0];++i) {
+        size_t prefix=strlen(numerals[i]),tail=prefix;
+        if(bytes<=prefix || memcmp(word,numerals[i],prefix))continue;
+        if(bytes-tail>=sizeof joiner-1 && !memcmp(word+tail,joiner,sizeof joiner-1))tail+=sizeof joiner-1;
+        /* Two-letter tails also occur as ordinary verbal endings: do not
+         * split an inflection just because its beginning resembles a number. */
+        if(bytes-tail<6 || stress_class(word+tail,bytes-tail)!=1u)continue;
+        char left[2048],right[2048];
+        int a=direct_context_depth(word,prefix,0,left,sizeof left,depth+1);
+        int b=direct_context_depth(word+tail,bytes-tail,0,right,sizeof right,depth+1);
+        if(a<0 || b<0)return a<0?a:b;
+        if(a!=1 || b!=1 || !single_phone_tag(left) || !single_phone_tag(right))continue;
+        (void)shorten_written_final_e(word,prefix,left);
+        int result=append_phone_tags(left,right,output,capacity);
+        if(result!=1)return result;
+        size_t count=stress_syllables(output);
+        if(count)stress_primary(output,count-1);
+        return 1;
+    }
+    return 0;
+}
+
 /* Apply the same compound and verbal-prefix stress as the admitted-word
  * rule, but allow an unknown component to use the general orthography. */
 int reloq_fa_direct_guess_prefixed_verb(const char *word,size_t bytes,char *output,size_t capacity)
@@ -2010,6 +2040,8 @@ static int direct_context_depth(const char *word,size_t bytes,int follows_word,
     result=derived_zade_word(word,bytes,output,capacity,depth);
     if(result)return result;
     result=derived_agent_r_word(word,bytes,output,capacity,depth);
+    if(result)return result;
+    result=joined_numeral_word(word,bytes,output,capacity,depth);
     if(result)return result;
     result=joined_compound_word(word,bytes,output,capacity,depth);
     if(result)return result;

@@ -21,7 +21,7 @@ if __package__:
     from .continuous_driver import bounded_jobs, bracket_jobs, continuation_comma, sentence_jobs, try_continuous, try_persian_glides
     from .._reloq_eci_direct import (DirectEciEngine, EciCapitalWord, EciIndex, EciLanguage,
                                      EciPitch, EciPitchHz, EciProsody, EciText, PAUSE_MODE)
-    from .._reloq_languages import Language, LanguageEngine, US_ENGLISH, GERMAN, FINNISH
+    from .._reloq_languages import Language, LanguageEngine, US_ENGLISH, GERMAN, FINNISH, carry_speech_context
 else:
     from direct_fa_sequence import ScopedDirectPersianEngine
     from hybrid_fa_frontend import DirectFirstPersian
@@ -29,7 +29,7 @@ else:
     from continuous_driver import bounded_jobs, bracket_jobs, continuation_comma, sentence_jobs, try_continuous, try_persian_glides
     from _reloq_eci_direct import (DirectEciEngine, EciCapitalWord, EciIndex, EciLanguage,
                                   EciPitch, EciPitchHz, EciProsody, EciText, PAUSE_MODE)
-    from _reloq_languages import Language, LanguageEngine, US_ENGLISH, GERMAN, FINNISH
+    from _reloq_languages import Language, LanguageEngine, US_ENGLISH, GERMAN, FINNISH, carry_speech_context
 
 PERSIAN_PROBE = Language(0x140000, 'Persian test', 'fa_IR', 'utf-8', US_ENGLISH.voices)
 PINGLISH_PROBE = Language(0x140001, 'Persian (Pinglish) test', 'fa_Latn', 'utf-8', US_ENGLISH.voices)
@@ -371,6 +371,7 @@ class PersianProbeLanguageEngine(LanguageEngine):
                       replace(part, text=valid_text(part.text)) if isinstance(part, EciText) else
                       replace(part, original=valid_text(part.original), segmented=valid_text(part.segmented))
                       if isinstance(part, EciCapitalWord) else part for part in parts)
+        parts = carry_speech_context(parts)
         # Consult the native text policy before Unicode-name and script
         # routing. An isolated character or explicit spelling must still be
         # named; indexes between ordinary fragments remain in their places.

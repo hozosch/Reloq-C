@@ -8,7 +8,7 @@ NVDA settings and language-command routing do not contain German special cases.
 from __future__ import annotations
 
 from collections import OrderedDict
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 import threading
 from typing import Callable
@@ -26,6 +26,36 @@ if __package__:
     from ._reloq_eci_direct import DirectEciEngine, EciText, EciCapitalWord, EciLanguage, EciPitch, EciPitchHz, EciProsody, persistent_tag_control, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, ORIGINAL_ACOUSTIC_CLOCK
 else:
     from _reloq_eci_direct import DirectEciEngine, EciText, EciCapitalWord, EciLanguage, EciPitch, EciPitchHz, EciProsody, persistent_tag_control, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, ORIGINAL_ACOUSTIC_CLOCK
+
+
+def speech_has_context(parts):
+    """Count source text before language or sentence boundaries split it."""
+    count = 0
+    for part in parts:
+        if isinstance(part, EciText):
+            if part.source_in_context:
+                return True
+            if part.is_control or part.internal_punctuation:
+                continue
+            count += len(part.text)
+        elif isinstance(part, EciCapitalWord):
+            count += len(part.original)
+        elif isinstance(part, str):
+            count += len(part)
+        if count > 1:
+            return True
+    return False
+
+
+def carry_speech_context(parts):
+    """Retain the original utterance context through later text splits."""
+    parts = tuple(parts)
+    if not speech_has_context(parts):
+        return parts
+    return tuple(EciText(part, source_in_context=True) if isinstance(part, str) else
+                 replace(part, source_in_context=True) if isinstance(part, EciText) and
+                 not part.is_control and not part.internal_punctuation and not part.character_mode else part
+                 for part in parts)
 
 
 @dataclass(frozen=True)
@@ -285,6 +315,7 @@ class LanguageEngine:
 
     def speak(self, parts, on_pcm, on_index, *, reset_cancellation=True):
         self._assert_owner()
+        in_context = speech_has_context(parts)
         # Validate all selections before any speech escapes this job.
         for part in parts:
             if isinstance(part, EciLanguage):
@@ -303,7 +334,16 @@ class LanguageEngine:
             engine = self._activate(key)
             if self._cancelled.is_set():
                 return False
-            result = engine.speak(tuple(pending), on_pcm, on_index)
+            chunk = tuple(pending)
+            text_length = sum(len(part if isinstance(part, str) else part.text)
+                              for part in chunk if isinstance(part, str) or
+                              isinstance(part, EciText) and not part.is_control)
+            if in_context and text_length == 1:
+                chunk = tuple(EciText(part, source_in_context=True) if isinstance(part, str) and part else
+                              replace(part, source_in_context=True) if isinstance(part, EciText) and
+                              part.text and not part.is_control and not part.character_mode else part
+                              for part in chunk)
+            result = engine.speak(chunk, on_pcm, on_index)
             pending.clear()
             return result and not self._cancelled.is_set()
 

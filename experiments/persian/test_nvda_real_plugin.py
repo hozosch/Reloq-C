@@ -648,6 +648,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.cases.append(('fa_IR', passage, 'comparison_finnish_dense'))
             self.cases.extend((('fa_IR', 'سلام دنیا: این یک آزمایش است؟', 'comparison_colon'),
                                ('fa_IR', 'سلام دنیا. این یک آزمایش است؟', 'comparison_period')))
+            self.cases.extend((locale, char, mode) for locale in ('fa_IR', 'fa_Latn')
+                              for char, mode in (('⚭', 'unicode_language_flow'),
+                                                 (' ', 'unicode_language_flow_reference'),
+                                                 ('⚭', 'unicode_language_spelled'),
+                                                 ('🙂', 'unicode_language_emoji'),
+                                                 ('⚭', 'unicode_language_single'),
+                                                 ('⚭', 'unicode_language_single_reference')))
             self.cases.append(('fa_IR', 'راه‌اندازی. راه‌اندازی مجدد. سیستم راه‌اندازی شد.', 'comparison_rahandazi'))
             self.cases.append(('fa_IR', '۹۶. شماره ۹۶. ۹۶: سلام دنیا.', 'comparison_96'))
             self.cases.extend(('fa_IR', 'سلام دنیا خوب.', 'comparison_' + kind + '_pitch')
@@ -878,6 +885,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 def sound(locale, text, mode):
                     return next(row['pcm_sha256'] for row in self.results
                                 if row['locale'] == locale and row['text'] == text and row['spelling'] == mode)
+                for locale in ('fa_IR', 'fa_Latn'):
+                    reference = sound(locale, ' ', 'unicode_language_flow_reference')
+                    if sound(locale, '⚭', 'unicode_language_flow') != reference:
+                        raise AssertionError('language switch turned running text into a character name: ' + locale)
+                    if sound(locale, '⚭', 'unicode_language_spelled') == reference:
+                        raise AssertionError('language switch lost explicit character spelling: ' + locale)
+                    if sound(locale, '🙂', 'unicode_language_emoji') == reference:
+                        raise AssertionError('language switch lost an emoji: ' + locale)
+                    if sound(locale, '⚭', 'unicode_language_single') != sound(locale, '⚭', 'unicode_language_single_reference'):
+                        raise AssertionError('language switch lost the isolated character name: ' + locale)
                 self.spelling_config['useSpellingFunctionality'] = self.saved_spelling_functionality
                 for locale in ('de_DE', 'en_US', 'fa_IR', 'fa_Latn'):
                     for char in ('⚭', '⊖', '≪', 'Ж', 'α', '⚽', '🙂', '\x7f', '\u00a0', '\u200b',
@@ -980,6 +997,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             elif spelling == 'comparison_finnish_dense':
                 sequence = [part for i, word in enumerate(text.split(), 60000)
                             for part in (word + ' ', self.index_command(i))]
+            elif isinstance(spelling, str) and spelling.startswith('unicode_language_'):
+                marker = ([self.character(True), self.native_word(text), self.character(False)]
+                          if spelling in ('unicode_language_spelled', 'unicode_language_single_reference') else [text])
+                if spelling in ('unicode_language_single', 'unicode_language_single_reference'):
+                    sequence = [self.language_command('en_US'), *marker]
+                else:
+                    before, after = ('سلام ', ' دنیا') if locale == 'fa_IR' else ('salam ', ' donya')
+                    sequence = [before, self.index_command(19001), self.language_command('en_US'), *marker,
+                                self.index_command(19002), self.language_command(locale), after]
             elif spelling in ('unicode_spelling_on', 'unicode_spelling_off'):
                 sequence = list(self.speech.getSpellingSpeech(text, locale=locale, endsUtterance=False))
             elif spelling in ('unicode_single_on', 'unicode_single_off'):
@@ -1227,6 +1253,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                 else '`[.0pA.0ran.1tez] `[.1baz]')
                 if expected not in tags or not any(self.syllable_fits[self.before_syllable_fits:]):
                     raise AssertionError('NVDA lost the reported contour or syllable alignment: ' + ascii((text, tags)))
+            if spelling in ('issue50_compact_colon_most', 'issue50_compact_colon_split_most',
+                            'issue50_compact_colon_reference_none'):
+                tags = ' '.join(self.projected[self.before_projected:])
+                if '`[.0do.0noR.1te]' not in tags:
+                    raise AssertionError('NVDA colon name lost its connected numeral vowel: ' + ascii((text, tags)))
             if spelling == 'issue50_hundred_short':
                 tags = ' '.join(self.projected[self.before_projected:])
                 if not re.search(r'\.[012]sA', tags) or "s'A:'" in tags:

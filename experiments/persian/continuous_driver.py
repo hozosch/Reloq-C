@@ -1208,8 +1208,7 @@ def sentence_jobs(parts, home, *, hard_only=False):
                     continue
             fragment = value[begin:i + 1]
             if fragment:
-                pending.append(fragment if isinstance(part, str) else EciText(
-                    fragment, segmentation_guarded=part.segmentation_guarded))
+                pending.append(fragment if isinstance(part, str) else replace(part, text=fragment))
             if any(isinstance(p, (str, EciText, EciCapitalWord)) and
                    (p if isinstance(p, str) else p.text if isinstance(p, EciText) else p.original).strip()
                    for p in pending):
@@ -1218,8 +1217,7 @@ def sentence_jobs(parts, home, *, hard_only=False):
             begin = i + 1
         fragment = value[begin:]
         if fragment:
-            pending.append(fragment if isinstance(part, str) else EciText(
-                fragment, segmentation_guarded=part.segmentation_guarded))
+            pending.append(fragment if isinstance(part, str) else replace(part, text=fragment))
         offset += len(value)
     if any(isinstance(p, (str, EciText, EciCapitalWord)) and
            (p if isinstance(p, str) else p.text if isinstance(p, EciText) else p.original).strip()

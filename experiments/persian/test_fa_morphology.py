@@ -64,6 +64,17 @@ def main():
     assert project('نیم‌فاصله').endswith(".0fa.0se.1le]")
     assert project('نیم‌اتصال').endswith('.0et.0te.1sal]')
     assert project('بک‌اسلش')=='`[.0bAk.0es.1lAS]'
+    # Numerals can be written against an independently known noun with or
+    # without a half-space, including NVDA's name for the colon. Neither
+    # form should turn the /o/ of دو into an inferred /u/.
+    for prefix, noun in (('دو', 'نقطه'), ('سه', 'نقطه'),
+                         ('دو', 'کتاب'), ('چهار', 'کتاب')):
+        fused, joined = project(prefix+noun), project(prefix+'‌'+noun)
+        assert fused == joined, (prefix, noun, fused, joined)
+    assert project('دونقطه') == '`[.0do.0noR.1te]'
+    assert project('دوست') == '`[.1dust]'
+    assert project('دولت') == '`[.0do.1lAt]'
+    project('هشتید', covered=False)  # A verb ending, not هشت + ید.
     # Native composition covers classified -ختیار/-ختیاری derivatives and
     # -زاده surnames using their own recognized stems, without asking eSpeak.
     assert project('بختیار')=="`[.0bAG.0ti.1jar]"

@@ -28,6 +28,14 @@ def main():
             empty = render(engine, [EciText(' ', segmentation_guarded=True), EciIndex(15)])
             assert protected == empty, (language.locale, 'dictionary-protected text')
             checks += 1
+            continued = render(engine, [EciText('⚭', source_in_context=True), EciIndex(15)])
+            assert continued == protected, (language.locale, 'single run from longer source')
+            spelled = [EciText('⚭', character_mode=True), EciIndex(15)]
+            assert render(engine, [EciText('⚭', character_mode=True, source_in_context=True), EciIndex(15)]) == render(engine, spelled), (
+                language.locale, 'explicit spelling in longer source')
+            assert render(engine, [EciText('🙂', source_in_context=True), EciIndex(15)]) != empty, (
+                language.locale, 'emoji in longer source')
+            checks += 3
             reference = render(engine, ['Test ', EciIndex(13), ' ', EciIndex(14), ' Ende'])
             for char in (('⚭', 'α') if language.id != 0x120000 else ('⚭',)):
                 assert render(engine, ['Test ', EciIndex(13), char, EciIndex(14), ' Ende']) == reference, (

@@ -132,7 +132,7 @@ struct queued_item {
     int is_index;
     int pitch;
     int is_pitch;
-    int unicode_input, character_mode, segmentation_guarded;
+    int unicode_input, character_mode, segmentation_guarded, source_in_context;
     struct queued_voice voice;
 };
 
@@ -1102,7 +1102,7 @@ int ECICALL eciAddTextUtf8(ECIHand handle,const void *text,size_t bytes,int mode
 {
     struct reloq_eci_engine *e=handle;
     if(!e||epoch_get(&e->busy))return 0;
-    if((!text&&bytes)||(mode<0||mode>3)||bytes==SIZE_MAX) {
+    if((!text&&bytes)||(mode<0||(mode&~7))||bytes==SIZE_MAX) {
         eci_error(e,RELOQ_ECI_INVALID);return 0;
     }
     unsigned char *copy=malloc(bytes+1);
@@ -1111,7 +1111,7 @@ int ECICALL eciAddTextUtf8(ECIHand handle,const void *text,size_t bytes,int mode
     copy[bytes]=0;
     if(append_item(e,(struct queued_item){.utf8=copy,.length=bytes,
        .voice=capture_voice(e),.unicode_input=1,.character_mode=mode&1,
-       .segmentation_guarded=!!(mode&2)})) {
+       .segmentation_guarded=!!(mode&2),.source_in_context=!!(mode&4)})) {
         free(copy);eci_error(e,RELOQ_ECI_MEMORY);return 0;
     }
     eci_error(e,RELOQ_ECI_OK);return 1;
@@ -1176,7 +1176,7 @@ int ECICALL eciSynthesize(ECIHand handle)
     size_t text_bytes = 0;
     size_t original_text_bytes = 0, source_bytes = 0;
     int unicode_input=0;
-    unsigned char *modes=NULL,*guards=NULL;size_t *source_map=NULL;int have_guards=0;
+    unsigned char *modes=NULL,*guards=NULL;size_t *source_map=NULL;int have_guards=0,source_in_context=0;
     size_t mark_count = 0, next_mark = 0, pitch_count = 0;
     unsigned char *phrase = NULL;
     struct index_mark *marks = NULL;
@@ -1215,6 +1215,7 @@ int ECICALL eciSynthesize(ECIHand handle)
         text_bytes += e->queue[i].length;
         unicode_input|=e->queue[i].unicode_input;
         have_guards|=e->queue[i].segmentation_guarded;
+        if(e->queue[i].length)source_in_context|=e->queue[i].source_in_context;
     }
     if(have_voice) {
         apply_voice(e,&initial_voice);
@@ -1320,7 +1321,7 @@ int ECICALL eciSynthesize(ECIHand handle)
         /* An isolated Unicode scalar is a character request, even when the
          * host did not send a spelling flag. Count the complete queued text,
          * not the fragments separated by source indexes or voice controls. */
-        if((!guards || !guards[0]) && reloq_utf8_next(phrase,text_bytes,&at,&cp)==1 &&
+        if(!source_in_context && (!guards || !guards[0]) && reloq_utf8_next(phrase,text_bytes,&at,&cp)==1 &&
            at==text_bytes)
             memset(modes,1,text_bytes);
     }
@@ -1730,6 +1731,7 @@ int ECICALL eciGetParam(ECIHand handle, int parameter)
     case RELOQ_ECI_ORIGINAL_ACOUSTIC_CLOCK: return e->original_acoustic_clock;
     case RELOQ_ECI_WORD_SEGMENTATION: return e->word_segmentation;
     case RELOQ_ECI_CAMEL_CASE: return e->camel_case;
+    case RELOQ_ECI_UTF8_INPUT_MODES: return 7;
     case RELOQ_ECI_EQ_LOW: return e->eq_low;
     case RELOQ_ECI_EQ_MID: return e->eq_mid;
     case RELOQ_ECI_EQ_HIGH: return e->eq_high;

@@ -53,6 +53,7 @@ NATIVE_WPM = 0x1017
 EQ_LOW, EQ_MID, EQ_HIGH = 0x1018, 0x1019, 0x101a
 ORIGINAL_ACOUSTIC_CLOCK = 0x101b
 WORD_SEGMENTATION, CAMEL_CASE = 0x101c, 0x101d
+UTF8_INPUT_MODES = 0x101e
 EQ_FILTER_BASE, EQ_FILTER_COUNT, EQ_FILTER_STRIDE = 0x1020, 5, 4
 # Adapter-only control: exact ECI pitch in Hz; zero restores the VB scale.
 PITCH_HZ = 0x2000
@@ -82,6 +83,9 @@ class EciText:
     # Internal sentence-planning punctuation supplies a contour rather than
     # a user-requested character name. It is never set by source text.
     internal_punctuation: bool = False
+    # The host split a larger utterance into language-specific ECI calls.
+    # A lone scalar in this run is still ordinary text, not character review.
+    source_in_context: bool = False
 
     @property
     def is_control(self) -> bool:
@@ -116,6 +120,7 @@ class _Utf8Text:
     data: bytes
     character_mode: bool
     segmentation_guarded: bool = False
+    source_in_context: bool = False
 
 
 @dataclass(frozen=True)
@@ -195,6 +200,7 @@ class DirectEciEngine:
         self._on_index: Callable[[int], None] | None = None
         self._callback_error: BaseException | None = None
         self._first_pcm_diagnostic = None
+        self._utf8_input_modes = None
         self._buffer_samples = buffer_samples
         self._buffer = (ctypes.c_int16 * buffer_samples)()
         self._callback = _CallbackType(self._receive)
@@ -423,9 +429,11 @@ class DirectEciEngine:
                 text = part.text if isinstance(part, EciText) else part
                 mode = part.character_mode if isinstance(part, EciText) else False
                 guarded = part.segmentation_guarded if isinstance(part, EciText) else False
-                if not isinstance(text, str) or not isinstance(mode, bool) or not isinstance(guarded, bool):
+                in_context = part.source_in_context if isinstance(part, EciText) else False
+                if (not isinstance(text, str) or not isinstance(mode, bool) or
+                        not isinstance(guarded, bool) or not isinstance(in_context, bool)):
                     raise TypeError("invalid native Unicode text run")
-                prepared.append(_Utf8Text(text.encode("utf-8", errors="strict"), mode, guarded))
+                prepared.append(_Utf8Text(text.encode("utf-8", errors="strict"), mode, guarded, in_context))
             elif isinstance(part, str):
                 encoded = part.encode(encoding, errors="strict")
                 if b"\0" in encoded:
@@ -501,12 +509,25 @@ class DirectEciEngine:
         completed_successfully = False
         restore = {}
         restore_pitch = None
+        # Only a lone scalar can trigger the native automatic character mode.
+        # Retain compatibility with older DLLs by using the existing guard
+        # for that one scalar if they do not advertise the new mode bit.
+        candidates = [p for p in prepared if isinstance(p, _Utf8Text)]
+        needs_context = any(p.source_in_context and not p.character_mode and
+                            not p.segmentation_guarded for p in candidates)
+        byte_count = sum(len(p.data) for p in candidates) if needs_context else 0
+        one_scalar = (0 < byte_count <= 4 and
+                      len(b''.join(p.data for p in candidates).decode('utf-8')) == 1)
         try:
             for part in prepared:
                 if self._cancelled.is_set():
                     return False
                 if isinstance(part, _Utf8Text):
                     mode = int(part.character_mode) | (int(part.segmentation_guarded) << 1)
+                    if one_scalar and part.source_in_context and not part.character_mode and not part.segmentation_guarded:
+                        if self._utf8_input_modes is None:
+                            self._utf8_input_modes = self._dll.eciGetParam(self._handle, UTF8_INPUT_MODES)
+                        mode |= 4 if self._utf8_input_modes >= 0 and self._utf8_input_modes & 4 else 2
                     ok = self._dll.eciAddTextUtf8(self._handle, part.data, len(part.data), mode)
                     operation = "eciAddTextUtf8"
                 elif isinstance(part, EciIndex):
