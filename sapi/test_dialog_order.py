@@ -208,21 +208,26 @@ def main():
         assert user32.GetNextDlgTabItem(window, rate, False) == mellow
         assert user32.GetNextDlgTabItem(window, mellow, False) == pauses
         breath, boost, clock = (user32.GetDlgItem(window, control) for control in (109, 114, clock_id))
-        assert user32.GetNextDlgTabItem(window, breath, False) == rate
+        override = user32.GetDlgItem(window, overrides_id)
+        assert user32.GetNextDlgTabItem(window, breath, False) == override
         if user32.IsWindowEnabled(boost):
-            assert user32.GetNextDlgTabItem(window, pauses, False) == boost
+            assert user32.GetNextDlgTabItem(window, override, False) == boost
             assert user32.GetNextDlgTabItem(window, boost, False) == clock
         else:
-            assert user32.GetNextDlgTabItem(window, pauses, False) == clock
-        assert user32.GetNextDlgTabItem(window, clock, False) == tags
-        # The three program actions form one keyboard group rather than
-        # interrupting the voice sliders or the sample-rate controls.
-        actions = [user32.GetDlgItem(window, control) for control in (126, 141, 153)]
+            assert user32.GetNextDlgTabItem(window, override, False) == clock
+        assert user32.GetNextDlgTabItem(window, clock, False) == rate
+        assert user32.GetNextDlgTabItem(window, pauses, False) == tags
+        speed_rectangles = [wintypes.RECT() for _ in range(3)]
+        for control, rect in zip((override, boost, clock), speed_rectangles):
+            assert user32.GetWindowRect(control, ctypes.byref(rect))
+        assert speed_rectangles[0].bottom <= speed_rectangles[1].top
+        assert speed_rectangles[1].bottom <= speed_rectangles[2].top
+        # The remaining program actions do not interrupt the speed controls.
+        actions = [user32.GetDlgItem(window, control) for control in (141, 153)]
         assert all(actions)
         assert user32.GetNextDlgTabItem(window, user32.GetDlgItem(window, 113), False) == actions[0]
         assert user32.GetNextDlgTabItem(window, actions[0], False) == actions[1]
-        assert user32.GetNextDlgTabItem(window, actions[1], False) == actions[2]
-        assert user32.GetNextDlgTabItem(window, actions[2], False) == user32.GetDlgItem(window, 120)
+        assert user32.GetNextDlgTabItem(window, actions[1], False) == user32.GetDlgItem(window, 120)
         rectangles = [wintypes.RECT() for _ in range(3)]
         for control, rect in zip((rate, mellow, pauses), rectangles):
             assert user32.GetWindowRect(control, ctypes.byref(rect))

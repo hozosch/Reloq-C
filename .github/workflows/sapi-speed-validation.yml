@@ -1,0 +1,32 @@
+name: Validate SAPI speed settings
+on:
+  push:
+    branches: [codex/persian-sapi-speed-dev39-20261123]
+    paths: [.github/workflows/sapi-speed-validation.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  sapi:
+    runs-on: windows-2022
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: persian-windows-baseline-early
+          run-id: 45076960840
+          github-token: ${{ github.token }}
+          path: baseline
+      - name: Build the SAPI adapter
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
+          make -C sapi -j4 CC=gcc ARCH=x64 BUILD=build/x64 build/x64/ReLoqSapi.dll
+          cp baseline/eci.dll sapi/build/x64/eci.dll
+      - name: Check real Windows dialog and keyboard order
+        shell: pwsh
+        run: |
+          python sapi/test_dialog_order.py --directory sapi/build/x64
+          if ($LASTEXITCODE -ne 0) { throw 'SAPI dialog order failed' }
