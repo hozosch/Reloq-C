@@ -13,7 +13,7 @@ from test_us_articulation import capture, voice
 from test_persian_acoustic_clock import actual
 from nvda_driver_probe import make_language_engine, PERSIAN_PROBE, PINGLISH_PROBE
 from _reloq_languages import ACOUSTIC_CLOCK_BITS
-from _reloq_eci_direct import GENDER, HEAD_SIZE, NATIVE_SPEED, SAMPLE_RATE
+from _reloq_eci_direct import GENDER, HEAD_SIZE, NATIVE_SPEED, SAMPLE_RATE, SAMPLE_RATES
 from _reloq_persian_frames import FrameCapture
 
 # The listener's saved project. Frequency deltas are Hz and the band gains
@@ -96,6 +96,19 @@ def main():
                                 error,corr=audio_error(expected,obtained)
                                 if normalized:
                                     assert error<.15 and corr>.99,(phone,gender,head,rate,clock,error,corr)
+                                elif phone=='r_i':
+                                    # The accepted saved R filter must still
+                                    # match in the R body. Its following I
+                                    # now has an intentionally gentler F2
+                                    # transition, so the full contextual
+                                    # audio is allowed to differ there.
+                                    start=old.start_ms+(old.end_ms-old.start_ms)*.1
+                                    end=old.start_ms+(old.end_ms-old.start_ms)*.5
+                                    first=round(start*SAMPLE_RATES[rate]/1000)*2
+                                    last=round(end*SAMPLE_RATES[rate]/1000)*2
+                                    body_error,body_corr=audio_error(expected[first:last],obtained[first:last])
+                                    assert body_error<.03 and body_corr>.998,(phone,gender,head,rate,clock,body_error,body_corr)
+                                    assert error<.09 and corr>.995,(phone,gender,head,rate,clock,error,corr)
                                 else:
                                     assert error<.03 and corr>.998,(phone,gender,head,rate,clock,error,corr)
                                 checks+=1
