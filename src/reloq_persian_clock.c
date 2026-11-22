@@ -93,13 +93,14 @@ int reloq_fa_align_nucleus_clocks(const struct reloq_fa_plan_event *events,size_
                (second && (p+1>=phone_count || provider_slots[p+1]!=second))) {status=1;break;}
             const struct reloq_fa_syllable *actual=phones+p++;
             if(!contained(actual,owner)) {
-                /* The old provider can end a syllable inside q or before
-                 * its own vowel. Extend only through an identified phone
-                 * that does not extend past the next syllable's start. */
-                if(s<syllable_count && actual->to<=syllables[s].from &&
-                   ((vowel(e->value) && actual->from>=owner->to) ||
-                    (e->value==RELOQ_FA_PHONE_UVULAR && actual->from>=owner->from &&
-                     actual->to>owner->to))) {
+                /* The provider can place a verified phone in an adjacent
+                 * gap, for example a final consonant after its syllable's
+                 * recorded end. Extend only inside the gap bounded by the
+                 * other syllables or the final pause. */
+                int32_t left=s>1?syllables[s-2].to:0;
+                int32_t right=s<syllable_count?syllables[s].from:phones[phone_count-1].from;
+                if(actual->from>=left && actual->to<=right) {
+                    if(actual->from<result[s-1].syllable_from)result[s-1].syllable_from=actual->from;
                     if(actual->to>result[s-1].syllable_to)result[s-1].syllable_to=actual->to;
                     result[s-1].syllable_extended=1;
                 } else {
@@ -156,6 +157,19 @@ int reloq_fa_align_nucleus_clocks(const struct reloq_fa_plan_event *events,size_
     /* One final pause follows the last native phone. */
     if(!status && (in_word || next_weak || !have_word || s!=syllable_count ||
                    p>=phone_count || phone_count-p!=1 || provider_slots[p]!=36))status=1;
+    if(!status)for(size_t i=1;i<s;++i)
+        if(result[i].syllable_from<result[i-1].syllable_to){status=1;break;}
+    if(!status)for(size_t i=0;i<s && !status;++i)if(result[i].syllable_extended) {
+        /* A newly extended region must not absorb an actual comma or end
+         * pause, even when both occupy the same inter-syllable gap. */
+        for(size_t j=0;j<phone_count;++j)if(provider_slots[j]==36) {
+            int left=result[i].syllable_from<syllables[i].from &&
+                result[i].syllable_from<phones[j].to && syllables[i].from>phones[j].from;
+            int right=result[i].syllable_to>syllables[i].to &&
+                syllables[i].to<phones[j].to && result[i].syllable_to>phones[j].from;
+            if(left || right){status=1;break;}
+        }
+    }
     if(!status && output && capacity<s)status=-2;
     if(!status) {
         if(output)memcpy(output,result,s*sizeof *output);

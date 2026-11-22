@@ -103,11 +103,11 @@ syllable even when counts match. An experimental C adapter now compares the
 event plan with both provider clocks and captured provider phone slots before
 returning vowel anchors. It accounts for the backend's two-part affricates,
 H features and the cross-syllable doubled /dʒ/, while retaining linguistic
-stress and weak-word metadata. When an identified q or vowel extends into
-the gap before the next syllable, as in `قشنگ`, the adapter extends only its
-returned anchor through that verified phone. Other q contexts and ambiguous
-or inconsistent alignments can still be declined without returning partial
-anchors. The current diagnostic
+stress and weak-word metadata. When an identified phone lies in the gap
+around a provider syllable, as in `قشنگ`, the adapter extends only its returned
+anchor through that verified phone, without crossing another syllable or a
+pause. Ambiguous or inconsistent alignments can still be declined
+without returning partial anchors. The current diagnostic
 obtains syllable and phone clocks in separate captures. The adapter does not
 yet drive intonation, handle mixed English or remove full-utterance planning.
 `eci/test_persian_nucleus_clock.py` checks the mappings across voices, rates,

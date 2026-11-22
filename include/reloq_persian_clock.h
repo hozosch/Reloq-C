@@ -14,8 +14,8 @@ extern "C" {
  * the provider's 100 ns clock; word numbers count native pronunciation groups,
  * not source words. A doubled affricate can cross a backend syllable boundary
  * without changing the linguistic plan or the vowel anchor. When an
- * identified q or vowel extends into the gap after a provider syllable,
- * syllable_extended records that syllable_to includes the verified phone. */
+ * identified phone extends into a gap around a provider syllable,
+ * syllable_extended records that the returned bounds include that phone. */
 struct reloq_fa_nucleus_clock {
     int32_t syllable_from,syllable_to,nucleus_from,nucleus_to;
     uint32_t word,syllable,stress,weak,nucleus,bridged_j,syllable_extended;

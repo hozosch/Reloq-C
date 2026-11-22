@@ -11,6 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 import ctypes as c
 from pathlib import Path
 import random
+import re
 import sys
 
 from test_persian_owned_capture import NativeFrame, NativeSyllable
@@ -102,7 +103,8 @@ def main():
             assert not dll.eciPersianCapturePhoneIdentities(c.byref(count), c.byref(failed))
             assert count.value == 0 and failed.value == 0
 
-    def check(voice, text, variant, expect_bridged=False, expect_extended=False):
+    def check(voice, text, variant, expect_bridged=False, expect_extended=False,
+              allow_unsupported=False):
         raw = text.encode('utf8')
         events = analyze(raw, variant)
         syllables, _ = capture(voice, raw, variant, 0)
@@ -111,6 +113,14 @@ def main():
         n = S()
         status = align(events, len(events), syllables, len(syllables), phones, len(phones),
                        slots, len(slots), None, 0, c.byref(n))
+        if status == 1 and allow_unsupported:
+            assert n.value == 0
+            guard = (Anchor * len(syllables))()
+            c.memset(guard, 0x5a, c.sizeof(guard)); original = bytes(guard)
+            assert align(events, len(events), syllables, len(syllables), phones, len(phones),
+                         slots, len(slots), guard, len(guard), c.byref(n)) == 1
+            assert n.value == 0 and bytes(guard) == original
+            return None
         assert status == 0 and n.value == len(syllables), (text, status, n.value, len(syllables))
         anchors = (Anchor * n.value)()
         status = align(events, len(events), syllables, len(syllables), phones, len(phones),
@@ -157,13 +167,14 @@ def main():
                   for a in anchors]
         assert actual == expected, (text, actual, expected)
         for i, anchor in enumerate(anchors):
-            assert anchor.syllable_from == syllables[i].from_
             assert anchor.syllable_from <= anchor.nucleus_from < anchor.nucleus_to <= anchor.syllable_to
             if anchor.syllable_extended:
-                assert anchor.syllable_to > syllables[i].to
+                assert anchor.syllable_from < syllables[i].from_ or anchor.syllable_to > syllables[i].to
             else:
+                assert anchor.syllable_from == syllables[i].from_
                 assert anchor.syllable_to == syllables[i].to
-        assert bool(any(a.bridged_j for a in anchors)) == expect_bridged, text
+        if expect_bridged is not None:
+            assert bool(any(a.bridged_j for a in anchors)) == expect_bridged, text
         if expect_extended is not None:
             assert bool(any(a.syllable_extended for a in anchors)) == expect_extended, text
         return events, syllables, phones, slots
@@ -208,7 +219,7 @@ def main():
                 check(voice, 'قشنگ', 0, expect_extended=True)
                 check(voice, 'ghashang', 1, expect_extended=True)
                 checks += 2
-                for text in ('قابل', 'قانون', 'قدم', 'واقعیت'):
+                for text in ('قابل', 'قانون', 'قدم', 'واقعیت', 'قدرت', 'قیمت', 'قلب', 'قهوه', 'حقیقت'):
                     check(voice, text, 0, expect_extended=None)
                     checks += 1
                 # An invalid vowel clock cannot produce a partially filled
@@ -247,6 +258,45 @@ def main():
                 assert status == 1 and n.value == 0 and bytes(buffer) == unchanged, (rate, gender, status)
             finally:
                 dll.eciDelete(voice)
+    # Unbiased dictionary samples exercise more consonant combinations. A
+    # still-unsupported mapping must decline cleanly, never return a guessed
+    # vowel; accepted mappings must pass the same independent checks above.
+    lexicon = Path(__file__).resolve().parents[1] / 'experiments/persian/direct_fa_frequency_words.inc'
+    words = re.findall(r'^\s*\{"([^"\\]+)",', lexicon.read_text(encoding='utf8'), re.M)
+    candidates = [word for word in words if len(word) >= 3 and all(ch.isalpha() for ch in word)]
+    samples = random.Random(227).sample(candidates, 300)
+    voice = dll.eciNewEx(0x90000)
+    assert voice
+    output = (c.c_short * 2048)()
+    try:
+        assert dll.eciSetOutputBuffer(voice, len(output), output) == 1
+        dll.eciRegisterCallback(voice, callback, None)
+        for parameter, value in ((5, 3), (0x1010, 0), (0x1007, 85), (0x100b, 0)):
+            assert dll.eciSetParam(voice, parameter, value) >= 0
+        lexical = sum(check(voice, text, 0, expect_bridged=None, expect_extended=None,
+                            allow_unsupported=True) is not None for text in samples)
+        assert lexical >= 250, lexical
+    finally:
+        dll.eciDelete(voice)
+    # An otherwise valid extension must stop before a real comma pause.
+    example = (Event * 8)(Event(1, 0, 0, 0, 0), Event(2, 13, 0, 0, 0),
+                          Event(2, 1, 0, 0, 0), Event(3, 0, 0, 0, 0),
+                          Event(4, 44, 0, 0, 0), Event(1, 0, 0, 0, 0),
+                          Event(2, 2, 0, 0, 1), Event(3, 0, 0, 0, 0))
+    syll = (NativeSyllable * 2)(NativeSyllable(0, 10), NativeSyllable(50, 60))
+    phone = (NativeSyllable * 5)(NativeSyllable(0, 10), NativeSyllable(10, 25),
+                                  NativeSyllable(30, 40), NativeSyllable(50, 60),
+                                  NativeSyllable(70, 80))
+    raw_slots = (c.c_uint32 * 5)(3, 31, 36, 34, 36)
+    out, n = (Anchor * 2)(), S()
+    assert align(example, len(example), syll, len(syll), phone, len(phone),
+                 raw_slots, len(raw_slots), out, len(out), c.byref(n)) == 0
+    assert out[0].syllable_extended and out[0].syllable_to == 25
+    phone[2].from_ = 20
+    c.memset(out, 0x5a, c.sizeof(out)); unchanged = bytes(out)
+    assert align(example, len(example), syll, len(syll), phone, len(phone),
+                 raw_slots, len(raw_slots), out, len(out), c.byref(n)) == 1
+    assert n.value == 0 and bytes(out) == unchanged
     def concurrent(worker):
         voice = dll.eciNewEx(0x90000)
         assert voice
@@ -263,8 +313,8 @@ def main():
             dll.eciDelete(voice)
     with ThreadPoolExecutor(max_workers=4) as pool:
         simultaneous = sum(pool.map(concurrent, range(4)))
-    print(f'Passed {checks} native vowel-clock mappings, {bridges} doubled-affricate bridges '
-          f'and {simultaneous} concurrent captures.')
+    print(f'Passed {checks} native vowel-clock mappings, {bridges} doubled-affricate bridges, '
+          f'{lexical}/300 dictionary words and {simultaneous} concurrent captures.')
     if args.dump_identities:
         print('Observed provider phone slots:', sorted((phone, sorted(slots)) for phone, slots in identity_map.items()))
 
