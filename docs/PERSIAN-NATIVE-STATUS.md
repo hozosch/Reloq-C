@@ -112,6 +112,10 @@ obtains syllable and phone clocks in separate captures. The adapter does not
 yet drive intonation, handle mixed English or remove full-utterance planning.
 `eci/test_persian_nucleus_clock.py` checks the mappings across voices, rates,
 comma pauses, grouped numbers and rejected mismatches.
+In the fixed 300-word sample, four words are still declined: final /h/ can
+introduce a separate short carrier clock, and final /q/ can overlap the
+following pause. Their mapping must be verified before accepting either case;
+the current voice continues to use the existing contour path.
 For an all-unstressed word whose phones the US provider cannot represent,
 the current proxy can add an artificial primary stress while retaining the
 weak-word control. That synthetic marker is not a Persian lexical accent;
