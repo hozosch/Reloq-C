@@ -11,6 +11,7 @@ on:
       - .github/dependabot.yml
 permissions:
   contents: read
+  actions: read
 jobs:
   actions:
     runs-on: ubuntu-24.04
@@ -65,5 +66,6 @@ jobs:
         with:
           artifact-ids: ${{ steps.direct.outputs.artifact-id }}
           path: direct-download
+          github-token: ${{ github.token }}
       - name: Verify the direct artifact
         run: cmp "$RUNNER_TEMP/actions-smoke/probe.txt" direct-download/probe.txt
