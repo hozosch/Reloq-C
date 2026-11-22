@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 import sys
 
@@ -29,6 +30,10 @@ def main():
         persian = prepared._engines[driver.PERSIAN_PROBE.id]
         assert not persian._frontend._reference_available
         assert prepared._active is prepared._engines[driver.US_ENGLISH.id]
+        if (os.cpu_count() or 1) > 1:
+            assert prepared._persian_contour_worker._engine is not None
+            if os.environ.get('RELOQ_FA_STREAM_PREFIX', '1') == '1':
+                assert prepared._persian_capture_worker._engine is not None
         english = (EciIndex(1), 'Hello, this is a test.', EciIndex(2))
         assert render(prepared, english) == render(baseline, english)
         mixed = (EciIndex(3), 'Hello ', EciLanguage(driver.PERSIAN_PROBE.id, '1'),

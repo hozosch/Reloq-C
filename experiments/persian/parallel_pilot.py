@@ -76,10 +76,14 @@ class ParallelPilot:
         # prepares this first long request. The queued capture still verifies
         # cancellation and settings before using the handle.
         try:
-            self._executor.submit(self._open)
+            self._initializing = self._executor.submit(self._open)
         except BaseException:
             self._executor.shutdown(wait=False)
             raise
+
+    def wait_ready(self):
+        """Finish optional voice-selection warmup on the worker's thread."""
+        self._initializing.result()
 
     def _open(self):
         if self._engine is not None:

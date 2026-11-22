@@ -394,7 +394,8 @@ class PersianProbeLanguageEngine(LanguageEngine):
 
     def select_voice(self, language, voice):
         super().select_voice(language, voice)
-        if self._home[0] == US_ENGLISH.id and PERSIAN_PROBE.id in self._languages:
+        english_home = self._home[0] == US_ENGLISH.id and PERSIAN_PROBE.id in self._languages
+        if english_home:
             # US/Persian switches are expected in both directions. Create
             # the Persian frontend during selection, rather than on the
             # first Persian word in an otherwise English utterance. Restore
@@ -410,9 +411,9 @@ class PersianProbeLanguageEngine(LanguageEngine):
                 pass
             finally:
                 self._activate(home)
-            return
-        if (self._home[0] not in (PERSIAN_PROBE.id, PINGLISH_PROBE.id) or
-                not isinstance(self._engines.get(self._home[0]), ScopedDirectPersianEngine)):
+        persian_id = PERSIAN_PROBE.id if english_home else self._home[0]
+        if (persian_id not in (PERSIAN_PROBE.id, PINGLISH_PROBE.id) or
+                not isinstance(self._engines.get(persian_id), ScopedDirectPersianEngine)):
             return
         if (getattr(self, '_persian_contour_worker', None) is None and
                 (os.cpu_count() or 1) > 1):
@@ -428,6 +429,18 @@ class PersianProbeLanguageEngine(LanguageEngine):
                     self._persian_capture_worker = ParallelPilot(self._dll, persian=True)
             except (RuntimeError, OSError):
                 pass
+        if english_home:
+            # The accepted load-time wait also covers the two background
+            # handles used for English/Persian sentence planning. Otherwise
+            # the first mixed text can still wait for their initialization.
+            for name in ('_persian_contour_worker', '_persian_capture_worker'):
+                worker = getattr(self, name, None)
+                if worker is not None:
+                    try:
+                        worker.wait_ready()
+                    except (RuntimeError, OSError):
+                        worker.close()
+                        setattr(self, name, None)
         if (US_ENGLISH.id in self._languages and
                 not getattr(self, '_persian_english_prepared', False)):
             home = self._home
