@@ -452,10 +452,15 @@ static const char *emoji_label(const unsigned char *text,size_t length,
     }
     return label;
 }
+int reloq_unicode_is_default_emoji(uint32_t cp)
+{
+    if(!cp || cp>0x10ffffu || (cp>=0xd800u && cp<=0xdfffu))return 0;
+    return emoji_presentation(cp) || (cp>=0x1f1e6 && cp<=0x1f1ff);
+}
 int reloq_unicode_is_emoji(uint32_t cp)
 {
     if(!cp || cp>0x10ffffu || (cp>=0xd800u && cp<=0xdfffu))return 0;
-    if(emoji_presentation(cp) || (cp>=0x1f1e6 && cp<=0x1f1ff))return 1;
+    if(reloq_unicode_is_default_emoji(cp))return 1;
     unsigned char text[4];size_t length=encode(text,cp),matched=0;
     return emoji_label(text,length,NULL,0,cp,1,0,0,1,&matched)!=NULL && matched==length;
 }

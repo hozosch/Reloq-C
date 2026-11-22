@@ -125,7 +125,7 @@ def main():
                             single_character_audio = {}
                             for char in ('⚭', 'Ж', 'α', '⚽', '≪', '«', '»', '€', '×', '→', '∑', '\u00a0', '\u200b',
                                          '\u202a', '\u202b', '\u202c', '\u202d', '\u202e', '✓', '➔',
-                                         '@', '+', '?', ':', 'a', '1', ' ', '\t', '\n', '\r', '\x7f'):
+                                         '@', '+', '?', ':', 'a', '1', ' ', '\t', '\n', '\r', '\x7f', '\x1c'):
                                 try:
                                     expected, _, _ = run([character_mode(True), module.NativeDictionaryWord(char),
                                                           character_mode(False)])
@@ -172,7 +172,7 @@ def main():
                                                        index(78), ') ' + right])
                                 assert quoted == bracketed, (locale, 'running quotes')
                                 checks.append((locale, 'running quotes'))
-                            for char in ('⚽', '🙂', 'α', 'Ж', '⚭', '≪', '\x7f', '\u00a0', '\u200b',
+                            for char in ('⚽', '🙂', 'α', 'Ж', '⚭', '≪', '\x7f', '\x1c', '\u00a0', '\u200b',
                                          '\u202a', '\u202b', '\u202c', '\u202d', '\u202e', '✓', '➔'):
                                 on, projects, native = run(spelling(char, locale, True))
                                 off, _, _ = run(spelling(char, locale, False))
@@ -210,6 +210,15 @@ def main():
                             assert audio == without_name, locale
                             checks.append((locale, 'running text'))
 
+                            # DEL is a C0/C1-style control, not a visible
+                            # symbol. Its standalone name is retained, but it
+                            # must not be announced inside an ordinary line.
+                            for char in ('\x7f', '\x01', '\x1c'):
+                                running = text.replace('⚭', char)
+                                audio, _, _ = run([running])
+                                assert audio == without_name, (locale, char, 'control in running text')
+                                checks.append((locale, 'running control', char))
+
                             # Indexes do not turn a single fragment inside a
                             # larger sentence into a character-navigation job.
                             index = sys.modules['speech.commands'].IndexCommand
@@ -217,6 +226,11 @@ def main():
                             _, _, native = run([before, index(17), '⚭', index(18), after])
                             assert 'marriage symbol' not in ' '.join(native).lower(), (locale, native)
                             checks.append((locale, 'indexed running text'))
+                            indexed_space, _, _ = run([before, index(17), ' ', index(18), after])
+                            for char in ('\x7f', '\x01', '\x1c'):
+                                indexed, _, _ = run([before, index(17), char, index(18), after])
+                                assert indexed == indexed_space, (locale, char, 'indexed running control')
+                                checks.append((locale, 'indexed running control', char))
 
                             # NVDA may put just a symbol between language
                             # commands. Its new ECI handle must receive the
@@ -246,6 +260,10 @@ def main():
                             direct_symbol, _, _ = run(switched('⚭'), direct=True)
                             direct_emoji, _, _ = run(switched('🙂'), direct=True)
                             assert direct_symbol == direct_reference and direct_emoji != direct_reference, locale
+                            for char in ('\x7f', '\x01', '\x1c'):
+                                control, _, _ = run(switched(char), direct=True)
+                                assert control == direct_reference, (locale, char, 'language boundary control')
+                                checks.append((locale, 'language boundary control', char))
                             single, _, _ = run([language('en_US'), '⚭'], direct=True)
                             spelled_single, _, _ = run([language('en_US'), character_mode(True),
                                                         module.NativeDictionaryWord('⚭'),

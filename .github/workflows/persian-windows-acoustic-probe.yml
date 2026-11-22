@@ -35,6 +35,7 @@ on:
       - eci/test_persian_owned_us_capture.py
       - eci/test_persian_native_us_render.py
       - eci/test_persian_native_runs_render.py
+      - eci/test_persian_native_characters.py
       - eci/test_persian_native_direct_stream.py
       - experiments/persian/test_native_us_sentence_parity.py
       - eci/test_persian_native_pipeline.py
@@ -323,6 +324,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Native Persian US sentence rendering failed' }
           python -B eci/test_persian_native_runs_render.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Native Persian spelling, phonetic or input-variant rendering failed' }
+          python -B eci/test_persian_native_characters.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Native Persian standalone character names failed' }
           python -B eci/test_persian_native_direct_stream.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Incremental Persian run rendering failed' }
           python -B experiments/persian/test_native_us_sentence_parity.py --library eci/eci.dll

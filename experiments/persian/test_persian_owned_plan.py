@@ -145,6 +145,12 @@ def main():
         assert result==0 and mapped==sorted(mapped),(mixed,result,events)
         assert sum(e[0]==PHONE and e[1]==20 for e in events)==5
         assert [raw[e[1]:e[1]+e[2]].decode('ascii') for e in events if e[0]==ENGLISH]==['phone']
+        text='salam 🙂 donya'; raw=text.encode('utf8')
+        start=len('salam '.encode('utf8')); end=start+len('🙂'.encode('utf8'))
+        plain=analyze(text,mode=1,complete=True,offsets=range(len(raw)+1))
+        explicit=analyze(text,mode=1,complete=True,
+                         runs=[(start,0),(end,1),(len(raw),0)],offsets=range(len(raw)+1))
+        assert plain==explicit and plain[0]==0
         # Complete Pinglish analysis owns bracket punctuation; it must not
         # require the host tokenizer for an otherwise native phrase.
         for left,right in (('(',')'), ('[',']'), ('{','}')):

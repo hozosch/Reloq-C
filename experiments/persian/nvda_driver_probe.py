@@ -398,10 +398,12 @@ class PersianProbeLanguageEngine(LanguageEngine):
         # Use character names only for an isolated character; emoji remain
         # available in continuous speech. NVDA's configured substitutions
         # have already been applied before this point.
-        visible = ''.join(part if isinstance(part, str) else part.text
-                          for part in parts if isinstance(part, str) or
-                          isinstance(part, EciText) and not part.is_control).strip()
-        isolated = len(visible) == 1
+        source_text = ''.join(part if isinstance(part, str) else part.text
+                              for part in parts if isinstance(part, str) or
+                              isinstance(part, EciText) and not part.is_control)
+        single_scalar = len(source_text) == 1
+        isolated = (len(source_text.strip()) == 1 or
+                    single_scalar and ord(source_text) < 32 and source_text not in '\t\r\n')
         def adjoining(index, direction):
             # Source indexes and voice controls do not divide a word.
             index += direction
@@ -439,12 +441,16 @@ class PersianProbeLanguageEngine(LanguageEngine):
                 expanded.append(part)
                 continue
             normalized_chars = []
+            contextual = (not (isolated or single_scalar) or
+                          isinstance(part, EciText) and part.source_in_context)
             for char in text:
                 if (char == '\ufe0f' and previous_char is not None and
                         not (isinstance(part, EciText) and part.segmentation_guarded) and
                         (0x2600 <= ord(previous_char) <= 0x27bf or 0x1f000 <= ord(previous_char) <= 0x1faff)):
                     continue
-                normalized_chars.append(' ' if ord(char) > 127 and char.isspace() else char)
+                silent_control = ((ord(char) < 32 and char not in '\t\r\n') or ord(char) == 0x7f)
+                normalized_chars.append(' ' if (contextual and silent_control) or
+                                        (ord(char) > 127 and char.isspace()) else char)
                 previous_char = char
             normalized = ''.join(normalized_chars)
             if normalized != text:

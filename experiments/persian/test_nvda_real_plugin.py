@@ -675,6 +675,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 ('fa_IR', 'سلام ⚭ دنیا', 'سلام   دنیا'),
                 ('fa_Latn', 'salam ⚭ donya', 'salam   donya'))
                 for text, mode in ((original, 'unicode_flow'), (reference, 'unicode_flow_reference')))
+            self.cases.extend((locale, left + char + right, 'unicode_control_flow')
+                              for locale, left, right in (('fa_IR', 'سلام ', ' دنیا'),
+                                                          ('fa_Latn', 'salam ', ' donya'))
+                              for char in ('\x7f', '\x01', '\x1c'))
             self.next()
         except BaseException:
             self.fail()
@@ -915,6 +919,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                             and speechDictHandler.processText('⚭') == '⚭'
                             and sound(locale, original, 'unicode_flow') != sound(locale, reference, 'unicode_flow_reference')):
                         raise AssertionError('unmapped Unicode name was spoken in running text: ' + locale)
+                    for char in ('\x7f', '\x01', '\x1c'):
+                        if (self.symbols.processSpeechSymbols(locale, char, self.symbols.SymbolLevel.NONE) == char
+                                and speechDictHandler.processText(char) == char
+                                and sound(locale, original.replace('⚭', char), 'unicode_control_flow') !=
+                                    sound(locale, reference, 'unicode_flow_reference')):
+                            raise AssertionError('control name was spoken in running text: ' + ascii((locale, char)))
                 for symbol, label in (('-', 'خطِ تیره'), ('_', 'زیرخط')):
                     if sound('fa_IR', symbol, True) != sound('fa_IR', label, False):
                         raise AssertionError('NVDA symbol differs from its written Persian name: ' + symbol)
@@ -1015,7 +1025,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             elif spelling == 'unicode_single_reference':
                 sequence = [self.character(True), self.native_word(text), self.character(False),
                             self.index_command(19000 + self.index)]
-            elif spelling in ('unicode_flow', 'unicode_flow_reference'):
+            elif spelling in ('unicode_flow', 'unicode_flow_reference', 'unicode_control_flow'):
                 sequence = [text]
             elif spelling == 'issue49_korean_spelling':
                 sequence = [self.character(True), text, self.character(False)]
@@ -1081,7 +1091,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                                           'issue49_character_navigation',
                                                           'unicode_spelling_on', 'unicode_spelling_off',
                                                           'unicode_single_on', 'unicode_single_off', 'unicode_single_reference',
-                                                          'unicode_flow', 'unicode_flow_reference')
+                                                          'unicode_flow', 'unicode_flow_reference', 'unicode_control_flow')
             self.pipeline = self.pipeline or spelling in ('issue49_version_some', 'issue49_version_split',
                                                            'issue49_emoji_some', 'issue49_emoji_split',
                                                            'issue49_heading', 'issue49_heading_split',

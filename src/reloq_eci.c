@@ -2687,6 +2687,50 @@ static int reloq_fa_sample_tick(uint64_t sample,unsigned rate,int64_t *tick)
     *tick=(int64_t)whole;return 0;
 }
 
+/* An English-only character name belongs to the ordinary US engine, just as
+ * it does for the existing NVDA voice. Keep the caller's handle, callback,
+ * cancellation and source indices; a language switch is part of this one
+ * native utterance and never changes the selected voice. */
+static int reloq_fa_speak_english_character(ECIHand voice,const char *name,
+    size_t name_bytes,int spell,const size_t *offsets,const int *values,
+    size_t index_count,size_t source_bytes,unsigned before)
+{
+    struct reloq_eci_engine *e=voice;
+    int old_tags=eciGetParam(voice,RELOQ_ECI_PROCESS_TAGS);
+    if(old_tags<0 || eciSetParam(voice,RELOQ_ECI_PROCESS_TAGS,1)<0)return -1;
+    int status=-3;size_t i=0;
+    while(i<index_count && offsets[i]<source_bytes) {
+        if(!eciInsertIndex(voice,values[i++]))goto done;
+    }
+    if(!eciAddTextUtf8(voice,"`l1.0 ",6,0) ||
+       !eciAddTextUtf8(voice,name,name_bytes,spell?1:0))goto done;
+    while(i<index_count)if(!eciInsertIndex(voice,values[i++]))goto done;
+    if(epoch_get(&e->stop_epoch)!=before){status=-4;goto done;}
+    if(!eciSynthesize(voice)) {
+        if(epoch_get(&e->stop_epoch)!=before)status=-4;
+        goto done;
+    }
+    status=epoch_get(&e->stop_epoch)!=before?-4:0;
+done:
+    if(status)(void)eciClearInput(voice);
+    (void)eciSetParam(voice,RELOQ_ECI_PROCESS_TAGS,old_tags);
+    return status;
+}
+
+static int reloq_fa_silent_context(ECIHand voice,const int *values,size_t count,unsigned before)
+{
+    struct reloq_eci_engine *e=voice;
+    if(epoch_get(&e->stop_epoch)!=before)return -4;
+    for(size_t i=0;i<count;++i)if(!eciInsertIndex(voice,values[i])) {
+        (void)eciClearInput(voice);return -3;
+    }
+    if(count && !eciSynthesize(voice)) {
+        (void)eciClearInput(voice);
+        return epoch_get(&e->stop_epoch)!=before?-4:-3;
+    }
+    return epoch_get(&e->stop_epoch)!=before?-4:0;
+}
+
 static int reloq_fa_speak_us_native(ECIHand handle,ECIHand pilot_handle,
     const char *text,size_t bytes,int mode,const size_t *run_ends,
     const unsigned char *run_modes,size_t run_count,int use_runs,
@@ -2706,6 +2750,45 @@ static int reloq_fa_speak_us_native(ECIHand handle,ECIHand pilot_handle,
         if(source_offsets[i]>bytes || index_values[i]<0 ||
            (i && source_offsets[i]<source_offsets[i-1]))return -1;
     unsigned before=epoch_get(&e->stop_epoch),pilot_before=epoch_get(&pilot->stop_epoch);
+    /* Like eciAddTextUtf8's context bit, run bit 4 says that a scalar
+     * belongs to a larger host utterance. Explicit character mode and emoji
+     * remain named. Strip the bit before passing modes to the analyzer. */
+    unsigned char *owned_modes=NULL;int source_in_context=0,has_context=0;
+    if(use_runs && run_count) {
+        if(!run_modes || !run_ends || run_count>bytes)return -1;
+        for(size_t i=0;i<run_count;++i) {
+            if((run_modes[i]&~7u) || (run_modes[i]&3u)==3u)return -1;
+            has_context|=(run_modes[i]&4u)!=0;
+        }
+        if(has_context) {
+            owned_modes=malloc(run_count);
+            if(!owned_modes)return -2;
+            for(size_t i=0;i<run_count;++i)owned_modes[i]=(unsigned char)(run_modes[i]&3u);
+            if(run_count==1 && (run_modes[0]&4u) && !(run_modes[0]&3u))source_in_context=1;
+            run_modes=owned_modes;
+        }
+    }
+    /* A whole one-scalar request is a character request even without an
+     * explicit spelling run. A symbol in a larger input stays normal text. */
+    size_t scalar_end=0;uint32_t scalar=0;int one_scalar=0,single=0;
+    if(bytes && (!use_runs || (run_count==1 && run_ends && run_modes &&
+       run_ends[0]==bytes && run_modes[0]<=1)) &&
+       reloq_utf8_next((const unsigned char *)text,bytes,&scalar_end,&scalar)==1 && scalar_end==bytes)
+        one_scalar=1;
+    single=one_scalar && (!source_in_context || reloq_unicode_is_default_emoji(scalar));
+    if(single) {
+        char name[2048];int kind=0;
+        int resolved=eciPersianCharacterResolve(scalar,name,sizeof name,&kind);
+        if(resolved<0){free(owned_modes);return -1;}
+        if(resolved==1 && (kind || (mode==0 && ((scalar>='A' && scalar<='Z') ||
+                                                (scalar>='a' && scalar<='z'))))) {
+            int result=kind?reloq_fa_speak_english_character(handle,name,strlen(name),0,
+                source_offsets,index_values,index_count,bytes,before):
+                reloq_fa_speak_english_character(handle,text,bytes,1,
+                source_offsets,index_values,index_count,bytes,before);
+            free(owned_modes);return result;
+        }
+    }
     struct reloq_fa_prepared prepared={0};struct reloq_fa_native_words words={0};
     struct reloq_fa_owned_capture target={0},donor={0};
     char *donor_text=NULL;
@@ -2713,25 +2796,33 @@ static int reloq_fa_speak_us_native(ECIHand handle,ECIHand pilot_handle,
     unsigned char *pauses=NULL;uint64_t *word_samples=NULL;
     struct reloq_fa_frame_mark *replay_marks=NULL;
     struct reloq_fa_glide_candidate *glides=NULL;
-    int status=use_runs ? reloq_fa_prepare_native_runs(text,bytes,mode,run_ends,run_modes,run_count,
-        source_offsets,index_count,error_offset,&prepared,&donor_text,1) :
-        reloq_fa_prepare_native(text,bytes,mode,source_offsets,index_count,error_offset,&prepared);
+    /* Both acoustic and contour inputs must come from the same linguistic
+     * analysis. The ordinary text API previously projected the whole input
+     * a second time for the donor; besides repeated work, that could let
+     * target and donor take different analysis paths. Preserve its existing
+     * rejection of inline controls, then prepare one ordinary-text run. */
+    size_t ordinary_end=bytes;
+    unsigned char ordinary_mode=single?1:0;
+    if(single && use_runs)run_modes=&ordinary_mode;
+    int status;
+    if(!use_runs && !single && memchr(text,'`',bytes))status=1;
+    else status=reloq_fa_prepare_native_runs(text,bytes,mode,
+        use_runs?run_ends:(bytes?&ordinary_end:NULL),
+        use_runs?run_modes:(bytes?&ordinary_mode:NULL),
+        use_runs?run_count:(bytes?1:0),source_offsets,index_count,error_offset,
+        &prepared,&donor_text,use_runs||single);
     if(status)goto done;
     status=reloq_fa_native_words_make(prepared.backend.text,prepared.backend.length,&words);
+    if(status==1 && source_in_context && one_scalar &&
+       (!prepared.backend.length || (scalar<128 && strchr(".,?!:;()[]{}-",(int)scalar)) ||
+        scalar==0x060c || scalar==0x061b || scalar==0x061f)) {
+        status=reloq_fa_silent_context(handle,index_values,index_count,before);
+        goto done;
+    }
     if(status)goto done;
     /* The target plan collapses and marks geminated affricates for the
-     * acoustic provider. The established US pilot instead uses the original
-     * pronunciation, including both phones; preserve that contour input. */
-    if(!use_runs) {
-        size_t donor_error=0;
-        status=eciPersianProjectTextCompleteUtf8(text,bytes,mode,NULL,NULL,0,
-            &donor_text,NULL,&donor_error);
-        if(status) {
-            if(donor_error<=bytes)*error_offset=donor_error;
-            if(status>0)status=1;
-            goto done;
-        }
-    }
+     * acoustic provider. The donor generated from the same events keeps the
+     * original pronunciation, including both phones and glottal boundaries. */
     if(!donor_text){status=1;goto done;}
     size_t word_count=words.count-1;
     if(index_count+word_count>4096){status=1;goto done;}
@@ -2801,7 +2892,7 @@ done:
     eciPersianRelease(donor_text);
     eciPersianReleaseOwnedCapture(&target);eciPersianReleaseOwnedCapture(&donor);
     free(positions);free(pauses);free(source_slots);free(word_slots);free(word_samples);
-    free(replay_marks);free(glides);
+    free(replay_marks);free(glides);free(owned_modes);
     return status;
 }
 

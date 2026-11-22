@@ -5,6 +5,7 @@
 #endif
 #include "reloq_persian_speak.h"
 #include "reloq_inline_tags.h"
+#include "reloq_unicode.h"
 #include "reloq_utf8.h"
 #include <stdint.h>
 #include <stdlib.h>
@@ -40,6 +41,57 @@ static int reloq_fa_explicit_contour_safe(const char *text,size_t bytes)
     return vowels<=1 || markers>=vowels;
 }
 
+/* Apply the common Unicode text policy to non-Persian scalars before the
+ * native analyzer. Character/phonetic runs and emoji retain their own paths.
+ * Replace omitted symbols with the same number of ASCII spaces so all UTF-8
+ * source offsets and run boundaries continue to refer to the original input.
+ * Persian letters, vowel marks, and joiners are owned by the Persian parser. */
+static int reloq_fa_text_symbols(const char *text,size_t bytes,
+    const size_t *ends,const unsigned char *modes,size_t count,
+    char **filtered,size_t *error_offset)
+{
+    *filtered=NULL;
+    if((count && (!ends || !modes)) || (!!count != !!bytes))return -1;
+    size_t begin=0;
+    for(size_t r=0;r<count;++r) {
+        size_t end=ends[r];
+        if(end<=begin || end>bytes || modes[r]>2 ||
+           (end<bytes && ((unsigned char)text[end]&0xc0)==0x80))goto invalid;
+        if(modes[r]==0)for(size_t at=begin;at<end;) {
+            size_t first=at;uint32_t cp=0;
+            if(reloq_utf8_next((const unsigned char *)text,end,&at,&cp)!=1) {
+                *error_offset=first;goto invalid;
+            }
+            int silent=(cp<32 && cp!='\t' && cp!='\r' && cp!='\n') || cp==0x7f;
+            if(!silent && (cp<128 || (cp>=0x0600 && cp<=0x06ff) ||
+               (cp>=0x0750 && cp<=0x077f) || (cp>=0x08a0 && cp<=0x08ff) ||
+               (cp>=0xfb50 && cp<=0xfdff) || (cp>=0xfe70 && cp<=0xfeff) ||
+               cp==0x200c || cp==0x200d || cp==0xfe0e || cp==0xfe0f || cp==0x20e3 ||
+               reloq_unicode_is_emoji(cp)))continue;
+            if(!silent) {
+                unsigned char *admitted=NULL;size_t written=0,*map=NULL;
+                int status=reloq_unicode_admit((const unsigned char *)text+first,at-first,
+                                              NULL,1,0,&admitted,&written,&map);
+                if(status){free(admitted);free(map);free(*filtered);*filtered=NULL;return status;}
+                silent=!written || (written==1 && admitted[0]==' ');
+                free(admitted);free(map);
+            }
+            if(silent) {
+                if(!*filtered) {
+                    *filtered=malloc(bytes+1);
+                    if(!*filtered)return -2;
+                    memcpy(*filtered,text,bytes);(*filtered)[bytes]=0;
+                }
+                memset(*filtered+first,' ',at-first);
+            }
+        }
+        begin=end;
+    }
+    if(begin==bytes)return 0;
+invalid:
+    free(*filtered);*filtered=NULL;return -1;
+}
+
 int reloq_fa_prepare_native_runs(const char *text,size_t bytes,int variant,
     const size_t *run_ends,const unsigned char *run_modes,size_t run_count,
     const size_t *source_offsets,size_t index_count,size_t *error_offset,
@@ -52,16 +104,21 @@ int reloq_fa_prepare_native_runs(const char *text,size_t bytes,int variant,
     if(!text || !error_offset || bytes==SIZE_MAX || (variant!=0 && variant!=1) ||
        (index_count && !source_offsets) || index_count>SIZE_MAX/sizeof(size_t) ||
        memchr(text,0,bytes))return -1;
+    char *filtered=NULL;
+    int admission=reloq_fa_text_symbols(text,bytes,run_ends,run_modes,run_count,
+                                       &filtered,error_offset);
+    if(admission)return admission;
+    if(filtered)text=filtered;
     unsigned char *types=index_count?malloc(index_count):NULL;
     size_t *positions=index_count?malloc(index_count*sizeof *positions):NULL;
-    if(index_count && (!types || !positions)){free(types);free(positions);return -2;}
+    if(index_count && (!types || !positions)){free(filtered);free(types);free(positions);return -2;}
     if(types)memset(types,1,index_count);
     struct reloq_fa_plan_event *events=NULL;size_t count=0;
     int status=eciPersianAnalyzeRunsCompleteUtf8(text,bytes,variant,
         run_ends,run_modes,run_count,
         source_offsets,types,index_count,&events,&count,positions,error_offset);
     free(types);
-    if(status){free(positions);return status==3?-1:status>0?1:status;}
+    if(status){free(filtered);free(positions);return status==3?-1:status>0?1:status;}
     /* Do not replace a known English Unicode name by a numeric fallback,
      * or give Persian letter names to Latin spelling in the Persian profile.
      * Those cases need a separate English language event. */
@@ -110,6 +167,7 @@ int reloq_fa_prepare_native_runs(const char *text,size_t bytes,int variant,
     if(!status)status=reloq_fa_backend_prepare(text,bytes,events,count,&plan,&event_error);
     if(!status && donor_text)
         status=reloq_fa_backend_prepare_donor(text,bytes,events,count,&donor,&event_error);
+    free(filtered);
     eciPersianRelease(events);
     if(status){reloq_fa_backend_clear(&plan);reloq_fa_backend_clear(&donor);free(positions);return status;}
     for(size_t i=0;i<index_count;++i) {

@@ -5,6 +5,7 @@
 #include "reloq_persian_direct.h"
 #include "reloq_persian_phones.h"
 #include "reloq_persian_timing.h"
+#include "reloq_unicode.h"
 #include "reloq_utf8.h"
 #include <ctype.h>
 #include <limits.h>
@@ -345,6 +346,22 @@ static int analyze_runs(const char *text,size_t bytes,int mode,
         } else {
             size_t from=start,at=start;
             while(at<end && !result) {
+                /* Pinglish words and Persian text already share the native
+                 * plan. An emoji with a Persian name is a character within
+                 * that plan, not an unsupported Latin-word fragment. */
+                if(mode && complete && (unsigned char)text[at]>=0xc0) {
+                    size_t next_byte=at;uint32_t cp=0;char name[2048];int name_kind=0;
+                    if(reloq_utf8_next((const unsigned char *)text,end,&next_byte,&cp)==1 &&
+                       reloq_unicode_is_default_emoji(cp) &&
+                       reloq_fa_character_resolve(cp,name,sizeof name,&name_kind)==1 && !name_kind) {
+                        size_t err=0;
+                        result=segment(&p,text+from,at-from,mode,0,map+from,&err,complete);
+                        if(result){*error_offset=from+err;break;}
+                        result=segment(&p,text+at,next_byte-at,mode,1,map+at,&err,complete);
+                        if(result){*error_offset=at+err;break;}
+                        at=next_byte;from=at;continue;
+                    }
+                }
                 if(text[at]=='`' && at+1<end && text[at+1]=='[') {
                     size_t err=0,closing=at+2;
                     while(closing<end && text[closing]!=']' &&

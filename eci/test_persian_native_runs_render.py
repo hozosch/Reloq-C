@@ -144,7 +144,7 @@ def main():
         for text, mode in (('سلام NVDA دنیا', 0), ('⚭', 1), ('a', 1), ('`vs70 سلام', 0)):
             run_mode = 1 if len(text) == 1 else 0
             status, audio, marks, error = pair.render(text, mode, ((len(text.encode()), run_mode),))
-            if text == 'a':
+            if text in ('a', '⚭'):
                 assert status == 0 and audio and marks, (text, status, error)
             else:
                 assert status == 1 and not audio and not marks, (text, status, error)

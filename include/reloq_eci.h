@@ -625,7 +625,9 @@ ECIAPI int ECICALL eciPersianReplayUsCapture(ECIHand voice,
  * through voice. Ordered source byte offsets and non-negative index values
  * are delivered through voice's callback. The pilot is silent. No NVDA or
  * eSpeak component is required.
- * This initial route rejects mixed English and inline controls and does not
+ * A single Unicode scalar is spoken as a character even without spelling;
+ * an English-only character name uses the ordinary US language route.
+ * This initial route rejects mixed English prose and inline controls and does not
  * yet include all of the established NVDA sentence/transition rules or
  * incremental playback; it is not the registered Persian voice. Unknown
  * Persian words still use experimental orthographic inference. Stop on voice
@@ -638,8 +640,11 @@ ECIAPI int ECICALL eciPersianSpeakUsNativeUtf8(ECIHand voice,ECIHand pilot,
 /* Experimental extended sentence route. run_ends and run_modes have the
  * eciPersianAnalyzeRunsCompleteUtf8 contract: normal text (0), character
  * names (1), or one explicit Persian phonetic group (2). Normal runs also
- * accept `l20.0 and `l20.1 input-variant selectors. A name requiring a
- * separate English voice, mixed English prose, unsupported controls and
+ * accept `l20.0 and `l20.1 input-variant selectors. Run-mode bit 4 marks
+ * text belonging to a larger host utterance, suppressing automatic character
+ * naming while preserving explicit spelling and emoji. An isolated character
+ * can use an English name; English-only names in a longer run, mixed English
+ * prose, unsupported controls and
  * phonetic groups whose multiple nuclei lack explicit syllable markers
  * return 1 without output; invalid arrays return -1. This uses the same accepted
  * acoustic bridge and US contour as eciPersianSpeakUsNativeUtf8, and is not

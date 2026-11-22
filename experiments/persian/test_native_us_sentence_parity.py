@@ -62,11 +62,15 @@ def main():
         assert dll.eciSetOutputBuffer(handle, len(output), output) == 1
     cases = (
         (PERSIAN_PROBE, 0, ('سلام', 'سلام دنیا.', 'کتاب را.', 'سلام، دنیا؟',
-                            'من (دنیا) خوب', 'ژژژژژ', 'سوال', 'تعجب', 'او آمد.', '۱۲')),
+                            'من (دنیا) خوب', 'ژژژژژ', 'سوال', 'تعجب', 'او آمد.', '۱۲',
+                            'دونقطه', 'سلام دونقطه دنیا', 'سلام ⚭ دنیا',
+                            'سلام ✓ دنیا', 'سلام Ж دنیا', 'سلام 🙂 دنیا', 'سلام \x7f دنیا',
+                            'سلام \x1c دنیا')),
         (PINGLISH_PROBE, 1, ('salaam', 'salaam donyaa.', 'ketaab raa.', 'salam, donya?',
                              'salaam (donyaa) khoob', 'aks', 'aksi', 'u aamad.', '12',
                              'tajjub', 'salaam aamad tajjub.', 'tanzimaat tajjub in raa?',
-                             'do tajjub omumi gozine khoone?')),
+                             'do tajjub omumi gozine khoone?', 'salam ⚭ donya', 'salam ✓ donya',
+                             'salam 🙂 donya')),
     )
     rng = random.Random(411)
     fa_words = ('سلام', 'دنیا', 'کتاب', 'را', 'است', 'من', 'خانه', 'او', 'آمد', 'برای',
