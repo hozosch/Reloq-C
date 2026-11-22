@@ -172,6 +172,7 @@ jobs:
           # outdated text-test expectation. Reuse them only while every
           # binary input matches and the exact artifact is still available.
           reusable=false
+          reuse_run=""
           if [ "$GITHUB_REF_NAME" = "codex/persian-finnish-nasal-swedish-20261120" ] &&
              git diff --quiet c1f884b21f409792f0987978aaa516cb9f114f94 HEAD -- \
                eci/Makefile eci/reloq_eci_fixed_math.c src include vendor/openevv61 \
@@ -184,9 +185,27 @@ jobs:
                'experiments/persian/direct_fa_*.inc'; then
             id=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/44916929623/artifacts?per_page=100" \
               --jq '.artifacts[] | select(.id == 14712393088 and .expired == false and .digest == "sha256:8af4080dcc2ba10759ae6ae6d9438e566cf7142056bc4dcf18e076f2659f04c1" and .workflow_run.head_sha == "c1f884b21f409792f0987978aaa516cb9f114f94") | .id' || true)
-            if [ "$id" = "14712393088" ]; then reusable=true; fi
+            if [ "$id" = "14712393088" ]; then reusable=true; reuse_run=44916929623; fi
+          fi
+          # This run built both DLLs before the old short-A test expectation
+          # failed. Reuse only that exact artifact and only if every binary
+          # input still matches; all tests below run again at the new head.
+          if [ "$GITHUB_REF_NAME" = "codex/persian-native-u-20261121" ] &&
+             git diff --quiet 5d642543a40a261ec2fad3ec637f04879fe4cc5e HEAD -- \
+               eci/Makefile eci/reloq_eci_fixed_math.c src include vendor/openevv61 \
+               tools/prepare_persian_provider.py tools/reuse_persian_provider_cache.py \
+               experiments/aragonese/build_native_probe.py experiments/persian/build_native_probe.py \
+               experiments/persian/build_windows_probe.py experiments/persian/prepare_continuous_host.py \
+               experiments/persian/continuous_frames.c experiments/persian/continuous_frames.h \
+               experiments/persian/continuous_replay.inc experiments/persian/scoped_acoustics_probe.c \
+               'experiments/persian/direct_fa_*.c' 'experiments/persian/direct_fa_*.h' \
+               'experiments/persian/direct_fa_*.inc'; then
+            id=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/45041056974/artifacts?per_page=100" \
+              --jq '.artifacts[] | select(.id == 14761488164 and .expired == false and .digest == "sha256:7331af50d5952471f40e4cfa494d2e33c06eb53b82eec9dc14c4b78a4b5e4ba2" and .workflow_run.head_sha == "5d642543a40a261ec2fad3ec637f04879fe4cc5e") | .id' || true)
+            if [ "$id" = "14761488164" ]; then reusable=true; reuse_run=45041056974; fi
           fi
           echo "reusable=$reusable" >> "$GITHUB_OUTPUT"
+          echo "run_id=$reuse_run" >> "$GITHUB_OUTPUT"
       - name: Reuse source-matched acoustic binaries
         if: steps.reuse.outputs.reusable == 'true'
         shell: bash
@@ -194,7 +213,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
-          gh run download 44916929623 --name persian-windows-acoustic-probe --dir reused-acoustic --repo "$GITHUB_REPOSITORY"
+          gh run download "${{ steps.reuse.outputs.run_id }}" --name persian-windows-acoustic-probe --dir reused-acoustic --repo "$GITHUB_REPOSITORY"
           mkdir -p persian-windows-probe
           cp reused-acoustic/eci/eci.dll eci/eci.dll
           cp reused-acoustic/persian-windows-probe/eci_persian_probe.dll persian-windows-probe/eci_persian_probe.dll

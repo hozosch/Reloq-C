@@ -70,7 +70,13 @@ def main():
                         candidate = capture(current, scope, tag)
                         short = capture(current, scope, short_tag)
                         duration, reference = vowel_duration(candidate, index), vowel_duration(short, index)
-                        assert duration == reference, (name, rate, gender, head, speed, clock, duration, reference)
+                        if "'A:'" in tag:
+                            # The short front A has a shorter base duration
+                            # in every context. The explicitly long marker
+                            # retains the earlier initial-vowel timing.
+                            assert duration > reference, (name, rate, gender, head, speed, clock, duration, reference)
+                        else:
+                            assert duration == reference, (name, rate, gender, head, speed, clock, duration, reference)
                         if old:
                             previous = capture(old, old_scope, tag)
                             before = vowel_duration(previous, index)
