@@ -39,7 +39,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
     def fail(self):
         RESULT.write_text(json.dumps({'ok': False, 'error': traceback.format_exc(),
-                                      'cases': self.results}, ensure_ascii=True), encoding='utf8')
+                                      'cases': self.results,
+                                      'record_debug': getattr(self, 'record_debug', [])}, ensure_ascii=True), encoding='utf8')
 
     def player(self, *_args, **_kwargs):
         player = Player()
@@ -55,6 +56,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             import synthDrivers.reloqC as reloq
             import characterProcessing
             from synthDrivers.reloqC._persian import continuous_driver, continuous_plan, direct_fa_sequence, korean_contour, nvda_driver_probe
+            from synthDrivers.reloqC._persian.hybrid_fa_frontend import DirectFirstPersian
             from synthDrivers.reloqC._persian.persian_symbols import SYMBOL_TAGS
             from synthDrivers.reloqC._reloq_eci_transport import EciTextTransport
             from synthDrivers.reloqC._reloq_persian_frames import FrameCapture
@@ -152,6 +154,23 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.pitch_command = PitchCommand
             self.symbols = characterProcessing
             self.projected = []
+            self.record_case = False
+            self.record_debug = []
+            for method_name in ('analyze_direct', 'project_direct', 'project_fallback_word'):
+                original = getattr(DirectFirstPersian, method_name)
+                def observe_frontend(instance, *args, _name=method_name, _original=original, **kwargs):
+                    result = _original(instance, *args, **kwargs)
+                    if self.record_case:
+                        self.record_debug.append((_name, repr(args), repr(result)))
+                    return result
+                setattr(DirectFirstPersian, method_name, observe_frontend)
+            original_validation = direct_fa_sequence.ScopedDirectPersianEngine._phonemes_for_validation
+            def observe_validation(instance, text):
+                result = original_validation(instance, text)
+                if self.record_case:
+                    self.record_debug.append(('validation', repr(text), repr(result)))
+                return result
+            direct_fa_sequence.ScopedDirectPersianEngine._phonemes_for_validation = observe_validation
             self.projected_sources = []
             self.emoji_submissions = []
             self.korean_calls = []
@@ -281,6 +300,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             characterProcessing.processSpeechSymbols = trace(characterProcessing.processSpeechSymbols, 'symbols')
             original_synth_speak = reloq.SynthDriver.speak
             def observe_synth_speech(instance, sequence):
+                if self.record_case:
+                    self.record_debug.append(('sequence', repr(sequence)))
                 if self.emoji_case:
                     self.emoji_submissions.append(tuple(item for item in sequence if isinstance(item, str)))
                 if self.version_case or self.compact_case:
@@ -954,6 +975,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     'first_native_preparations': self.native_preparations[:4]}, ensure_ascii=True), encoding='utf8')
                 return
             locale, text, spelling = self.cases[self.index]
+            self.record_case = isinstance(spelling, str) and spelling.startswith('issue49_record_')
             self.speech.cancelSpeech()
             if getattr(self, 'saved_rate_for_r_test', None) is not None:
                 old_rate, old_boost = self.saved_rate_for_r_test
