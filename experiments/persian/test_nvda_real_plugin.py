@@ -532,6 +532,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                           ('de_DE', 'Guten Tag.', False)]
             # Check contextual function words through NVDA's actual pipeline,
             # including an English host and a word read in isolation.
+            # The record symbol directly adjacent to a Persian headline was
+            # reported as making the whole line silent in Dev-26. Exercise
+            # NVDA's actual speech pipeline with symbols set to NONE, also
+            # when its text/index boundaries divide the emoji from the word.
+            self.cases.extend((('fa_IR', '⏺پزشکیان: روحانیون به کمک دولت بیان', 'issue49_record_line'),
+                               ('fa_IR', '⏺️پزشکیان: روحانیون به کمک دولت بیان', 'issue49_record_line'),
+                               ('fa_IR', '⏺پزشکیان: روحانیون به کمک دولت بیان', 'issue49_record_split'),
+                               ('fa_IR', 'پزشکیان: روحانیون به کمک دولت بیان', 'issue49_record_line')))
             self.cases.extend((('fa_IR', 'کتاب و خانه', 'issue49_weak_and'),
                                ('fa_IR', 'کتاب را', 'issue49_weak_object'),
                                ('fa_IR', 'NVDA را', 'issue49_weak_english_host'),
@@ -1061,6 +1069,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     raise AssertionError('missing heading level')
                 at = number.end()
                 sequence = [text[:at], self.index_command(10000 + self.index), text[at:]]
+            elif spelling == 'issue49_record_split':
+                sequence = [text[:1], self.index_command(14000 + self.index), text[1:]]
+            elif spelling in ('issue49_record_line',):
+                sequence = [text]
             elif spelling == 'issue50_question_split':
                 sequence = [text[:-1], self.index_command(12000 + self.index), text[-1:]]
             elif spelling == 'issue50_compact_colon_split_most':
@@ -1086,6 +1098,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.pipeline = self.pipeline or (isinstance(spelling, str) and spelling.startswith('issue49_weak_'))
             self.pipeline = self.pipeline or spelling in ('issue49_grouped_none', 'issue49_grouped_some')
             self.pipeline = self.pipeline or (isinstance(spelling, str) and spelling.startswith('issue50_'))
+            self.pipeline = self.pipeline or spelling in ('issue49_record_line', 'issue49_record_split')
             self.pipeline = self.pipeline or spelling in ('issue49_quotes', 'issue49_numeric', 'issue49_own_vowel', 'issue49_nominal_compound', 'issue49_native_new_compound')
             self.pipeline = self.pipeline or spelling in ('issue49_preposition', 'issue49_final_accent',
                                                           'issue49_character_navigation',
@@ -1186,6 +1199,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                              for chunk in player.chunks[self.before.get(id(player), 0):])
             if not audio:
                 raise RuntimeError('no actual NVDA audio for ' + ascii(text))
+            if spelling in ('issue49_record_line', 'issue49_record_split'):
+                tags = ' '.join(self.projected[self.before_projected:])
+                if '`[.0pAzS.0ki.1an]' not in tags or '`[.0bA.1jan]' not in tags:
+                    raise AssertionError('NVDA lost part of the reported Persian line: ' + ascii(tags))
             if self.sample_case:
                 if len(self.korean_calls) != self.before_korean:
                     raise AssertionError('Finnish sample unexpectedly used a Korean donor')
