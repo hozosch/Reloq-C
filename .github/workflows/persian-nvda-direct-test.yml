@@ -405,6 +405,7 @@ jobs:
         with:
           artifact-ids: ${{ steps.direct-addon.outputs.artifact-id }}
           path: verified-direct-addon
+          github-token: ${{ github.token }}
       - name: Verify the direct add-on artifact
         shell: bash
         run: |
