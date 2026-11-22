@@ -48,7 +48,7 @@ def main():
             shown = en._phonemes_for_probe(text)
             tags = continuous_plan._converted(shown, continuous_plan._EN_TO_FA)
             if tags and all(native_tag_accepted(tag, fa._phonemes_for_probe(tag)) for tag in tags):
-                expected = (continuous_plan._display_punctuation(shown, tags)
+                expected = (continuous_plan._display_punctuation(shown, tags, text)
                             if re.search(r'[.?!,;:]\s*\S', text)
                             else ' '.join(tags) + continuous_plan._punctuation(text))
             else:
