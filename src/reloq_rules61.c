@@ -1318,7 +1318,8 @@ static void take_fa_phone(void *context,int32_t from,int32_t to,unsigned phone)
 }
 static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],float duration)
 {
-    if(!s->fa_phone_count || tick<0 || !reloq_fa_tuning_enabled())return;
+    if(!s->fa_phone_count || tick<0)return;
+    int tuning=reloq_fa_tuning_enabled();
     int64_t native=tick*10000;
     while(s->fa_phone_next+1<s->fa_phone_count &&
           s->fa_phones[s->fa_phone_next+1].from<=native)++s->fa_phone_next;
@@ -1336,7 +1337,10 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
             reloq_fa_tuning_r_sources(controls,s->fa_previous_noise,
                 s->fa_previous_voice,s->fa_previous_aspiration,
                 p->from/10000.0,p->articulation_end/10000.0,to/10000.0,(double)tick,duration);
-        if(p->phone==RELOQ_FA_TUNE_BEFORE_FINAL_H) {
+        /* The R source transition is a language rule, independent of the
+         * saved sound-project bypass. The formant/filter tuning below still
+         * follows the normal comparison scope. */
+        if(tuning && p->phone==RELOQ_FA_TUNE_BEFORE_FINAL_H) {
             if(s->fa_h_level_phone!=s->fa_phone_next) {
                 s->fa_h_level_phone=s->fa_phone_next;s->fa_h_level_set=0;
             }
@@ -1356,12 +1360,12 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
                 float level=s->fa_h_level_set?s->fa_h_level:controls[2];
                 if(level>0)controls[2]=(float)floor(level*weight+0.5);
             }
-        } else if(p->phone==RELOQ_FA_TUNE_R_BEFORE_BACK_A &&
+        } else if(tuning && p->phone==RELOQ_FA_TUNE_R_BEFORE_BACK_A &&
            s->fa_phone_next+1<s->fa_phone_count &&
            s->fa_phones[s->fa_phone_next+1].phone==RELOQ_FA_TUNE_BACK_A)
             reloq_fa_tuning_r_to_back_a(controls,p->articulation_end/10000.0,
                                         to/10000.0,(double)tick,rate);
-        else {
+        else if(tuning) {
             unsigned phone=p->phone;
             if(phone==RELOQ_FA_TUNE_BACK_A && s->fa_phone_next &&
                s->fa_phones[s->fa_phone_next-1].phone==RELOQ_FA_TUNE_R_BEFORE_BACK_A &&

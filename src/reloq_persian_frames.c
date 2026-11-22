@@ -87,7 +87,7 @@ void reloq_fa_tuning_r_sources(float c[62],float previous_noise,float previous_v
     float previous_aspiration,double from,double end,
     double next,double at,double duration)
 {
-    if(fa_tuning_on!=1 || !c || !isfinite(duration) || from<0 || end-from<12 ||
+    if(!c || !isfinite(duration) || from<0 || end-from<12 ||
        next<end || at<from || at>=next || duration<=0)return;
     /* The generator's source can jump directly from silence to full R
      * frication; use the immediately preceding actual frame as the anchor.
