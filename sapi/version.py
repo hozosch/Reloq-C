@@ -1,2 +1,2 @@
 """Package and updater version; bump this once for each SAPI release."""
-VERSION = '1.4.1'
+VERSION = '2.0.0-dev39'
