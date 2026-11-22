@@ -127,6 +127,7 @@ on:
       - experiments/persian/test_phoneme_editor_real_plugin.py
       - experiments/persian/test_persian_acoustic_clock.py
       - experiments/persian/test_native_us_nvda_route.py
+      - experiments/persian/test_native_us_nvda_specials.py
       - experiments/persian/test_lautlabor_project.py
       - addon/soundlab/**
 permissions:
@@ -240,6 +241,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian and Pinglish acoustic clock failed' }
           python -B experiments/persian/test_native_us_nvda_route.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Native Persian NVDA sentence route failed' }
+          python -B experiments/persian/test_native_us_nvda_specials.py --library "$dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Native Persian NVDA punctuation and source indexes failed' }
           python -B experiments/persian/benchmark_active_vs_native.py --library "$dll" --repeats 8
           if ($LASTEXITCODE -ne 0) { throw 'Native Persian sentence latency comparison failed' }
           python -B experiments/persian/test_lautlabor_project.py --library "$dll"

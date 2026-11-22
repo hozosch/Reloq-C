@@ -311,6 +311,17 @@ def try_native_persian_sentence(owner, parts, on_pcm, on_index, *, fa_ids):
     source = bytes(text).decode('utf-8')
     if len(source) <= 1 or len(source) > 64 or len(source.split()) > 3:
         return None
+    if re.search(r'(^|\s)[.,?!،؟]', source):
+        return None
+    # The general native run mapper does not yet reproduce NVDA's source
+    # positions for every symbol and bracket. Keep those on the established
+    # route until their complete mixed/character event mapping is shared.
+    for char in source:
+        category = unicodedata.category(char)
+        persian = 0x600 <= ord(char) <= 0x6ff and category[0] in ('L', 'M', 'N')
+        pinglish = key[0] == PINGLISH_PROBE.id and char.isascii() and char.isalpha()
+        if not (persian or pinglish or char in '0123456789 \t\r\n.,?!،؟\u200c'):
+            return None
     engine = owner._activate(key)
     if not isinstance(engine, ScopedDirectPersianEngine) or getattr(engine._frontend, '_reference_available', False):
         return None
