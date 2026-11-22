@@ -287,13 +287,14 @@ def _spelling_proxy(text, segment, spelling_spans):
 
 
 def _english_transition_proxy(text, en, *, initial=False, final=False):
-    """Keep real boundary fricatives in the English context when possible.
+    """Keep the real boundary /z/ in the English context when possible.
 
     This context is used for native cross-language acoustics, not the US
     sentence-pitch pilot. An otherwise unsupported Persian word may need a
     neutral vowel proxy; at a language boundary that proxy must not erase the
-    adjacent /z/, /s/, /h/ or other fricative. Validate every changed tag
-    against the US parser before using it as a timing/acoustic reference.
+    adjacent /z/. Other consonants keep their established transition path.
+    Validate every changed tag against the US parser before using it as a
+    timing/acoustic reference.
     """
     proxy = persian_proxy_for_english(text, en)
     source, target = tuple(_TAG.finditer(text)), tuple(_TAG.finditer(proxy))
@@ -317,7 +318,7 @@ def _english_transition_proxy(text, en, *, initial=False, final=False):
             continue
         body = syllables[0 if at_start else -1][1]
         phone = body[0 if at_start else -1] if body else ''
-        if phone not in 'fsvzSZh' or not phone:
+        if phone != 'z':
             continue
         if at_start:
             tag = tag[:4] + _FA_TO_EN[phone] + tag[5:]
@@ -330,8 +331,7 @@ def _english_transition_proxy(text, en, *, initial=False, final=False):
     displayed = tuple(_TAG.finditer(en._phonemes_for_probe(' '.join(edits[i] for i in indices))))
     if len(displayed) != len(indices):
         return proxy
-    # An omitted final /h/ is normally tolerated by the generic Finnish
-    # display check. Here the boundary sound itself must actually survive.
+    # Here the boundary sound itself must actually survive the US parser.
     accepted = {i: edits[i] for i, shown in zip(indices, displayed)
                 if edits[i] == shown.group()}
     for i in reversed(indices):
