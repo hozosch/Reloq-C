@@ -120,7 +120,7 @@ def main():
                                                     ('سلام دونقطه. دنیا', api.symbols.SymbolLevel.NONE)):
                                     _, projected_colon, _ = run([text], level=level)
                                     tags = ' '.join(tag for _, tag in projected_colon)
-                                    assert '`[.0do.1noR.0te]' in tags, (text, tags)
+                                    assert '`[.0do.0noR.1te]' in tags, (text, tags)
                                     checks.append((locale, 'connected colon name', text))
                             single_character_audio = {}
                             for char in ('⚭', 'Ж', 'α', '⚽', '≪', '«', '»', '€', '×', '→', '∑', '\u00a0', '\u200b',

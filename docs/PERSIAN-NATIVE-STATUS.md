@@ -23,10 +23,9 @@ The native analyzer also composes a written numeral and an independently
 known, classified nominal component when their unspaced compound is not
 already in the lexicon. This covers the form `دونقطه` used by NVDA for the
 colon while preserving admitted whole words and rejecting short ambiguous
-verb endings. For a known nominal ending in heh, it retains the stored lexical
-accent when the recorded and inferred phone sequences agree; this restores
-the colon name's Dev18 vowel and accent. The shared ECI UTF-8 input can carry
-original utterance context across a host language switch. A single ordinary symbol in that larger source
+verb endings. The numeral retains its short vowel, and the compounded noun
+receives final-syllable stress. The shared ECI UTF-8 input can carry original
+utterance context across a host language switch. A single ordinary symbol in that larger source
 is then not mistaken for an isolated character, while explicit spelling,
 genuinely isolated characters and emoji remain available. Older ECI DLLs use
 the existing single-character protection as a compatibility fallback.

@@ -1824,32 +1824,8 @@ static int joined_numeral_word(const char *word,size_t bytes,char *output,size_t
         (void)shorten_written_final_e(word,prefix,left);
         int result=append_phone_tags(left,right,output,capacity);
         if(result!=1)return result;
-        size_t count=stress_syllables(output),target=count?count-1:0;
-        /* A known nominal ending in written heh can have an unstressed /e/.
-         * When the stored citation has the same phones, preserve its lexical
-         * accent instead of moving it onto that final vowel. */
-        if(bytes-tail>=2 && !memcmp(word+bytes-2,"ه",2)) {
-            char reference[2048],current[2048];
-            if(reloq_fa_direct_word(word+tail,bytes-tail,reference,sizeof reference)==1 &&
-               strlen(right)<sizeof current) {
-                memcpy(current,right,strlen(right)+1);
-                reloq_fa_direct_normalize_durations(reference);
-                reloq_fa_direct_normalize_durations(current);
-                if(same_phones(reference,current)) {
-                    size_t syllable=0,primary=SIZE_MAX;
-                    for(size_t k=2;reference[k] && reference[k]!=']';++k)
-                        if(reference[k]=='.' && reference[k+1]>='0' && reference[k+1]<='2') {
-                            if(reference[k+1]=='1') {
-                                if(primary!=SIZE_MAX){primary=SIZE_MAX;break;}
-                                primary=syllable;
-                            }
-                            ++syllable;
-                        }
-                    if(primary!=SIZE_MAX)target=stress_syllables(left)+primary;
-                }
-            }
-        }
-        if(count)stress_primary(output,target);
+        size_t count=stress_syllables(output);
+        if(count)stress_primary(output,count-1);
         return 1;
     }
     return 0;

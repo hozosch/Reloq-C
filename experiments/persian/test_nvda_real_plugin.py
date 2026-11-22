@@ -1256,7 +1256,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if spelling in ('issue50_compact_colon_most', 'issue50_compact_colon_split_most',
                             'issue50_compact_colon_reference_none'):
                 tags = ' '.join(self.projected[self.before_projected:])
-                if '`[.0do.1noR.0te]' not in tags:
+                if '`[.0do.0noR.1te]' not in tags:
                     raise AssertionError('NVDA colon name lost its connected numeral vowel: ' + ascii((text, tags)))
             if spelling == 'issue50_hundred_short':
                 tags = ' '.join(self.projected[self.before_projected:])
