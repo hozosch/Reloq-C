@@ -1,7 +1,7 @@
 name: Check ReLoq Apple against the development core
 on:
   push:
-    branches: [codex/persian-native-u-20261121, codex/persian-unified-dev33-20261122]
+    branches: [codex/persian-native-u-20261121, codex/persian-unified-dev33-20261122, codex/persian-unified-dev35-20261122]
     paths:
       - .github/workflows/apple-app-compat.yml
       - tools/apple/reloq-apple-0.1.1-core2.patch

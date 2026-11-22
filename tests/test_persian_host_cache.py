@@ -20,7 +20,12 @@ from reuse_persian_host_cache import (ALLOWED, EXPECTED_KEY, RECENT_ALLOWED, REC
                                       DEV188_TRANSITION_ALLOWED, DEV188_TRANSITION_KEY,
                                       DEV189_ALLOWED, DEV189_KEY, DEV190_ALLOWED, DEV190_KEY,
                                       DEV191_ALLOWED, DEV191_KEY, DEV200_ALLOWED, DEV200_KEY,
-                                      DEV201_ALLOWED, DEV201_KEY, eligible)
+                                      DEV201_ALLOWED, DEV201_KEY, DEV34_ALLOWED, DEV34_KEY, eligible)
+
+assert eligible(DEV34_KEY, DEV34_ALLOWED)
+assert not eligible(DEV34_KEY, ())
+assert not eligible(DEV34_KEY, DEV34_ALLOWED | {'src/reloq_core.c'})
+assert not eligible(DEV34_KEY, DEV34_ALLOWED - {'experiments/persian/direct_fa_pinglish.c'})
 
 assert eligible(DEV201_KEY, DEV201_ALLOWED)
 assert not eligible(DEV201_KEY, ())
@@ -34,7 +39,7 @@ workflow = (Path(__file__).resolve().parents[1] /
 host_restore = workflow.split('id: host', 1)[1].split('restore-keys: |', 1)[1]
 host_restore = host_restore.split('      - name:', 1)[0]
 host_keys = [line.strip() for line in host_restore.splitlines() if line.strip()]
-assert DEV201_KEY in host_keys and len(host_keys) <= 9, host_keys
+assert DEV34_KEY in host_keys and DEV201_KEY in host_keys and len(host_keys) <= 9, host_keys
 
 assert eligible(DEV200_KEY, DEV200_ALLOWED)
 assert not eligible(DEV200_KEY, ())

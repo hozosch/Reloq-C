@@ -8,6 +8,11 @@ import shutil
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
+DEV34_BASE = 'e5cab5ce1abe4318a9bb88e735399fddcab4b7a9'
+DEV34_KEY = ('persian-windows-host-gcc14-v2-'
+             '550359d015dcee8e8741f8de1460dec5bf725f325c3b4c9e33a8e6ae8e1f5d28')
+DEV34_ALLOWED = {'experiments/persian/direct_fa_lexicon.c',
+                 'experiments/persian/direct_fa_pinglish.c'}
 DEV201_BASE = '1ec09b3d51d372386a37d4fe61d8f8a88c342414'
 DEV201_KEY = ('persian-windows-host-gcc14-v2-'
               '30af170397101f659f29a2a315d16d726eed79098ece67bb74e5777179854068')
@@ -240,7 +245,8 @@ INPUTS = ('eci/Makefile', 'eci/reloq_eci_fixed_math.c', 'src', 'include',
 
 
 def eligible(key, changed):
-    return bool(changed) and ((key == DEV201_KEY and set(changed) == DEV201_ALLOWED) or
+    return bool(changed) and ((key == DEV34_KEY and set(changed) == DEV34_ALLOWED) or
+                              (key == DEV201_KEY and set(changed) == DEV201_ALLOWED) or
                               (key == DEV200_KEY and set(changed) == DEV200_ALLOWED) or
                               (key == DEV191_KEY and set(changed) == DEV191_ALLOWED) or
                               (key == EXPECTED_KEY and set(changed) <= ALLOWED) or
@@ -280,7 +286,7 @@ def main():
     build, dll = ROOT / 'eci/build/windows', ROOT / 'eci/eci.dll'
     try:
         key = os.environ.get('PERSIAN_HOST_CACHE_KEY', '')
-        base = DEV201_BASE if key == DEV201_KEY else DEV200_BASE if key == DEV200_KEY else DEV191_BASE if key == DEV191_KEY else DEV190_BASE if key == DEV190_KEY else DEV189_BASE if key == DEV189_KEY else DEV188_TRANSITION_BASE if key == DEV188_TRANSITION_KEY else DEV188_BASE if key == DEV188_KEY else DEV187_BASE if key == DEV187_KEY else DEV172_BASE if key == DEV172_KEY else DEV171_BASE if key == DEV171_KEY else DEV170_BASE if key == DEV170_KEY else DEV169_BASE if key == DEV169_KEY else DEV168_BASE if key == DEV168_KEY else DEV166_BASE if key == DEV166_KEY else DEV164_BASE if key == DEV164_KEY else DEV163_BASE if key == DEV163_KEY else DEV162_BASE if key == DEV162_KEY else DEV161_BASE if key == DEV161_KEY else DEV160_BASE if key == DEV160_KEY else DEV159_BASE if key == DEV159_KEY else DEV158_BASE if key == DEV158_KEY else DEV157_BASE if key == DEV157_KEY else DEV156_BASE if key == DEV156_KEY else DEV155_BASE if key == DEV155_KEY else DEV154_BASE if key == DEV154_KEY else DEV153_BASE if key == DEV153_KEY else DEV152_BASE if key == DEV152_KEY else DEV151_BASE if key == DEV151_KEY else DEV150_BASE if key == DEV150_KEY else DEV149_BASE if key == DEV149_KEY else TRACE_BASE if key == TRACE_KEY else NEWEST_BASE if key == NEWEST_KEY else RECENT_BASE if key == RECENT_KEY else BASE
+        base = DEV34_BASE if key == DEV34_KEY else DEV201_BASE if key == DEV201_KEY else DEV200_BASE if key == DEV200_KEY else DEV191_BASE if key == DEV191_KEY else DEV190_BASE if key == DEV190_KEY else DEV189_BASE if key == DEV189_KEY else DEV188_TRANSITION_BASE if key == DEV188_TRANSITION_KEY else DEV188_BASE if key == DEV188_KEY else DEV187_BASE if key == DEV187_KEY else DEV172_BASE if key == DEV172_KEY else DEV171_BASE if key == DEV171_KEY else DEV170_BASE if key == DEV170_KEY else DEV169_BASE if key == DEV169_KEY else DEV168_BASE if key == DEV168_KEY else DEV166_BASE if key == DEV166_KEY else DEV164_BASE if key == DEV164_KEY else DEV163_BASE if key == DEV163_KEY else DEV162_BASE if key == DEV162_KEY else DEV161_BASE if key == DEV161_KEY else DEV160_BASE if key == DEV160_KEY else DEV159_BASE if key == DEV159_KEY else DEV158_BASE if key == DEV158_KEY else DEV157_BASE if key == DEV157_KEY else DEV156_BASE if key == DEV156_KEY else DEV155_BASE if key == DEV155_KEY else DEV154_BASE if key == DEV154_KEY else DEV153_BASE if key == DEV153_KEY else DEV152_BASE if key == DEV152_KEY else DEV151_BASE if key == DEV151_KEY else DEV150_BASE if key == DEV150_KEY else DEV149_BASE if key == DEV149_KEY else TRACE_BASE if key == TRACE_KEY else NEWEST_BASE if key == NEWEST_KEY else RECENT_BASE if key == RECENT_KEY else BASE
         changed = subprocess.check_output(['git', 'diff', '--name-only', base, 'HEAD', '--', *INPUTS],
                                           cwd=ROOT, text=True).splitlines()
         if not eligible(key, changed):
@@ -299,7 +305,7 @@ def main():
         # All native Persian direct components depend on direct_fa_*.h.
         for obj in build.glob('reloq_fa_direct_*.o'):
             obj.unlink()
-        if key == DEV201_KEY:
+        if key in (DEV34_KEY, DEV201_KEY):
             # The only changed inputs are Persian direct tables/lexicon;
             # force their freshly compiled objects into a new DLL.
             dll.unlink()

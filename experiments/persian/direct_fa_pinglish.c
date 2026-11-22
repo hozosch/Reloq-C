@@ -88,21 +88,59 @@ static int suffix_preserves_a(const char *stem,const char *formed,char suffix)
     return !*formed;
 }
 
-/* A dictionary spelling may be a homograph of the explicitly written
- * Pinglish pronunciation. Keep single a and double aa from the input, even
- * when the Persian-script reader now resolves the homograph differently. */
-static int pinglish_preserves_a(const char *roman,const char *tag)
+/* A Persian-script homograph may differ from the explicit Pinglish vowels.
+ * Comparing only counts of one vowel misses a swap with another vowel.
+ * When all counts align, retain the dictionary's syllables and stress while
+ * replacing the vowel sounds in order. Otherwise use marked spelling. */
+static int pinglish_apply_vowels(const char *roman,char *tag)
 {
+    char expected[1025];size_t count=0;
     for(size_t i=0;roman[i];++i) {
-        if(lower(roman[i])!='a')continue;
-        char expected='A';
-        if(lower(roman[i+1])=='a'){expected='a';++i;}
-        while(*tag && *tag!='a' && *tag!='A')++tag;
-        if(*tag!=expected)return 0;
-        ++tag;
+        char c=lower(roman[i]),next=lower(roman[i+1]);
+        if(!strchr("aeiou",c))continue;
+        if(c=='a' && next=='a'){c='a';++i;}
+        else if(c=='e' && next=='e'){c='i';++i;}
+        else if(c=='o' && (next=='o' || next=='u')){c='u';++i;}
+        else if(c=='a')c='A';
+        if(count>=sizeof expected)return 0;
+        expected[count++]=c;
     }
-    while(*tag && *tag!='a' && *tag!='A')++tag;
-    return !*tag;
+    char *positions[1025];size_t seen=0;int inside=0;
+    for(char *p=tag;*p;++p) {
+        if(*p=='['){inside=1;continue;}
+        if(*p==']'){inside=0;continue;}
+        if(inside && strchr("aAeEiou",*p)) {
+            if(seen>=sizeof positions/sizeof positions[0])return 0;
+            positions[seen++]=p;
+        }
+    }
+    if(seen!=count)return 0;
+    for(size_t i=0;i<count;++i)
+        if(!(expected[i]=='e' && *positions[i]=='E'))*positions[i]=expected[i];
+    return 1;
+}
+
+static void pinglish_preserve_stress(const char *before,char *after)
+{
+    char stresses[1025];size_t count=0,seen=0;
+    for(const char *p=before;*p;++p)if(*p=='.' && p[1]>='0' && p[1]<='2') {
+        if(count==sizeof stresses)return;
+        stresses[count++]=p[1];
+    }
+    for(char *p=after;*p;++p)if(*p=='.' && p[1]>='0' && p[1]<='2')++seen;
+    if(count!=seen) {
+        /* Prefix-stressed verbs stay prefix-stressed even if explicit
+         * Pinglish vowels add a syllable absent from the homograph. */
+        if(!count || !seen || stresses[0]!='1')return;
+        char *first=NULL;
+        for(char *p=after;*p;++p)if(*p=='.' && p[1]>='0' && p[1]<='2') {
+            if(!first)first=p+1;
+            if(p[1]=='1')p[1]='0';
+        }
+        *first='1';return;
+    }
+    seen=0;
+    for(char *p=after;*p;++p)if(*p=='.' && p[1]>='0' && p[1]<='2')p[1]=stresses[seen++];
 }
 
 static int persian_dictionary_pinglish(const char *key,char *output,size_t capacity,int complete)
@@ -304,10 +342,17 @@ static int pinglish_word_mode(const char *word,size_t bytes,char *output,size_t 
     pinglish_lookup_key(word,bytes,key);
     int known=persian_dictionary_pinglish(key,output,capacity,complete);
     if(known<0)return known;
-    if(known==1 && pinglish_preserves_a(word,output))return 1;
+    char previous[4096]={0};
+    if(known==1) {
+        if(pinglish_apply_vowels(word,output))return 1;
+        size_t n=strlen(output);
+        if(n<sizeof previous)memcpy(previous,output,n+1);
+    }
     char spelling[4096];
     int spelled=spelled_persian(word,bytes,spelling,sizeof spelling);
-    return spelled==1 ? persian_pinglish_word(spelling,output,capacity,complete) : spelled;
+    int result=spelled==1 ? persian_pinglish_word(spelling,output,capacity,complete) : spelled;
+    if(result==1 && previous[0])pinglish_preserve_stress(previous,output);
+    return result;
 }
 
 int reloq_fa_pinglish_word(const char *word,size_t bytes,char *output,size_t capacity)
