@@ -162,6 +162,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.user_controls = []
             self.continuous = []
             self.us_fits = []
+            self.hz_transitions = []
             self.grouped_case = False
             self.grouped_bounds = []
             self.nav_stale_case = False
@@ -172,6 +173,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             old_glides = nvda_driver_probe.try_persian_glides
             old_us_fit = continuous_driver.fit_us_word_pitch
             old_context_plan = continuous_driver.context_plan
+            old_hz_transition = continuous_plan.match_h_to_us_z
             old_runs = nvda_driver_probe._script_runs
             def observe_runs(text):
                 result = old_runs(text)
@@ -206,6 +208,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 result = old_us_fit(*args, **kwargs)
                 self.us_fits.append(result)
                 return result
+            def observe_hz_transition(plan, parts, en, rate):
+                result = old_hz_transition(plan, parts, en, rate)
+                for edge in result:
+                    self.hz_transitions.append((parts[edge-1].text, parts[edge].text))
+                return result
+            continuous_plan.match_h_to_us_z = observe_hz_transition
             def observe_grouped_plan(parts, *args, **kwargs):
                 plan = old_context_plan(parts, *args, **kwargs)
                 if (self.grouped_case and len(parts) >= 2 and parts[-1].language == 'fa' and
@@ -540,7 +548,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                ('fa_IR', '⏺️پزشکیان: روحانیون به کمک دولت بیان', 'issue49_record_line'),
                                ('fa_IR', '⏺پزشکیان: روحانیون به کمک دولت بیان', 'issue49_record_split'),
                                ('fa_IR', 'پزشکیان: روحانیون به کمک دولت بیان', 'issue49_record_line')))
-            self.cases.extend((('fa_IR', 'کتاب و خانه', 'issue49_weak_and'),
+            self.cases.extend((('fa_IR', 'روح zero', 'issue49_h_z'),
+                               ('fa_IR', 'روح zero', 'issue49_h_z_language'),
+                               ('fa_IR', 'کتاب و خانه', 'issue49_weak_and'),
                                ('fa_IR', 'کتاب را', 'issue49_weak_object'),
                                ('fa_IR', 'NVDA را', 'issue49_weak_english_host'),
                                ('fa_IR', 'را', 'issue49_weak_isolated'),
@@ -1037,6 +1047,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = [text]
             elif spelling == 'issue49_korean_spelling':
                 sequence = [self.character(True), text, self.character(False)]
+            elif spelling in ('issue49_h_z', 'issue49_h_z_language'):
+                sequence = ([text] if spelling == 'issue49_h_z' else
+                            ['روح ', self.language_command('en_US'), 'zero',
+                             self.language_command('fa_IR')])
             elif spelling == 'english_exception':
                 sequence = ['salam ', self.language_command('en_US'), 'phone',
                             self.language_command('fa_Latn'), ' donya']
@@ -1099,6 +1113,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.pipeline = self.pipeline or spelling in ('issue49_grouped_none', 'issue49_grouped_some')
             self.pipeline = self.pipeline or (isinstance(spelling, str) and spelling.startswith('issue50_'))
             self.pipeline = self.pipeline or spelling in ('issue49_record_line', 'issue49_record_split')
+            self.pipeline = self.pipeline or spelling in ('issue49_h_z', 'issue49_h_z_language')
             self.pipeline = self.pipeline or spelling in ('issue49_quotes', 'issue49_numeric', 'issue49_own_vowel', 'issue49_nominal_compound', 'issue49_native_new_compound')
             self.pipeline = self.pipeline or spelling in ('issue49_preposition', 'issue49_final_accent',
                                                           'issue49_character_navigation',
@@ -1122,6 +1137,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.before_emoji = len(self.emoji_submissions)
             self.before_korean = len(self.korean_calls)
             self.before_continuous = len(self.continuous)
+            self.before_hz = len(self.hz_transitions)
             if self.pipeline:
                 self.speech.speak([self.index_command(self.index + 1), *sequence],
                                   symbolLevel=(self.symbols.SymbolLevel.MOST if isinstance(spelling, str) and spelling.startswith('issue50_') and spelling.endswith('_most') else
@@ -1199,6 +1215,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                              for chunk in player.chunks[self.before.get(id(player), 0):])
             if not audio:
                 raise RuntimeError('no actual NVDA audio for ' + ascii(text))
+            if spelling in ('issue49_h_z', 'issue49_h_z_language') and not any(
+                    self.hz_transitions[self.before_hz:]):
+                raise AssertionError('NVDA did not apply the H-to-Z noise transition')
             if spelling in ('issue49_record_line', 'issue49_record_split'):
                 tags = ' '.join(self.projected[self.before_projected:])
                 if '`[.0pAzS.0ki.1an]' not in tags or '`[.0bA.1jan]' not in tags:

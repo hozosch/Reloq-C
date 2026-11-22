@@ -35,6 +35,18 @@ def main():
         # such a donor represents a real H-to-next-sound transition.
         tagged = '`[.0Rer.1meh]'
         assert _english_transition_proxy(tagged, en, final=True) == persian_proxy_for_english(tagged, en)
+        # A neutral fallback may not erase a shared consonant. Verify both
+        # directions against the actual US parser, including voiced stops
+        # and nasals; the Persian R and Ach retain their own identities.
+        for phone in 'fstpkShzbdgvZmn':
+            initial = f'`[.1{phone}Ard]'
+            assert _english_transition_proxy(initial, en, initial=True) == f'`[.1{phone}A]', phone
+            final = f'`[.0Rer.1me{phone}]'
+            expected = '`[.0mE.1mE]' if phone == 'h' else f'`[.0mE.1mE{phone}]'
+            assert _english_transition_proxy(final, en, final=True) == expected, phone
+        for phone in 'rGR':
+            final = f'`[.0Rer.1me{phone}]'
+            assert _english_transition_proxy(final, en, final=True) == persian_proxy_for_english(final, en), phone
     finally:
         en.close()
 

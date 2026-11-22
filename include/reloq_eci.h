@@ -584,6 +584,9 @@ ECIAPI int ECICALL eciPersianMatchUsZOnset(struct reloq_fa_frame *frames,size_t 
 ECIAPI int ECICALL eciPersianMatchHToUsZ(struct reloq_fa_frame *frames,size_t count,
     size_t boundary,size_t end,const struct reloq_fa_frame *reference,
     size_t reference_count,size_t reference_boundary);
+ECIAPI int ECICALL eciPersianMatchUsUnvoicedOnset(struct reloq_fa_frame *frames,size_t count,
+    size_t boundary,size_t end,const struct reloq_fa_frame *reference,
+    size_t reference_count,size_t reference_boundary,size_t reference_end,unsigned char phone);
 ECIAPI int ECICALL eciPersianSmoothFinalRJoin(struct reloq_fa_frame *frames,size_t count,
     size_t boundary,size_t end);
 ECIAPI int ECICALL eciPersianPlanUnvoicedOnsets(struct reloq_fa_frame *frames,size_t count,

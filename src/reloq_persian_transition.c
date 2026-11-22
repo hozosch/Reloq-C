@@ -91,6 +91,78 @@ static int native_shaped_lead(const struct reloq_fa_frame *frames,size_t boundar
            fabs((double)lead->initial_noise-lead->onset_noise)<=15;
 }
 
+/* Compare the actual consonant's noise bands, not just a voiced/unvoiced
+ * label: the first US frame can still belong to the preceding consonant. */
+static int same_onset_source(const float *a,const float *b,unsigned char phone)
+{
+    if(a[2]>0 || b[2]>0)return 0;
+    if(phone=='p' || phone=='t' || phone=='k')
+        return a[7]==0 && b[7]==0 && a[8]==0 && b[8]==0;
+    if(a[7]!=0 || b[7]!=0 || a[8]<20 || b[8]<20 || fabs(a[8]-b[8])>12)return 0;
+    for(unsigned j=35;j<=42;++j)if(fabs(a[j]-b[j])>12)return 0;
+    return 1;
+}
+
+int reloq_persian_match_us_unvoiced_onset(struct reloq_fa_frame *frames,size_t count,
+    size_t boundary,size_t end,const struct reloq_fa_frame *reference,
+    size_t reference_count,size_t reference_boundary,size_t reference_end,unsigned char phone)
+{
+    if(!frames || !reference || !boundary || boundary>=end || end>count ||
+       reference_boundary>=reference_end || reference_end>reference_count ||
+       count>120000 || reference_count>120000 || !phone || !strchr("fstpkS",phone) ||
+       count>SIZE_MAX/sizeof *frames || reference_count>SIZE_MAX/sizeof *reference)return -1;
+    uintptr_t a=(uintptr_t)frames,b=(uintptr_t)reference;
+    size_t an=count*sizeof *frames,bn=reference_count*sizeof *reference;
+    if(a>UINTPTR_MAX-an || b>UINTPTR_MAX-bn || (a<b+bn && b<a+an))return -1;
+    if(frames[boundary].controls[2]<=0)return 0;
+    struct unvoiced_lead target;
+    int found=find_unvoiced_lead(frames,boundary,end,phone,.5,&target);
+    if(found<0)return -1;
+    if(!found || target.duration>100)return 0;
+    /* For a stop, confirm that both contexts actually contain its release;
+     * a coincidental quiet interval must never be mistaken for a closure. */
+    if(phone=='p' || phone=='t' || phone=='k') {
+        struct unvoiced_lead donor;
+        int matched=find_unvoiced_lead(reference,reference_boundary,reference_end,phone,0,&donor);
+        if(matched<0)return -1;
+        if(!matched || target.release<20 || donor.release<20 ||
+           fabs(target.release-donor.release)>20)return 0;
+    }
+    size_t stop=boundary,ref=reference_boundary;double elapsed=0,ref_time=0;
+    int changed=0;
+    while(stop<end && elapsed<=120) {
+        while(ref<reference_end) {
+            double step=reference[ref].controls[0];
+            if(!isfinite(step) || step<=0 || step>20)return -1;
+            if(ref_time+step>elapsed+1e-6)break;
+            ref_time+=step;++ref;
+        }
+        if(ref>=reference_end)return 0;
+        const float *t=frames[stop].controls,*r=reference[ref].controls;
+        if(!isfinite(t[0]) || t[0]<=0 || t[0]>20 || !isfinite(r[0]) || r[0]<=0 || r[0]>20 ||
+           !isfinite(t[2]) || !isfinite(t[7]) || !isfinite(t[8]) ||
+           !isfinite(r[2]) || !isfinite(r[7]) || !isfinite(r[8]))return -1;
+        for(unsigned j=35;j<=42;++j)if(!isfinite(t[j]) || !isfinite(r[j]))return -1;
+        if(elapsed>=target.duration && same_onset_source(t,r,phone))break;
+        if(t[2]!=r[2] || t[7]!=r[7] || t[8]!=r[8])changed=1;
+        for(unsigned j=35;j<=42;++j)if(t[j]!=r[j])changed=1;
+        elapsed+=t[0];++stop;
+    }
+    if(!changed || stop==boundary || stop>=end || ref>=reference_end || elapsed>120)return 0;
+    ref=reference_boundary;elapsed=ref_time=0;
+    for(size_t i=boundary;i<stop;++i) {
+        while(ref+1<reference_end && ref_time+reference[ref].controls[0]<=elapsed+1e-6) {
+            ref_time+=reference[ref].controls[0];++ref;
+        }
+        frames[i].controls[2]=reference[ref].controls[2];
+        frames[i].controls[7]=reference[ref].controls[7];
+        frames[i].controls[8]=reference[ref].controls[8];
+        for(unsigned j=35;j<=42;++j)frames[i].controls[j]=reference[ref].controls[j];
+        elapsed+=frames[i].controls[0];
+    }
+    return 1;
+}
+
 /* A target context can inherit an English vowel ahead of the actual voiced
  * stop, even though the English side already ended in silence or a release.
  * Recognize both the low-voice closure and its burst before removing only

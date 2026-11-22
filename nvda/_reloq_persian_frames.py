@@ -214,6 +214,12 @@ class FrameCapture:
                 ctypes.c_size_t, ctypes.c_size_t, ctypes.POINTER(NativeFrame),
                 ctypes.c_size_t, ctypes.c_size_t)
             self.match_us_z_onset.restype = ctypes.c_int
+        self.match_us_unvoiced_onset = getattr(dll, 'eciPersianMatchUsUnvoicedOnset', None)
+        if self.match_us_unvoiced_onset is not None:
+            self.match_us_unvoiced_onset.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,
+                ctypes.c_size_t, ctypes.c_size_t, ctypes.POINTER(NativeFrame),
+                ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_ubyte)
+            self.match_us_unvoiced_onset.restype = ctypes.c_int
         self.match_h_to_us_z = getattr(dll, 'eciPersianMatchHToUsZ', None)
         if self.match_h_to_us_z is not None:
             self.match_h_to_us_z.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,

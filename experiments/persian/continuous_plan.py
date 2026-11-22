@@ -287,12 +287,13 @@ def _spelling_proxy(text, segment, spelling_spans):
 
 
 def _english_transition_proxy(text, en, *, initial=False, final=False):
-    """Keep the real boundary /z/ in the English context when possible.
+    """Keep matching boundary consonants in the English context when possible.
 
     This context is used for native cross-language acoustics, not the US
     sentence-pitch pilot. An otherwise unsupported Persian word may need a
-    neutral vowel proxy; at a language boundary that proxy must not erase the
-    adjacent /z/. Other consonants keep their established transition path.
+    neutral vowel proxy; at a language boundary that proxy must not erase a
+    consonant shared with the US voice. Persian-specific consonants retain
+    their own acoustic paths.
     Validate every changed tag against the US parser before using it as a
     timing/acoustic reference.
     """
@@ -318,7 +319,7 @@ def _english_transition_proxy(text, en, *, initial=False, final=False):
             continue
         body = syllables[0 if at_start else -1][1]
         phone = body[0 if at_start else -1] if body else ''
-        if phone != 'z':
+        if not phone or phone not in 'fstpkShzbdgvZmn':
             continue
         if at_start:
             tag = tag[:4] + _FA_TO_EN[phone] + tag[5:]
@@ -341,7 +342,8 @@ def _english_transition_proxy(text, en, *, initial=False, final=False):
     return proxy
 
 
-def _context(parts, language, en, fa, word_markers, source_marks=(), guarded_spans=(), spelling_spans=()):
+def _context(parts, language, en, fa, word_markers, source_marks=(), guarded_spans=(), spelling_spans=(),
+             verified_onsets=None):
     result = []
     for i, part in enumerate(parts):
         if i:
@@ -384,9 +386,19 @@ def _context(parts, language, en, fa, word_markers, source_marks=(), guarded_spa
         elif language == 'fa':
             result.append(english_phone_proxy(en, fa, _spelling_proxy(part.text, i, spelling_spans)))
         else:
-            result.append(_english_transition_proxy(part.text, en,
+            proxy = _english_transition_proxy(part.text, en,
                 initial=i > 0 and not _bracket_boundary(parts, i),
-                final=i + 1 < len(parts) and not _bracket_boundary(parts, i + 1)))
+                final=i + 1 < len(parts) and not _bracket_boundary(parts, i + 1))
+            result.append(proxy)
+            if verified_onsets is not None and i > 0:
+                source, target = _TAG.search(part.text), _TAG.search(proxy)
+                if source and target and not part.text[:source.start()].strip():
+                    onset = re.match(r'\.[012]([fstpkS])', source.group(1))
+                    if onset and re.match(r'\.[012]' + re.escape(onset.group(1)), target.group(1)):
+                        # _english_transition_proxy has already validated the
+                        # US parser. Record the result instead of probing the
+                        # same word again on the latency-sensitive path.
+                        verified_onsets[i] = onset.group(1)
     return result
 
 
@@ -879,9 +891,11 @@ class SentencePlan:
     _native_bridge_remaining: object = None
     _native_match_stop_nasal: object = None
     _native_match_us_z_onset: object = None
+    _native_match_us_unvoiced_onset: object = None
     _native_match_h_to_us_z: object = None
     _native_smooth_final_r_join: object = None
     _native_plan_unvoiced_onsets: object = None
+    _verified_us_onsets: dict[int, str] | None = None
 
     def timeline(self):
         """Reuse frame times while only resonance or source values change."""
@@ -1008,7 +1022,7 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
             type(value) is not int or not 0 <= value <= 0x7fffffff):
             raise ValueError('invalid source index')
         source_marks.append((segment, offset, order, next_mark + order, value))
-    contexts, edges = {}, {}
+    contexts, edges, verified_onsets = {}, {}, {}
     def fit_us_segments(item, bounds, donor, *, only=None):
         fitted = []
         for segment, part in enumerate(parts):
@@ -1036,7 +1050,7 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
         # converting every word into an English context proxy.
         before_replay = ('fa', 'en-us') if parts[0].language == 'en-us' else ('fa',)
         prepared = {language: _context(parts, language, en, fa, word_markers, source_marks,
-                                       guarded_spans, spelling_spans)
+                                       guarded_spans, spelling_spans, verified_onsets)
                     for language in before_replay}
         voices = tuple(sorted(voices, key=lambda pair: pair[0] != parts[0].language))
     pending, pending_target, early = None, None, None
@@ -1174,7 +1188,8 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
     try:
         for language, voice in voices:
             planned = prepared[language] if language in prepared else _context(
-                parts, language, en, fa, word_markers, source_marks, guarded_spans, spelling_spans)
+                parts, language, en, fa, word_markers, source_marks, guarded_spans, spelling_spans,
+                verified_onsets)
             if language == 'fa' and pending_target is not None:
                 future, pending_target = pending_target, None
                 try:
@@ -1335,9 +1350,11 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
                         _native_bridge_remaining=getattr(capture_api, 'bridge_remaining', None),
                         _native_match_stop_nasal=getattr(capture_api, 'match_stop_nasal', None),
                         _native_match_us_z_onset=getattr(capture_api, 'match_us_z_onset', None),
+                        _native_match_us_unvoiced_onset=getattr(capture_api, 'match_us_unvoiced_onset', None),
                         _native_match_h_to_us_z=getattr(capture_api, 'match_h_to_us_z', None),
                         _native_smooth_final_r_join=getattr(capture_api, 'smooth_final_r_join', None),
-                        _native_plan_unvoiced_onsets=getattr(capture_api, 'plan_unvoiced_onsets', None))
+                        _native_plan_unvoiced_onsets=getattr(capture_api, 'plan_unvoiced_onsets', None),
+                        _verified_us_onsets=verified_onsets)
 
 
 def replay_marks(plan, original_counts):
@@ -1442,6 +1459,34 @@ def match_us_z_onsets(plan, parts, rate):
         if result < 0:
             raise RuntimeError('invalid US-to-Persian fricative context')
         if result:
+            changed.append(edge)
+    return tuple(changed)
+
+
+def match_us_unvoiced_onsets(plan, parts, en, rate):
+    """Use a verified US source transition for shared voiceless consonants."""
+    native = getattr(plan, '_native_match_us_unvoiced_onset', None)
+    donor = plan.contexts.get('en-us')
+    if native is None or donor is None:
+        return ()
+    bounds = _edges_by_count(plan.counts)
+    changed = []
+    for edge in range(1, len(parts)):
+        if (parts[edge-1].language != 'en-us' or parts[edge].language != 'fa' or
+                _bracket_boundary(parts, edge)):
+            continue
+        phone = (getattr(plan, '_verified_us_onsets', None) or {}).get(edge)
+        if phone is None:
+            continue
+        first_ref = bisect_left(donor.ticks, round(plan.edges['en-us'][edge] * 1000 / rate))
+        last_ref = bisect_left(donor.ticks, round(plan.edges['en-us'][edge+1] * 1000 / rate))
+        if first_ref >= last_ref:
+            continue
+        status = native(plan.frames, len(plan.frames), bounds[edge-1], bounds[edge],
+                        donor.frames, len(donor.frames), first_ref, last_ref, ord(phone))
+        if status < 0:
+            raise RuntimeError('invalid US voiceless consonant transition')
+        if status:
             changed.append(edge)
     return tuple(changed)
 
@@ -2034,6 +2079,7 @@ def selected_sentence(plan, parts, en, german, rate, *, check=None):
     """Apply the user's selected sentence and A-to-Ach transition."""
     original_counts = plan.counts
     if check: check()
+    match_us_unvoiced_onsets(plan, parts, en, rate)
     direct_unvoiced_onsets(plan, parts, en, rate)
     bridge_stop_onsets(plan, parts, en, rate)
     if check: check()

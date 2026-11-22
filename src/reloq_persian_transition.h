@@ -53,6 +53,12 @@ int reloq_persian_match_h_to_us_z(struct reloq_fa_frame *frames,size_t count,
     size_t boundary,size_t end,const struct reloq_fa_frame *reference,
     size_t reference_count,size_t reference_boundary);
 
+/* Adopt the actual US source transition into a verified common unvoiced
+ * consonant without shortening the Persian consonant or moving indexes. */
+int reloq_persian_match_us_unvoiced_onset(struct reloq_fa_frame *frames,size_t count,
+    size_t boundary,size_t end,const struct reloq_fa_frame *reference,
+    size_t reference_count,size_t reference_boundary,size_t reference_end,unsigned char phone);
+
 /* Smooth only a discontinuous formant at an already identified final-R
  * language join. Do not alter the R's source, timing or steady state. */
 int reloq_persian_smooth_final_r_join(struct reloq_fa_frame *frames,size_t count,
