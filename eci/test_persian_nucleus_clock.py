@@ -26,6 +26,12 @@ class Anchor(c.Structure):
                 ('syllable_extended', c.c_uint32))
 
 
+class EarlyNucleus(c.Structure):
+    _fields_ = (('from_', c.c_int32), ('to', c.c_int32), ('word', c.c_uint32),
+                ('syllable', c.c_uint32), ('stress', c.c_uint32), ('weak', c.c_uint32),
+                ('nucleus', c.c_uint32))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--library', required=True, type=Path)
@@ -38,8 +44,10 @@ def main():
     functions = (
         ('eciNewEx', H, (I,)), ('eciDelete', H, (H,)), ('eciSetParam', I, (H, I, I)),
         ('eciSetOutputBuffer', I, (H, I, c.POINTER(c.c_short))),
+        ('eciAddTextUtf8', I, (H, c.c_char_p, S, I)), ('eciSynthesize', I, (H,)),
         ('eciPersianCaptureBegin', I, (S,)), ('eciPersianCaptureSetControlsOnly', I, (I,)),
         ('eciPersianCaptureSetPhoneTrace', I, (I,)),
+        ('eciPersianCaptureSetNucleusTrace', I, (I,)),
         ('eciPersianSpeakNativeUtf8', I, (H, c.c_char_p, S, I, c.POINTER(S), c.POINTER(I), S, c.POINTER(S))),
         ('eciPersianAnalyzeRunsCompleteUtf8', I, (c.c_char_p, S, I, c.POINTER(S), c.POINTER(B), S,
             c.POINTER(S), c.POINTER(B), S, c.POINTER(c.POINTER(Event)), c.POINTER(S),
@@ -59,6 +67,20 @@ def main():
     align.argtypes = (c.POINTER(Event), S, c.POINTER(NativeSyllable), S,
                       c.POINTER(NativeSyllable), S, c.POINTER(c.c_uint32), S,
                       c.POINTER(Anchor), S, c.POINTER(S))
+    early_align = dll.eciPersianAlignEarlyNuclei
+    early_align.restype = I
+    early_align.argtypes = (c.POINTER(Event), S, c.POINTER(NativeSyllable), S,
+                            c.POINTER(c.c_uint32), S, c.POINTER(EarlyNucleus), S,
+                            c.POINTER(S))
+    cursor_create = dll.eciPersianEarlyCursorCreate
+    cursor_create.restype, cursor_create.argtypes = I, (c.POINTER(Event), S, c.POINTER(H))
+    cursor_next = dll.eciPersianEarlyCursorNext
+    cursor_next.restype, cursor_next.argtypes = I, (H, c.POINTER(NativeSyllable), c.c_uint32,
+                                                   c.POINTER(EarlyNucleus))
+    cursor_finish = dll.eciPersianEarlyCursorFinish
+    cursor_finish.restype, cursor_finish.argtypes = I, (H,)
+    cursor_release = dll.eciPersianEarlyCursorRelease
+    cursor_release.restype, cursor_release.argtypes = None, (H,)
 
     @callback_type
     def callback(_handle, _message, _value, _context):
@@ -76,17 +98,22 @@ def main():
         finally:
             dll.eciPersianRelease(events)
 
-    def capture(voice, raw, variant, phone_trace):
+    def capture(voice, raw, variant, phone_trace, include_frames=False):
         assert dll.eciPersianCaptureBegin(30000) == 0
         try:
             assert dll.eciPersianCaptureSetControlsOnly(1) == 0
-            assert dll.eciPersianCaptureSetPhoneTrace(phone_trace) == 0
+            if phone_trace == 2:
+                assert dll.eciPersianCaptureSetNucleusTrace(1) == 0
+            else:
+                assert dll.eciPersianCaptureSetPhoneTrace(phone_trace) == 0
             error = S()
             status = dll.eciPersianSpeakNativeUtf8(voice, raw, len(raw), variant, None, None, 0, c.byref(error))
             assert status == 0, (raw, variant, status, error.value)
             count, failed = S(), I()
-            dll.eciPersianCaptureEnd(c.byref(count), c.byref(failed))
+            frames = dll.eciPersianCaptureEnd(c.byref(count), c.byref(failed))
             assert not failed.value and count.value
+            frame_data = (c.string_at(frames, count.value * c.sizeof(NativeFrame))
+                          if include_frames else None)
             clocks = dll.eciPersianCaptureSyllables(c.byref(count), c.byref(failed))
             assert not failed.value and clocks and count.value
             result = (NativeSyllable * count.value)(*(NativeSyllable(clocks[i].from_, clocks[i].to)
@@ -96,7 +123,7 @@ def main():
                 ids = dll.eciPersianCapturePhoneIdentities(c.byref(count), c.byref(failed))
                 assert not failed.value and ids and count.value == len(result), (raw, count.value, len(result))
                 identities = tuple(ids[:count.value])
-            return result, identities
+            return (result, identities, frame_data) if include_frames else (result, identities)
         finally:
             dll.eciPersianCaptureRelease()
             count, failed = S(999), I(999)
@@ -129,19 +156,33 @@ def main():
         # Independently map vowel events to their recorded provider intervals.
         # Phone and syllable clocks can disagree on doubled J, but never on
         # the vowel clock used as an intonation anchor.
-        p, expected, weak, word, pending_j = 0, [], 0, -1, False
+        p, expected, vowel_slots, q_counts, weak, word, pending_j = 0, [], [], [], 0, -1, False
+        syllable_q, current_syllable = 0, None
         for at, e in enumerate(events):
             if e.kind == 5:
                 weak = 1
             elif e.kind == 1:
                 word += 1
+                syllable_q = 0
+                current_syllable = None
             elif e.kind == 2:
-                if e.value == 22:  # H is a feature, not a separate traced phone.
+                if e.syllable != current_syllable:
+                    current_syllable = e.syllable
+                    syllable_q = 0
+                if e.value == 22:  # H is a feature, with a final carrier at word end.
+                    if at + 1 < len(events) and events[at + 1].kind == 3:
+                        assert identities[p] == 3
+                        p += 1
                     continue
                 identity_map.setdefault(e.value, set()).add(identities[p])
+                if e.value == 13:  # The current provider's marked uvular stop.
+                    syllable_q += 1
                 if 1 <= e.value <= 6 or e.value in (30, 31):
                     expected.append((phones[p].from_, phones[p].to, word, e.syllable,
                                      e.stress, weak, e.value))
+                    vowel_slots.append(identities[p])
+                    q_counts.append(syllable_q)
+                    syllable_q = 0
                 if e.value == 23:  # CH has stop and fricative clocks.
                     assert identities[p:p+2] == (2, 11)
                     p += 2
@@ -166,6 +207,45 @@ def main():
         actual = [(a.nucleus_from, a.nucleus_to, a.word, a.syllable, a.stress, a.weak, a.nucleus)
                   for a in anchors]
         assert actual == expected, (text, actual, expected)
+        # This trace is emitted before the provider selects intonation. Its
+        # vowel slot and any marked q release are read independently from the
+        # provider's phone records, then compared to the later acoustic clock.
+        early, early_ids = capture(voice, raw, variant, 2)
+        assert len(early) == len(anchors) == len(early_ids), text
+        for a, clock, identity, slot, q_count in zip(anchors, early, early_ids, vowel_slots, q_counts):
+            assert (clock.from_, clock.to) == (a.nucleus_from, a.nucleus_to), (text, a.word, a.syllable)
+            assert (identity & 255, identity >> 8) == (slot, q_count), (text, a.word, a.syllable, identity)
+        early_slots = (c.c_uint32 * len(early_ids))(*early_ids)
+        count = S()
+        assert early_align(events, len(events), early, len(early), early_slots, len(early_slots),
+                           None, 0, c.byref(count)) == 0 and count.value == len(anchors), text
+        projected = (EarlyNucleus * count.value)()
+        assert early_align(events, len(events), early, len(early), early_slots, len(early_slots),
+                           projected, len(projected), c.byref(count)) == 0
+        assert [(a.from_, a.to, a.word, a.syllable, a.stress, a.weak, a.nucleus)
+                for a in projected] == actual, text
+        # The same plan can consume one vowel at a time, before intonation;
+        # a rejected identity must not advance the cursor or modify output.
+        cursor = H()
+        assert cursor_create(events, len(events), c.byref(cursor)) == 0 and cursor.value
+        try:
+            assert cursor_finish(cursor) == 1
+            one = EarlyNucleus()
+            c.memset(c.byref(one), 0x5a, c.sizeof(one)); untouched = bytes(one)
+            assert cursor_next(cursor, c.byref(early[0]), early_ids[0] ^ 1, c.byref(one)) == 1
+            assert bytes(one) == untouched and cursor_finish(cursor) == 1
+            streamed = []
+            for index, (clock, identity) in enumerate(zip(early, early_ids)):
+                assert cursor_next(cursor, c.byref(clock), identity, c.byref(one)) == 0
+                streamed.append((one.from_, one.to, one.word, one.syllable, one.stress, one.weak, one.nucleus))
+                if index == 0 and len(early) > 1:
+                    unchanged = bytes(one)
+                    assert cursor_next(cursor, c.byref(clock), early_ids[1], c.byref(one)) == 1
+                    assert bytes(one) == unchanged
+            assert streamed == actual and cursor_finish(cursor) == 0
+            assert cursor_next(cursor, c.byref(early[-1]), early_ids[-1], c.byref(one)) == 1
+        finally:
+            cursor_release(cursor)
         for i, anchor in enumerate(anchors):
             assert anchor.syllable_from <= anchor.nucleus_from < anchor.nucleus_to <= anchor.syllable_to
             if anchor.syllable_extended:
@@ -189,7 +269,7 @@ def main():
     corpus = [[rng.choice((' ', ', ', '، ')).join(rng.choice(words[variant])
                for _ in range(rng.randrange(1, 5))) + rng.choice(('', '.', '?'))
                for _ in range(100)] for variant in (0, 1)]
-    checks = bridges = 0
+    checks = bridges = final_q = 0
     identity_map = {}
     for rate in (0, 1, 3, 6):
         for gender in (0, 1):
@@ -212,7 +292,12 @@ def main():
                     bridges += 1
                 for variant, text in ((0, 'هوا'), (0, 'چرخ'), (0, 'جوجه'),
                                       (0, '۱,۹۰۰,۰۰۰ ریال'), (0, 'سه هزار'),
+                                      (0, 'یاه'), (0, 'درمونگاه'), (0, 'راه خانه'),
+                                      (0, 'گاه به گاه'), (0, 'ماهِ من'), (0, 'راه، خانه'),
+                                      (0, 'راه.'),
                                       (1, 'havaa'), (1, 'charkh'), (1, 'juje'),
+                                      (1, 'raah'), (1, 'shah'), (1, 'goh'),
+                                      (1, 'raah khoone'), (1, 'raah, khoone'), (1, 'raah?'),
                                       (1, '1,900,000 rial'), (1, 'se hezaar')):
                     check(voice, text, variant)
                     checks += 1
@@ -222,6 +307,27 @@ def main():
                 for text in ('قابل', 'قانون', 'قدم', 'واقعیت', 'قدرت', 'قیمت', 'قلب', 'قهوه', 'حقیقت'):
                     check(voice, text, 0, expect_extended=None)
                     checks += 1
+                # The early adapter needs only the vowel interval: unlike the
+                # older full-phone adapter it can handle a final q whose
+                # release overlaps the subsequent provider pause. Compare its
+                # vowels independently with the later phone clocks.
+                for variant, text in ((0, 'دماغ'), (0, 'طلاق'), (0, 'اتاق'),
+                                      (0, 'داغ'), (0, 'باغ'), (0, 'اتاق خانه'),
+                                      (1, 'damaagh'), (1, 'taalaagh')):
+                    raw = text.encode('utf8')
+                    q_plan = analyze(raw, variant)
+                    early_q, early_ids = capture(voice, raw, variant, 2)
+                    q_phones, phone_ids = capture(voice, raw, variant, 1)
+                    expected_vowels = [(q_phones[j].from_, q_phones[j].to)
+                                       for j, slot in enumerate(phone_ids)
+                                       if slot in (31, 34, 29, 27, 33, 32)]
+                    assert [(x.from_, x.to) for x in early_q] == expected_vowels, text
+                    q_id_array = (c.c_uint32 * len(early_ids))(*early_ids)
+                    projected_q, n = (EarlyNucleus * len(early_q))(), S()
+                    assert early_align(q_plan, len(q_plan), early_q, len(early_q), q_id_array,
+                                       len(q_id_array), projected_q, len(projected_q), c.byref(n)) == 0, text
+                    assert [(x.from_, x.to) for x in projected_q] == expected_vowels, text
+                    final_q += 1
                 # An invalid vowel clock cannot produce a partially filled
                 # anchor array or be mistaken for a normal geminate bridge.
                 saved = (phones[1].from_, phones[1].to)
@@ -241,6 +347,51 @@ def main():
                              None, 0, guard, len(guard), c.byref(n)) == 1 and n.value == 0 and bytes(guard) == before
                 assert align(events, len(events), syllables, len(syllables), phones, len(phones),
                              slots, len(slots), guard, len(guard)-1, c.byref(n)) == -2 and n.value == 0 and bytes(guard) == before
+                # A word-final H must consume only the exact, contained
+                # synthetic carrier. Reject a wrong identity or an interval
+                # crossing the syllable boundary without returning anchors.
+                raw = 'راه خانه'.encode('utf8')
+                final_h = analyze(raw, 0)
+                h_syllables, _ = capture(voice, raw, 0, 0)
+                h_phones, h_ids = capture(voice, raw, 0, 1)
+                h_slots = (c.c_uint32 * len(h_ids))(*h_ids)
+                h_index = next(i for i, (phone, identity) in enumerate(zip(h_phones, h_ids))
+                               if identity == 3 and phone.to == h_syllables[0].to)
+                h_guard = (Anchor * len(h_syllables))()
+                c.memset(h_guard, 0x5a, c.sizeof(h_guard)); h_before = bytes(h_guard)
+                h_slots[h_index] = 999
+                assert align(final_h, len(final_h), h_syllables, len(h_syllables), h_phones,
+                             len(h_phones), h_slots, len(h_slots), h_guard, len(h_guard),
+                             c.byref(n)) == 1 and n.value == 0 and bytes(h_guard) == h_before
+                h_slots[h_index] = 3
+                h_phones[h_index].to += 1
+                assert align(final_h, len(final_h), h_syllables, len(h_syllables), h_phones,
+                             len(h_phones), h_slots, len(h_slots), h_guard, len(h_guard),
+                             c.byref(n)) == 1 and n.value == 0 and bytes(h_guard) == h_before
+                # Early planning rejects a false provider identity, an
+                # incorrect q count, and insufficient capacity atomically.
+                q_events = analyze('قشنگ'.encode('utf8'), 0)
+                q_early, q_ids = capture(voice, 'قشنگ'.encode('utf8'), 0, 2)
+                q_slots = (c.c_uint32 * len(q_ids))(*q_ids)
+                mixed_events = (Event * (len(q_events) + 1))(
+                    *(list(q_events) + [Event(8, 0, 1, 0, 0)]))
+                bad_cursor = H(123)
+                assert cursor_create(mixed_events, len(mixed_events), c.byref(bad_cursor)) == 1
+                assert not bad_cursor.value  # Reject English before any output.
+                q_guard = (EarlyNucleus * len(q_early))()
+                c.memset(q_guard, 0x5a, c.sizeof(q_guard)); q_before = bytes(q_guard)
+                q_slots[0] ^= 1
+                assert early_align(q_events, len(q_events), q_early, len(q_early), q_slots,
+                                   len(q_slots), q_guard, len(q_guard), c.byref(n)) == 1
+                assert n.value == 0 and bytes(q_guard) == q_before
+                q_slots[0] = q_ids[0] ^ 0x100
+                assert early_align(q_events, len(q_events), q_early, len(q_early), q_slots,
+                                   len(q_slots), q_guard, len(q_guard), c.byref(n)) == 1
+                assert n.value == 0 and bytes(q_guard) == q_before
+                q_slots[0] = q_ids[0]
+                assert early_align(q_events, len(q_events), q_early, len(q_early), q_slots,
+                                   len(q_slots), q_guard, len(q_guard)-1, c.byref(n)) == -2
+                assert n.value == 0 and bytes(q_guard) == q_before
                 # The old provider can place a vowel in a gap after its
                 # recorded syllable. Reconcile only the unambiguous gap;
                 # an overlapping vowel must be declined without output.
@@ -313,8 +464,59 @@ def main():
             dll.eciDelete(voice)
     with ThreadPoolExecutor(max_workers=4) as pool:
         simultaneous = sum(pool.map(concurrent, range(4)))
+    # Enabling diagnostics must not alter the generated control frames.
+    voice = dll.eciNewEx(0x90000)
+    assert voice
+    output = (c.c_short * 2048)()
+    try:
+        assert dll.eciSetOutputBuffer(voice, len(output), output) == 1
+        dll.eciRegisterCallback(voice, callback, None)
+        for variant, text in ((0, 'سلام دنیا.'), (0, 'قشنگ'), (0, 'راه خانه'),
+                              (0, '۱,۹۰۰,۰۰۰ ریال'), (1, 'tajjub raah')):
+            raw = text.encode('utf8')
+            _, _, normal = capture(voice, raw, variant, 0, include_frames=True)
+            _, _, observed = capture(voice, raw, variant, 2, include_frames=True)
+            assert normal == observed, (variant, text)
+    finally:
+        dll.eciDelete(voice)
+    assert dll.eciPersianCaptureSetNucleusTrace(1) == -1
+    assert dll.eciPersianCaptureBegin(100) == 0
+    try:
+        assert dll.eciPersianCaptureSetNucleusTrace(2) == -1
+    finally:
+        dll.eciPersianCaptureRelease()
+    # The early mapping is scoped to the Persian projection, not ordinary
+    # Finnish. A Finnish capture must decline it rather than inspect an
+    # unrelated language's phone records or report a plausible wrong clock.
+    voice = dll.eciNewEx(0x90000)
+    assert voice
+    output = (c.c_short * 2048)()
+    try:
+        assert dll.eciSetOutputBuffer(voice, len(output), output) == 1
+        dll.eciRegisterCallback(voice, callback, None)
+        assert dll.eciPersianCaptureBegin(30000) == 0
+        try:
+            assert dll.eciPersianCaptureSetControlsOnly(1) == 0
+            assert dll.eciPersianCaptureSetNucleusTrace(1) == 0
+            raw = 'Hei maailma.'.encode('utf8')
+            assert dll.eciAddTextUtf8(voice, raw, len(raw), 0) == 1
+            assert dll.eciSynthesize(voice) == 1
+            count, failed = S(), I()
+            dll.eciPersianCaptureEnd(c.byref(count), c.byref(failed))
+            assert not failed.value and count.value
+            dll.eciPersianCaptureSyllables(c.byref(count), c.byref(failed))
+            assert failed.value and count.value == 0
+        finally:
+            dll.eciPersianCaptureRelease()
+    finally:
+        dll.eciDelete(voice)
+    empty_cursor = H(123)
+    assert cursor_create(None, 0, c.byref(empty_cursor)) == 1 and not empty_cursor.value
+    assert cursor_finish(None) == -1
+    cursor_release(None)
     print(f'Passed {checks} native vowel-clock mappings, {bridges} doubled-affricate bridges, '
-          f'{lexical}/300 dictionary words and {simultaneous} concurrent captures.')
+          f'{final_q} final-q early mappings, {lexical}/300 dictionary words and '
+          f'{simultaneous} concurrent captures.')
     if args.dump_identities:
         print('Observed provider phone slots:', sorted((phone, sorted(slots)) for phone, slots in identity_map.items()))
 

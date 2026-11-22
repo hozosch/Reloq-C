@@ -509,7 +509,14 @@ ECIAPI int ECICALL eciPersianCaptureSetControlsOnly(int enabled);
 /* Select phone timing instead of syllable timing for an active capture.
  * This optional diagnostic is request-local and does not alter speech. */
 ECIAPI int ECICALL eciPersianCaptureSetPhoneTrace(int enabled);
-/* Private-provider phone slots corresponding to phone-trace clocks. These are
+/* Select experimental provider nucleus timing captured before intonation.
+ * Retrieve times with CaptureSyllables and private encoded vowel identities
+ * with CapturePhoneIdentities: its low byte is the private provider vowel
+ * slot and its next byte counts marked q releases before that vowel. These
+ * are diagnostics, not validated speech controls; the three timing modes
+ * are exclusive. */
+ECIAPI int ECICALL eciPersianCaptureSetNucleusTrace(int enabled);
+/* Private-provider identities for phone or nucleus trace clocks. These are
  * diagnostics for native alignment, not public Persian phone identities. */
 ECIAPI const uint32_t *ECICALL eciPersianCapturePhoneIdentities(size_t *count,int *failed);
 /* Experimental clock adapter. Layout and failure contract are defined in
@@ -520,6 +527,18 @@ ECIAPI int ECICALL eciPersianAlignNucleusClocks(const struct reloq_fa_plan_event
     const struct reloq_fa_syllable *phones,size_t phone_count,
     const uint32_t *provider_slots,size_t slot_count,
     struct reloq_fa_nucleus_clock *output,size_t capacity,size_t *written);
+struct reloq_fa_early_nucleus;
+struct reloq_fa_early_cursor;
+ECIAPI int ECICALL eciPersianEarlyCursorCreate(const struct reloq_fa_plan_event *events,size_t event_count,
+    struct reloq_fa_early_cursor **result);
+ECIAPI int ECICALL eciPersianEarlyCursorNext(struct reloq_fa_early_cursor *cursor,
+    const struct reloq_fa_syllable *nucleus,uint32_t identity,struct reloq_fa_early_nucleus *output);
+ECIAPI int ECICALL eciPersianEarlyCursorFinish(const struct reloq_fa_early_cursor *cursor);
+ECIAPI void ECICALL eciPersianEarlyCursorRelease(struct reloq_fa_early_cursor *cursor);
+ECIAPI int ECICALL eciPersianAlignEarlyNuclei(const struct reloq_fa_plan_event *events,size_t event_count,
+    const struct reloq_fa_syllable *nuclei,size_t nucleus_count,
+    const uint32_t *identities,size_t identity_count,
+    struct reloq_fa_early_nucleus *output,size_t capacity,size_t *written);
 /* Apply verified U-to-A word-boundary transitions to request-local frames.
  * Returns 0 on success, -1 for invalid inputs, -2 for allocation failure. */
 ECIAPI int ECICALL eciPersianApplyGlides(struct reloq_fa_frame *rows,size_t count,

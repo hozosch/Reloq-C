@@ -112,10 +112,30 @@ obtains syllable and phone clocks in separate captures. The adapter does not
 yet drive intonation, handle mixed English or remove full-utterance planning.
 `eci/test_persian_nucleus_clock.py` checks the mappings across voices, rates,
 comma pauses, grouped numbers and rejected mismatches.
-In the fixed 300-word sample, four words are still declined: final /h/ can
-introduce a separate short carrier clock, and final /q/ can overlap the
-following pause. Their mapping must be verified before accepting either case;
-the current voice continues to use the existing contour path.
+
+An additional opt-in provider trace now observes each vowel after duration
+assignment and before intonation. It identifies the vowel from the provider's
+current phone record and includes any marked /q/ release before it, whose
+existing acoustic rule extends that release by 25 ms. A C cursor validates
+the linguistic event plan before synthesis and consumes these vowel clocks
+one at a time, carrying word-group, syllable, stress and weak-word metadata.
+This makes alignment available at the per-syllable boundary without a full
+acoustic capture. It remains experimental: the current voice does not install
+the cursor in its live renderer, the direct US intonation rules and
+source-word/mixed-English boundaries are incomplete, and matching provider
+vowel slots alone does not prove those boundaries. The test compares early
+clocks and identities with independently traced phone clocks, checks cursor
+output and rejection without partial state, and compares control frames with
+and without the trace. It also checks final /q/ independently: its later
+overlap with a pause does not prevent identifying the earlier vowel interval.
+
+The current backend adds a short provider-slot carrier for word-final /h/;
+the adapter consumes it only when its identity and position agree with that
+word's syllable. Tests cover final /h/ in isolation and before another word,
+as well as /h/ followed by a vowel. In the fixed 300-word sample, two words
+are still declined: final /q/ can overlap the following pause. That mapping
+must be verified before accepting it; the current voice continues to use the
+existing contour path.
 For an all-unstressed word whose phones the US provider cannot represent,
 the current proxy can add an artificial primary stress while retaining the
 weak-word control. That synthetic marker is not a Persian lexical accent;

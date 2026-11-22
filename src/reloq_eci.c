@@ -2246,6 +2246,24 @@ int ECICALL eciPersianAlignNucleusClocks(const struct reloq_fa_plan_event *event
     return reloq_fa_align_nucleus_clocks(events,event_count,syllables,syllable_count,
                                         phones,phone_count,provider_slots,slot_count,output,capacity,written);
 }
+int ECICALL eciPersianEarlyCursorCreate(const struct reloq_fa_plan_event *events,size_t event_count,
+    struct reloq_fa_early_cursor **result)
+{return reloq_fa_early_cursor_create(events,event_count,result);}
+int ECICALL eciPersianEarlyCursorNext(struct reloq_fa_early_cursor *cursor,
+    const struct reloq_fa_syllable *nucleus,uint32_t identity,struct reloq_fa_early_nucleus *output)
+{return reloq_fa_early_cursor_next(cursor,nucleus,identity,output);}
+int ECICALL eciPersianEarlyCursorFinish(const struct reloq_fa_early_cursor *cursor)
+{return reloq_fa_early_cursor_finish(cursor);}
+void ECICALL eciPersianEarlyCursorRelease(struct reloq_fa_early_cursor *cursor)
+{reloq_fa_early_cursor_release(cursor);}
+int ECICALL eciPersianAlignEarlyNuclei(const struct reloq_fa_plan_event *events,size_t event_count,
+    const struct reloq_fa_syllable *nuclei,size_t nucleus_count,
+    const uint32_t *identities,size_t identity_count,
+    struct reloq_fa_early_nucleus *output,size_t capacity,size_t *written)
+{
+    return reloq_fa_align_early_nuclei(events,event_count,nuclei,nucleus_count,
+                                       identities,identity_count,output,capacity,written);
+}
 
 struct reloq_fa_owned_capture_context {
     struct reloq_eci_engine *engine;
@@ -2424,6 +2442,12 @@ int ECICALL eciPersianCaptureSetPhoneTrace(int enabled)
 {
     if(!reloq_fa_capture_active() || (enabled!=0 && enabled!=1))return -1;
     reloq61_syllable_trace_phone_mode(enabled);
+    return 0;
+}
+int ECICALL eciPersianCaptureSetNucleusTrace(int enabled)
+{
+    if(!reloq_fa_capture_active() || (enabled!=0 && enabled!=1))return -1;
+    reloq61_syllable_trace_nucleus_mode(enabled);
     return 0;
 }
 int ECICALL eciPersianApplyGlides(struct reloq_fa_frame *rows,size_t count,

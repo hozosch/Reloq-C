@@ -41,10 +41,16 @@ void reloq61_syllable_trace_set(reloq_syllable_sink sink,void *context)
 {syllable_sink=sink;syllable_context=context;syllable_previous_to=-1;syllable_origin=0;phone_trace_mode=0;}
 void reloq61_syllable_trace_phone_mode(int enabled)
 {phone_trace_mode=enabled!=0;syllable_previous_to=-1;syllable_origin=0;}
+void reloq61_syllable_trace_nucleus_mode(int enabled)
+{phone_trace_mode=enabled?2:0;syllable_previous_to=-1;syllable_origin=0;}
+int reloq61_nucleus_trace_enabled(void)
+{return syllable_sink && phone_trace_mode==2;}
 void reloq61_phone_identity_trace_set(reloq_phone_identity_sink sink,void *context)
 {phone_identity_sink=sink;phone_identity_context=context;}
 void reloq61_phone_identity_trace_emit(uint32_t identity)
-{if(phone_trace_mode && phone_identity_sink)phone_identity_sink(phone_identity_context,identity);}
+{if(phone_trace_mode==1 && phone_identity_sink)phone_identity_sink(phone_identity_context,identity);}
+void reloq61_nucleus_identity_trace_emit(uint32_t identity)
+{if(phone_trace_mode==2 && phone_identity_sink)phone_identity_sink(phone_identity_context,identity);}
 static int trace_absolute_on(void *state,int32_t from,int32_t to,int32_t *start,int32_t *end,
                              int32_t *previous_to,int64_t *origin,int allow_overlap);
 static int trace_absolute(void *state,int32_t from,int32_t to,int32_t *start,int32_t *end)
@@ -58,10 +64,17 @@ void reloq61_syllable_trace_emit(void *state,int32_t from,int32_t to)
 }
 void reloq61_phone_trace_emit(void *state,int32_t from,int32_t to)
 {
-    if(!syllable_sink || !phone_trace_mode || from<0 || to<=from)return;
+    if(!syllable_sink || phone_trace_mode!=1 || from<0 || to<=from)return;
     int32_t start,end;
     if(trace_absolute_on(state,from,to,&start,&end,&syllable_previous_to,&syllable_origin,1))
         syllable_sink(syllable_context,-1,-1);
+    else syllable_sink(syllable_context,start,end);
+}
+void reloq61_nucleus_trace_emit(void *state,int32_t from,int32_t to)
+{
+    if(!reloq61_nucleus_trace_enabled())return;
+    int32_t start,end;
+    if(trace_absolute(state,from,to,&start,&end))syllable_sink(syllable_context,-1,-1);
     else syllable_sink(syllable_context,start,end);
 }
 void reloq61_fa_phone_emit(void *state,int32_t from,int32_t to,unsigned phone)

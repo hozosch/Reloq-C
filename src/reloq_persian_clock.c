@@ -17,7 +17,8 @@ static int contained(const struct reloq_fa_syllable *phone,const struct reloq_fa
 
 /* Private slots of the existing scoped backend, kept out of the Persian
  * linguistic plan. CH and J are handled as two acoustic components below;
- * H is a feature on the following segment and has no separate phone clock. */
+ * H is a feature on the following segment. At the end of a word, the
+ * backend adds a short carrier that has its own provider clock. */
 static uint32_t provider_slot(uint32_t phone)
 {
     static const uint8_t slots[]={0,31,34,29,27,33,32,1,4,2,5,3,6,3,3,
@@ -75,10 +76,18 @@ int reloq_fa_align_nucleus_clocks(const struct reloq_fa_plan_event *events,size_
                 ++s;
             } else if(e->stress!=stress){status=1;break;}
             const struct reloq_fa_syllable *owner=syllables+s-1;
-            /* H is represented as an onset/transition feature in this
-             * backend; it does not own a separate clock. */
+            /* A word-final H is followed by the backend's synthetic /w/
+             * carrier. Consume it only when its identity and clock identify
+             * it unambiguously inside this syllable. Elsewhere H is a
+             * feature on the next segment and has no phone clock. */
             if(e->value==RELOQ_FA_PHONE_H) {
                 if(pending_j){status=1;break;}
+                if(i+1<event_count && events[i+1].kind==RELOQ_FA_PLAN_WORD_END) {
+                    if(!has_nucleus || p==0 || p>=phone_count || provider_slots[p]!=3 ||
+                       !contained(phones+p,owner) || phones[p].to!=owner->to ||
+                       phones[p].from<phones[p-1].to){status=1;break;}
+                    ++p;
+                }
                 break;
             }
             uint32_t first=provider_slot(e->value),second=0;
@@ -176,5 +185,149 @@ int reloq_fa_align_nucleus_clocks(const struct reloq_fa_plan_event *events,size_
         *written=s;
     }
     free(result);
+    return status;
+}
+
+struct early_expectation {
+    uint32_t word,syllable,stress,weak,nucleus,identity;
+};
+struct reloq_fa_early_cursor {
+    struct early_expectation *expected;
+    size_t count,next;
+    int32_t previous_to;
+};
+
+void reloq_fa_early_cursor_release(struct reloq_fa_early_cursor *cursor)
+{
+    if(!cursor)return;
+    free(cursor->expected);
+    free(cursor);
+}
+
+int reloq_fa_early_cursor_create(const struct reloq_fa_plan_event *events,size_t event_count,
+    struct reloq_fa_early_cursor **output)
+{
+    if(output)*output=NULL;
+    if(!output || (event_count && !events) ||
+       event_count>SIZE_MAX/sizeof(struct early_expectation))return -1;
+    if(!event_count)return 1;
+    struct reloq_fa_early_cursor *cursor=calloc(1,sizeof *cursor);
+    if(!cursor)return -3;
+    cursor->expected=calloc(event_count,sizeof *cursor->expected);
+    if(!cursor->expected){free(cursor);return -3;}
+    cursor->previous_to=-1;
+    size_t n=0;uint32_t word=0,previous=UINT32_MAX,stress=0,q_before=0;
+    int in_word=0,weak=0,next_weak=0,has_nucleus=0,have_word=0,ended=0,status=0;
+    for(size_t i=0;i<event_count && !status;++i) {
+        const struct reloq_fa_plan_event *e=events+i;
+        switch(e->kind) {
+        case RELOQ_FA_PLAN_WEAK_WORD:
+            if(in_word || ended || next_weak){status=1;break;}
+            next_weak=1;break;
+        case RELOQ_FA_PLAN_WORD_BEGIN:
+            if(in_word || ended || word==UINT32_MAX){status=1;break;}
+            if(have_word)++word;
+            have_word=1;in_word=1;weak=next_weak;next_weak=0;
+            previous=UINT32_MAX;has_nucleus=0;q_before=0;break;
+        case RELOQ_FA_PLAN_PHONE: {
+            if(!in_word || !e->value || e->value>RELOQ_FA_PHONE_Y || e->stress>2 ||
+               (e->flags & ~(RELOQ_FA_PHONE_LONG|RELOQ_FA_PLAN_SHORT_NUCLEUS|
+                             RELOQ_FA_PLAN_COMPACT_HIATUS)) ||
+               ((e->flags & RELOQ_FA_PHONE_LONG) && !vowel(e->value))){status=1;break;}
+            if(e->syllable!=previous) {
+                if((previous==UINT32_MAX && e->syllable!=0) ||
+                   (previous!=UINT32_MAX && (e->syllable!=previous+1 || !has_nucleus)))
+                    {status=1;break;}
+                previous=e->syllable;stress=e->stress;has_nucleus=0;q_before=0;
+            } else if(e->stress!=stress){status=1;break;}
+            if(!has_nucleus && e->value==RELOQ_FA_PHONE_UVULAR) {
+                if(q_before==255){status=1;break;}
+                ++q_before;
+            }
+            if(vowel(e->value)) {
+                uint32_t slot=provider_slot(e->value);
+                if(has_nucleus || !slot){status=1;break;}
+                cursor->expected[n]=(struct early_expectation){
+                    .word=word,.syllable=e->syllable,.stress=e->stress,
+                    .weak=(uint32_t)weak,.nucleus=e->value,.identity=slot | (q_before<<8)};
+                ++n;has_nucleus=1;
+            }
+            break;
+        }
+        case RELOQ_FA_PLAN_WORD_END:
+            if(!in_word || previous==UINT32_MAX || !has_nucleus){status=1;break;}
+            in_word=0;break;
+        case RELOQ_FA_PLAN_PUNCTUATION:
+            if(in_word || !have_word || next_weak){status=1;break;}
+            if(e->value==',' || e->value==0x060c) {
+                if(ended)status=1;
+            } else if(e->value=='.' || e->value=='?' || e->value=='!' || e->value==0x061f) {
+                if(ended)status=1;
+                else ended=1;
+            } else status=1;
+            break;
+        case RELOQ_FA_PLAN_INPUT_VARIANT:
+            if(in_word || e->value>1)status=1;
+            break;
+        case RELOQ_FA_PLAN_GLOTTAL_ONSET:
+            if(in_word || !have_word || ended || i+1>=event_count ||
+               events[i+1].kind!=RELOQ_FA_PLAN_WORD_BEGIN)status=1;
+            break;
+        default:
+            status=1;break;
+        }
+    }
+    if(!status && (in_word || next_weak || !have_word || !n))status=1;
+    if(status){reloq_fa_early_cursor_release(cursor);return status;}
+    cursor->count=n;
+    *output=cursor;
+    return 0;
+}
+
+int reloq_fa_early_cursor_next(struct reloq_fa_early_cursor *cursor,
+    const struct reloq_fa_syllable *nucleus,uint32_t identity,
+    struct reloq_fa_early_nucleus *output)
+{
+    if(!cursor || !nucleus || !output)return -1;
+    if(cursor->next>=cursor->count || nucleus->from<0 || nucleus->to<=nucleus->from ||
+       nucleus->from<cursor->previous_to || identity!=cursor->expected[cursor->next].identity)return 1;
+    const struct early_expectation *e=cursor->expected+cursor->next;
+    *output=(struct reloq_fa_early_nucleus){
+        .from=nucleus->from,.to=nucleus->to,.word=e->word,.syllable=e->syllable,
+        .stress=e->stress,.weak=e->weak,.nucleus=e->nucleus};
+    cursor->previous_to=nucleus->to;
+    ++cursor->next;
+    return 0;
+}
+
+int reloq_fa_early_cursor_finish(const struct reloq_fa_early_cursor *cursor)
+{return !cursor?-1:cursor->next==cursor->count?0:1;}
+
+int reloq_fa_align_early_nuclei(const struct reloq_fa_plan_event *events,size_t event_count,
+    const struct reloq_fa_syllable *nuclei,size_t nucleus_count,
+    const uint32_t *identities,size_t identity_count,
+    struct reloq_fa_early_nucleus *output,size_t capacity,size_t *written)
+{
+    if(written)*written=0;
+    if(!written || (event_count && !events) || (nucleus_count && !nuclei) ||
+       (identity_count && !identities) || (!output && capacity) ||
+       nucleus_count>SIZE_MAX/sizeof(struct reloq_fa_early_nucleus))return -1;
+    if(!nucleus_count || identity_count!=nucleus_count)return 1;
+    struct reloq_fa_early_cursor *cursor=NULL;
+    int status=reloq_fa_early_cursor_create(events,event_count,&cursor);
+    if(status)return status;
+    if(cursor->count!=nucleus_count){reloq_fa_early_cursor_release(cursor);return 1;}
+    struct reloq_fa_early_nucleus *result=calloc(nucleus_count,sizeof *result);
+    if(!result){reloq_fa_early_cursor_release(cursor);return -3;}
+    for(size_t i=0;i<nucleus_count && !status;++i)
+        status=reloq_fa_early_cursor_next(cursor,nuclei+i,identities[i],result+i);
+    if(!status)status=reloq_fa_early_cursor_finish(cursor);
+    if(!status && output && capacity<nucleus_count)status=-2;
+    if(!status) {
+        if(output)memcpy(output,result,nucleus_count*sizeof *output);
+        *written=nucleus_count;
+    }
+    free(result);
+    reloq_fa_early_cursor_release(cursor);
     return status;
 }

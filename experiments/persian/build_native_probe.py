@@ -1308,6 +1308,80 @@ def prepare_x(work: Path) -> list[Path]:
         block = block.replace(marker, insertion, 1)
         text = (text[:start] + block + text[end:]).replace(
             include, include + '#include <stdlib.h>\n' + helper, 1)
+        if name == 'delta_rules_c30_fifi.c':
+            marker_include = '#include "reloq61_rule_calls_fifi.h"\n'
+            helper = r'''
+/* Read the current syllable's phone records without changing the scanner.
+ * The selected Persian q adds a 25 ms release after duration assignment;
+ * report how many such releases precede this syllable's vowel. */
+static int persian_early_nucleus_identity(void *state,int32_t begin,int32_t nucleus,
+                                          uint32_t *identity)
+{
+    delta_state *d=state;
+    if(!d || !begin || !nucleus || !identity)return 0;
+    int32_t at=EVV_REF(vmover(d,EVV_AT(int32_t *,begin),2));
+    int32_t end=EVV_REF(vmover(d,EVV_AT(int32_t *,nucleus),2));
+    int32_t target=end?vgetsc(d,0,0,end,2):0;
+    if(!target || (*EVV_AT(int32_t *,target)&2))return 0;
+    unsigned q=0;
+    for(unsigned guard=0;at && guard<256;++guard) {
+        int32_t node=vgetsc(d,0,0,at,2);
+        if(!node || (*EVV_AT(int32_t *,node)&2))return 0;
+        void *fields=TFLDS(EVV_AT(void *,node));
+        unsigned slot=*(const unsigned char *)delta_record_field(&vstmtbl[2],0,fields);
+        if(node==target) {
+            if(!slot || slot>255 || q>255)return 0;
+            *identity=slot | (q<<8);
+            return 1;
+        }
+        if(slot==3) {
+            unsigned marker=*(const unsigned char *)delta_record_field(&vstmtbl[2],12,fields);
+            if(marker==3)++q;
+        }
+        int32_t next=EVV_AT(int32_t *,node)[1]&~3;
+        if(!next || next==at)return 0;
+        at=EVV_REF(vmover(d,EVV_AT(int32_t *,next),2));
+    }
+    return 0;
+}
+'''
+            if text.count(marker_include) != 1:
+                raise RuntimeError('Cannot locate the early nucleus declarations')
+            text = text.replace(marker_include, marker_include + helper, 1)
+            marker = '    reloq61_syllable_trace_emit(state,STATE(int32_t,f13),STATE(int32_t,f14));\n'
+            if text.count(marker) != 1:
+                raise RuntimeError('Cannot locate the pre-intonation duration boundary')
+            text = text.replace(marker, marker + r'''    if(reloq61_nucleus_trace_enabled()) {
+        /* Candidate linguistic nucleus. This opt-in diagnostic reads the
+         * assigned durations without moving the provider's pointer registers.
+         * It does not change the normal voice or select a contour. */
+        const char *q_mode=getenv("RELOQ_FA_PROBE_Q");
+        if(!q_mode || q_mode[0]!='7' || q_mode[1]) {
+            /* This mapping belongs to the scoped Persian phone projection,
+             * not to ordinary Finnish or other exploratory Q variants. */
+            reloq61_nucleus_trace_emit(state,-1,-1);
+        } else {
+            delta_tpos a={.node=STATE(int32_t,w24),.flags=1};
+            delta_tpos b={.node=STATE(int32_t,w26),.flags=1};
+            delta_tpos c={.node=STATE(int32_t,w27),.flags=1};
+            int32_t before=-1,length=-1;uint32_t identity=0;
+            if(a.node && b.node && c.node) {
+                before=vdur((delta_state *)state,&a,&b,8);
+                length=vdur((delta_state *)state,&b,&c,8);
+            }
+            int identified=persian_early_nucleus_identity(state,a.node,b.node,&identity);
+            int64_t extra=(int64_t)(identity>>8)*250000;
+            int64_t from=(int64_t)STATE(int32_t,f13)+(int64_t)before*10000+extra;
+            int64_t to=from+(int64_t)length*10000;
+            if(!identified || before<0 || length<=0 || from<0 || to>INT32_MAX)
+                reloq61_nucleus_trace_emit(state,-1,-1);
+            else {
+                reloq61_nucleus_identity_trace_emit(identity);
+                reloq61_nucleus_trace_emit(state,(int32_t)from,(int32_t)to);
+            }
+        }
+    }
+''', 1)
         destination = work / name
         destination.write_text(text, encoding='utf8')
         outputs.append(destination)

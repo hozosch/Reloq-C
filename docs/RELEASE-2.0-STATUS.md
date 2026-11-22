@@ -16,6 +16,15 @@ development branch and are candidates for review after publication:
 - [#56](https://github.com/hozosch/Reloq-C/issues/56): parameter changes before
   digits; `nvda/test_eci_inline_queue_digits.py` checks queued controls and
   indexes, and the Apple ECI smoke test also exercises the reported example.
+- [#51](https://github.com/hozosch/Reloq-C/issues/51): an independently
+  maintained [ReLoq Apple app](https://github.com/Quinton1110/ReLoq-Apple)
+  already provides iOS and macOS voices. A 2.0-based app and its Persian
+  integration still need their own update and device validation.
+- [#52](https://github.com/hozosch/Reloq-C/issues/52): the three fixes from
+  [PR 53](https://github.com/hozosch/Reloq-C/pull/53) are present in this
+  branch. The author tested the older Apple-based engine on hardware; the
+  current branch has compiled in the Apple CI but has not yet been tested
+  in a signed app or with VoiceOver on a device.
 
 The native release workflow runs those checks. Package names follow their
 respective manifest versions, and the version preflight rejects mismatched

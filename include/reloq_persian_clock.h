@@ -34,6 +34,37 @@ int reloq_fa_align_nucleus_clocks(const struct reloq_fa_plan_event *events,size_
     const uint32_t *provider_slots,size_t slot_count,
     struct reloq_fa_nucleus_clock *output,size_t capacity,size_t *written);
 
+/* A linguistic syllable paired with its early provider vowel interval.
+ * This deliberately does not claim provider syllable or source boundaries. */
+struct reloq_fa_early_nucleus {
+    int32_t from,to;
+    uint32_t word,syllable,stress,weak,nucleus;
+};
+
+/* A request-local cursor validates the linguistic plan once, before audio,
+ * then matches each early provider vowel as the syllable is synthesized.
+ * Its records are private; release every successfully created cursor.
+ * A rejected input leaves the cursor and result unchanged. */
+struct reloq_fa_early_cursor;
+int reloq_fa_early_cursor_create(const struct reloq_fa_plan_event *events,size_t event_count,
+    struct reloq_fa_early_cursor **result);
+int reloq_fa_early_cursor_next(struct reloq_fa_early_cursor *cursor,
+    const struct reloq_fa_syllable *nucleus,uint32_t identity,
+    struct reloq_fa_early_nucleus *output);
+int reloq_fa_early_cursor_finish(const struct reloq_fa_early_cursor *cursor);
+void reloq_fa_early_cursor_release(struct reloq_fa_early_cursor *cursor);
+
+/* Match early, pre-intonation vowel clocks with the owned Persian plan.
+ * identities are the paired private provider vowel slots and q-release
+ * counts emitted in nucleus trace mode. This is an experimental building
+ * block, not a complete voice or proof of source-word boundary alignment.
+ * The failure, count-query and no-partial-output contracts match the
+ * independently traced alignment above. */
+int reloq_fa_align_early_nuclei(const struct reloq_fa_plan_event *events,size_t event_count,
+    const struct reloq_fa_syllable *nuclei,size_t nucleus_count,
+    const uint32_t *identities,size_t identity_count,
+    struct reloq_fa_early_nucleus *output,size_t capacity,size_t *written);
+
 #ifdef __cplusplus
 }
 #endif
