@@ -278,6 +278,93 @@ def _bracket_continuations(parts):
     return tuple(result)
 
 
+def try_native_persian_sentence(owner, parts, on_pcm, on_index, *, fa_ids):
+    """Use one native Persian/US analysis for short ordinary sentences.
+
+    The native backend has not yet acquired the established mixed-script,
+    internal-prosody or incremental long-text paths. Those requests retain
+    the current planner until their native equivalents pass the same tests.
+    """
+    key, text, offsets, values = owner._home, bytearray(), [], []
+    saw_text = False
+    for part in parts:
+        if isinstance(part, EciLanguage):
+            candidate = owner._key(part.language, part.voice)
+            if saw_text and candidate != key:
+                return None
+            key = candidate
+        elif isinstance(part, EciIndex):
+            offsets.append(len(text)); values.append(part.value)
+        elif isinstance(part, (str, EciText)):
+            if isinstance(part, EciText) and (part.character_mode or part.is_control or
+                    part.segmentation_guarded or part.internal_punctuation):
+                return None
+            value = part if isinstance(part, str) else part.text
+            if '`' in value:
+                return None
+            text.extend(value.encode('utf-8'))
+            saw_text = saw_text or bool(value)
+        else:
+            return None
+    if key[0] not in fa_ids or not text or len(text) > 256 or len(offsets) > 4096:
+        return None
+    source = bytes(text).decode('utf-8')
+    if len(source) <= 1 or len(source) > 64 or len(source.split()) > 3:
+        return None
+    engine = owner._activate(key)
+    if not isinstance(engine, ScopedDirectPersianEngine) or getattr(engine._frontend, '_reference_available', False):
+        return None
+    target = engine._voice
+    speak = getattr(target._dll, 'eciPersianSpeakUsNativeUtf8', None)
+    if speak is None:
+        return None
+    pilot_key = owner._key(US_ENGLISH.id, key[1])
+    pilot = owner._activate(pilot_key)
+    owner._activate(key)
+    with owner._guard:
+        if owner._cancelled.is_set():
+            return False
+        engine._cancelled.clear()
+        target._cancelled.clear()
+        pilot._cancelled.clear()
+        owner._native_persian_pilot = pilot
+    size, integer = ctypes.c_size_t, ctypes.c_int
+    speak.argtypes = (ctypes.c_void_p, ctypes.c_void_p, ctypes.c_char_p, size, integer,
+                      ctypes.POINTER(size), ctypes.POINTER(integer), size, size, ctypes.POINTER(size))
+    speak.restype = integer
+    positions = (size * len(offsets))(*offsets) if offsets else None
+    indexes = (integer * len(values))(*values) if values else None
+    error = size()
+    emitted = False
+    def pcm(value):
+        nonlocal emitted
+        emitted = True
+        on_pcm(value)
+    def index(value):
+        nonlocal emitted
+        emitted = True
+        on_index(value)
+    target._callback_error = None
+    target._on_pcm, target._on_index = pcm, index
+    try:
+        status = speak(target._handle, pilot._handle, bytes(text), len(text),
+                       int(key[0] == PINGLISH_PROBE.id), positions, indexes,
+                       len(offsets), 30000, ctypes.byref(error))
+        if target._callback_error is not None:
+            raise target._callback_error
+        if owner._cancelled.is_set():
+            return False
+        if status == 1 and not emitted:
+            return None
+        if status != 0:
+            raise RuntimeError(f'Native Persian sentence failed ({status}, byte {error.value})')
+        return True
+    finally:
+        target._on_pcm = target._on_index = None
+        with owner._guard:
+            owner._native_persian_pilot = None
+
+
 class PersianProbeLanguageEngine(LanguageEngine):
     """Use English for explicit and clear Latin-script boundaries."""
 
@@ -335,6 +422,10 @@ class PersianProbeLanguageEngine(LanguageEngine):
 
     def cancel(self):
         super().cancel()
+        with self._guard:
+            pilot = getattr(self, '_native_persian_pilot', None)
+            if pilot is not None:
+                pilot.cancel()
         korean = getattr(self, '_persian_korean_contour', None)
         if korean is not None:
             korean.cancel()
@@ -697,6 +788,9 @@ class PersianProbeLanguageEngine(LanguageEngine):
                                             fa_ids=(PERSIAN_PROBE.id, PINGLISH_PROBE.id),
                                             english_id=US_ENGLISH.id, german_id=GERMAN.id,
                                             reset_cancellation=False, end_pause_shortened=old_pause == 0)
+                    if result is None and getattr(self, '_native_sentences', False) and not self._cancelled.is_set():
+                        result = try_native_persian_sentence(self, job, on_pcm, on_index,
+                            fa_ids=(PERSIAN_PROBE.id, PINGLISH_PROBE.id))
                     if result is None and not self._cancelled.is_set():
                         result = try_persian_glides(self, job, on_pcm, on_index,
                                                     fa_ids=(PERSIAN_PROBE.id, PINGLISH_PROBE.id))
@@ -722,7 +816,7 @@ class PersianProbeLanguageEngine(LanguageEngine):
 
 
 def make_language_engine(library, native_library, worker, espeak_library, data_parent,
-                         *, language=PERSIAN_PROBE.id, voice='1', languages=None):
+                         *, language=PERSIAN_PROBE.id, voice='1', languages=None, native_sentences=False):
     """Construct the regular LanguageEngine with a test-only Persian factory."""
     def factory(dll, *, dialect, encoding, native_voice):
         if dialect in (PERSIAN_PROBE.id, PINGLISH_PROBE.id):
@@ -731,6 +825,8 @@ def make_language_engine(library, native_library, worker, espeak_library, data_p
             return OwnedPersianEngine(dll, native_library, worker, espeak_library, data_parent,
                                       pinglish=dialect == PINGLISH_PROBE.id)
         return DirectEciEngine(dll, dialect=dialect, encoding=encoding, native_voice=native_voice)
-    return PersianProbeLanguageEngine(library, language=language, voice=voice,
-                                      languages=PROFILES if languages is None else languages,
-                                      engine_factory=factory)
+    engine = PersianProbeLanguageEngine(library, language=language, voice=voice,
+                                        languages=PROFILES if languages is None else languages,
+                                        engine_factory=factory)
+    engine._native_sentences = bool(native_sentences)
+    return engine

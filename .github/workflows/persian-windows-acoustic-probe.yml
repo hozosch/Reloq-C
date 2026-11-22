@@ -2,7 +2,7 @@ name: Persian Windows acoustic probe
 on:
   workflow_dispatch:
   push:
-    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116, codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117, codex/persian-us-contour-20261117, codex/persian-adjectives-20261117, codex/persian-ra-pinglish-20261119, codex/persian-core-20261119, codex/persian-phones-20261119, codex/persian-native-20261120, codex/persian-issue49-solh-20261120, codex/persian-native-transitions-20261120, codex/persian-native-fast-pilot-20261120, codex/persian-sentence-core-20261120, codex/persian-sentence-linear-20261120, codex/persian-context-native-20261120, codex/persian-transition-streaming-20261120, codex/persian-native-sv-probe-20261120, codex/persian-finnish-nasal-swedish-20261120, codex/persian-native-u-20261121]
+    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116, codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117, codex/persian-us-contour-20261117, codex/persian-adjectives-20261117, codex/persian-ra-pinglish-20261119, codex/persian-core-20261119, codex/persian-phones-20261119, codex/persian-native-20261120, codex/persian-issue49-solh-20261120, codex/persian-native-transitions-20261120, codex/persian-native-fast-pilot-20261120, codex/persian-sentence-core-20261120, codex/persian-sentence-linear-20261120, codex/persian-context-native-20261120, codex/persian-transition-streaming-20261120, codex/persian-native-sv-probe-20261120, codex/persian-finnish-nasal-swedish-20261120, codex/persian-native-u-20261121, codex/persian-unified-dev33-20261122]
     paths:
       - experiments/persian/build_native_probe.py
       - experiments/persian/build_windows_probe.py
@@ -38,6 +38,7 @@ on:
       - eci/test_persian_native_characters.py
       - eci/test_persian_native_direct_stream.py
       - experiments/persian/test_native_us_sentence_parity.py
+      - experiments/persian/test_native_us_nvda_route.py
       - experiments/persian/test_native_us_z_onset.py
       - experiments/persian/test_us_fricative_transition.py
       - experiments/persian/test_us_unvoiced_onsets.py
@@ -374,6 +375,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Incremental Persian run rendering failed' }
           python -B experiments/persian/test_native_us_sentence_parity.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Native Persian sentence differs from the current voice' }
+          python -B experiments/persian/test_native_us_nvda_route.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Native Persian NVDA sentence route failed' }
           python -B experiments/persian/test_native_us_z_onset.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Native Persian US fricative transition failed' }
           python -B experiments/persian/test_us_fricative_transition.py --library eci/eci.dll
@@ -398,6 +401,11 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Owned US capture diverged from the Persian sentence planner' }
           python -B experiments/persian/test_native_us_proxy.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Native Persian US proxy diverged from the established planner' }
+          $proxy = Join-Path $env:RUNNER_TEMP 'reloq-fa-us-proxy.dll'
+          & C:\mingw64\bin\gcc.exe -shared -O2 -std=c11 -Iinclude src/reloq_persian_us_proxy.c -o "$proxy"
+          if ($LASTEXITCODE -ne 0) { throw 'Could not build the standalone US proxy test' }
+          python -B experiments/persian/test_native_us_proxy.py --library eci/eci.dll --proxy-library "$proxy"
+          if ($LASTEXITCODE -ne 0) { throw 'Request-local US proxy reuse changed output or did not reduce probes' }
           python -B experiments/persian/test_us_proxy_audio_parity.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Native Persian US proxy changed the accepted audio' }
           python -B eci/test_persian_frames.py --library eci/eci.dll --standard

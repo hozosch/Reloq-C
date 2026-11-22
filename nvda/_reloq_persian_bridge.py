@@ -52,4 +52,5 @@ def add_profiles(languages, library: Path):
 def make_engine(library: Path, *, languages, language, voice):
     text_library, worker, reference, parent = _paths(library)
     return make_language_engine(library, text_library, worker, reference, parent,
-                                language=language, voice=voice, languages=languages)
+                                language=language, voice=voice, languages=languages,
+                                native_sentences=True)

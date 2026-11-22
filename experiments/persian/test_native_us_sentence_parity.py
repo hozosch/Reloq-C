@@ -14,7 +14,8 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT / 'experiments/persian'), str(ROOT / 'nvda')]
-from _reloq_eci_direct import EciIndex, EciText, SAMPLE_RATE
+from _reloq_eci_direct import EciIndex, EciText, ORIGINAL_ACOUSTIC_CLOCK, SAMPLE_RATE
+from _reloq_languages import ACOUSTIC_CLOCK_BITS
 from nvda_driver_probe import PERSIAN_PROBE, PINGLISH_PROBE, US_ENGLISH, make_language_engine
 
 
@@ -178,6 +179,40 @@ def main():
                         assert status == 0 and bytes(pcm) == bytes(expected) and indices == expected_indices, (
                             profile.locale, rate, preset, runs, status, error.value, len(pcm), len(expected))
                         checks += 1
+            # The native US transfer must preserve the same per-language
+            # acoustic clock as the active NVDA sentence route. In
+            # particular, fitting the US pitch must not reintroduce 1-ms
+            # changes after a user selects the original 5-ms timing.
+            for profile, mode, texts in (
+                    (PERSIAN_PROBE, 0, ('سلام', 'فوری', 'ظهور ناگهانی')),
+                    (PINGLISH_PROBE, 1, ('salaam', 'fori', 'salaam donyaa.'))):
+                for rate in (1, 3, 6):
+                    owner.select_voice(profile.id, '1')
+                    owner.set_parameter(SAMPLE_RATE, rate)
+                    for clock in (0, 1, 0):
+                        owner.set_acoustic_clocks(ACOUSTIC_CLOCK_BITS[profile.id] if clock else 0)
+                        fa = owner._activate(owner._key(profile.id, '1'))
+                        us = owner._activate(owner._key(US_ENGLISH.id, '1'))
+                        for handle, engine in ((voice, fa), (pilot, us)):
+                            source = engine._voice if hasattr(engine, '_voice') else engine
+                            for parameter in (5, 0x1007, 0x1008, 0x1009, 0x100a, 0x100b,
+                                              0x100c, 0x100d, 0x100e, 0x100f, 0x1010, 0x1011,
+                                              0x1015, ORIGINAL_ACOUSTIC_CLOCK):
+                                value = dll.eciGetParam(source._handle, parameter)
+                                if value >= 0:
+                                    assert dll.eciSetParam(handle, parameter, value) >= 0
+                        for text in texts:
+                            expected, expected_indices = bytearray(), []
+                            assert owner.speak((EciIndex(90), text, EciIndex(92)), expected.extend,
+                                lambda value: expected_indices.append((value, len(expected) // 2)))
+                            raw = text.encode('utf8'); error = S(); pcm.clear(); indices.clear()
+                            offsets, values = (S * 2)(0, len(raw)), (I * 2)(90, 92)
+                            status = dll.eciPersianSpeakUsNativeUtf8(voice, pilot, raw, len(raw), mode,
+                                offsets, values, 2, 30000, c.byref(error))
+                            assert status == 0 and bytes(pcm) == bytes(expected) and indices == expected_indices, (
+                                profile.locale, rate, clock, text, status, error.value)
+                            checks += 1
+            owner.set_acoustic_clocks(0)
             # Compare the new complete Pinglish bracket analysis with the
             # previous no-reference fallback, including marks inside words.
             owner.select_voice(PINGLISH_PROBE.id, '1')

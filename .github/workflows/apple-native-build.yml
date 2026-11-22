@@ -2,7 +2,7 @@ name: Build Apple native ECI library
 on:
   workflow_dispatch:
   push:
-    branches: [codex/persian-native-u-20261121]
+    branches: [codex/persian-native-u-20261121, codex/persian-unified-dev33-20261122]
 permissions:
   contents: read
 concurrency:

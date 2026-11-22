@@ -32,6 +32,8 @@ def main():
     if lib:
         lib.reloq_fa_us_proxy_make.argtypes = [c.c_char_p, c.c_size_t, PROBE, c.c_void_p, c.POINTER(Result)]
         lib.reloq_fa_us_proxy_make.restype = c.c_int
+        lib.reloq_fa_us_proxy_make_reusing.argtypes = lib.reloq_fa_us_proxy_make.argtypes
+        lib.reloq_fa_us_proxy_make_reusing.restype = c.c_int
         lib.reloq_fa_us_proxy_clear.argtypes = [c.POINTER(Result)]
     owner = make_language_engine(args.library, args.library, None,
                                  Path('/unavailable-espeak'), Path('/unavailable'))
@@ -40,12 +42,13 @@ def main():
     en.raw.set_parameter(PROCESS_TAGS, 1)
     fa_key = owner._key(PERSIAN_PROBE.id, '1')
     fa = owner._activate(fa_key)
-    errors = []
+    errors, probes = [], []
 
     @PROBE
     def probe(_ctx, src, length, sink, sink_ctx):
         try:
             text = c.string_at(src, length).decode('utf-8')
+            probes.append(text)
             result = en._phonemes_for_probe(text).encode('cp1252')
             # A probe may deliver multiple buffers; no C allocator crosses
             # the DLL boundary, including on Windows.
@@ -58,13 +61,14 @@ def main():
             errors.append(exc)
             return -1
 
-    def native(text):
+    def native(text, *, reuse=False):
         if not lib:
             count = len(re.findall(r'`\[[^]]+\]', text))
             return collect(indexed_us_proxy(text, en, tuple(range(count-1))))
         data = text.encode('utf-8')
         output = Result()
-        status = lib.reloq_fa_us_proxy_make(data, len(data), probe, None, c.byref(output))
+        call = lib.reloq_fa_us_proxy_make_reusing if reuse else lib.reloq_fa_us_proxy_make
+        status = call(data, len(data), probe, None, c.byref(output))
         if errors:
             raise errors.pop()
         assert status == 0, (text, status)
@@ -137,6 +141,15 @@ def main():
         for text in tests:
             actual, expected = native(text), python(text)
             assert actual == expected, (text, actual, expected)
+        if lib:
+            # A deterministic worker can reuse the isolated check of an
+            # identical weak tag only during this one request. The general
+            # callback API retains its original per-occurrence contract.
+            repeated = ' '.join(('`[.0ne.0mi]',) * 12)
+            probes.clear(); ordinary = native(repeated); ordinary_calls = len(probes)
+            probes.clear(); optimized = native(repeated, reuse=True); optimized_calls = len(probes)
+            assert optimized == ordinary and ordinary_calls > optimized_calls and optimized_calls == 2, (
+                ordinary_calls, optimized_calls)
         print(f'Passed {len(tests)} native US-proxy comparisons against the established planner.')
     finally:
         owner.close()

@@ -171,6 +171,19 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             old_prepared = direct_fa_sequence.ScopedDirectPersianEngine._speak_prepared
             old_continuous = nvda_driver_probe.try_continuous
             old_glides = nvda_driver_probe.try_persian_glides
+            old_native_sentence = nvda_driver_probe.try_native_persian_sentence
+            self.native_test_case, self.native_calls = False, []
+            def observe_native_sentence(*args, **kwargs):
+                # Most existing cases inspect the established Python planning
+                # stages. Exercise the new route explicitly below instead of
+                # treating the absence of those stages as a pronunciation bug.
+                if not self.native_test_case:
+                    return None
+                result = old_native_sentence(*args, **kwargs)
+                if result is not None:
+                    self.native_calls.append(result)
+                return result
+            nvda_driver_probe.try_native_persian_sentence = observe_native_sentence
             old_us_fit = continuous_driver.fit_us_word_pitch
             old_context_plan = continuous_driver.context_plan
             old_hz_transition = continuous_plan.match_h_to_us_z
@@ -708,6 +721,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                   ('fa_Latn', 'salaam donyaa.', 'salaam NVDA donyaa'))
                               for kind, text in (('pure', pure), ('mixed', mixed))
                               for setting in ('fine_first', 'original', 'fine_again'))
+            self.cases.extend((locale, text, mode)
+                              for locale, text in (('fa_IR', 'فوری'),
+                                                   ('fa_IR', 'ظهور ناگهانی'),
+                                                   ('fa_Latn', 'salaam donyaa.'))
+                              for mode in ('core_legacy', 'core_native'))
             self.next()
         except BaseException:
             self.fail()
@@ -726,6 +744,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                             raise AssertionError('NVDA clock did not change speech: ' + locale + ' ' + kind)
                         if sound_for('fine_first') != sound_for('fine_again'):
                             raise AssertionError('NVDA clock did not restore speech: ' + locale + ' ' + kind)
+                for locale, text in (('fa_IR', 'فوری'), ('fa_IR', 'ظهور ناگهانی'),
+                                     ('fa_Latn', 'salaam donyaa.')):
+                    samples = [row for row in self.results if row['locale'] == locale and row['text'] == text
+                               and row['spelling'] in ('core_legacy', 'core_native')]
+                    if len(samples) != 2 or samples[0]['pcm_sha256'] != samples[1]['pcm_sha256']:
+                        raise AssertionError('native NVDA sentence changed speech: ' + locale + ' ' + ascii(text))
                 if self.results[0]['pcm_sha256'] == self.results[1]['pcm_sha256']:
                     raise AssertionError('single-a Pinglish lost its short vowel')
                 matching = next(row for row in self.results if row['locale']=='fa_Latn'
@@ -993,6 +1017,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 self.synth.rate = old_rate
                 self.saved_rate_for_r_test = None
             self.synth.language = locale
+            self.native_test_case = (spelling == 'core_native' or
+                                     isinstance(spelling, str) and spelling.startswith('clock_'))
+            self.before_native = len(self.native_calls)
             if isinstance(spelling, str) and spelling.startswith('clock_'):
                 if not hasattr(self, 'saved_clock_test_mask'):
                     self.saved_clock_test_mask = self.synth._acousticClockMask
@@ -1125,7 +1152,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = [text, 'کادرِ علامت‌زدنی', status]
             elif isinstance(spelling, str) and spelling.startswith('tags_'):
                 sequence = [text]
-            elif self.sample_case or (isinstance(spelling, str) and spelling.startswith(('clock_', 'issue49_weak_', 'issue49_grouped_', 'issue50_'))) or spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'issue49_quotes', 'issue49_numeric', 'issue49_version_some', 'issue49_emoji_some', 'issue49_heading', 'issue49_korean', 'issue49_korean_word', 'issue49_persian_unicode', 'issue49_persian_unicode_none', 'issue49_persian_unicode_all', 'issue49_korean_english', 'issue49_hamza_line', 'issue49_hamza_line_none', 'issue49_own_vowel', 'issue49_nominal_compound', 'issue49_native_new_compound'):
+            elif self.sample_case or (isinstance(spelling, str) and spelling.startswith(('core_', 'clock_', 'issue49_weak_', 'issue49_grouped_', 'issue50_'))) or spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'issue49_quotes', 'issue49_numeric', 'issue49_version_some', 'issue49_emoji_some', 'issue49_heading', 'issue49_korean', 'issue49_korean_word', 'issue49_persian_unicode', 'issue49_persian_unicode_none', 'issue49_persian_unicode_all', 'issue49_korean_english', 'issue49_hamza_line', 'issue49_hamza_line_none', 'issue49_own_vowel', 'issue49_nominal_compound', 'issue49_native_new_compound'):
                 sequence = [text]
             else:
                 sequence = ([self.character(True), text, self.character(False)] if spelling else [text])
@@ -1135,7 +1162,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.started = time.perf_counter()
             self.pipeline = spelling in ('pipeline', 'pipeline_most', 'pipeline_stop', 'pipeline_log', 'pipeline_symbols', 'pipeline_mixed_symbols', 'pipeline_user_latency', 'pipeline_mixed_latency', 'pipeline_bracket', 'pipeline_dash', 'issue49_hyphen', 'issue49_unknown', 'checkbox_unchecked', 'checkbox_checked', 'checkbox_checked_most', 'decimal_pipeline', 'decimal_indexed_pipeline', 'decimal_grouped_pipeline', 'decimal_signed_pipeline')
             self.pipeline = self.pipeline or self.sample_case or (isinstance(spelling, str) and spelling.startswith('tags_'))
-            self.pipeline = self.pipeline or (isinstance(spelling, str) and spelling.startswith('clock_'))
+            self.pipeline = self.pipeline or (isinstance(spelling, str) and spelling.startswith(('clock_', 'core_')))
             self.pipeline = self.pipeline or (isinstance(spelling, str) and spelling.startswith('issue49_weak_'))
             self.pipeline = self.pipeline or spelling in ('issue49_grouped_none', 'issue49_grouped_some')
             self.pipeline = self.pipeline or (isinstance(spelling, str) and spelling.startswith('issue50_'))
@@ -1243,6 +1270,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                              for chunk in player.chunks[self.before.get(id(player), 0):])
             if not audio:
                 raise RuntimeError('no actual NVDA audio for ' + ascii(text))
+            if (spelling == 'core_native' or isinstance(spelling, str) and spelling.startswith('clock_pure_')) and \
+                    len(self.native_calls) == self.before_native:
+                raise AssertionError('NVDA did not use the common native sentence: ' + ascii(text))
             if spelling in ('issue49_h_z', 'issue49_h_z_language', 'issue49_h_s', 'issue49_h_f') and not any(
                     self.hz_transitions[self.before_hz:]):
                 raise AssertionError('NVDA did not apply the connected H transition')

@@ -40,9 +40,13 @@
 #include <time.h>
 #if defined(_WIN32)
 #include <windows.h>
+#include <process.h>
 #include <wchar.h>
-#elif !defined(__ANDROID__)
+#else
+#include <pthread.h>
+#if !defined(__ANDROID__)
 #include <iconv.h>
+#endif
 #endif
 
 #if defined(_MSC_VER)
@@ -2598,6 +2602,20 @@ static int reloq_fa_replay_us_capture(ECIHand handle,
     if(epoch_get(&e->stop_epoch)!=before)status=-4;
     else if(status<0)status=-1;
     else if(!status) {
+        if(e->original_acoustic_clock==1) {
+            /* Transfer inserts 1-ms pitch changes after capture. Match the
+             * active Persian voice's 5-ms hold, while leaving its two
+             * request-local phone-boundary metadata tracks untouched. */
+            int64_t group=INT64_MIN;float held[62];
+            for(size_t i=0;i<target->frame_count;++i) {
+                int64_t current=planned[i].tick/5;
+                if(current!=group) {
+                    group=current;
+                    memcpy(held,planned[i].controls,sizeof held);
+                } else for(unsigned column=1;column<62;++column)
+                    if(column!=11 && column!=12)planned[i].controls[column]=held[column];
+            }
+        }
         int rendered=eciPersianReplayFrames(handle,before,planned,target->frame_count,marks,mark_count);
         status=rendered==RELOQ_ECI_OK?0:rendered==RELOQ_ECI_CANCELLED?-4:-3;
     }
@@ -2748,6 +2766,42 @@ static int reloq_fa_silent_context(ECIHand voice,const int *values,size_t count,
     return epoch_get(&e->stop_epoch)!=before?-4:0;
 }
 
+struct reloq_fa_parallel_donor {
+    ECIHand handle;const char *text;size_t maximum;
+    struct reloq_fa_owned_capture *capture;int status;
+};
+#if defined(_WIN32)
+typedef HANDLE reloq_fa_donor_thread;
+static unsigned __stdcall reloq_fa_capture_donor_thread(void *context)
+{
+    struct reloq_fa_parallel_donor *job=context;
+    job->status=eciPersianCaptureUsProxyUtf8(job->handle,job->text,strlen(job->text),
+                                             job->maximum,job->capture);
+    return 0;
+}
+static int reloq_fa_start_donor(reloq_fa_donor_thread *thread,struct reloq_fa_parallel_donor *job)
+{
+    uintptr_t handle=_beginthreadex(NULL,0,reloq_fa_capture_donor_thread,job,0,NULL);
+    if(!handle)return 0;
+    *thread=(HANDLE)handle;return 1;
+}
+static void reloq_fa_join_donor(reloq_fa_donor_thread thread)
+{(void)WaitForSingleObject(thread,INFINITE);(void)CloseHandle(thread);}
+#else
+typedef pthread_t reloq_fa_donor_thread;
+static void *reloq_fa_capture_donor_thread(void *context)
+{
+    struct reloq_fa_parallel_donor *job=context;
+    job->status=eciPersianCaptureUsProxyUtf8(job->handle,job->text,strlen(job->text),
+                                             job->maximum,job->capture);
+    return NULL;
+}
+static int reloq_fa_start_donor(reloq_fa_donor_thread *thread,struct reloq_fa_parallel_donor *job)
+{return pthread_create(thread,NULL,reloq_fa_capture_donor_thread,job)==0;}
+static void reloq_fa_join_donor(reloq_fa_donor_thread thread)
+{(void)pthread_join(thread,NULL);}
+#endif
+
 static int reloq_fa_speak_us_native(ECIHand handle,ECIHand pilot_handle,
     const char *text,size_t bytes,int mode,const size_t *run_ends,
     const unsigned char *run_modes,size_t run_count,int use_runs,
@@ -2860,11 +2914,25 @@ static int reloq_fa_speak_us_native(ECIHand handle,ECIHand pilot_handle,
     }
     if(epoch_get(&e->stop_epoch)!=before || epoch_get(&pilot->stop_epoch)!=pilot_before){status=-4;goto done;}
     struct reloq_fa_prepared_capture_job job={handle,&prepared,positions,pauses,total};
+    /* The two owned captures consume the same completed text analysis but
+     * use independent handles and thread-local frame storage. Running the
+     * US contour alongside the target avoids adding their processing times
+     * before the first output. Thread creation failure keeps the established
+     * sequential route. No speech or linguistic results outlive the job. */
+    struct reloq_fa_parallel_donor donor_job={pilot_handle,donor_text,maximum_frames,&donor,0};
+    reloq_fa_donor_thread donor_thread;
+    /* For a single short word thread startup can cost more than the donor. */
+    int donor_started=words.count>1 && reloq_fa_start_donor(&donor_thread,&donor_job);
     status=reloq_fa_capture_owned(e,total,maximum_frames,before,
         reloq_fa_capture_prepared_run,&job,&target);
+    if(donor_started) {
+        if(status || epoch_get(&e->stop_epoch)!=before)(void)eciStop(pilot_handle);
+        reloq_fa_join_donor(donor_thread);
+    }
     if(status)goto done;
     if(epoch_get(&e->stop_epoch)!=before || epoch_get(&pilot->stop_epoch)!=pilot_before){status=-4;goto done;}
-    status=eciPersianCaptureUsProxyUtf8(pilot_handle,donor_text,strlen(donor_text),maximum_frames,&donor);
+    status=donor_started?donor_job.status:
+        eciPersianCaptureUsProxyUtf8(pilot_handle,donor_text,strlen(donor_text),maximum_frames,&donor);
     if(status)goto done;
     if(epoch_get(&e->stop_epoch)!=before || epoch_get(&pilot->stop_epoch)!=pilot_before){status=-4;goto done;}
     if(donor.mark_count!=word_count){status=1;goto done;}
