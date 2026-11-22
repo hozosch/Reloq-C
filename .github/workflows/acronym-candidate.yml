@@ -9,7 +9,7 @@ jobs:
   wordseg:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           fetch-depth: 0
@@ -25,13 +25,13 @@ jobs:
     env:
       RELOQ_BUILD_EPOCH: '1700000000'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           fetch-depth: 0
       # This follow-up changes only tests and isolated research. Reuse the
       # newly built native core only after checking its inputs and digest.
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: acronym-nvda-candidate
           run-id: 43306923529
@@ -53,7 +53,7 @@ jobs:
           Path('eci/eci.dll').write_bytes(dll)
           PYSCRIPT
           python eci/verify_pe_exports.py eci/eci.dll --objdump objdump --header include/reloq_eci.h
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dictionary-snapshot
           run-id: 43102437479
@@ -108,7 +108,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'SAPI dictionary regression failed' }
           $p = Start-Process regsvr32.exe -ArgumentList '/s', '/u', $dll -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "SAPI unregistration failed: $($p.ExitCode)" }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: acronym-nvda-candidate
           path: dist/reloq-c-synth-x64-1.4.1-dev5.nvda-addon
@@ -119,10 +119,10 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: acronym-nvda-candidate
           path: candidate
@@ -143,7 +143,7 @@ jobs:
         run: |
           python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.4.1-dev5.nvda-addon --work segmentation-probe
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA acronym or segmentation regression failed' }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: acronym-real-nvda-results
@@ -156,10 +156,10 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: acronym-nvda-candidate
           path: candidate
@@ -180,7 +180,7 @@ jobs:
         run: |
           python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.4.1-dev5.nvda-addon --plugin addon/test_nvda_real_issue40_plugin.py --work boundaries-probe
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA boundary regression failed' }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: acronym-nvda-boundaries-results

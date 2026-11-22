@@ -9,10 +9,10 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
           architecture: x86
@@ -35,7 +35,7 @@ jobs:
           PY
       - name: Capture slow and comparison rates
         run: python tools/observe_low_speed_reference.py reference/ECI.DLL observations
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: low-speed-original-reference
           path: observations/

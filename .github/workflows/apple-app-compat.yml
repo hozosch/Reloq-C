@@ -26,12 +26,12 @@ jobs:
     timeout-minutes: 55
     steps:
       - name: Check out the development core
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: engine
           persist-credentials: false
       - name: Check out ReLoq Apple 0.1.1
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: Quinton1110/ReLoq-Apple
           ref: 6ea066b8357626374bd5a21a32920659ae475646

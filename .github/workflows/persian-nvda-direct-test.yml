@@ -137,7 +137,7 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -184,7 +184,7 @@ jobs:
           if [ -z "$available" ]; then echo 'Timed out waiting for the Windows baseline' >&2; exit 1; fi
           echo "run_id=$selected" >> "$GITHUB_OUTPUT"
           echo "early_run_id=$early_selected" >> "$GITHUB_OUTPUT"
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: persian-windows-baseline-early
           run-id: ${{ steps.acoustic.outputs.early_run_id }}
@@ -392,14 +392,33 @@ jobs:
             gh run download "${{ steps.acoustic.outputs.run_id }}" --name persian-windows-baseline-early --dir verified-acoustic --repo "$GITHUB_REPOSITORY"
             cmp -s candidate/eci.dll verified-acoustic/eci.dll || { echo 'The tested and fully verified Windows DLLs differ' >&2; exit 1; }
           fi
-      - uses: actions/upload-artifact@v4
+      - name: Upload the Persian NVDA add-on directly
+        id: direct-addon
+        uses: actions/upload-artifact@v7
+        with:
+          path: dist/reloq-c-persian-pinglish-*.nvda-addon
+          archive: false
+          if-no-files-found: error
+          retention-days: 30
+      - name: Download the direct add-on artifact
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ steps.direct-addon.outputs.artifact-id }}
+          path: verified-direct-addon
+      - name: Verify the direct add-on artifact
+        shell: bash
+        run: |
+          addon=$(find dist -maxdepth 1 -name 'reloq-c-persian-pinglish-*.nvda-addon' -print -quit)
+          test -n "$addon"
+          cmp "$addon" "verified-direct-addon/$(basename "$addon")"
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: persian-nvda-direct-package
           path: dist/*.nvda-addon
           if-no-files-found: warn
-          retention-days: 7
-      - uses: actions/upload-artifact@v4
+          retention-days: 30
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: persian-nvda-direct-results

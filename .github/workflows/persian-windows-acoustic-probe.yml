@@ -160,7 +160,7 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           fetch-depth: 0
@@ -220,7 +220,7 @@ jobs:
           cp reused-acoustic/persian-windows-probe/eci_persian_probe.dll persian-windows-probe/eci_persian_probe.dll
           python eci/verify_pe_exports.py eci/eci.dll --objdump objdump --header include/reloq_eci.h
           make -C eci eci_classic_noise_probe.exe SHELL=C:/msys64/usr/bin/bash.exe WINDOWS_CC=gcc WINDOWS_OBJDUMP=objdump
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         id: provider
         if: steps.reuse.outputs.reusable != 'true'
         with:
@@ -236,7 +236,7 @@ jobs:
             persian-windows-provider-gcc14-v2-02eff3929fd30e8fdebed50f38e28587951afe693dc8f0aa800f0512c3cf5f6b
             persian-windows-provider-gcc14-v2-782694288976480b757bf5220770ab738c651bf3e9222a0c071b2a7198289a63
             persian-windows-provider-gcc14-v2-04cc9a755afeb7ef13a3aebfa7900e2fcef9ceaa6dec69c8d88257a01ecfdbac
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         id: host
         if: steps.reuse.outputs.reusable != 'true'
         with:
@@ -306,7 +306,7 @@ jobs:
         run: |
           python -B eci/test_concurrent_startup.py --library eci/eci.dll --rounds 40
           if ($LASTEXITCODE -ne 0) { throw 'Concurrent cold multilingual voice initialization failed' }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: persian-windows-baseline-early
           path: eci/eci.dll
@@ -460,19 +460,19 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Windows continuous replay failed' }
           python -B experiments/persian/test_sibilant_noise.py --candidate persian-windows-probe/eci_persian_probe.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian sibilant targets failed' }
-      - uses: actions/cache/save@v4
+      - uses: actions/cache/save@v6
         if: steps.reuse.outputs.reusable != 'true' && steps.host.outputs.cache-hit != 'true'
         with:
           path: |
             eci/build/windows
             eci/eci.dll
           key: ${{ steps.host.outputs.cache-primary-key }}
-      - uses: actions/cache/save@v4
+      - uses: actions/cache/save@v6
         if: success() && steps.reuse.outputs.reusable != 'true' && steps.provider.outputs.cache-hit != 'true'
         with:
           path: vendor/openevv61/build/windows-release
           key: ${{ steps.provider.outputs.cache-primary-key }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: persian-windows-acoustic-probe

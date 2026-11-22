@@ -12,17 +12,17 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
       - name: Check private probe source preparation
         run: |
           python3 -m py_compile experiments/persian/build_native_probe.py experiments/persian/trace_word_edges_timing.py
           python3 experiments/persian/build_native_probe.py --dry-run
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         id: baseline
         with:
           path: |
@@ -33,7 +33,7 @@ jobs:
       - name: Build ordinary Linux core when needed
         if: steps.baseline.outputs.cache-hit != 'true'
         run: make -C eci -j2 libreloq_eci.so
-      - uses: actions/cache/save@v4
+      - uses: actions/cache/save@v6
         if: steps.baseline.outputs.cache-hit != 'true'
         with:
           path: |
@@ -43,7 +43,7 @@ jobs:
           key: persian-linux-gcc13-463c72658de0-v1
       - name: Install analysis dependencies
         run: python3 -m pip install numpy scipy
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         id: probe
         with:
           path: ${{ runner.temp }}/fa
@@ -51,7 +51,7 @@ jobs:
       - name: Build isolated acoustic probe
         if: steps.probe.outputs.cache-hit != 'true'
         run: python3 experiments/persian/build_native_probe.py --work-dir "$RUNNER_TEMP/fa" --jobs 2
-      - uses: actions/cache/save@v4
+      - uses: actions/cache/save@v6
         if: steps.probe.outputs.cache-hit != 'true'
         with:
           path: ${{ runner.temp }}/fa
@@ -70,7 +70,7 @@ jobs:
         run: |
           python3 experiments/persian/espeak_reference.py --output "$RUNNER_TEMP/reference"
           python3 experiments/persian/compare_combined_l_timing.py --library "$RUNNER_TEMP/fa/libreloq_eci.so" --reference-dir "$RUNNER_TEMP/reference" --wav "out/persisch-l-vokallaenge.wav"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: persisch-l-vokallaenge
           path: out/persisch-l-vokallaenge.wav

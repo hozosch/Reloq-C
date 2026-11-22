@@ -14,7 +14,7 @@ jobs:
       packageable: ${{ steps.version.outputs.packageable }}
       build_epoch: ${{ steps.version.outputs.build_epoch }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Select stable installable packaging
@@ -42,7 +42,7 @@ jobs:
     if: needs.version.outputs.packageable == 'true'
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Download and verify current community dictionaries
@@ -50,7 +50,7 @@ jobs:
           RELOQ_BUILD_GITHUB_TOKEN: ${{ github.token }}
         run: |
           python3 -c "import sys; sys.path.insert(0, 'addon'); from build_synth import refresh_community_dictionaries; refresh_community_dictionaries()"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dictionary-snapshot
           path: data/community/
@@ -61,14 +61,14 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Check dictionary snapshot management
         run: |
           python3 -B nvda/test_dictionary_manager.py
           python3 -B nvda/test_dictionary_update_ui.py
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dictionary-snapshot
           path: data/community
@@ -163,7 +163,7 @@ jobs:
           python3 -B nvda/test_eci_asian_greek_native.py
       - name: Verify SAPI delivery, timing and cancellation against the engine
         run: make -C sapi test
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
@@ -190,14 +190,14 @@ jobs:
       RELOQ_BUILD_EPOCH: ${{ needs.version.outputs.build_epoch }}
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dictionary-snapshot
           path: data/community
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
@@ -207,7 +207,7 @@ jobs:
           javac -d /tmp/reloq-update-test android/java/org/reloq/tts/UpdateData.java android/test/UpdateDataTest.java
           java -cp /tmp/reloq-update-test org.reloq.tts.UpdateDataTest
           python3 android/test_auto_updates.py --java-home "$JAVA_HOME"
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
         with:
           packages: platform-tools
           log-accepted-android-sdk-licenses: false
@@ -229,7 +229,7 @@ jobs:
           previous_apk=(previous/*.apk)
           test "${#previous_apk[@]}" -eq 1
           python3 android/build.py --sdk "$ANDROID_HOME" --ndk "$ANDROID_HOME/ndk/30.0.16248370" --java-home "$JAVA_HOME" --abi '${{ matrix.abi }}' --verified-dictionaries --replace-from "${previous_apk[0]}" --jobs 2
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: android-apk-${{ matrix.tag }}
           path: dist/reloq-c-android-${{ matrix.tag }}-*.apk
@@ -241,14 +241,14 @@ jobs:
     env:
       RELOQ_BUILD_EPOCH: ${{ needs.version.outputs.build_epoch }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dictionary-snapshot
           path: data/community
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: sapi-native-x64
           path: dist
@@ -282,7 +282,7 @@ jobs:
           for language in en de; do
             PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-${{ needs.version.outputs.version }}.nvda-addon"))' "$language"
           done
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: nvda-addon
           path: dist/*.nvda-addon
@@ -293,10 +293,10 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 35
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: nvda-addon
           path: candidate
@@ -344,34 +344,34 @@ jobs:
     if: needs.version.outputs.stable == 'true'
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dictionary-snapshot
           path: data/community
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: sapi-native-*
           path: artifacts/payload
           merge-multiple: true
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: sapi-installer
           path: artifacts/sapi
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: android-apk-*
           merge-multiple: true
           path: artifacts/android
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: nvda-addon
           path: artifacts/nvda
       - name: Collect the four installable packages
         run: python3 tools/release_packages.py collect artifacts release-packages
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: release-packages
           path: release-packages/

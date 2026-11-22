@@ -34,12 +34,12 @@ jobs:
       matrix:
         arch: [x64, x86]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Use the shared release dictionary snapshot
         if: ${{ inputs.shared_dictionary_snapshot }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: dictionary-snapshot
           path: data/community
@@ -61,7 +61,7 @@ jobs:
           fi
           sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -qq
           sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y --no-install-recommends gcc-mingw-w64-$prefix-posix
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         id: rules
         with:
           path: vendor/openevv61/build
@@ -76,7 +76,7 @@ jobs:
           if [ '${{ matrix.arch }}' = x64 ]; then prefix=x86_64; else prefix=i686; fi
           make -C eci -j2 windows-${{ matrix.arch }} PROVIDER_LTO=-flto=2 WINDOWS_CC=$prefix-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=$prefix-w64-mingw32-objdump
           python3 sapi/build.py --arch ${{ matrix.arch }} --cc $prefix-w64-mingw32-gcc-posix --objdump $prefix-w64-mingw32-objdump
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sapi-native-${{ matrix.arch }}
           path: dist/reloq-c-sapi5-${{ matrix.arch }}-*.zip
@@ -87,10 +87,10 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: sapi-native-*
           path: dist
@@ -231,7 +231,7 @@ jobs:
             if ($k -and @($k.GetSubKeyNames() | Where-Object { $_ -like 'ReLoqC_*' }).Count) { throw "Voice tokens remain: $view" }
             if ($k) { $k.Dispose() }; $h.Dispose()
           }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: sapi-installer

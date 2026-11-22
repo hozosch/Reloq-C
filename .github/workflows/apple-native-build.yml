@@ -13,7 +13,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Build iOS, simulator and macOS libraries
@@ -29,7 +29,7 @@ jobs:
             -liconv -lm -o "$RUNNER_TEMP/test-apple-eci"
       - name: Run native macOS ECI smoke test
         run: '"$RUNNER_TEMP/test-apple-eci"'
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: reloq-apple-xcframework
           path: ${{ runner.temp }}/reloq-apple/ReLoq.xcframework

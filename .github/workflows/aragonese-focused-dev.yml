@@ -12,11 +12,11 @@ jobs:
     env:
       RELOQ_BUILD_EPOCH: '1700000000'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           fetch-depth: 0
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dictionary-snapshot
           run-id: 43505754441
@@ -29,14 +29,14 @@ jobs:
           fi
           sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 update -qq
           sudo apt-get -o Acquire::Retries=2 install -y --no-install-recommends gcc-mingw-w64-x86-64-posix gettext
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         id: prior
         with:
           path: vendor/openevv61/build
           key: aragonese-hearing-ubuntu24-gcc13-x64-v1-${{ github.sha }}
           restore-keys: |
             aragonese-hearing-ubuntu24-gcc13-x64-v1-
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@v6
         id: released
         if: steps.prior.outputs.cache-matched-key == ''
         with:
@@ -66,7 +66,7 @@ jobs:
         run: |
           make -C eci -j4 windows-x64 PROVIDER_LTO=-flto=2 WINDOWS_CC=x86_64-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=x86_64-w64-mingw32-objdump
           printf '%s\n' "$GITHUB_SHA" > vendor/openevv61/build/.hearing-source-commit
-      - uses: actions/cache/save@v4
+      - uses: actions/cache/save@v6
         if: steps.prior.outputs.cache-hit != 'true'
         with:
           path: vendor/openevv61/build
@@ -90,7 +90,7 @@ jobs:
           build(Path('dist/reloq-c-synth-x64-1.5.0-dev11.nvda-addon'),Path('eci/eci.dll'),refresh_dictionaries=False)
           PY
           cp eci/eci.dll dist/eci.dll
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: aragonese-focused-candidate
           path: |
@@ -104,10 +104,10 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: aragonese-focused-candidate
           path: candidate
@@ -139,7 +139,7 @@ jobs:
           if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw 'NVDA portable installation failed' }
           python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-1.5.0-dev11.nvda-addon --plugin addon/test_nvda_real_aragonese_plugin.py --work aragonese-probe
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA language or spelling regression' }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: aragonese-focused-nvda-results

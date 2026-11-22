@@ -9,7 +9,7 @@ jobs:
   sapi-build:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Install Windows compiler
@@ -22,7 +22,7 @@ jobs:
           make -C sapi CC=x86_64-w64-mingw32-gcc-posix build/ReLoqSapi.dll build/Test-Dictionary.exe build/Test-DictionarySources.exe
           cc -std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -I sapi sapi/dictionary_merge.c sapi/test_dictionary_merge.c -o /tmp/test-dictionary-merge
           /tmp/test-dictionary-merge
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: issue131-sapi-test
           path: |
@@ -34,14 +34,14 @@ jobs:
     needs: sapi-build
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: issue131-sapi-test
           path: candidate/sapi
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: high-speed-addon-candidate
           path: candidate

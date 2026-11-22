@@ -154,7 +154,7 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -174,7 +174,7 @@ jobs:
           if [ -z "$selected" ]; then echo 'No matching Windows acoustic build' >&2; exit 1; fi
           gh run watch "$selected" --exit-status --interval 15 --repo "$GITHUB_REPOSITORY"
           echo "run_id=$selected" >> "$GITHUB_OUTPUT"
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: persian-windows-acoustic-probe
           run-id: ${{ steps.acoustic.outputs.run_id }}
@@ -346,13 +346,13 @@ jobs:
           $addon = (Get-ChildItem dist -Filter *.nvda-addon | Select-Object -First 1).FullName
           python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon "$addon" --plugin experiments/persian/test_nvda_real_plugin.py --work persian-nvda-results
           if ($LASTEXITCODE -ne 0) { throw 'Actual NVDA Persian profile test failed' }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: persian-pinglish-nvda-test
           path: dist/*.nvda-addon
           if-no-files-found: error
           retention-days: 7
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: persian-pinglish-nvda-test-results
