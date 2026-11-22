@@ -431,8 +431,24 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
         RECT frame={0,0,620,750};AdjustWindowRectEx(&frame,(DWORD)GetWindowLongPtrW(w,GWL_STYLE),FALSE,0);
         SetWindowPos(w,NULL,0,0,frame.right-frame.left,frame.bottom-frame.top,SWP_NOMOVE|SWP_NOZORDER);
         combo(w,LANGUAGE,T(LANGUAGE),8);combo(w,PROFILE,T(PROFILE),38);
-        combo(w,GENDER,T(MODEL),68);combo(w,RATE,T(RATE),98);
-        check(w,MELLOW_MODE,T(MELLOW_MODE),128);combo(w,PAUSES,T(PAUSES),151);
+        combo(w,GENDER,T(MODEL),68);check(w,SHARED,T(SHARED),98);
+        base_pitch(w,d,124);number(w,INFLECTION,T(INFLECTION),180);
+        number(w,HEAD,T(HEAD),207);number(w,ROUGH,T(ROUGH),234);number(w,BREATH,T(BREATH),261);
+        combo(w,RATE,T(RATE),290);check(w,MELLOW_MODE,T(MELLOW_MODE),320);
+        combo(w,PAUSES,T(PAUSES),343);
+        control(w,L"BUTTON",T(BOOST),WS_TABSTOP|BS_AUTOCHECKBOX,BOOST,12,375,326,23);
+        control(w,L"BUTTON",T(ORIGINAL_ACOUSTIC_CLOCK),WS_TABSTOP|BS_AUTOCHECKBOX,ORIGINAL_ACOUSTIC_CLOCK,350,375,258,24);
+        control(w,L"BUTTON",T(TAGS),WS_TABSTOP|BS_AUTOCHECKBOX,TAGS,12,400,326,23);
+        control(w,L"BUTTON",T(WORD_SEGMENTATION),WS_TABSTOP|BS_AUTOCHECKBOX,WORD_SEGMENTATION,350,400,258,23);
+        control(w,L"BUTTON",T(ABBREVIATIONS),WS_TABSTOP|BS_AUTOCHECKBOX,ABBREVIATIONS,12,423,326,23);
+        control(w,L"BUTTON",T(CAMEL_CASE),WS_TABSTOP|BS_AUTOCHECKBOX,CAMEL_CASE,350,423,258,23);
+        check(w,PREDICTION,T(PREDICTION),446);check(w,ORIGINAL_QUESTIONS,T(ORIGINAL_QUESTIONS),469);
+        check(w,DICTIONARIES,T(DICTIONARIES),492);
+        /* Keep the related actions together in keyboard order. They occupy a
+         * separate right-hand column beside the voice controls. */
+        control(w,L"BUTTON",T(OVERRIDES),WS_TABSTOP|BS_PUSHBUTTON,OVERRIDES,350,180,258,24);
+        control(w,L"BUTTON",T(EQ_DIALOG),WS_TABSTOP|BS_PUSHBUTTON,EQ_DIALOG,350,207,258,24);
+        control(w,L"BUTTON",T(UPDATE_SETTINGS),WS_TABSTOP|BS_PUSHBUTTON,UPDATE_SETTINGS,350,234,258,24);
         for(size_t i=0;i<sapi_language_count();++i){WCHAR name[128];const struct sapi_language *language=sapi_language_at(i);
             if(!GetLocaleInfoW(language->lcid,LOCALE_SLOCALIZEDDISPLAYNAME,name,128))wcscpy(name,language->name);
             add(w,LANGUAGE,name);}
@@ -440,19 +456,6 @@ static INT_PTR CALLBACK dialog_proc(HWND w,UINT message,WPARAM wp,LPARAM lp)
         add(w,GENDER,T(MALE));add(w,GENDER,T(FEMALE));
         for(unsigned i=0;i<7;++i){WCHAR text[32];swprintf(text,32,L"%d Hz",sapi_sample_rate(i));add(w,RATE,text);}
         add(w,PAUSES,T(NEVER));add(w,PAUSES,T(FINAL));add(w,PAUSES,T(ALWAYS));
-        check(w,SHARED,T(SHARED),183);
-        base_pitch(w,d,209);number(w,INFLECTION,T(INFLECTION),266);
-        control(w,L"BUTTON",T(OVERRIDES),WS_TABSTOP|BS_PUSHBUTTON,OVERRIDES,350,266,258,24);
-        number(w,HEAD,T(HEAD),293);number(w,ROUGH,T(ROUGH),320);number(w,BREATH,T(BREATH),347);
-        control(w,L"BUTTON",T(EQ_DIALOG),WS_TABSTOP|BS_PUSHBUTTON,EQ_DIALOG,350,293,258,24);
-        control(w,L"BUTTON",T(UPDATE_SETTINGS),WS_TABSTOP|BS_PUSHBUTTON,UPDATE_SETTINGS,350,320,258,24);
-        control(w,L"BUTTON",T(ORIGINAL_ACOUSTIC_CLOCK),WS_TABSTOP|BS_AUTOCHECKBOX,ORIGINAL_ACOUSTIC_CLOCK,350,347,258,24);
-        control(w,L"BUTTON",T(TAGS),WS_TABSTOP|BS_AUTOCHECKBOX,TAGS,12,377,326,23);
-        control(w,L"BUTTON",T(WORD_SEGMENTATION),WS_TABSTOP|BS_AUTOCHECKBOX,WORD_SEGMENTATION,350,377,258,23);
-        control(w,L"BUTTON",T(ABBREVIATIONS),WS_TABSTOP|BS_AUTOCHECKBOX,ABBREVIATIONS,12,400,326,23);
-        control(w,L"BUTTON",T(CAMEL_CASE),WS_TABSTOP|BS_AUTOCHECKBOX,CAMEL_CASE,350,400,258,23);
-        check(w,PREDICTION,T(PREDICTION),423);check(w,ORIGINAL_QUESTIONS,T(ORIGINAL_QUESTIONS),446);
-        check(w,DICTIONARIES,T(DICTIONARIES),469);check(w,BOOST,T(BOOST),492);
         combo(w,DICT_SOURCE,T(DICT_SOURCE),517);
         add(w,DICT_SOURCE,T(DICT_COMMUNITY));add(w,DICT_SOURCE,T(DICT_ALTERNATIVE));
         control(w,L"BUTTON",T(DICT_OWN),WS_TABSTOP|BS_PUSHBUTTON,OWN_DICTIONARIES,12,547,258,24);

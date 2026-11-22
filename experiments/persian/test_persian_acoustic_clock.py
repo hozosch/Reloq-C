@@ -76,6 +76,34 @@ def main():
         assert samples[0]!=samples[1] and samples[0]==samples[2],'mixed clock or restoration failed'
         count+=1
     finally:owner.close()
+    # Within a Persian utterance the actual US engine and its contour pilot
+    # use the selected Persian clock, even if the user's English preference
+    # differs. Leaving the utterance restores that independent preference.
+    for profile, texts in ((PERSIAN_PROBE, ('سلام دنیا', 'سلام دنیا NVDA و تنظیمات خروج')),
+                           (PINGLISH_PROBE, ('salaam donyaa', 'salaam NVDA donyaa'))):
+        owner=make_language_engine(dll,dll,None,Path('/unavailable-espeak'),Path('/unavailable'),
+                                   language=profile.id,native_sentences=True)
+        try:
+            bit=ACOUSTIC_CLOCK_BITS[profile.id];en_bit=ACOUSTIC_CLOCK_BITS[US_ENGLISH.id]
+            for desired, mask in ((1,bit),(0,en_bit)):
+                owner.set_acoustic_clocks(mask)
+                observed=[];activate=owner._activate
+                def watch(key):
+                    engine=activate(key)
+                    if key[0]==US_ENGLISH.id:
+                        observed.append(engine._dll.eciGetParam(engine._handle,ORIGINAL_ACOUSTIC_CLOCK))
+                    return engine
+                for text in texts:
+                    samples=bytearray()
+                    with patch.object(owner,'_activate',side_effect=watch):
+                        assert owner.speak((text,),samples.extend,lambda _:None)
+                    assert samples and observed and all(value==desired for value in observed), (
+                        profile.locale,text,desired,observed)
+                en=owner._activate(owner._key(US_ENGLISH.id,'1'))
+                assert en._dll.eciGetParam(en._handle,ORIGINAL_ACOUSTIC_CLOCK)==int(bool(mask&en_bit))
+                owner._activate(owner._home)
+                count+=1
+        finally:owner.close()
     print(f'Passed {count} Persian/Pinglish real-US-contour clock, restoration and isolation cases.')
 
 if __name__=='__main__':main()

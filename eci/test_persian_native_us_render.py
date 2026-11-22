@@ -136,6 +136,38 @@ def main():
             finally:
                 pair.close()
 
+    # The native Persian transaction owns one timing choice for both its
+    # target and silent US contour. A caller's independent US setting must
+    # neither affect the utterance nor be overwritten after it returns.
+    clock_param = 0x101b
+    for rate in (1, 3, 6):
+        pair = Pair(rate)
+        try:
+            raw = 'سلام دنیا'.encode('utf8')
+            for fa_clock in (0, 1, 2):
+                effective = int(fa_clock == 1)
+                assert dll.eciSetParam(pair.voice, clock_param, fa_clock) >= 0
+                assert dll.eciSetParam(pair.pilot, clock_param, effective) >= 0
+                reference = pair.render('سلام دنیا', offsets=(0, len(raw)))
+                assert reference[0] == 0 and reference[1] and len(reference[2]) == 2
+                for us_clock in (0, 1, 2):
+                    assert dll.eciSetParam(pair.pilot, clock_param, us_clock) >= 0
+                    actual = pair.render('سلام دنیا', offsets=(0, len(raw)))
+                    assert actual[:3] == reference[:3], (rate, fa_clock, us_clock)
+                    assert dll.eciGetParam(pair.voice, clock_param) == fa_clock
+                    assert dll.eciGetParam(pair.pilot, clock_param) == us_clock
+                    # Preflight rejection and capture failure must also
+                    # restore the pilot's original choice without output.
+                    rejected = pair.render('سلام NVDA دنیا')
+                    assert rejected[0] == 1 and not rejected[1] and not rejected[2]
+                    assert dll.eciGetParam(pair.pilot, clock_param) == us_clock
+                    failed = pair.render('سلام', maximum=1)
+                    assert failed[0] == -3 and not failed[1] and not failed[2]
+                    assert dll.eciGetParam(pair.pilot, clock_param) == us_clock
+                    checks += 1
+        finally:
+            pair.close()
+
     pair = Pair()
     try:
         for text, mode, expected in (('سلام NVDA دنیا', 0, 1), ('`vs70 سلام', 0, 1), ('', 0, 1),
@@ -170,6 +202,8 @@ def main():
         assert list(pool.map(independent, samples)) == expected
 
     pair, result = Pair(), []
+    assert dll.eciSetParam(pair.voice, clock_param, 1) >= 0
+    assert dll.eciSetParam(pair.pilot, clock_param, 2) >= 0
     worker = threading.Thread(target=lambda: result.append(pair.render('سلام ' * 1000, maximum=120000)), daemon=True)
     try:
         worker.start(); deadline = time.monotonic() + 15
@@ -179,7 +213,10 @@ def main():
         assert dll.eciStop(pair.voice) == 1
         worker.join(20)
         assert not worker.is_alive() and result and result[0][0] == -4, result
+        assert dll.eciGetParam(pair.voice, clock_param) == 1
+        assert dll.eciGetParam(pair.pilot, clock_param) == 2
         assert pair.render('سلام')[0] == 0
+        assert dll.eciGetParam(pair.pilot, clock_param) == 2
     finally:
         if worker.is_alive():
             dll.eciStop(pair.voice); dll.eciStop(pair.pilot); worker.join(20)

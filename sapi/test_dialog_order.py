@@ -207,6 +207,22 @@ def main():
         assert rate and mellow and pauses, 'Expected controls not found'
         assert user32.GetNextDlgTabItem(window, rate, False) == mellow
         assert user32.GetNextDlgTabItem(window, mellow, False) == pauses
+        breath, boost, clock = (user32.GetDlgItem(window, control) for control in (109, 114, clock_id))
+        assert user32.GetNextDlgTabItem(window, breath, False) == rate
+        if user32.IsWindowEnabled(boost):
+            assert user32.GetNextDlgTabItem(window, pauses, False) == boost
+            assert user32.GetNextDlgTabItem(window, boost, False) == clock
+        else:
+            assert user32.GetNextDlgTabItem(window, pauses, False) == clock
+        assert user32.GetNextDlgTabItem(window, clock, False) == tags
+        # The three program actions form one keyboard group rather than
+        # interrupting the voice sliders or the sample-rate controls.
+        actions = [user32.GetDlgItem(window, control) for control in (126, 141, 153)]
+        assert all(actions)
+        assert user32.GetNextDlgTabItem(window, user32.GetDlgItem(window, 113), False) == actions[0]
+        assert user32.GetNextDlgTabItem(window, actions[0], False) == actions[1]
+        assert user32.GetNextDlgTabItem(window, actions[1], False) == actions[2]
+        assert user32.GetNextDlgTabItem(window, actions[2], False) == user32.GetDlgItem(window, 120)
         rectangles = [wintypes.RECT() for _ in range(3)]
         for control, rect in zip((rate, mellow, pauses), rectangles):
             assert user32.GetWindowRect(control, ctypes.byref(rect))

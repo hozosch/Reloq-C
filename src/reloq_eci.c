@@ -2875,7 +2875,19 @@ static int reloq_fa_speak_us_native(ECIHand handle,ECIHand pilot_handle,
     size_t ordinary_end=bytes;
     unsigned char ordinary_mode=single?1:0;
     if(single && use_runs)run_modes=&ordinary_mode;
-    int status;
+    int status,pilot_clock_changed=0;
+    int pilot_clock=eciGetParam(pilot_handle,RELOQ_ECI_ORIGINAL_ACOUSTIC_CLOCK);
+    /* The US pilot is part of this Persian utterance. Its temporary clock
+     * follows the Persian handle, independently of the caller's stored US
+     * preference. Persian's automatic (2) mode uses the fine clock. */
+    int wanted_clock=e->original_acoustic_clock==1;
+    if(pilot_clock<0){status=-1;goto done;}
+    if(pilot_clock!=wanted_clock) {
+        if(eciSetParam(pilot_handle,RELOQ_ECI_ORIGINAL_ACOUSTIC_CLOCK,wanted_clock)<0) {
+            status=-1;goto done;
+        }
+        pilot_clock_changed=1;
+    }
     if(!use_runs && !single && memchr(text,'`',bytes))status=1;
     else status=reloq_fa_prepare_native_runs(text,bytes,mode,
         use_runs?run_ends:(bytes?&ordinary_end:NULL),
@@ -2973,6 +2985,8 @@ static int reloq_fa_speak_us_native(ECIHand handle,ECIHand pilot_handle,
     status=reloq_fa_replay_us_capture(handle,&target_words,&donor,words.syllables,
         replay_marks,index_count,before);
 done:
+    if(pilot_clock_changed && eciSetParam(pilot_handle,RELOQ_ECI_ORIGINAL_ACOUSTIC_CLOCK,pilot_clock)<0 && !status)
+        status=-3;
     reloq_fa_prepared_clear(&prepared);reloq_fa_native_words_clear(&words);
     eciPersianRelease(donor_text);
     eciPersianReleaseOwnedCapture(&target);eciPersianReleaseOwnedCapture(&donor);

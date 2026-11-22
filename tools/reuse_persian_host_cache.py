@@ -8,6 +8,10 @@ import shutil
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
+DEV36_BASE = 'a29c07e6e3036463e66b224d742703d8fee0abc7'
+DEV36_KEY = ('persian-windows-host-gcc14-v2-'
+             '327dfdcb26be7b18cbb34433921f8b4bacd0497e76a3c33525c66b2e274ca9d7')
+DEV36_ALLOWED = {'src/reloq_rules61.c', 'src/reloq_eci.c'}
 DEV35_BASE = '324d869229dcaf88bac4486b900de04b8ab7b165'
 DEV35_KEY = ('persian-windows-host-gcc14-v2-'
              '89fe1c68ffc01ee0d0c40f0061a3fe4ac3dee2197657891dc14ab8919c009156')
@@ -249,7 +253,8 @@ INPUTS = ('eci/Makefile', 'eci/reloq_eci_fixed_math.c', 'src', 'include',
 
 
 def eligible(key, changed):
-    return bool(changed) and ((key == DEV35_KEY and set(changed) == DEV35_ALLOWED) or
+    return bool(changed) and ((key == DEV36_KEY and set(changed) == DEV36_ALLOWED) or
+                              (key == DEV35_KEY and set(changed) == DEV35_ALLOWED) or
                               (key == DEV34_KEY and set(changed) == DEV34_ALLOWED) or
                               (key == DEV201_KEY and set(changed) == DEV201_ALLOWED) or
                               (key == DEV200_KEY and set(changed) == DEV200_ALLOWED) or
@@ -291,7 +296,7 @@ def main():
     build, dll = ROOT / 'eci/build/windows', ROOT / 'eci/eci.dll'
     try:
         key = os.environ.get('PERSIAN_HOST_CACHE_KEY', '')
-        base = DEV35_BASE if key == DEV35_KEY else DEV34_BASE if key == DEV34_KEY else DEV201_BASE if key == DEV201_KEY else DEV200_BASE if key == DEV200_KEY else DEV191_BASE if key == DEV191_KEY else DEV190_BASE if key == DEV190_KEY else DEV189_BASE if key == DEV189_KEY else DEV188_TRANSITION_BASE if key == DEV188_TRANSITION_KEY else DEV188_BASE if key == DEV188_KEY else DEV187_BASE if key == DEV187_KEY else DEV172_BASE if key == DEV172_KEY else DEV171_BASE if key == DEV171_KEY else DEV170_BASE if key == DEV170_KEY else DEV169_BASE if key == DEV169_KEY else DEV168_BASE if key == DEV168_KEY else DEV166_BASE if key == DEV166_KEY else DEV164_BASE if key == DEV164_KEY else DEV163_BASE if key == DEV163_KEY else DEV162_BASE if key == DEV162_KEY else DEV161_BASE if key == DEV161_KEY else DEV160_BASE if key == DEV160_KEY else DEV159_BASE if key == DEV159_KEY else DEV158_BASE if key == DEV158_KEY else DEV157_BASE if key == DEV157_KEY else DEV156_BASE if key == DEV156_KEY else DEV155_BASE if key == DEV155_KEY else DEV154_BASE if key == DEV154_KEY else DEV153_BASE if key == DEV153_KEY else DEV152_BASE if key == DEV152_KEY else DEV151_BASE if key == DEV151_KEY else DEV150_BASE if key == DEV150_KEY else DEV149_BASE if key == DEV149_KEY else TRACE_BASE if key == TRACE_KEY else NEWEST_BASE if key == NEWEST_KEY else RECENT_BASE if key == RECENT_KEY else BASE
+        base = DEV36_BASE if key == DEV36_KEY else DEV35_BASE if key == DEV35_KEY else DEV34_BASE if key == DEV34_KEY else DEV201_BASE if key == DEV201_KEY else DEV200_BASE if key == DEV200_KEY else DEV191_BASE if key == DEV191_KEY else DEV190_BASE if key == DEV190_KEY else DEV189_BASE if key == DEV189_KEY else DEV188_TRANSITION_BASE if key == DEV188_TRANSITION_KEY else DEV188_BASE if key == DEV188_KEY else DEV187_BASE if key == DEV187_KEY else DEV172_BASE if key == DEV172_KEY else DEV171_BASE if key == DEV171_KEY else DEV170_BASE if key == DEV170_KEY else DEV169_BASE if key == DEV169_KEY else DEV168_BASE if key == DEV168_KEY else DEV166_BASE if key == DEV166_KEY else DEV164_BASE if key == DEV164_KEY else DEV163_BASE if key == DEV163_KEY else DEV162_BASE if key == DEV162_KEY else DEV161_BASE if key == DEV161_KEY else DEV160_BASE if key == DEV160_KEY else DEV159_BASE if key == DEV159_KEY else DEV158_BASE if key == DEV158_KEY else DEV157_BASE if key == DEV157_KEY else DEV156_BASE if key == DEV156_KEY else DEV155_BASE if key == DEV155_KEY else DEV154_BASE if key == DEV154_KEY else DEV153_BASE if key == DEV153_KEY else DEV152_BASE if key == DEV152_KEY else DEV151_BASE if key == DEV151_KEY else DEV150_BASE if key == DEV150_KEY else DEV149_BASE if key == DEV149_KEY else TRACE_BASE if key == TRACE_KEY else NEWEST_BASE if key == NEWEST_KEY else RECENT_BASE if key == RECENT_KEY else BASE
         changed = subprocess.check_output(['git', 'diff', '--name-only', base, 'HEAD', '--', *INPUTS],
                                           cwd=ROOT, text=True).splitlines()
         if not eligible(key, changed):
@@ -310,6 +315,10 @@ def main():
         # All native Persian direct components depend on direct_fa_*.h.
         for obj in build.glob('reloq_fa_direct_*.o'):
             obj.unlink()
+        if key == DEV36_KEY:
+            for name in ('reloq_rules61.o', 'reloq_eci.o'):
+                (build / name).unlink(missing_ok=True)
+            dll.unlink()
         if key == DEV35_KEY:
             (build / 'reloq_rules61.o').unlink(missing_ok=True)
             dll.unlink()

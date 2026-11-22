@@ -146,6 +146,7 @@ public final class SettingsActivity extends Activity {
         wpmInput.setOnFocusChangeListener((view,focused) -> {if(!focused)commitWpm();});
         TextView tempoHelp=new TextView(this);tempoHelp.setText(R.string.speed_help);content.addView(tempoHelp);
         boost=check(R.string.rate_boost,settings.rateBoost);
+        originalAcousticClock=check(R.string.original_acoustic_clock,settings.originalClock(Catalog.LANGUAGES[clockUiLanguage].id));
         androidRate.setOnCheckedChangeListener((button,checked) -> {updateSpeedControls();changed();});
         speedModes.setOnCheckedChangeListener((group,id) -> {updateSpeedControls();changed();});
         updateSpeedControls();
@@ -190,7 +191,7 @@ public final class SettingsActivity extends Activity {
         rates=select(R.string.sample_rate,new String[]{"8 kHz","11.025 kHz","16 kHz","22.05 kHz",
             "32 kHz","44.1 kHz","48 kHz"},settings.rate);
         mellowMode=check(R.string.mellow_mode,settings.mellowMode);
-        originalAcousticClock=check(R.string.original_acoustic_clock,settings.originalClock(Catalog.LANGUAGES[clockUiLanguage].id));
+        pauses=select(R.string.pause_mode,getResources().getStringArray(R.array.pause_modes),settings.pauses);
         heading(R.string.equalizer);
         eqEnabled=check(R.string.equalizer_enabled,settings.eqEnabled);
         eqCustomLow=VoiceSettings.bounded(settings.eqLow,-12,12);
@@ -215,7 +216,6 @@ public final class SettingsActivity extends Activity {
             }
         });
         updateEqualizerControls();
-        pauses=select(R.string.pause_mode,getResources().getStringArray(R.array.pause_modes),settings.pauses);
         abbreviations=check(R.string.abbreviation_dictionary,settings.abbreviations);
         prediction=check(R.string.phrase_prediction,settings.prediction);
         originalQuestions=check(R.string.original_questions,settings.originalQuestions);

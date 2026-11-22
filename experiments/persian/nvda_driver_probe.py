@@ -20,19 +20,19 @@ if __package__:
     from .pinglish_frontend import english_exception, latin_fold, latin_spans
     from .continuous_driver import bounded_jobs, bracket_jobs, continuation_comma, sentence_jobs, try_continuous, try_persian_glides
     from .._reloq_eci_direct import (DirectEciEngine, EciCapitalWord, EciIndex, EciLanguage,
-                                     EciPitch, EciPitchHz, EciProsody, EciText, PAUSE_MODE)
-    from .._reloq_languages import Language, LanguageEngine, US_ENGLISH, GERMAN, FINNISH, carry_speech_context
+                                     EciPitch, EciPitchHz, EciProsody, EciText, PAUSE_MODE, ORIGINAL_ACOUSTIC_CLOCK)
+    from .._reloq_languages import Language, LanguageEngine, US_ENGLISH, GERMAN, FINNISH, N_, carry_speech_context
 else:
     from direct_fa_sequence import ScopedDirectPersianEngine
     from hybrid_fa_frontend import DirectFirstPersian
     from pinglish_frontend import english_exception, latin_fold, latin_spans
     from continuous_driver import bounded_jobs, bracket_jobs, continuation_comma, sentence_jobs, try_continuous, try_persian_glides
     from _reloq_eci_direct import (DirectEciEngine, EciCapitalWord, EciIndex, EciLanguage,
-                                  EciPitch, EciPitchHz, EciProsody, EciText, PAUSE_MODE)
-    from _reloq_languages import Language, LanguageEngine, US_ENGLISH, GERMAN, FINNISH, carry_speech_context
+                                  EciPitch, EciPitchHz, EciProsody, EciText, PAUSE_MODE, ORIGINAL_ACOUSTIC_CLOCK)
+    from _reloq_languages import Language, LanguageEngine, US_ENGLISH, GERMAN, FINNISH, N_, carry_speech_context
 
-PERSIAN_PROBE = Language(0x140000, 'Persian test', 'fa_IR', 'utf-8', US_ENGLISH.voices)
-PINGLISH_PROBE = Language(0x140001, 'Persian (Pinglish) test', 'fa_Latn', 'utf-8', US_ENGLISH.voices)
+PERSIAN_PROBE = Language(0x140000, N_('Persian'), 'fa_IR', 'utf-8', US_ENGLISH.voices)
+PINGLISH_PROBE = Language(0x140001, N_('Persian (Pinglish)'), 'fa_Latn', 'utf-8', US_ENGLISH.voices)
 PROFILES = {profile.id: profile for profile in
             (PERSIAN_PROBE, PINGLISH_PROBE, US_ENGLISH, GERMAN, FINNISH)}
 
@@ -379,6 +379,12 @@ def try_native_persian_sentence(owner, parts, on_pcm, on_index, *, fa_ids):
 class PersianProbeLanguageEngine(LanguageEngine):
     """Use English for explicit and clear Latin-script boundaries."""
 
+    def _acoustic_clock_for(self, language):
+        shared = getattr(self, '_persian_request_clock', None)
+        if language == US_ENGLISH.id and shared is not None:
+            return shared
+        return super()._acoustic_clock_for(language)
+
     def _activate(self, key):
         engine = super()._activate(key)
         if isinstance(engine, OwnedPersianEngine):
@@ -429,18 +435,18 @@ class PersianProbeLanguageEngine(LanguageEngine):
                     self._persian_capture_worker = ParallelPilot(self._dll, persian=True)
             except (RuntimeError, OSError):
                 pass
-        if english_home:
-            # The accepted load-time wait also covers the two background
-            # handles used for English/Persian sentence planning. Otherwise
-            # the first mixed text can still wait for their initialization.
-            for name in ('_persian_contour_worker', '_persian_capture_worker'):
-                worker = getattr(self, name, None)
-                if worker is not None:
-                    try:
-                        worker.wait_ready()
-                    except (RuntimeError, OSError):
-                        worker.close()
-                        setattr(self, name, None)
+        # Finish initializing the two background handles while either
+        # related voice is being selected. Otherwise the first utterance can
+        # wait for a newly selected Persian voice's worker just as it did for
+        # the English voice. No analyzed speech is cached across requests.
+        for name in ('_persian_contour_worker', '_persian_capture_worker'):
+            worker = getattr(self, name, None)
+            if worker is not None:
+                try:
+                    worker.wait_ready()
+                except (RuntimeError, OSError):
+                    worker.close()
+                    setattr(self, name, None)
         if (US_ENGLISH.id in self._languages and
                 not getattr(self, '_persian_english_prepared', False)):
             home = self._home
@@ -762,6 +768,10 @@ class PersianProbeLanguageEngine(LanguageEngine):
                 select(logical)
             output.append(part)
         prior_uppercase = None
+        prior_request_clock = getattr(self, '_persian_request_clock', None)
+        if (self._acoustic_clocks is not None and
+                self._home[0] in (PERSIAN_PROBE.id, PINGLISH_PROBE.id)):
+            self._persian_request_clock = super()._acoustic_clock_for(self._home[0])
         try:
             # Sentence splitting is needed only when this request contains a
             # Persian/English switch. Keep unrelated languages on their
@@ -850,7 +860,19 @@ class PersianProbeLanguageEngine(LanguageEngine):
             return True
         finally:
             try:
-                self._activate(self._home)
+                self._persian_request_clock = prior_request_clock
+                # English's own setting remains independent after a Persian
+                # utterance, even if a switch or cancellation ended early.
+                try:
+                    engine = self._engines.get(US_ENGLISH.id)
+                    if engine is not None and self._acoustic_clocks is not None:
+                        desired = self._acoustic_clock_for(US_ENGLISH.id)
+                        values = self._engine_parameters[US_ENGLISH.id]
+                        if values.get(ORIGINAL_ACOUSTIC_CLOCK) != desired:
+                            engine.set_parameter(ORIGINAL_ACOUSTIC_CLOCK, desired)
+                            values[ORIGINAL_ACOUSTIC_CLOCK] = desired
+                finally:
+                    self._activate(self._home)
             finally:
                 if prior_uppercase is not None:
                     self._uppercase_cache = prior_uppercase

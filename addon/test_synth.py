@@ -312,25 +312,21 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert driver._get_language() == "de_DE"
                 assert driver.voice == "1"
                 assert list(driver.availableVoices) == list(map(str, range(1, 9)))
-                german_ui = ui_language.replace("-", "_").split("_", 1)[0] == "de"
                 assert driver.description == "Eloquence C"
-                assert driver.availableLanguages["de_DE"].displayName == "German"
+                assert driver.availableLanguages["de_DE"].displayName == translation.gettext("German")
                 assert isinstance(driver.availableLanguages["de_DE"], sys.modules["synthDriverHandler"].LanguageInfo)
                 assert [v.displayName for v in driver.availableVoices.values()] == [
                     "Reed", "Shelly", "Bobby", "Rocko", "Glen", "Sandy", "Grandma", "Grandpa"]
-                assert driver.availablePausemodes["1"].displayName == ("Nur am Textende" if german_ui else "Only at text end")
-                assert driver.availableSamplerates["1"].displayName == ("11,025 kHz" if german_ui else "11.025 kHz")
+                assert driver.availablePausemodes["1"].displayName == translation.gettext("Only at text end")
+                assert driver.availableSamplerates["1"].displayName == translation.gettext("11.025 kHz")
                 head_setting = next(item for item in driver.supportedSettings if item.id == "headSize")
-                assert head_setting.displayNameWithAccelerator == ("Kopf&größe" if german_ui else "&Head size")
+                assert head_setting.displayNameWithAccelerator == translation.gettext("&Head size")
                 question_setting = next(item for item in driver.supportedSettings if item.id == "originalQuestions")
-                assert question_setting.displayNameWithAccelerator == (
-                    "Ursprüngliche &Frageintonation verwenden" if german_ui else "Use original &question intonation")
+                assert question_setting.displayNameWithAccelerator == translation.gettext("Use original &question intonation")
                 mellow_setting = next(item for item in driver.supportedSettings if item.id == "mellowMode")
-                assert mellow_setting.displayNameWithAccelerator == (
-                    "&Weicher Modus (ab 16 kHz)" if german_ui else "&Mellow mode (16 kHz and above)")
+                assert mellow_setting.displayNameWithAccelerator == translation.gettext("&Mellow mode (16 kHz and above)")
                 clock_setting = next(item for item in driver.supportedSettings if item.id == "originalAcousticClock")
-                assert clock_setting.displayNameWithAccelerator == (
-                    "&Originalen Eloquence-Lauttakt verwenden (5 ms)" if german_ui else "Use &original Eloquence acoustic timing (5 ms)")
+                assert clock_setting.displayNameWithAccelerator == translation.gettext("Use &original Eloquence acoustic timing (5 ms)")
                 assert clock_setting.availableInSettingsRing and clock_setting.useConfig
                 driver.voice = "deu_experimental"
                 assert driver.voice == "1", "old voice IDs must migrate"
@@ -411,13 +407,13 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert driver.languageIsSupported("en-US")
                 assert driver.languageIsSupported("pt-BR")
                 assert driver.languageIsSupported("fi-FI")
-                assert driver.availableLanguages["pt_BR"].displayName == "Brazilian Portuguese"
-                assert driver.availableLanguages["fi_FI"].displayName == "Finnish"
+                assert driver.availableLanguages["pt_BR"].displayName == translation.gettext("Brazilian Portuguese")
+                assert driver.availableLanguages["fi_FI"].displayName == translation.gettext("Finnish")
                 assert LangChangeCommand in driver.supportedCommands
                 assert driver_module._parts(["Ein", LangChangeCommand("de-AT"),
                     " Satz", LangChangeCommand("hu-HU"), " bleibt", LangChangeCommand(None),
                     " zusammen."]) == [driver_module.EciText("Ein Satz bleibt zusammen.")]
-                assert driver.availableLanguages["en_US"].displayName == "American English"
+                assert driver.availableLanguages["en_US"].displayName == translation.gettext("American English")
                 assert driver_module._parts(["Hello", LangChangeCommand("en-US"), "world",
                     LangChangeCommand(None), "Hallo"]) == [driver_module.EciText("Hello"), driver_module.EciLanguage(65536,"1"),
                     driver_module.EciText("world"), driver_module.EciLanguage(262144,"1"), driver_module.EciText("Hallo")]
