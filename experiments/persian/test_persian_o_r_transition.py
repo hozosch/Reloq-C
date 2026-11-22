@@ -19,6 +19,14 @@ def release_slope(result):
                 for a, b in zip(rows, rows[1:]) if b.tick > a.tick), default=0)
 
 
+def attack_slope(result):
+    start = result.syllables[1][0] / 10000
+    end = result.syllables[1][1] / 10000
+    rows = [row for row in result.frames() if start <= row.tick <= end]
+    return max((abs(b.controls[17] - a.controls[17]) / (b.tick - a.tick)
+                for a, b in zip(rows, rows[1:]) if b.tick > a.tick), default=0)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--library', required=True, type=Path)
@@ -40,6 +48,7 @@ def main():
                     actual = capture(current, scope, tag)
                     if (rate, gender, head, speed) == (3, 0, 50, 82):
                         assert release_slope(actual) < 60, release_slope(actual)
+                        assert attack_slope(actual) < 60, attack_slope(actual)
                     if previous:
                         old = capture(previous, old_scope, tag)
                         assert actual.syllables == old.syllables
@@ -52,10 +61,10 @@ def main():
                                     assert row.controls[column] == before.controls[column], (
                                         rate, gender, head, speed, row.tick, column)
                         begin, end = actual.syllables[1]
-                        if end - begin >= 80000:
+                        if end - begin >= 300000:
                             assert middle(actual, 1, (9, 13, 15, 17)) == middle(old, 1, (9, 13, 15, 17))
                         if (rate, gender, head, speed) == (3, 0, 50, 82):
-                            assert release_slope(old) > 120
+                            assert attack_slope(old) > 120
                             assert actual.pcm != old.pcm and len(actual.pcm) == len(old.pcm)
                         # The rule must not affect an O followed by another
                         # consonant, or ordinary Finnish when scope is off.

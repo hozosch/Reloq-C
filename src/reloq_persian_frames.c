@@ -36,7 +36,14 @@ void reloq_fa_tuning_targets(float c[62],unsigned phone,double from,double to,
     double fade_in=after_r?1.0:fmax(0.0,(at-from)/3.0);
     double w=fmin(1.0,fmin(fade_in,fmax(0.0,(to-at)/release_ms)));
     for(unsigned i=0;phone<=5 && i<4;++i)if(shifts[phone][i] && c[columns[i]]>0 && w>0) {
-        double v=c[columns[i]]+shifts[phone][i]*w;
+        /* The saved O adds 425 Hz to F4. For a short O immediately before
+         * R, the normal 3-ms attack can be as abrupt as the release that
+         * the R-context rule already stretches. Fade this one adjustment in
+         * across 10 ms, while keeping other vowels and O contexts intact. */
+        double weight=w;
+        if(phone==RELOQ_FA_TUNE_O && i==3 && release_ms>3.0)
+            weight=fmin(weight,fmax(0.0,(at-from)/10.0));
+        double v=c[columns[i]]+shifts[phone][i]*weight;
         c[columns[i]]=(float)fmax(40.0,fmin(rate*.475,v));
     }
     /* The newer long-a project was edited on top of the saved project, not

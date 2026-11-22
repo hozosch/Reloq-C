@@ -83,16 +83,21 @@ def connected_release(library, previous):
                         for row, reference in zip(rows,before):
                             assert row.tick == reference.tick
                             for col in range(62):
-                                if row.tick > end and col == 17:
+                                if row.tick > end and col in (15, 17, 19):
                                     continue
                                 assert row.controls[col] == reference.controls[col], (
                                     rate,gender,speed,row.tick,col)
                         if (rate,gender,speed) == (3,0,82):
-                            changed = [row.tick for row, reference in zip(rows,before)
-                                       if row.controls[17] != reference.controls[17]]
-                            assert changed and min(changed) == end+1 and max(changed) < end+20, changed
-                            interval = [row.controls[17] for row in rows if end <= row.tick <= max(changed)+1]
-                            assert max(abs(a-b) for a,b in zip(interval,interval[1:])) <= 40.01
+                            # Dev30 already limited F4. F3 and F5 must also
+                            # change in the actual R release, not in the R's
+                            # steady portion or in a synthetic-only fixture.
+                            for column in (15, 19):
+                                changed = [row.tick for row, reference in zip(rows,before)
+                                           if row.controls[column] != reference.controls[column]]
+                                assert changed and min(changed) == end+1 and max(changed) < end+20, (column,changed)
+                                interval = [row.controls[column] for row in rows
+                                            if end <= row.tick <= max(changed)+1]
+                                assert max(abs(a-b) for a,b in zip(interval,interval[1:])) <= 40.01
                     checks += 1
     finally:
         current.close()

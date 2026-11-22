@@ -1288,9 +1288,9 @@ struct rule_plan {
     struct rule_control *controls;size_t control_count,control_capacity;
     struct rule_fa_phone *fa_phones;size_t fa_phone_count,fa_phone_capacity,fa_phone_next;
     size_t fa_h_level_phone;float fa_h_level;int fa_h_level_set;
-    float fa_r_previous_f4,fa_r_previous_voice,fa_r_previous_noise;
+    float fa_r_previous_resonance[3],fa_r_previous_voice,fa_r_previous_noise;
     float fa_r_previous_band3,fa_r_previous_band4;
-    int fa_r_previous_valid,fa_r_release_active;
+    unsigned fa_r_previous_valid,fa_r_release_active;
     int fa_phone_failed;
     struct reloq_session *session;
     int memory,retracted_filter,retracted_st,word_volume,cjk_volume,managed_voice_controls,word_pitch,native_pitch,word_speed,german_af_markers,original_clock;
@@ -1380,32 +1380,34 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
                                     (double)tick,duration,rate,release_ms);
         }
     }
-    /* The selected word-final R has its own distinctive coda source. Its
-     * R-to-next-phone F4 can traverse 700 Hz in five milliseconds even
-     * though its actual R is steady. Limit only that resonant release and
-     * keep following until it rejoins the original curve. Never change the
-     * R source, pitch, duration or steady-state targets. The source guard
-     * also keeps medial R and other consonants on their existing paths. */
-    if(s->fa_r_previous_valid && isfinite(duration) && duration>0 &&
-       isfinite(controls[17]) && controls[17]>0) {
-        double delta=controls[17]-s->fa_r_previous_f4;
-        if(!s->fa_r_release_active && p->phone==RELOQ_FA_TUNE_R &&
-           s->fa_phone_next+1<s->fa_phone_count && native>p->articulation_end &&
-           s->fa_r_previous_voice>=15 && s->fa_r_previous_voice<=30 &&
-           s->fa_r_previous_noise>=45 && s->fa_r_previous_band3>=60 &&
-           s->fa_r_previous_band4>=35 && s->fa_r_previous_band4<55 &&
-           fabs(delta)>40.0*duration)
-            s->fa_r_release_active=1;
-        if(s->fa_r_release_active) {
+    /* Smooth the upper resonances of the selected coda R's release. The
+     * earlier F4-only limit left equally fast F3/F5 changes at this same
+     * boundary. Each limit ends as soon as its native trajectory is met;
+     * the preceding R, excitation and phone timing are not changed. */
+    static const unsigned resonance[3]={15,17,19};
+    int r_release=p->phone==RELOQ_FA_TUNE_R &&
+        s->fa_phone_next+1<s->fa_phone_count && native>p->articulation_end &&
+        s->fa_r_previous_voice>=15 && s->fa_r_previous_voice<=30 &&
+        s->fa_r_previous_noise>=45 && s->fa_r_previous_band3>=60 &&
+        s->fa_r_previous_band4>=35 && s->fa_r_previous_band4<55;
+    for(unsigned i=0;i<3;++i) {
+        unsigned bit=1u<<i,column=resonance[i];
+        if((s->fa_r_previous_valid&bit) && isfinite(duration) && duration>0 &&
+           isfinite(controls[column]) && controls[column]>0) {
+            double delta=controls[column]-s->fa_r_previous_resonance[i];
             double step=40.0*duration;
-            if(fabs(delta)<=step)s->fa_r_release_active=0;
-            else controls[17]=(float)(s->fa_r_previous_f4+(delta>0?step:-step));
-        }
-    } else s->fa_r_release_active=0;
-    s->fa_r_previous_f4=controls[17];
+            if(r_release && fabs(delta)>step)s->fa_r_release_active|=bit;
+            if(s->fa_r_release_active&bit) {
+                if(fabs(delta)<=step)s->fa_r_release_active&=~bit;
+                else controls[column]=(float)(s->fa_r_previous_resonance[i]+(delta>0?step:-step));
+            }
+        } else s->fa_r_release_active&=~bit;
+        s->fa_r_previous_resonance[i]=controls[column];
+        if(isfinite(controls[column]) && controls[column]>0)s->fa_r_previous_valid|=bit;
+        else s->fa_r_previous_valid&=~bit;
+    }
     s->fa_r_previous_voice=controls[2];s->fa_r_previous_noise=controls[8];
     s->fa_r_previous_band3=controls[37];s->fa_r_previous_band4=controls[38];
-    s->fa_r_previous_valid=isfinite(controls[17]) && controls[17]>0;
 }
 static struct rule_span *new_span(struct rule_plan *s)
 {
