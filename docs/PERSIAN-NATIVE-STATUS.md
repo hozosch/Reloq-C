@@ -11,9 +11,13 @@ NVDA's eSpeak DLL is installed; it does not package or load the eSpeak helper
 modules. Covered words use the existing native analyses. For uncovered
 written words the C analyzer infers short vowels, which can differ from the
 earlier reference-backed development voice and needs listening validation.
-Pinglish retains the explicit a/aa distinction. This removes the optional
-eSpeak pronunciation fallback from that test package; it does not remove its
-Python contour orchestration or register an independent ECI voice.
+Pinglish retains the explicit a/aa distinction. In the complete native
+analyzer, runs of three or more identical vowels are treated like a doubled
+vowel; this permits informal elongated spellings while leaving strict English
+routing and the single/double distinction unchanged. Tests also cover the
+source indexes and following weak words. This removes the optional eSpeak
+pronunciation fallback from that test package; it does not remove its Python
+contour orchestration or register an independent ECI voice.
 
 The silent US contour proxy and its pronunciation checks now run in shared C.
 The NVDA planner uses that implementation when the matching ECI library is

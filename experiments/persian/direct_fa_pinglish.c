@@ -258,6 +258,24 @@ static int pinglish_word_mode(const char *word,size_t bytes,char *output,size_t 
         }
     }
     normalized[normalized_len]=0;word=normalized;bytes=normalized_len;
+    if(complete) {
+        /* In casual Pinglish, extra repeated vowels commonly express
+         * emphasis. The complete, reference-free path caps each such run
+         * at two letters before interpreting it. Keep single and doubled
+         * vowels distinct and leave the strict/English-routing path alone. */
+        size_t out=0;
+        for(size_t i=0;i<bytes;) {
+            char c=lower(normalized[i]);
+            size_t end=i+1;
+            if(strchr("aeiou",c))
+                while(end<bytes && lower(normalized[end])==c)++end;
+            size_t count=end-i;
+            if(count>2)count=2;
+            for(size_t copy=0;copy<count;++copy)normalized[out++]=normalized[i];
+            i=end;
+        }
+        normalized[out]=0;bytes=out;
+    }
     if(bytes<2 || bytes>512)return 0;
     for(size_t i=0;i<bytes;++i) {
         char c=lower(word[i]),n=i+1<bytes?lower(word[i+1]):0;

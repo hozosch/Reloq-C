@@ -25,7 +25,8 @@ def main():
                                              'خواجه‌ئیان', 'نمی‌آراست')),
                               (PINGLISH_PROBE,('salam donya','salam phone donya',
                                                'salam ژژژژژ phone donya',
-                                               'paraantez baaz', 'raah khoone', '66'))):
+                                               'paraantez baaz', 'raah khoone', '66',
+                                               'zooon ast', 'zooon raa', 'ketaab va zooon'))):
             engine=make_language_engine(args.library,args.library,None,absent,Path(temp),
                                         language=profile.id)
             try:

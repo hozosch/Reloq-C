@@ -21,6 +21,12 @@ def main():
                           ctypes.POINTER(ctypes.POINTER(ctypes.c_size_t)), ctypes.POINTER(ctypes.c_size_t))
     translate.restype = ctypes.c_int
     dll.eciPersianRelease.argtypes = (ctypes.c_void_p,)
+    complete = dll.eciPersianProjectTextCompleteUtf8
+    complete.argtypes = (ctypes.c_char_p, ctypes.c_size_t, ctypes.c_int,
+                         ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_ubyte), ctypes.c_size_t,
+                         ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_size_t),
+                         ctypes.POINTER(ctypes.c_size_t))
+    complete.restype = ctypes.c_int
 
     def pinglish(word):
         source = word.encode('utf8')
@@ -38,6 +44,22 @@ def main():
         finally:
             dll.eciPersianRelease(output)
             dll.eciPersianRelease(mapping)
+
+    def complete_phrase(text):
+        source = text.encode('utf8')
+        output, error = ctypes.c_void_p(), ctypes.c_size_t()
+        offsets = (ctypes.c_size_t * 2)(0, len(source))
+        is_index = (ctypes.c_ubyte * 2)(1, 1)
+        targets = (ctypes.c_size_t * 2)()
+        status = complete(source, len(source), 1, offsets, is_index, 2,
+                          ctypes.byref(output), targets, ctypes.byref(error))
+        assert status == 0, (text, status, error.value)
+        try:
+            tag = ctypes.string_at(output).decode('ascii')
+            assert targets[0] <= targets[1] <= len(tag), (text, tuple(targets), tag)
+            return tag
+        finally:
+            dll.eciPersianRelease(output)
 
     def check_a_quality(roman, tag):
         expected = ''.join('a' if match.group() == 'aa' else 'A'
@@ -77,6 +99,15 @@ def main():
         assert pinglish(roman.upper()) == pinglish(roman), roman
     for word in ('phone', 'this', 'zooon'):
         assert pinglish(word)[0] == 0, word
+    # Only the complete, reference-free path tolerates elongated informal
+    # vowel spellings. It retains short versus doubled vowels and lets weak
+    # following words keep their normal context.
+    for extended, canonical in (('zooon ast', 'zoon ast'), ('zooooon raa', 'zoon raa'),
+                                ('salaaaam', 'salaam'), ('salaaaaam', 'salaam'),
+                                ('zooon', 'zoon')):
+        assert complete_phrase(extended) == complete_phrase(canonical), extended
+    assert '`00 `[.0Ast]' in complete_phrase('zooon ast')
+    assert '`[.0ra]' in complete_phrase('zooooon raa')
     # Unknown spellings are represented with Persian letters and explicit
     # vowel marks before the shared Persian text parser is called.
     for roman, script in (('sevinaa', 'سِوینا'), ('zarakhi', 'زَرَخِی'),
