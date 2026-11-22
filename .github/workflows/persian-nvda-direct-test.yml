@@ -240,6 +240,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian and Pinglish acoustic clock failed' }
           python -B experiments/persian/test_native_us_nvda_route.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Native Persian NVDA sentence route failed' }
+          python -B experiments/persian/benchmark_active_vs_native.py --library "$dll" --repeats 8
+          if ($LASTEXITCODE -ne 0) { throw 'Native Persian sentence latency comparison failed' }
           python -B experiments/persian/test_lautlabor_project.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Saved Persian sound project differed from the laboratory' }
           python -B experiments/persian/test_persian_syllable_pitch.py --library "$dll"
