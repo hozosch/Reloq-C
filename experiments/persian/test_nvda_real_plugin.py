@@ -1049,8 +1049,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 sequence = [text]
             elif spelling == 'issue49_korean_spelling':
                 sequence = [self.character(True), text, self.character(False)]
-            elif spelling in ('issue49_h_z', 'issue49_h_z_language'):
-                sequence = ([text] if spelling == 'issue49_h_z' else
+            elif spelling in ('issue49_h_z', 'issue49_h_z_language', 'issue49_h_s', 'issue49_h_f'):
+                sequence = ([text] if spelling != 'issue49_h_z_language' else
                             ['روح ', self.language_command('en_US'), 'zero',
                              self.language_command('fa_IR')])
             elif spelling == 'english_exception':
@@ -1115,7 +1115,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             self.pipeline = self.pipeline or spelling in ('issue49_grouped_none', 'issue49_grouped_some')
             self.pipeline = self.pipeline or (isinstance(spelling, str) and spelling.startswith('issue50_'))
             self.pipeline = self.pipeline or spelling in ('issue49_record_line', 'issue49_record_split')
-            self.pipeline = self.pipeline or spelling in ('issue49_h_z', 'issue49_h_z_language')
+            self.pipeline = self.pipeline or spelling in ('issue49_h_z', 'issue49_h_z_language',
+                                                           'issue49_h_s', 'issue49_h_f')
             self.pipeline = self.pipeline or spelling in ('issue49_quotes', 'issue49_numeric', 'issue49_own_vowel', 'issue49_nominal_compound', 'issue49_native_new_compound')
             self.pipeline = self.pipeline or spelling in ('issue49_preposition', 'issue49_final_accent',
                                                           'issue49_character_navigation',
