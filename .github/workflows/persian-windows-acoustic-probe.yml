@@ -206,6 +206,24 @@ jobs:
               --jq '.artifacts[] | select(.id == 14764040558 and .expired == false and .digest == "sha256:3bdd9fa766b75e0715fe1efd29a541d7019e659559edc67807cd8108d75d2914" and .workflow_run.head_sha == "8d4c340fcf745f89a2d76430131a31c7e3068c16") | .id' || true)
             if [ "$id" = "14764040558" ]; then reusable=true; reuse_run=45044878820; fi
           fi
+          # The dev30 binaries were built successfully, but that run stopped
+          # at an outdated H-to-Z test expectation. Reuse the exact verified
+          # artifact only if every binary input still matches; all acoustic
+          # and integration checks below are run again at the current head.
+          if [ "$GITHUB_REF_NAME" = "codex/persian-native-u-20261121" ] &&
+             git diff --quiet f37a5bd77409e8e1f943f1d9a8a4eb8a07704c52 HEAD -- \
+               eci/Makefile eci/reloq_eci_fixed_math.c src include vendor/openevv61 \
+               tools/prepare_persian_provider.py tools/reuse_persian_provider_cache.py \
+               experiments/aragonese/build_native_probe.py experiments/persian/build_native_probe.py \
+               experiments/persian/build_windows_probe.py experiments/persian/prepare_continuous_host.py \
+               experiments/persian/continuous_frames.c experiments/persian/continuous_frames.h \
+               experiments/persian/continuous_replay.inc experiments/persian/scoped_acoustics_probe.c \
+               'experiments/persian/direct_fa_*.c' 'experiments/persian/direct_fa_*.h' \
+               'experiments/persian/direct_fa_*.inc'; then
+            id=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/45054672629/artifacts?per_page=100" \
+              --jq '.artifacts[] | select(.id == 14767338404 and .expired == false and .digest == "sha256:a9f2ddf1dba4c382cc8709d6188cb89163842d8617c6cc035f60dc7d74c6185a" and .workflow_run.head_sha == "f37a5bd77409e8e1f943f1d9a8a4eb8a07704c52") | .id' || true)
+            if [ "$id" = "14767338404" ]; then reusable=true; reuse_run=45054672629; fi
+          fi
           echo "reusable=$reusable" >> "$GITHUB_OUTPUT"
           echo "run_id=$reuse_run" >> "$GITHUB_OUTPUT"
       - name: Reuse source-matched acoustic binaries

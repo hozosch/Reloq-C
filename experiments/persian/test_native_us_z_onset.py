@@ -99,8 +99,13 @@ def main():
         assert reverse(target, 110, 20, 110, donor, 110, 20) == 1
         old = (NativeFrame * 110).from_buffer_copy(before)
         assert target[20].controls[2] == donor[20].controls[2] == 0
+        assert target[19].controls[7] == 52  # carry H over the silent carrier
+        assert all(target[i].controls[2] == 0 and target[i].controls[7] == 52
+                   for i in range(20, 37))  # ordinary H while Z noise rises
         for i in range(110):
             for column in range(62):
+                if i == 19 and column == 7:
+                    continue
                 if 20 <= i < 70 and column in (2, 7):
                     continue
                 assert target[i].controls[column] == old[i].controls[column], (i, column)
@@ -125,9 +130,12 @@ def main():
         assert reverse(target, 260, 20, 260, donor, 260, 20) == 1
         old = (NativeFrame * 260).from_buffer_copy(before)
         assert target[20].controls[2] == 0
+        assert target[19].controls[7] == 52
         assert target[120].controls[2] < old[120].controls[2]
         for i in range(260):
             for column in range(62):
+                if i == 19 and column == 7:
+                    continue
                 if 20 <= i < 220 and column in (2, 7):
                     continue
                 assert target[i].controls[column] == old[i].controls[column], (i, column)
