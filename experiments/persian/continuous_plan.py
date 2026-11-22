@@ -1492,7 +1492,7 @@ def match_us_unvoiced_onsets(plan, parts, en, rate):
 
 
 def match_h_to_us_z(plan, parts, en, rate):
-    """Carry the real /h/ to an English /z/ through the native context."""
+    """Connect final /h/ to verified English fricatives and voiceless stops."""
     native = getattr(plan, '_native_match_h_to_us_z', None)
     if native is None or 'fa' not in plan.contexts:
         return ()
@@ -1506,13 +1506,18 @@ def match_h_to_us_z(plan, parts, en, rate):
                 re.match(r'^\s*[.,?!:;()\[\]{}]', parts[edge].text)):
             continue
         shown = _TAG.search(en._phonemes_for_probe(parts[edge].text))
-        if shown is None or not re.match(r'`\[\.[012]z', shown.group()):
+        onset = re.match(r'`\[\.[012]([zsfSptk])', shown.group()) if shown else None
+        if onset is None:
             continue
-        reference = bisect_left(donor.ticks, round(plan.edges['fa'][edge] * 1000 / rate))
-        if reference >= len(donor.frames):
-            continue
-        result = native(plan.frames, len(plan.frames), bounds[edge-1], bounds[edge],
-                        donor.frames, len(donor.frames), reference)
+        if onset.group(1) == 'z':
+            reference = bisect_left(donor.ticks, round(plan.edges['fa'][edge] * 1000 / rate))
+            if reference >= len(donor.frames):
+                continue
+            result = native(plan.frames, len(plan.frames), bounds[edge-1], bounds[edge],
+                            donor.frames, len(donor.frames), reference)
+        else:
+            result = native(plan.frames, len(plan.frames), bounds[edge-1], bounds[edge],
+                            None, 0, 0)
         if result < 0:
             raise RuntimeError('invalid Persian-to-US fricative context')
         if result:

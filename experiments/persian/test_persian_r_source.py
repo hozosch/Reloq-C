@@ -6,7 +6,8 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'nvda'))
-from _reloq_eci_direct import GENDER, NATIVE_SPEED, SAMPLE_RATE
+from _reloq_eci_direct import EciIndex, GENDER, NATIVE_SPEED, SAMPLE_RATE
+from nvda_driver_probe import make_language_engine
 from test_persian_r_after_i_contexts import capture
 from test_us_articulation import voice
 
@@ -55,6 +56,29 @@ def main():
                                     assert x.controls[column] == y.controls[column], (
                                         rate, gender, speed, tag, x.tick, column)
                         checks += 1
+        if args.previous:
+            # The reported examples must change in actual text playback,
+            # not just in a separately captured synthetic phone trace.
+            owners = [make_language_engine(path, path, None, Path('/unavailable'), Path('/unavailable'))
+                      for path in (args.previous.resolve(), args.library.resolve())]
+            try:
+                for speed in (65, 82, 100):
+                    for owner in owners:
+                        for key, value in ((SAMPLE_RATE, 3), (GENDER, 0), (NATIVE_SPEED, speed)):
+                            owner.set_parameter(key, value)
+                    for text in ('ظهور ناگهانی', 'فوری'):
+                        rendered = []
+                        for owner in owners:
+                            pcm, marks = bytearray(), []
+                            assert owner.speak((EciIndex(11), text, EciIndex(12)), pcm.extend,
+                                               lambda number: marks.append((number, len(pcm))))
+                            rendered.append((bytes(pcm), marks))
+                        assert rendered[0][0] != rendered[1][0], (text, speed, 'no audible data changed')
+                        assert len(rendered[0][0]) == len(rendered[1][0]) and rendered[0][1] == rendered[1][1]
+                        checks += 1
+            finally:
+                for owner in owners:
+                    owner.close()
     finally:
         current.close()
         if previous:

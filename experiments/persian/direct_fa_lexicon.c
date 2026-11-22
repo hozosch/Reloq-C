@@ -1525,6 +1525,43 @@ static int known_i_final_ezafe(const char *word,size_t bytes,int follows_word,
     return 1;
 }
 
+/* An independently classified nominal -یان derivative can retain the
+ * phones of its independently known -ی stem. Existing full-word readings
+ * have already taken priority. Requiring both classifications and an
+ * actual final /i/ avoids guessing for unrelated spellings and verbs. */
+static int derived_i_an(const char *word,size_t bytes,char *output,size_t capacity,unsigned depth)
+{
+    size_t stem=0,root=0;
+    if(stress_class(word,bytes)!=1u || !ends_with(word,bytes,"ان",&stem) ||
+       (!ends_with(word,stem,"ی",&root) && !ends_with(word,stem,"ي",&root)) ||
+       stress_class(word,stem)!=1u)return 0;
+    char base[2048];
+    int result=direct_context_depth(word,stem,0,base,sizeof base,depth+1);
+    if(result!=1)return result<0?result:0;
+    size_t n=strlen(base);
+    if(!single_phone_tag(base) || n<3 || base[n-2]!='i')return 0;
+    stress_unaccent(base);
+    return append_phone_tags(base,"`[.1an]",output,capacity);
+}
+
+/* Recognize a classified -وند noun only when the preceding component has
+ * an independently recorded pronunciation. The known full word wins first,
+ * so this cannot overwrite an established exceptional pronunciation. */
+static int derived_vand(const char *word,size_t bytes,char *output,size_t capacity,unsigned depth)
+{
+    size_t stem=0;
+    /* Two-letter matches readily split unrelated place names such as اروند.
+     * Require a longer established stem before treating the ending as -وند. */
+    if(stress_class(word,bytes)!=1u || !ends_with(word,bytes,"وند",&stem) || stem<6)return 0;
+    char base[2048];
+    int result=direct_context_depth(word,stem,0,base,sizeof base,depth+1);
+    if(result!=1)return result<0?result:0;
+    size_t n=strlen(base);
+    if(!single_phone_tag(base) || n<3 || !strchr("bdfgklmnprstzSZGRCJ",base[n-2]))return 0;
+    stress_unaccent(base);
+    return append_phone_tags(base,"`[.1vAnd]",output,capacity);
+}
+
 /* A classified -یار / -یاری derivative after an independently known -خت
  * stem can syllabify as /...x.ti.ja:r(i)/. Preserve existing full-word
  * pronunciations first; require lexical class evidence and the matching
@@ -2112,6 +2149,10 @@ static int direct_context_depth(const char *word,size_t bytes,int follows_word,
     if(result)return result;
     /* Previously supported inflected and compound words take priority. */
     result=known_i_final_ezafe(word,bytes,follows_word,output,capacity,depth);
+    if(result)return result;
+    result=derived_i_an(word,bytes,output,capacity,depth);
+    if(result)return result;
+    result=derived_vand(word,bytes,output,capacity,depth);
     if(result)return result;
 
     /* NFC/NFKC places Arabic vowel marks before shadda, while the eSpeak

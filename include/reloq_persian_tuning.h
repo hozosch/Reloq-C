@@ -44,7 +44,7 @@ struct reloq_fa_tuning_filter {
 int reloq_fa_tuning_scope(int enabled);
 int reloq_fa_tuning_enabled(void);
 void reloq_fa_tuning_targets(float controls[62],unsigned phone,double from_ms,double to_ms,
-                             double frame_ms,double duration_ms,int rate);
+                             double frame_ms,double duration_ms,int rate,double release_ms);
 void reloq_fa_tuning_r_to_back_a(float controls[62],double from_ms,double to_ms,
                                 double frame_ms,int rate);
 void reloq_fa_tuning_prepare(struct reloq_fa_tuning_filter *,const float controls[62],int rate);

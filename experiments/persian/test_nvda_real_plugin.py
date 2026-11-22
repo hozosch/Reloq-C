@@ -550,6 +550,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                ('fa_IR', 'پزشکیان: روحانیون به کمک دولت بیان', 'issue49_record_line')))
             self.cases.extend((('fa_IR', 'روح zero', 'issue49_h_z'),
                                ('fa_IR', 'روح zero', 'issue49_h_z_language'),
+                               ('fa_IR', 'روح singer', 'issue49_h_s'),
+                               ('fa_IR', 'روح five', 'issue49_h_f'),
                                ('fa_IR', 'کتاب و خانه', 'issue49_weak_and'),
                                ('fa_IR', 'کتاب را', 'issue49_weak_object'),
                                ('fa_IR', 'NVDA را', 'issue49_weak_english_host'),
@@ -1215,12 +1217,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                              for chunk in player.chunks[self.before.get(id(player), 0):])
             if not audio:
                 raise RuntimeError('no actual NVDA audio for ' + ascii(text))
-            if spelling in ('issue49_h_z', 'issue49_h_z_language') and not any(
+            if spelling in ('issue49_h_z', 'issue49_h_z_language', 'issue49_h_s', 'issue49_h_f') and not any(
                     self.hz_transitions[self.before_hz:]):
-                raise AssertionError('NVDA did not apply the H-to-Z noise transition')
+                raise AssertionError('NVDA did not apply the connected H transition')
             if spelling in ('issue49_record_line', 'issue49_record_split'):
                 tags = ' '.join(self.projected[self.before_projected:])
-                if '`[.0pAzS.0ki.1an]' not in tags or '`[.0bA.1jan]' not in tags:
+                if '`[.0pe.0zeS.0ki.1an]' not in tags or '`[.0bA.1jan]' not in tags:
                     raise AssertionError('NVDA lost part of the reported Persian line: ' + ascii(tags))
                 if text.startswith('⏺') and '`[.0dok.1me.0je]' not in tags:
                     raise AssertionError('NVDA lost the CLDR record-button name: ' + ascii(tags))

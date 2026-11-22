@@ -423,12 +423,67 @@ int reloq_persian_match_us_z_onset(struct reloq_fa_frame *frames,size_t count,
     return 1;
 }
 
+/* The same medial-H source also applies before voiceless fricatives and
+ * stops. Their onset ends in a fricative plateau or a verified closure and
+ * release. Do not change the plateau, closure, release, vowel or pauses. */
+static int h_to_unvoiced_onset(struct reloq_fa_frame *frames,size_t count,
+                               size_t boundary,size_t end)
+{
+    size_t first=boundary;double gap=0;float h=0;
+    while(first>0) {
+        const float *c=frames[first-1].controls;
+        if(!isfinite(c[0]) || c[0]<=0 || c[0]>20 || !isfinite(c[2]) ||
+           !isfinite(c[7]) || !isfinite(c[8]))return -1;
+        if(c[2]<=5 && c[7]>=20 && c[8]<=5){h=c[7];break;}
+        if(c[2]>0 || c[7]>0 || c[8]>0 || (gap+=c[0])>5)return 0;
+        --first;
+    }
+    if(!h || frames[boundary].controls[2]<20 || frames[boundary].controls[8]>5)return 0;
+    size_t stop=boundary;double elapsed=0;float last_noise=0;int closure=0;
+    while(stop<end && elapsed<150) {
+        const float *c=frames[stop].controls;
+        if(!isfinite(c[0]) || c[0]<=0 || c[0]>20 || !isfinite(c[2]) ||
+           !isfinite(c[7]) || !isfinite(c[8]))return -1;
+        if(c[2]<=5 && c[8]>=30)break;
+        if(c[2]<=5 && c[7]==0 && c[8]==0 && elapsed>=1) {
+            /* A real stop has a short closure followed by its own burst.
+             * Require both before touching the preceding H transition. */
+            double quiet=0;size_t j=stop;
+            for(;j<end && quiet<150;++j) {
+                const float *n=frames[j].controls;
+                if(!isfinite(n[0]) || n[0]<=0 || n[0]>20 || !isfinite(n[2]) ||
+                   !isfinite(n[7]) || !isfinite(n[8]))return -1;
+                if(n[8]>=20 && n[2]<=5)break;
+                if(n[2]>5 || n[7]!=0 || n[8]!=0)return 0;
+                quiet+=n[0];
+            }
+            if(j>=end || quiet<2 || quiet>=150)return 0;
+            closure=1;break;
+        }
+        if(c[2]<20 || c[8]+2<last_noise)return 0;
+        last_noise=c[8];elapsed+=c[0];++stop;
+    }
+    if(stop==boundary || stop>=end || elapsed>=150 || (!closure && last_noise<20))return 0;
+    for(size_t i=first;i<boundary;++i)frames[i].controls[7]=h;
+    for(size_t i=boundary;i<stop;++i) {
+        frames[i].controls[2]=0;
+        frames[i].controls[7]=h;
+    }
+    (void)count;
+    return 1;
+}
+
 int reloq_persian_match_h_to_us_z(struct reloq_fa_frame *frames,size_t count,
     size_t boundary,size_t end,const struct reloq_fa_frame *reference,
     size_t reference_count,size_t reference_boundary)
 {
-    if(!frames || !reference || boundary<3 || boundary>=end || end>count ||
-       count>120000 || reference_count>120000 || reference_boundary>=reference_count ||
+    if(!frames || boundary<3 || boundary>=end || end>count || count>120000 ||
+       count>SIZE_MAX/sizeof *frames)return -1;
+    if(!reference) {
+        if(reference_count || reference_boundary)return -1;
+        return h_to_unvoiced_onset(frames,count,boundary,end);
+    }
+    if(reference_count>120000 || reference_boundary>=reference_count ||
        count>SIZE_MAX/sizeof *frames || reference_count>SIZE_MAX/sizeof *reference)return -1;
     uintptr_t left=(uintptr_t)frames,right=(uintptr_t)reference;
     size_t a=count*sizeof *frames,b=reference_count*sizeof *reference;
@@ -439,11 +494,18 @@ int reloq_persian_match_h_to_us_z(struct reloq_fa_frame *frames,size_t count,
      * boundary and the same unvoiced reference start. */
     if(frames[boundary-1].controls[2]>5 || reference[reference_boundary].controls[2]>5 ||
        frames[boundary].controls[2]<20 || reference[reference_boundary].controls[7]>5)return 0;
-    int h=0;double prior=0;
+    int h=0;float h_level=0;double prior=0,gap=0;size_t gap_start=boundary;
     for(size_t i=boundary;i>0 && prior<20;) {
         const float *c=frames[--i].controls;
-        if(!isfinite(c[0]) || c[0]<=0 || c[0]>20 || !isfinite(c[2]) || !isfinite(c[7]))return -1;
-        if(c[2]<=5 && c[7]>=20){h=1;break;}
+        if(!isfinite(c[0]) || c[0]<=0 || c[0]>20 || !isfinite(c[2]) ||
+           !isfinite(c[7]) || !isfinite(c[8]))return -1;
+        if(c[2]<=5 && c[7]>=20 && c[8]<=5) {
+            h=1;h_level=c[7];break;
+        }
+        /* Only a very short silent carrier can be part of this H. A real
+         * pause, another source or a release burst must remain untouched. */
+        if(c[2]>0 || c[7]>0 || c[8]>0 || (gap+=c[0])>5)return 0;
+        gap_start=i;
         prior+=c[0];
     }
     if(!h)return 0;
@@ -475,13 +537,29 @@ int reloq_persian_match_h_to_us_z(struct reloq_fa_frame *frames,size_t count,
         elapsed+=t[0];++stop;
     }
     if(stop==boundary || stop>=end || elapsed>300)return 0;
+    /* The actual medial H-to-Z rule keeps H aspiration while Z frication
+     * rises, and starts voicing only after that rise. A final-H carrier
+     * previously inserted silence and started Z voicing during the rise.
+     * Continue the observed H level across the short carrier and use the
+     * native Z onset's existing frication and later voice target. The smooth
+     * subtraction after the peak rejoins that target without a voice step. */
+    for(size_t i=gap_start;i<boundary;++i)frames[i].controls[7]=h_level;
+    float peak_voice=reference[rp].controls[2];
     ref=reference_boundary;elapsed=ref_time=0;
     for(size_t i=boundary;i<stop;++i) {
         while(ref+1<reference_count && ref_time+reference[ref].controls[0]<=elapsed+1e-6) {
             ref_time+=reference[ref].controls[0];++ref;
         }
-        frames[i].controls[2]=reference[ref].controls[2];
-        frames[i].controls[7]=reference[ref].controls[7];
+        if(i<=tp) {
+            frames[i].controls[2]=0;
+            frames[i].controls[7]=h_level;
+        } else {
+            double x=fmin(1.0,fmax(0.0,(elapsed-tt)/30.0));
+            double smooth=x*x*(3-2*x);
+            frames[i].controls[2]=(float)floor(fmax(0.0,
+                reference[ref].controls[2]-peak_voice*(1-smooth))+.5);
+            frames[i].controls[7]=reference[ref].controls[7];
+        }
         elapsed+=frames[i].controls[0];
     }
     return 1;

@@ -85,6 +85,24 @@ def main():
             assert render((text,))[0]
             assert frontend._worker is None, text
         assert frontend.analyze_direct('متوقف').parts[0].text == '`[.0mo.0te.0vAR.1Ref]'
+        # Classified derivatives must retain their known stems instead of
+        # guessing the omitted Persian short vowels from their spelling.
+        # Both reported names and several independently known -ی stems are
+        # checked through the shared native frontend and speech pipeline.
+        for word, expected in (('پزشکیان', '`[.0pe.0zeS.0ki.1an]'),
+                               ('پزشكيان', '`[.0pe.0zeS.0ki.1an]'),
+                               ('محمدیان', '`[.0mo.0hAm.0mA.0di.1an]'),
+                               ('احمدیان', '`[.0Ah.0mA.0di.1an]'),
+                               ('اسلامیان', '`[.0es.0la.0mi.1an]'),
+                               ('بیرانوند', '`[.0bej.0ran.1vAnd]'),
+                               ('ایرانیان', '`[.0i.0ra.0ni.1an]')):
+            analysis = frontend.analyze_direct(word)
+            assert analysis and analysis.parts[0].text == expected, (word, analysis)
+            assert render((word,))[0], word
+        # A two-letter remainder is not sufficient evidence for -وند:
+        # this independently named river is not derived from ار + وند.
+        assert frontend.analyze_direct('اروند') is None
+        assert frontend._worker is None
         # NVDA's CLDR expands ⏺ to this phrase even at symbol level NONE.
         # Preserve the explicit ezafe and finish the utterance across indexes.
         cldr = 'دکمهٔ ضبط پزشکیان: روحانیون به کمک دولت بیان'

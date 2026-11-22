@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 from bisect import bisect_left
 from pathlib import Path
+import re
 import sys
 from unittest.mock import patch
 
@@ -85,8 +86,29 @@ def main():
         for edge in selected:
             at = bounds[edge - 1]
             assert before[at][2] >= 20 and plan.frames[at].controls[2] <= 5
+            # The ordinary medial H-to-Z path retains aspiration while the
+            # following frication rises, with voicing beginning afterward.
+            # Check the same audible source trajectory at the word boundary.
+            phone = en._phonemes_for_probe(parts[edge].text)
+            if re.search(r'`\[\.[012]z', phone):
+                peak = max(range(at, min(at + 150, len(plan.frames))),
+                           key=lambda i: plan.frames[i].controls[8])
+                assert peak > at and plan.frames[peak].controls[8] >= 40
+                assert all(plan.frames[i].controls[2] == 0 and
+                           plan.frames[i].controls[7] >= 20 for i in range(at, peak + 1))
+                assert any(plan.frames[i].controls[2] > 0
+                           for i in range(peak + 1, min(peak + 50, len(plan.frames))))
+            else:
+                stop = next(i for i in range(at + 1, min(at + 150, len(plan.frames)))
+                            if before[i][2] <= 5 and (before[i][8] >= 30 or
+                               before[i][7] == 0 and before[i][8] == 0))
+                assert all(plan.frames[i].controls[2] == 0 and
+                           plan.frames[i].controls[7] >= 20 for i in range(at, stop))
+                assert tuple(plan.frames[stop].controls) == before[stop]
             for i in range(len(plan.frames)):
                 for column in range(62):
+                    if at - 5 <= i < at and column == 7:
+                        continue
                     if at <= i < min(at + 301, len(plan.frames)) and column in (2, 7):
                         continue
                     assert plan.frames[i].controls[column] == before[i][column], (i, column)
@@ -97,7 +119,8 @@ def main():
             for key, value in ((SAMPLE_RATE, rate), (GENDER, gender), (NATIVE_SPEED, speed)):
                 voice.set_parameter(key, value)
             for text in ('قرمز heading', 'مصاف غول‌های قرمز heading level 2 link',
-                         'heading زرد', 'روح zero', 'روح zebra', 'روح singer'):
+                         'heading زرد', 'روح zero', 'روح zebra', 'روح singer',
+                         'روح five', 'روح ship', 'روح time', 'روح paper', 'روح cat', 'روح, zero'):
                 pcm, marks = bytearray(), []
                 old_reverse_count = len(reverse_observed)
                 with patch.object(continuous_plan, 'match_us_z_onsets', new=inspect), \
@@ -105,8 +128,11 @@ def main():
                     assert voice.speak((EciIndex(11), text, EciIndex(12)), pcm.extend,
                                        lambda value: marks.append((value, len(pcm))))
                 assert pcm and marks == [(11, 0), (12, len(pcm))], (rate, gender, speed, text, marks)
-                if text in ('روح zero', 'روح zebra'):
+                if text in ('روح zero', 'روح zebra', 'روح singer', 'روح five', 'روح ship',
+                            'روح time', 'روح paper', 'روح cat'):
                     assert len(reverse_observed) > old_reverse_count, (rate, gender, speed, text)
+                if text == 'روح, zero':
+                    assert len(reverse_observed) == old_reverse_count, (rate, gender, speed, text)
         assert observed, 'the native US /z/ onset was not exercised'
         assert reverse_observed, 'the actual Persian /h/ to English /z/ was not exercised'
     finally:

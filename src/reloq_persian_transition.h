@@ -46,9 +46,11 @@ int reloq_persian_match_us_z_onset(struct reloq_fa_frame *frames,size_t count,
     size_t boundary,size_t end,const struct reloq_fa_frame *reference,
     size_t reference_count,size_t reference_boundary);
 
-/* Retain the actual H-to-Z voicing trajectory when the same English Z is
- * present in the Persian context. The US frication, timing and pitch stay
- * untouched. Refuse unrelated or unaligned context captures. */
+/* Continue a real final H into a following unvoiced onset. For Z, require
+ * a matching Persian context reference; for a verified voiceless fricative
+ * or stop, pass NULL and zero reference bounds. The caller must identify
+ * the phoneme and exclude punctuation. Frication, timing and pitch stay
+ * untouched; unrelated or unaligned captures are refused. */
 int reloq_persian_match_h_to_us_z(struct reloq_fa_frame *frames,size_t count,
     size_t boundary,size_t end,const struct reloq_fa_frame *reference,
     size_t reference_count,size_t reference_boundary);

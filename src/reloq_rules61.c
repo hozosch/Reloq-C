@@ -1360,12 +1360,24 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
                                         to/10000.0,(double)tick,rate);
         else if(tuning) {
             unsigned phone=p->phone;
+            double release_ms=3.0;
+            if(tuning==1 && phone==RELOQ_FA_TUNE_O && s->fa_phone_next+1<s->fa_phone_count) {
+                unsigned following=s->fa_phones[s->fa_phone_next+1].phone;
+                if((following==RELOQ_FA_TUNE_R || following==RELOQ_FA_TUNE_R_BEFORE_I ||
+                    following==RELOQ_FA_TUNE_R_BEFORE_BACK_A) && p->articulation_end<to) {
+                    /* The saved O has a 425-Hz F4 edit. Releasing it in
+                     * three ms makes an otherwise smooth O-to-R transition
+                     * abruptly jump. Spread only that edit's exit across the
+                     * already scheduled transition, never the vowel body. */
+                    release_ms=fmax(3.0,fmin(18.0,(to-p->articulation_end)/10000.0));
+                }
+            }
             if(phone==RELOQ_FA_TUNE_BACK_A && s->fa_phone_next &&
                s->fa_phones[s->fa_phone_next-1].phone==RELOQ_FA_TUNE_R_BEFORE_BACK_A &&
                s->fa_phones[s->fa_phone_next-1].articulation_end<p->from)
                 phone=RELOQ_FA_TUNE_BACK_A_AFTER_R;
             reloq_fa_tuning_targets(controls,phone,p->from/10000.0,to/10000.0,
-                                    (double)tick,duration,rate);
+                                    (double)tick,duration,rate,release_ms);
         }
     }
     /* The selected word-final R has its own distinctive coda source. Its
@@ -1382,10 +1394,10 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
            s->fa_r_previous_voice>=15 && s->fa_r_previous_voice<=30 &&
            s->fa_r_previous_noise>=45 && s->fa_r_previous_band3>=60 &&
            s->fa_r_previous_band4>=35 && s->fa_r_previous_band4<55 &&
-           fabs(delta)>100.0*duration)
+           fabs(delta)>40.0*duration)
             s->fa_r_release_active=1;
         if(s->fa_r_release_active) {
-            double step=80.0*duration;
+            double step=40.0*duration;
             if(fabs(delta)<=step)s->fa_r_release_active=0;
             else controls[17]=(float)(s->fa_r_previous_f4+(delta>0?step:-step));
         }

@@ -23,7 +23,7 @@ int reloq_fa_tuning_enabled(void)
  * language targets. The level edits are the same formant-following peaking
  * filters used in its audition, not guessed native formant amplitudes. */
 void reloq_fa_tuning_targets(float c[62],unsigned phone,double from,double to,
-                             double at,double duration,int rate)
+                             double at,double duration,int rate,double release_ms)
 {
     static const int shifts[6][4]={
         {0,0,0,0},{25,-50,25,75},{0,-25,50,25},{0,0,-25,75},
@@ -34,7 +34,7 @@ void reloq_fa_tuning_targets(float c[62],unsigned phone,double from,double to,
     if(!fa_tuning_on || !c || phone<1 || (phone>5 && phone!=RELOQ_FA_TUNE_U) ||
        from<0 || to<=from || at<from || at>=to || rate<8000)return;
     double fade_in=after_r?1.0:fmax(0.0,(at-from)/3.0);
-    double w=fmin(1.0,fmin(fade_in,fmax(0.0,(to-at)/3.0)));
+    double w=fmin(1.0,fmin(fade_in,fmax(0.0,(to-at)/release_ms)));
     for(unsigned i=0;phone<=5 && i<4;++i)if(shifts[phone][i] && c[columns[i]]>0 && w>0) {
         double v=c[columns[i]]+shifts[phone][i]*w;
         c[columns[i]]=(float)fmax(40.0,fmin(rate*.475,v));

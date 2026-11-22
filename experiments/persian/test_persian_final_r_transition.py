@@ -72,8 +72,9 @@ def connected_release(library, previous):
                     if (rate,gender,speed) == (3,0,82):
                         by_tick = {row.tick: row.controls for row in rows}
                         assert by_tick[end][17] == 2900
-                        assert by_tick[end+1][17] == 2980
-                        assert by_tick[end+10][17] == 3600
+                        assert by_tick[end+1][17] == 2940
+                        assert by_tick[end+10][17] == 3300
+                        assert by_tick[end+18][17] == 3600
                     if prior:
                         old = capture(prior, old_scope, tag)
                         assert old.syllables == result.syllables
@@ -91,7 +92,7 @@ def connected_release(library, previous):
                                        if row.controls[17] != reference.controls[17]]
                             assert changed and min(changed) == end+1 and max(changed) < end+20, changed
                             interval = [row.controls[17] for row in rows if end <= row.tick <= max(changed)+1]
-                            assert max(abs(a-b) for a,b in zip(interval,interval[1:])) <= 80.01
+                            assert max(abs(a-b) for a,b in zip(interval,interval[1:])) <= 40.01
                     checks += 1
     finally:
         current.close()
