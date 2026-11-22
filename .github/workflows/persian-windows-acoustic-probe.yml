@@ -266,6 +266,7 @@ jobs:
             eci/eci.dll
           key: persian-windows-host-gcc14-v2-${{ hashFiles('eci/Makefile', 'eci/reloq_eci_fixed_math.c', 'src/**', 'include/**', 'vendor/openevv61/**', '!vendor/openevv61/build/**', 'experiments/persian/direct_fa_*.c', 'experiments/persian/direct_fa_*.h', 'experiments/persian/direct_fa_*.inc', 'tools/prepare_persian_provider.py', 'experiments/persian/build_native_probe.py', 'experiments/aragonese/build_native_probe.py') }}
           restore-keys: |
+            persian-windows-host-gcc14-v2-89fe1c68ffc01ee0d0c40f0061a3fe4ac3dee2197657891dc14ab8919c009156
             persian-windows-host-gcc14-v2-550359d015dcee8e8741f8de1460dec5bf725f325c3b4c9e33a8e6ae8e1f5d28
             persian-windows-host-gcc14-v2-30af170397101f659f29a2a315d16d726eed79098ece67bb74e5777179854068
             persian-windows-host-gcc14-v2-6b9045ffe6990b76462ff5f1ea0cf5d0bb5cd710bd3ace2736572bc0c782affe

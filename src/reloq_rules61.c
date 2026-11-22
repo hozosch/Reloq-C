@@ -1294,6 +1294,7 @@ struct rule_plan {
     float fa_vr_previous_resonance[2],fa_vr_back_anchor[2];
     unsigned fa_vr_previous_valid,fa_vr_active;
     size_t fa_vr_back_phone;int fa_vr_back_set;
+    int64_t fa_r_noise_clock;float fa_r_noise_reduction,fa_r_asp_reduction;int fa_r_noise_valid;
     int fa_phone_failed;
     struct reloq_session *session;
     int memory,retracted_filter,retracted_st,word_volume,cjk_volume,managed_voice_controls,word_pitch,native_pitch,word_speed,german_af_markers,original_clock;
@@ -1383,6 +1384,55 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
                                     (double)tick,duration,rate,release_ms);
         }
     }
+    float r_noise_reduction=0,r_asp_reduction=0;
+    if(tuning && native>=p->from && native<to) {
+        /* Soften the actual frication of the voiced Persian coda R, not its
+         * duration, voicing, or the vowel preceding it. Its selected donor
+         * has a characteristic mid-band noise profile; the voiceless R after
+         * F or a stop must retain its independent source. A medial R between
+         * a rounded vowel and I needs the same small noise adjustment, but
+         * does not use the word-final rule. Fade at both phone edges. */
+        double shape=0;int rounded_r_before_i=0;
+        if(p->phone==RELOQ_FA_TUNE_R && controls[35]<5) {
+            shape=fmin(1.0,fmax(0.0,(controls[37]-45.0)/15.0));
+            shape*=fmin(1.0,fmax(0.0,(5.0-controls[36])/5.0));
+            shape*=fmin(1.0,fmax(0.0,(controls[2]-4.0)/11.0));
+            shape*=fmin(1.0,fmax(0.0,(35.0-controls[2])/5.0));
+        } else if(p->phone==RELOQ_FA_TUNE_R_BEFORE_I && s->fa_phone_next) {
+            unsigned previous=s->fa_phones[s->fa_phone_next-1].phone;
+            if(previous==RELOQ_FA_TUNE_O || previous==RELOQ_FA_TUNE_U)
+                {shape=1;rounded_r_before_i=1;}
+        }
+        double in=(native-p->from)/10000.0;
+        /* The release belongs to this R until the following phone starts.
+         * Ending the adjustment at articulation_end would abruptly restore
+         * full frication in the middle of that release. */
+        int32_t end=to==INT32_MAX?p->articulation_end:to;
+        double out=(end-native)/10000.0;
+        double edge=fmin(1.0,fmax(0.0,fmin(in,out)/4.0));
+        edge=edge*edge*(3.0-2.0*edge);
+        r_noise_reduction=(float)floor(4.0*shape*edge+0.5);
+        /* The medial Finnish-derived R carries most of its noise in the
+         * aspiration source rather than the coda donor's frication source.
+         * Reduce that component only for a rounded vowel-R-I sequence. */
+        if(rounded_r_before_i)r_asp_reduction=r_noise_reduction;
+    }
+    if(tuning && s->original_clock) {
+        int64_t clock=tick-tick%5;
+        if(s->fa_r_noise_valid && s->fa_r_noise_clock==clock) {
+            r_noise_reduction=s->fa_r_noise_reduction;
+            r_asp_reduction=s->fa_r_asp_reduction;
+        }
+        else {
+            s->fa_r_noise_clock=clock;s->fa_r_noise_reduction=r_noise_reduction;
+            s->fa_r_asp_reduction=r_asp_reduction;
+            s->fa_r_noise_valid=1;
+        }
+    }
+    if(tuning && isfinite(controls[8]) && controls[8]>0)
+        controls[8]=fmaxf(0.0f,controls[8]-r_noise_reduction);
+    if(tuning && isfinite(controls[7]) && controls[7]>0)
+        controls[7]=fmaxf(0.0f,controls[7]-r_asp_reduction);
     /* Round the vowel-to-R edge within the provider's existing transition.
      * The small, smoothly disappearing blend does not delay the target into
      * the R body or force a sharp catch-up at its onset. A following I has
