@@ -9,10 +9,10 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
           architecture: x86
@@ -53,7 +53,7 @@ jobs:
           PY
       - name: Measure the original at low VWPM values
         run: python tools/observe_eci_wpm_reference.py --library reference/ECI.DLL --output wpm-original.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: original-vwpm-observations

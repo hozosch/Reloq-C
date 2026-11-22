@@ -10,10 +10,10 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: high-speed-nvda-test
           path: tested
@@ -42,7 +42,7 @@ jobs:
               command="import pathlib,sys; sys.path.insert(0,'tools'); from observe_high_speed_reference import capture; result=capture(pathlib.Path(sys.argv[1]),False,'adictive drums',int(sys.argv[3]),pathlib.Path(sys.argv[2]).resolve()); print(result['seconds'])"
               subprocess.run([sys.executable,'-c',command,str(core),str(pathlib.Path('samples',label+'.wav')),str(speed)],check=True)
           PY
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: high-speed-exact-x64-audio
           path: samples/
