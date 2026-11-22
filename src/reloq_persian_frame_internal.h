@@ -15,6 +15,8 @@ const struct reloq_fa_frame *reloq_fa_capture_current(size_t *count, int *failed
 void reloq_fa_capture_release(void);
 void reloq_fa_capture_syllable(void *context,int32_t from,int32_t to);
 const struct reloq_fa_syllable *reloq_fa_capture_syllables(size_t *count,int *failed);
+void reloq_fa_capture_phone_identity(void *context,uint32_t identity);
+const uint32_t *reloq_fa_capture_phone_identities(size_t *count,int *failed);
 int reloq_fa_capture_set_controls_only(int enabled);
 int reloq_fa_capture_set_pcm_storage(int enabled);
 int reloq_fa_capture_pcm_storage(void);

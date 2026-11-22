@@ -9,4 +9,9 @@ void reloq61_syllable_trace_emit(void *state,int32_t from, int32_t to);
  * syllables. The same request-local sink and native time units are used. */
 void reloq61_syllable_trace_phone_mode(int enabled);
 void reloq61_phone_trace_emit(void *state,int32_t from,int32_t to);
+/* Optional identity trace for the same phone events. The value is a private
+ * provider phone slot, not a Persian linguistic phone ID. */
+typedef void (*reloq_phone_identity_sink)(void *context,uint32_t identity);
+void reloq61_phone_identity_trace_set(reloq_phone_identity_sink sink,void *context);
+void reloq61_phone_identity_trace_emit(uint32_t identity);
 #endif

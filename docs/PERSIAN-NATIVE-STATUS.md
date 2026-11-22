@@ -99,8 +99,19 @@ The tone targets also need a vowel or sonorant clock within each syllable.
 with the event-plan syllables for ordinary Persian and Pinglish phrases,
 including comma pauses. Equal counts are not sufficient to prove alignment:
 the current doubled /dʒ/ bridge can place a phone clock in the following
-syllable even when counts match. A future adapter must reconcile that case
-or decline it before producing audio.
+syllable even when counts match. An experimental C adapter now compares the
+event plan with both provider clocks and captured provider phone slots before
+returning vowel anchors. It accounts for the backend's two-part affricates,
+H features and the cross-syllable doubled /dʒ/, while retaining linguistic
+stress and weak-word metadata. When an identified q or vowel extends into
+the gap before the next syllable, as in `قشنگ`, the adapter extends only its
+returned anchor through that verified phone. Other q contexts and ambiguous
+or inconsistent alignments can still be declined without returning partial
+anchors. The current diagnostic
+obtains syllable and phone clocks in separate captures. The adapter does not
+yet drive intonation, handle mixed English or remove full-utterance planning.
+`eci/test_persian_nucleus_clock.py` checks the mappings across voices, rates,
+comma pauses, grouped numbers and rejected mismatches.
 For an all-unstressed word whose phones the US provider cannot represent,
 the current proxy can add an artificial primary stress while retaining the
 weak-word control. That synthetic marker is not a Persian lexical accent;

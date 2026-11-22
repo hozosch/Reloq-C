@@ -38,6 +38,9 @@ on:
       - eci/test_persian_native_direct_stream.py
       - experiments/persian/test_native_us_sentence_parity.py
       - eci/test_persian_native_pipeline.py
+      - eci/test_persian_nucleus_clock.py
+      - include/reloq_persian_clock.h
+      - src/reloq_persian_clock.c
       - experiments/persian/test_owned_us_capture_parity.py
       - experiments/persian/test_native_us_proxy.py
       - experiments/persian/test_us_proxy_audio_parity.py
@@ -323,6 +326,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Native Persian sentence differs from the current voice' }
           python -B eci/test_persian_native_pipeline.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Independent Persian planning components failed' }
+          python -B eci/test_persian_nucleus_clock.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Persian nucleus clock alignment failed' }
           python -B experiments/persian/test_owned_us_capture_parity.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Owned US capture diverged from the Persian sentence planner' }
           python -B experiments/persian/test_native_us_proxy.py --library eci/eci.dll

@@ -156,11 +156,14 @@ double reloq_fa_tuning_sample(struct reloq_fa_tuning_filter *f,double x)
 struct capture_state {
     struct reloq_fa_frame *frames;
     struct reloq_fa_syllable *syllables;
+    uint32_t *phone_identities;
     int16_t *pcm;
     size_t count, capacity, maximum, samples;
     size_t pcm_capacity;
     size_t syllable_count, syllable_capacity;
     int syllable_failed;
+    size_t phone_identity_count, phone_identity_capacity;
+    int phone_identity_failed;
     int active, failed, controls_only, store_pcm;
 };
 static _Thread_local struct capture_state capture;
@@ -172,6 +175,7 @@ FA_EXPORT int reloq_fa_capture_begin(size_t maximum)
     free(capture.frames);
     free(capture.pcm);
     free(capture.syllables);
+    free(capture.phone_identities);
     capture=(struct capture_state){.maximum=maximum,.active=1};
     return 0;
 }
@@ -199,6 +203,7 @@ FA_EXPORT void reloq_fa_capture_release(void)
     free(capture.frames);
     free(capture.pcm);
     free(capture.syllables);
+    free(capture.phone_identities);
     capture=(struct capture_state){0};
 }
 
@@ -224,6 +229,28 @@ FA_EXPORT const struct reloq_fa_syllable *reloq_fa_capture_syllables(size_t *cou
     if(!count || !failed)return NULL;
     *count=capture.syllable_count;*failed=capture.syllable_failed;
     return capture.syllables;
+}
+
+void reloq_fa_capture_phone_identity(void *context,uint32_t identity)
+{
+    (void)context;
+    if(!capture.active || capture.phone_identity_failed)return;
+    if(capture.phone_identity_count>=4096){capture.phone_identity_failed=1;return;}
+    if(capture.phone_identity_count==capture.phone_identity_capacity) {
+        size_t next=capture.phone_identity_capacity?capture.phone_identity_capacity*2:32;
+        if(next>4096)next=4096;
+        void *buffer=realloc(capture.phone_identities,next*sizeof *capture.phone_identities);
+        if(!buffer){capture.phone_identity_failed=1;return;}
+        capture.phone_identities=buffer;capture.phone_identity_capacity=next;
+    }
+    capture.phone_identities[capture.phone_identity_count++]=identity;
+}
+
+const uint32_t *reloq_fa_capture_phone_identities(size_t *count,int *failed)
+{
+    if(!count || !failed)return NULL;
+    *count=capture.phone_identity_count;*failed=capture.phone_identity_failed;
+    return capture.phone_identities;
 }
 
 FA_EXPORT int reloq_fa_capture_set_controls_only(int enabled)

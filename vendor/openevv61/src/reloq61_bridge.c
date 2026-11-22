@@ -28,6 +28,8 @@ static _Thread_local void *syllable_context;
 static _Thread_local int32_t syllable_previous_to;
 static _Thread_local int64_t syllable_origin;
 static _Thread_local int phone_trace_mode;
+static _Thread_local reloq_phone_identity_sink phone_identity_sink;
+static _Thread_local void *phone_identity_context;
 static _Thread_local struct reloq_fa_phone_trace fa_phone_trace;
 struct reloq_fa_phone_trace reloq61_fa_phone_scope(struct reloq_fa_phone_trace next)
 {
@@ -39,6 +41,10 @@ void reloq61_syllable_trace_set(reloq_syllable_sink sink,void *context)
 {syllable_sink=sink;syllable_context=context;syllable_previous_to=-1;syllable_origin=0;phone_trace_mode=0;}
 void reloq61_syllable_trace_phone_mode(int enabled)
 {phone_trace_mode=enabled!=0;syllable_previous_to=-1;syllable_origin=0;}
+void reloq61_phone_identity_trace_set(reloq_phone_identity_sink sink,void *context)
+{phone_identity_sink=sink;phone_identity_context=context;}
+void reloq61_phone_identity_trace_emit(uint32_t identity)
+{if(phone_trace_mode && phone_identity_sink)phone_identity_sink(phone_identity_context,identity);}
 static int trace_absolute_on(void *state,int32_t from,int32_t to,int32_t *start,int32_t *end,
                              int32_t *previous_to,int64_t *origin,int allow_overlap);
 static int trace_absolute(void *state,int32_t from,int32_t to,int32_t *start,int32_t *end)

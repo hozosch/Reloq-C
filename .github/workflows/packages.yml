@@ -131,6 +131,7 @@ jobs:
           python3 -B eci/test_persian_native_direct_stream.py --library eci/libreloq_eci.so
           python3 -B eci/test_persian_syllable_plan_clock.py --library eci/libreloq_eci.so
           python3 -B eci/test_persian_phone_plan_clock.py --library eci/libreloq_eci.so
+          python3 -B eci/test_persian_nucleus_clock.py --library eci/libreloq_eci.so
           python3 -B experiments/persian/test_native_us_sentence_parity.py --library eci/libreloq_eci.so
           python3 -B eci/test_persian_native_pipeline.py --library eci/libreloq_eci.so
           python3 -B experiments/persian/test_owned_us_capture_parity.py --library eci/libreloq_eci.so

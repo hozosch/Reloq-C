@@ -509,6 +509,17 @@ ECIAPI int ECICALL eciPersianCaptureSetControlsOnly(int enabled);
 /* Select phone timing instead of syllable timing for an active capture.
  * This optional diagnostic is request-local and does not alter speech. */
 ECIAPI int ECICALL eciPersianCaptureSetPhoneTrace(int enabled);
+/* Private-provider phone slots corresponding to phone-trace clocks. These are
+ * diagnostics for native alignment, not public Persian phone identities. */
+ECIAPI const uint32_t *ECICALL eciPersianCapturePhoneIdentities(size_t *count,int *failed);
+/* Experimental clock adapter. Layout and failure contract are defined in
+ * reloq_persian_clock.h; this does not itself select or synthesize a voice. */
+struct reloq_fa_nucleus_clock;
+ECIAPI int ECICALL eciPersianAlignNucleusClocks(const struct reloq_fa_plan_event *events,size_t event_count,
+    const struct reloq_fa_syllable *syllables,size_t syllable_count,
+    const struct reloq_fa_syllable *phones,size_t phone_count,
+    const uint32_t *provider_slots,size_t slot_count,
+    struct reloq_fa_nucleus_clock *output,size_t capacity,size_t *written);
 /* Apply verified U-to-A word-boundary transitions to request-local frames.
  * Returns 0 on success, -1 for invalid inputs, -2 for allocation failure. */
 ECIAPI int ECICALL eciPersianApplyGlides(struct reloq_fa_frame *rows,size_t count,

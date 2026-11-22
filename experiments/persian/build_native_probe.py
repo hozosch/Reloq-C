@@ -3560,6 +3560,8 @@ static void persian_open_vowel(void *state,int phone)
         if (selected && selected[0]=='1' && !selected[1]) {
             unsigned current=persian_probe_front_a_neighbour(state,STATE(int32_t,w61),1);
             unsigned following=persian_probe_front_a_neighbour(state,STATE(int32_t,w61),0);
+            if(STATE(int32_t,f10)>=0 && STATE(int32_t,f11)>STATE(int32_t,f10))
+                reloq61_phone_identity_trace_emit(current);
             unsigned target=current>0 && current<27 &&
                 persian_probe_following_final_h(state,STATE(int32_t,w61))?RELOQ_FA_TUNE_BEFORE_FINAL_H:
                 current==31?RELOQ_FA_TUNE_FRONT_A:current==34?RELOQ_FA_TUNE_BACK_A:

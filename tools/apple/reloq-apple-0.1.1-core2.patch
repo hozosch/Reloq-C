@@ -43,7 +43,7 @@ index f917a84..5d0cae5 100644
  $(PB)/libreloq.a: $(PB)/reloq.o
  	rm -f $@ && $(PAR) rcs $@ $(PB)/reloq.o
  	@mkdir -p $(PB)/Headers && cp $(ROOT)/include/eci.h $(ROOT)/include/reloq_eci.h $(PB)/Headers/
-+	@for h in reloq_persian_plan.h reloq_persian_numbers.h reloq_persian_phones.h reloq_persian_us_proxy.h reloq_persian_frames.h; do \
++	@for h in reloq_persian_plan.h reloq_persian_numbers.h reloq_persian_phones.h reloq_persian_us_proxy.h reloq_persian_frames.h reloq_persian_clock.h; do \
 +	  if test -f "$(ROOT)/include/$$h"; then cp "$(ROOT)/include/$$h" $(PB)/Headers/; fi; done
  
  # The three slices, each its own sub-make (PLATFORM picks the compiler), then one XCFramework.
@@ -81,7 +81,7 @@ index 98c8f13..e1a52dd 100644
  	cp -R build/reloq/ReloqEngine.xcframework Engine/reloq.xcframework
  	mkdir -p Engine/reloq-include
  	cp $(RELOQ)/include/eci.h $(RELOQ)/include/reloq_eci.h Engine/reloq-include/
-+	@for h in reloq_persian_plan.h reloq_persian_numbers.h reloq_persian_phones.h reloq_persian_us_proxy.h reloq_persian_frames.h; do \
++	@for h in reloq_persian_plan.h reloq_persian_numbers.h reloq_persian_phones.h reloq_persian_us_proxy.h reloq_persian_frames.h reloq_persian_clock.h; do \
 +	  if test -f "$(RELOQ)/include/$$h"; then cp "$(RELOQ)/include/$$h" Engine/reloq-include/; fi; done
  	printf '#define EV_ENGINE_BUILD "Reloq-C@%s%s"\n#define EV_RELOQ_VERSION "%s"\n' \
  	  "$$(git -C $(RELOQ) rev-parse --short HEAD)" \

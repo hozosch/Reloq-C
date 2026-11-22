@@ -22,6 +22,7 @@
 #include "reloq_equalizer.h"
 #include "reloq_wordseg.h"
 #include "reloq_persian_direct.h"
+#include "reloq_persian_clock.h"
 #include "reloq_persian_transition.h"
 #include "reloq_persian_acoustics.h"
 #include "reloq_persian_frame_internal.h"
@@ -2220,17 +2221,31 @@ int reloq_eci_last_error(ECIHand handle)
 int ECICALL eciPersianCaptureBegin(size_t maximum)
 {
     int status=reloq_fa_capture_begin(maximum);
-    if(!status)reloq61_syllable_trace_set(reloq_fa_capture_syllable,NULL);
+    if(!status) {
+        reloq61_syllable_trace_set(reloq_fa_capture_syllable,NULL);
+        reloq61_phone_identity_trace_set(reloq_fa_capture_phone_identity,NULL);
+    }
     return status;
 }
 const struct reloq_fa_frame *ECICALL eciPersianCaptureEnd(size_t *count,int *failed)
-{reloq61_syllable_trace_set(NULL,NULL);return reloq_fa_capture_end(count,failed);}
+{reloq61_syllable_trace_set(NULL,NULL);reloq61_phone_identity_trace_set(NULL,NULL);return reloq_fa_capture_end(count,failed);}
 const struct reloq_fa_frame *ECICALL eciPersianCaptureCurrent(size_t *count,int *failed)
 {return reloq_fa_capture_current(count,failed);}
 const struct reloq_fa_syllable *ECICALL eciPersianCaptureSyllables(size_t *count,int *failed)
 {return reloq_fa_capture_syllables(count,failed);}
 void ECICALL eciPersianCaptureRelease(void)
-{reloq61_syllable_trace_set(NULL,NULL);reloq_fa_capture_release();}
+{reloq61_syllable_trace_set(NULL,NULL);reloq61_phone_identity_trace_set(NULL,NULL);reloq_fa_capture_release();}
+const uint32_t *ECICALL eciPersianCapturePhoneIdentities(size_t *count,int *failed)
+{return reloq_fa_capture_phone_identities(count,failed);}
+int ECICALL eciPersianAlignNucleusClocks(const struct reloq_fa_plan_event *events,size_t event_count,
+    const struct reloq_fa_syllable *syllables,size_t syllable_count,
+    const struct reloq_fa_syllable *phones,size_t phone_count,
+    const uint32_t *provider_slots,size_t slot_count,
+    struct reloq_fa_nucleus_clock *output,size_t capacity,size_t *written)
+{
+    return reloq_fa_align_nucleus_clocks(events,event_count,syllables,syllable_count,
+                                        phones,phone_count,provider_slots,slot_count,output,capacity,written);
+}
 
 struct reloq_fa_owned_capture_context {
     struct reloq_eci_engine *engine;

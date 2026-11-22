@@ -39,7 +39,7 @@ OBJECTS := $(patsubst $(ROOT)/src/%.c,$(BUILD)/core/%.o,$(SOURCE))
 # small table rather than bundling the legacy Klatt renderer tables.
 OBJECTS += $(BUILD)/core/reloq_eci_fixed_math.o
 PUBLIC_HEADERS := eci.h reloq_eci.h reloq_persian_plan.h reloq_persian_numbers.h \
-    reloq_persian_phones.h reloq_persian_us_proxy.h reloq_persian_frames.h
+    reloq_persian_phones.h reloq_persian_us_proxy.h reloq_persian_frames.h reloq_persian_clock.h
 CFLAGS := $(OPT) -std=c11 -Wall -Wextra -pedantic -pthread -ffunction-sections \
     -fdata-sections -ffp-contract=off -fvisibility=hidden -DECI_STATIC -MMD -MP -I$(ROOT)/include
 
