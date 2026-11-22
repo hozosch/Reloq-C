@@ -15,14 +15,12 @@ import threading
 import unicodedata
 
 if __package__:
-    from .inprocess_espeak import InProcessEspeak
     from .pinglish_frontend import latin_name, normalize_pinglish
     from .persian_symbols import SYMBOL_TAGS, UNICODE_TAG
     from .reference_alignment import (source_map_for_reference, unpositioned_pinglish_input,
                                       unpositioned_reference_input)
     from .text_frontend import SpeechPart, UnsupportedPronunciation, translate_text
 else:
-    from inprocess_espeak import InProcessEspeak
     from pinglish_frontend import latin_name, normalize_pinglish
     from persian_symbols import SYMBOL_TAGS, UNICODE_TAG
     from reference_alignment import (source_map_for_reference, unpositioned_pinglish_input,
@@ -259,9 +257,17 @@ class DirectFirstPersian:
         with self._guard:
             if self._closed:
                 raise RuntimeError('Persian text frontend is closed')
+            if not self._reference_available:
+                raise RuntimeError('No Persian pronunciation reference is configured')
             if self._worker is None:
                 worker, library, data_parent = self._worker_paths
                 if worker is None:
+                    # The private release/test voice never configures this
+                    # reference; comparison tools can load it on demand.
+                    if __package__:
+                        from .inprocess_espeak import InProcessEspeak
+                    else:
+                        from inprocess_espeak import InProcessEspeak
                     self._worker = InProcessEspeak(library, data_parent)
                 else:
                     # Only the comparison tests request the old process path.

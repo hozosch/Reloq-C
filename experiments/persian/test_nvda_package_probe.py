@@ -19,9 +19,10 @@ ROOT = Path(__file__).resolve().parents[2]
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--native-library', type=Path, required=True)
-    parser.add_argument('--worker', type=Path, required=True)
-    parser.add_argument('--espeak-library', type=Path, required=True)
-    parser.add_argument('--data-parent', type=Path, required=True)
+    # Kept for callers of the older probe; none is required or opened.
+    parser.add_argument('--worker', type=Path)
+    parser.add_argument('--espeak-library', type=Path)
+    parser.add_argument('--data-parent', type=Path)
     args = parser.parse_args()
     base = {'manifest.ini': (ROOT / 'addon/synth/manifest.ini').read_bytes(),
             PREFIX + '__init__.py': (ROOT / 'addon/synth/synthDrivers/reloqC/__init__.py').read_bytes(),
@@ -37,7 +38,8 @@ def main():
     assert b'protect_joiners(self, prepared' in entries[PREFIX + '__init__.py']
     assert PREFIX + '_reloq_persian_joiners.py' in entries
     assert PREFIX + '_reloq_persian_decimals.py' in entries
-    assert PREFIX + '_persian/inprocess_espeak.py' in entries
+    assert PREFIX + '_persian/inprocess_espeak.py' not in entries
+    assert PREFIX + '_persian/espeak_ng_probe.py' not in entries
     assert PREFIX + '_persian/parallel_pilot.py' in entries
     assert PREFIX + '_persian/espeak_worker.py' not in entries
     assert PREFIX + 'fa-espeak-worker.exe' not in entries
@@ -60,20 +62,18 @@ def main():
         library = args.native_library.resolve()
         installed = folder / 'nvda' / 'synthDrivers'
         installed.mkdir(parents=True)
+        # A real NVDA installation normally contains this DLL. Its presence
+        # must not select a separate Persian pronunciation provider.
+        (installed / 'espeak.dll').touch()
         sys.modules['globalVars'] = types.SimpleNamespace(appDir=str(installed.parent))
         sys.path.insert(0, str(folder))
         try:
             bridge = importlib.import_module('probe_driver._reloq_persian_bridge')
             languages = importlib.import_module('probe_driver._reloq_languages')
             eci = importlib.import_module('probe_driver._reloq_eci_direct')
-            assert bridge._paths(package / 'eci.dll') == (package / 'eci.dll', None,
-                                                           installed / 'espeak.dll', installed)
-            # Keep NVDA's eSpeak in its real directory alongside all of its
-            # Persian remains selectable without NVDA's eSpeak DLL. Native
-            # words and numbers keep their pronunciation; uncovered words use
-            # general C orthography, with source indexes.
-            bridge._paths = lambda _library: (library, None,
-                                               installed / 'missing-espeak.dll', args.data_parent.resolve())
+            assert bridge._paths(package / 'eci.dll') == (package / 'eci.dll', None, None, None)
+            # Even with an installed NVDA eSpeak DLL, uncovered words use
+            # general C orthography and preserve source indexes.
             offline = bridge.add_profiles(dict(languages.LANGUAGES), library)
             assert bridge.PERSIAN_PROBE.id in offline and bridge.PINGLISH_PROBE.id in offline
             engine = bridge.make_engine(library, languages=offline, language=bridge.PERSIAN_PROBE.id, voice='1')
@@ -84,12 +84,17 @@ def main():
                                      eci.EciIndex(13)),pcm.extend,marks.append)
                 assert pcm and marks==[11,12,13]
                 frontend=engine._engines[bridge.PERSIAN_PROBE.id]._frontend
-                assert frontend._worker is None
+                assert not frontend._reference_available and frontend._worker is None
+                def forbidden_fallback():
+                    raise AssertionError('the packaged Persian voice attempted to use eSpeak')
+                frontend._fallback = forbidden_fallback
                 projected=frontend.project_direct(text,((0,True),(len(text.encode('utf8')),True)))
                 assert projected and projected[0].count('`[')==3
+                pcm.clear(); marks.clear()
+                assert engine.speak((eci.EciIndex(1), 'NVDA نمی‌آراست سلام', eci.EciIndex(2)),
+                                    pcm.extend, marks.append)
+                assert pcm and marks == [1, 2] and frontend._worker is None
             finally:engine.close()
-            bridge._paths = lambda _library: (library, None,
-                                               args.espeak_library.resolve(), args.data_parent.resolve())
             profiles = bridge.add_profiles(dict(languages.LANGUAGES), library)
             fa, pinglish = bridge.PERSIAN_PROBE, bridge.PINGLISH_PROBE
             assert languages.language_for('fa-IR', languages.GERMAN.id, profiles) == fa.id
@@ -97,7 +102,10 @@ def main():
             engine = bridge.make_engine(library, languages=profiles, language=pinglish.id, voice='1')
             try:
                 pcm, marks = bytearray(), []
-                assert engine.speak((eci.EciIndex(1), 'salam ', eci.EciIndex(2), 'donya?',
+                pinglish_frontend = engine._engines[pinglish.id]._frontend
+                assert not pinglish_frontend._reference_available
+                pinglish_frontend._fallback = forbidden_fallback
+                assert engine.speak((eci.EciIndex(1), 'salaam ', eci.EciIndex(2), 'donyaa?',
                                      eci.EciIndex(3)), pcm.extend, marks.append)
                 assert pcm and marks == [1, 2, 3]
                 assert engine._engines[pinglish.id]._frontend._worker is None
@@ -107,6 +115,8 @@ def main():
                 assert engine.speak(('سلام دنیا؟',), pcm.extend, lambda _: None)
                 assert bytes(pcm) == original
                 frontend = engine._engines[fa.id]._frontend
+                assert not frontend._reference_available
+                frontend._fallback = forbidden_fallback
                 frame_api = importlib.import_module('probe_driver._reloq_persian_frames')
                 dll = engine._engines[fa.id]._voice._dll
                 assert frame_api.FrameCapture(dll)._begin.__name__ == 'eciPersianCaptureBegin'
@@ -129,6 +139,9 @@ def main():
                 pcm.clear()
                 assert engine.speak(('salam ', eci.EciIndex(4), 'khubtar?'), pcm.extend, lambda _: None)
                 assert pcm
+                pcm.clear()
+                assert engine.speak(('salam phone zhushano?',), pcm.extend, lambda _: None)
+                assert pcm and pinglish_frontend._worker is None
                 engine.select_voice(fa.id, '1')
                 assert frontend.analyze_direct('پژوهشگر') is not None
                 assert frontend.analyze_direct('همگام‌سازی') is not None
@@ -137,14 +150,13 @@ def main():
                     assert engine.speak(('NVDA همگام‌سازی سلام',), pcm.extend, lambda _: None)
                     assert pcm
                     assert frontend._worker is None
-                    # This genuinely unadmitted form continues to exercise
-                    # the in-process fallback and source-index routing.
+                    # This uncovered form uses the C orthographic inference,
+                    # not an independently loaded eSpeak reference.
                     assert frontend.analyze_direct('نمی‌آراست') is None
                     pcm.clear()
                     assert engine.speak(('NVDA نمی‌آراست سلام',), pcm.extend, lambda _: None)
                     assert pcm
-                inprocess = importlib.import_module('probe_driver._persian.inprocess_espeak')
-                assert isinstance(frontend._worker, inprocess.InProcessEspeak)
+                assert frontend._worker is None
             finally:
                 engine.close()
         finally:

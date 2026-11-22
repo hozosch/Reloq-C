@@ -6,6 +6,15 @@ Persian/Pinglish analyzer produces language-owned phone and boundary events.
 An experimental C speech entry point can synthesize a subset without NVDA or
 an eSpeak process, using the existing Finnish-based acoustic bridge.
 
+The private NVDA test package now selects the complete C analyzer even when
+NVDA's eSpeak DLL is installed; it does not package or load the eSpeak helper
+modules. Covered words use the existing native analyses. For uncovered
+written words the C analyzer infers short vowels, which can differ from the
+earlier reference-backed development voice and needs listening validation.
+Pinglish retains the explicit a/aa distinction. This removes the optional
+eSpeak pronunciation fallback from that test package; it does not remove its
+Python contour orchestration or register an independent ECI voice.
+
 The silent US contour proxy and its pronunciation checks now run in shared C.
 The NVDA planner uses that implementation when the matching ECI library is
 available; the Python implementation remains for older libraries. It does not

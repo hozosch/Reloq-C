@@ -9,12 +9,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import re
+from typing import TYPE_CHECKING
 import unicodedata
 
-if __package__:
-    from .espeak_ng_probe import EspeakPhonemeProbe
-else:
-    from espeak_ng_probe import EspeakPhonemeProbe
+if TYPE_CHECKING:
+    if __package__:
+        from .espeak_ng_probe import EspeakPhonemeProbe
+    else:
+        from espeak_ng_probe import EspeakPhonemeProbe
 
 
 class UnsupportedPronunciation(ValueError):

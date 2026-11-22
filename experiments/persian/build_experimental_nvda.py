@@ -1,9 +1,9 @@
 """Build an explicitly labelled Persian/Pinglish NVDA test package.
 
 Only use Windows DLLs which have passed the focused tests. The bounded
-sentence planner uses the selected cross-language transition; some uncovered
-text still needs an independently loaded eSpeak reference. This script does
-not publish or replace a release.
+sentence planner uses the selected cross-language transition. Uncovered words
+use the core's orthographic inference without eSpeak and still need listening
+checks. This script does not publish or replace a release.
 """
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ sys.path.insert(0, str(ROOT / 'addon'))
 from build_synth import make_entries
 
 PREFIX = 'synthDrivers/reloqC/'
-MODULES = ('espeak_ng_probe', 'inprocess_espeak', 'text_frontend', 'pinglish_frontend', 'persian_symbols',
+MODULES = ('text_frontend', 'pinglish_frontend', 'persian_symbols',
            'persian_unicode_names',
            'reference_alignment', 'hybrid_fa_frontend', 'direct_fa_sequence', 'continuous_plan',
            'continuous_driver', 'parallel_pilot', 'korean_contour', 'nvda_driver_probe')

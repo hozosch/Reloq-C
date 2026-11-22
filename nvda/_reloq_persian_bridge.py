@@ -8,15 +8,16 @@ from ._persian.nvda_driver_probe import PERSIAN_PROBE, PINGLISH_PROBE, make_lang
 
 
 def _paths(library: Path):
-    import globalVars
-    parent = Path(globalVars.appDir) / 'synthDrivers'
-    return (library, None,
-            parent / 'espeak.dll', parent)
+    # The private Persian test voice uses the complete language-owned C
+    # analyzer even when NVDA has its own eSpeak installation. Unknown
+    # written words follow the core's orthographic inference instead of
+    # invoking a separate synthesizer as a pronunciation provider.
+    return (library, None, None, None)
 
 
 def add_profiles(languages, library: Path):
     """Do not expose test profiles if their private components are absent."""
-    text_library, worker, reference, _ = _paths(library)
+    text_library, _, _, _ = _paths(library)
     if not all(path.is_file() for path in (text_library, library)):
         return languages
     try:
@@ -34,7 +35,8 @@ def add_profiles(languages, library: Path):
                                ('eciPersianReplayFrames', 'reloq_fa_replay_frames')):
             require(dll, public, legacy)
         text_dll = dll if text_library.resolve() == library.resolve() else ctypes.CDLL(str(text_library.resolve()))
-        if not reference.is_file() and getattr(text_dll, 'eciPersianProjectCompleteUtf8', None) is None:
+        if (getattr(text_dll, 'eciPersianProjectCompleteUtf8', None) is None or
+                getattr(text_dll, 'eciPersianProjectTextCompleteUtf8', None) is None):
             return languages
         for public, legacy in (('eciPersianTranslateUtf8', 'reloq_fa_direct_text'),
                                ('eciPersianNumber', 'reloq_fa_direct_number'),

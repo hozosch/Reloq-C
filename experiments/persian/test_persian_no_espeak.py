@@ -17,9 +17,15 @@ def main():
     with tempfile.TemporaryDirectory() as temp:
         absent=Path(temp)/'no-espeak-library'
         for profile,cases in ((PERSIAN_PROBE,('سلام دنیا','سلام ژژژژژ دنیا',
-                                             'سلام NVDA دنیا','ژژژژژ NVDA','۱۲۳')),
+                                             'سلام NVDA دنیا','ژژژژژ NVDA','۱۲۳',
+                                             'heading level 3 ۱,۹۰۰,۰۰۰ ریال',
+                                             'نمایشِ اِتِّفاقاتِ ثبت‌شده (Log)',
+                                             'استفاده از NVDA هنگامِ ورود به ویندوز',
+                                             'نشان دادَنِ گزینه‌های خروج هنگامِ خارج شدن از NVDA',
+                                             'خواجه‌ئیان', 'نمی‌آراست')),
                               (PINGLISH_PROBE,('salam donya','salam phone donya',
-                                               'salam ژژژژژ phone donya'))):
+                                               'salam ژژژژژ phone donya',
+                                               'paraantez baaz', 'raah khoone', '66'))):
             engine=make_language_engine(args.library,args.library,None,absent,Path(temp),
                                         language=profile.id)
             try:
