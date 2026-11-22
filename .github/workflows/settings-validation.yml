@@ -1,0 +1,58 @@
+name: Validate reordered settings
+on:
+  push:
+    branches: [codex/settings-ui-validation-20261122]
+    paths: [.github/workflows/settings-validation.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  sapi:
+    runs-on: windows-2022
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: persian-windows-baseline-early
+          run-id: 45076960840
+          github-token: ${{ github.token }}
+          path: baseline
+      - name: Build the SAPI adapter
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
+          make -C sapi -j4 CC=gcc ARCH=x64 BUILD=build/x64 build/x64/ReLoqSapi.dll
+          cp baseline/eci.dll sapi/build/x64/eci.dll
+      - name: Check real Windows dialog and keyboard order
+        shell: pwsh
+        run: |
+          python sapi/test_dialog_order.py --directory sapi/build/x64
+          if ($LASTEXITCODE -ne 0) { throw 'SAPI dialog order failed' }
+  android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - name: Install Android build dependencies
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.1'
+      - name: Compile all Android settings and resources
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ui-build/generated ui-build/assets ui-build/classes
+          python3 -c 'import sys; sys.path.insert(0,"android"); from codegen import generate; generate("ui-build/generated")'
+          "$ANDROID_HOME/build-tools/35.0.1/aapt2" compile --dir android/res -o ui-build/resources.zip
+          "$ANDROID_HOME/build-tools/35.0.1/aapt2" link -o ui-build/resources.apk -I "$ANDROID_HOME/platforms/android-35/android.jar" --manifest android/AndroidManifest.xml --java ui-build/generated -A ui-build/assets ui-build/resources.zip
+          find android/java ui-build/generated -name '*.java' -print0 | xargs -0 "$JAVA_HOME/bin/javac" -encoding UTF-8 -source 8 -target 8 -Xlint:-options -bootclasspath "$ANDROID_HOME/platforms/android-35/android.jar:$ANDROID_HOME/build-tools/35.0.1/core-lambda-stubs.jar" -d ui-build/classes
+          python3 android/test_translations.py
+          python3 android/test_settings.py --settings-only --java-home "$JAVA_HOME" --android-jar "$ANDROID_HOME/platforms/android-35/android.jar"
