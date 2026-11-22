@@ -8,6 +8,12 @@ on:
       - src/**
       - include/**
       - vendor/openevv61/**
+      # The shared C sources include these files directly, and the Apple
+      # provider is generated from the same scripts as the other platforms.
+      - experiments/persian/direct_fa_*
+      - experiments/persian/build_native_probe.py
+      - experiments/aragonese/build_native_probe.py
+      - tools/prepare_persian_provider.py
       - addon/synth/manifest.ini
 permissions:
   contents: read
