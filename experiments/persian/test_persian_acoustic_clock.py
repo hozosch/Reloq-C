@@ -103,6 +103,22 @@ def main():
                 assert en._dll.eciGetParam(en._handle,ORIGINAL_ACOUSTIC_CLOCK)==int(bool(mask&en_bit))
                 owner._activate(owner._home)
                 count+=1
+            # Cancellation must release the borrowed timing before the next
+            # independent English utterance, even if audio has started.
+            owner.set_acoustic_clocks(bit)
+            received=[]
+            def stop_on_first_pcm(data):
+                received.append(len(data))
+                owner.cancel()
+            assert not owner.speak((texts[-1],),stop_on_first_pcm,lambda _:None)
+            assert received
+            en=owner._activate(owner._key(US_ENGLISH.id,'1'))
+            assert en._dll.eciGetParam(en._handle,ORIGINAL_ACOUSTIC_CLOCK)==0
+            owner.select_voice(US_ENGLISH.id,'1')
+            pcm=bytearray()
+            assert owner.speak(('Independent English.',),pcm.extend,lambda _:None) and pcm
+            assert en._dll.eciGetParam(en._handle,ORIGINAL_ACOUSTIC_CLOCK)==0
+            count+=1
         finally:owner.close()
     print(f'Passed {count} Persian/Pinglish real-US-contour clock, restoration and isolation cases.')
 

@@ -1418,7 +1418,7 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
          * native glottal-source rolloff only for that selected coda. This
          * shapes voiced excitation before aspiration or frication join it;
          * AV, AH, AF, the vowel and the phone's duration stay unchanged. */
-        if(final_r_after_u)r_voice_tilt=(float)floor(3.0*shape*edge+0.5);
+        if(final_r_after_u)r_voice_tilt=(float)floor(9.0*shape*edge+0.5);
         /* The medial Finnish-derived R carries most of its noise in the
          * aspiration source rather than the coda donor's frication source.
          * Reduce that component only for a rounded vowel-R-I sequence. */

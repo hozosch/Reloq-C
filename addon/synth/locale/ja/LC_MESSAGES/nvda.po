@@ -1,0 +1,503 @@
+# Translations reuse ReLoq C platform UI wording and standard locale names.
+# Current messages are translated; native-speaker review is still needed.
+msgid ""
+msgstr "Project-Id-Version: Eloquence C 1.4.1\nLanguage: ja\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n"
+
+msgid "&Add file…"
+msgstr "追加(&A)…"
+
+msgid "&Breathiness"
+msgstr "息漏れ(&B)"
+
+msgid "&Head size"
+msgstr "頭の大きさ(&H)"
+
+msgid "&Mellow mode (16 kHz and above)"
+msgstr "&ソフトモード（16 kHz 以上）"
+
+msgid "&Own dictionaries (NVDA and Eloquence):"
+msgstr "個人辞書（NVDA と Eloquence）(&O):"
+
+msgid "&Remove"
+msgstr "削除(&R)"
+
+msgid "&Sample rate"
+msgstr "サンプリング周波数(&R):"
+
+msgid "&Update dictionaries now"
+msgstr "辞書を更新(&U)"
+
+msgid "100% is one octave. Frequencies at or above half the sample rate are inactive."
+msgstr "100%は1オクターブです。サンプルレートの半分以上の周波数は無効です。"
+
+msgid "11.025 kHz"
+msgstr "11.025 kHz"
+
+msgid "16 kHz"
+msgstr "16 kHz"
+
+msgid "22.05 kHz"
+msgstr "22.05 kHz"
+
+msgid "32 kHz"
+msgstr "32 kHz"
+
+msgid "44.1 kHz"
+msgstr "44.1 kHz"
+
+msgid "48 kHz"
+msgstr "48 kHz"
+
+msgid "8 kHz"
+msgstr "8 kHz"
+
+msgid "Abbreviations"
+msgstr "略語"
+
+msgid "Add-on updates"
+msgstr "アドオンの更新"
+
+msgid "Advanced equalizer filters"
+msgstr "イコライザーの詳細フィルター"
+
+msgid "Advanced filters…"
+msgstr "詳細フィルター…"
+
+msgid "All voices"
+msgstr "すべての音声"
+
+msgid "Alternative IBM TTS Dictionaries"
+msgstr "代替 IBM TTS 辞書"
+
+msgid "Always"
+msgstr "常に"
+
+msgid "American English"
+msgstr "英語 (アメリカ合衆国)"
+
+msgid "Apply to which voices?"
+msgstr "どの音声に適用しますか？"
+
+msgid "Aragonese"
+msgstr "アラゴン語"
+
+msgid "Automatically check for add-on updates"
+msgstr "アドオンの更新を自動的に確認"
+
+msgid "Balanced"
+msgstr "バランス"
+
+msgid "Bandwidth (% of an octave, 10–400):"
+msgstr "帯域幅（オクターブの割合、10～400）:"
+
+msgid "Base pitch in hertz (1–24000):"
+msgstr "基準の高さ（ヘルツ、1～24000）:"
+
+msgid "Bass (250 Hz, -12 to +12 dB):"
+msgstr "低音（250 Hz、-12～+12 dB）:"
+
+msgid "Brazilian Portuguese"
+msgstr "ポルトガル語 (ブラジル)"
+
+msgid "Bright"
+msgstr "明るい"
+
+msgid "British English"
+msgstr "英語 (イギリス)"
+
+msgid "Castilian Spanish"
+msgstr "スペイン語 (スペイン)"
+
+msgid "Changing NVDA's normal pitch slider switches back to the ECI scale."
+msgstr "NVDA の通常の高さスライダーを変更すると、ECI スケールに戻ります。"
+
+msgid "Changing NVDA's normal rate or rate boost switches back to the normal rate scale."
+msgstr "NVDA の通常の速度または速度ブーストを変更すると、通常の速度スケールに戻ります。"
+
+msgid "Check for add-on updates"
+msgstr "更新を確認(C)"
+
+msgid "Checking for updates…"
+msgstr "更新を確認しています…"
+
+msgid "Choose a format…"
+msgstr "形式を選択…"
+
+msgid "Choose a pronunciation dictionary"
+msgstr "発音辞書を選択"
+
+msgid "Could not detect the format. Choose the dictionary format:"
+msgstr "形式を判別できませんでした。辞書の形式を選択してください:"
+
+msgid "Custom"
+msgstr "カスタム"
+
+#, python-format
+msgid "Dictionaries updated. Community revision: %s"
+msgstr "辞書を更新しました。コミュニティのリビジョン: %s"
+
+msgid "Dictionary &source:"
+msgstr "辞書のソース(&S):"
+
+msgid "Dictionary files (*.dic)|*.dic|All files (*.*)|*.*"
+msgstr "辞書ファイル (*.dic)|*.dic|すべてのファイル (*.*)|*.*"
+
+#, python-format
+msgid "Dictionary files in total: %s"
+msgstr "辞書ファイルの合計: %s"
+
+msgid "Dictionary format"
+msgstr "辞書の形式"
+
+msgid "Dictionary format:"
+msgstr "辞書の形式"
+
+#, python-format
+msgid "Dictionary import failed: %s"
+msgstr "辞書のインポートに失敗しました: %s"
+
+msgid "Dictionary language"
+msgstr "辞書の言語"
+
+#, python-format
+msgid "Dictionary loaded for the first time. Entries: %s"
+msgstr "辞書を初めて読み込みました。項目数: %s"
+
+msgid "Dictionary type"
+msgstr "辞書の種類(T):"
+
+msgid "Dictionary type:"
+msgstr "辞書の種類(T):"
+
+#, python-format
+msgid "Dictionary update complete. New entries: %s"
+msgstr "辞書の更新が完了しました。新しい項目: %s"
+
+msgid "Dictionary update complete. The number of new entries could not be determined."
+msgstr "辞書の更新が完了しました。新しい項目数を確認できませんでした。"
+
+#, python-format
+msgid "Dictionary update failed: %s"
+msgstr "辞書の更新に失敗しました：%s"
+
+msgid "Download and install update"
+msgstr "更新をダウンロードしてインストール"
+
+msgid "Downloading update…"
+msgstr "更新をダウンロードしています…"
+
+msgid "Edit NVDA dictionary…"
+msgstr "NVDA 辞書を編集…"
+
+msgid "Eloquence"
+msgstr "Eloquence"
+
+msgid "Eloquence C"
+msgstr "Eloquence C"
+
+#, python-format
+msgid "Eloquence C version %s is available. Download and install it?"
+msgstr "Eloquence C のバージョン %s が利用できます。ダウンロードしてインストールしますか？"
+
+msgid "Eloquence C: Persian and Pinglish test"
+msgstr "Eloquence C: ペルシャ語とピングリッシュのテスト"
+
+msgid "Eloquence C: fifteen language variants"
+msgstr "Eloquence C: 15 種類の言語"
+
+msgid "Eloquence files are saved with OK or Apply. NVDA imports and edits take effect immediately."
+msgstr "Eloquence ファイルは OK または適用で保存されます。NVDA 辞書のインポートと編集は直ちに反映されます。"
+
+msgid "Eloquence pronunciation dictionary"
+msgstr "Eloquence辞書"
+
+msgid "Enable &equalizer"
+msgstr "&イコライザーを有効にする"
+
+msgid "Enable equalizer"
+msgstr "イコライザーを有効にする"
+
+msgid "Enable filter"
+msgstr "フィルターを有効にする"
+
+msgid "Equalizer"
+msgstr "イコライザー"
+
+msgid "Equalizer &preset:"
+msgstr "&イコライザーのプリセット:"
+
+msgid "Equalizer bass"
+msgstr "イコライザーの低音"
+
+msgid "Equalizer filter bandwidth"
+msgstr "イコライザーフィルターの帯域幅"
+
+msgid "Equalizer filter enabled"
+msgstr "イコライザーフィルターの有効状態"
+
+msgid "Equalizer filter frequency"
+msgstr "イコライザーフィルターの周波数"
+
+msgid "Equalizer filter gain"
+msgstr "イコライザーフィルターのゲイン"
+
+msgid "Equalizer midrange"
+msgstr "イコライザーの中音"
+
+msgid "Equalizer preset"
+msgstr "イコライザーのプリセット"
+
+msgid "Equalizer treble"
+msgstr "イコライザーの高音"
+
+msgid "Exact base pitch"
+msgstr "正確な基準の高さ"
+
+msgid "Exact speech rate"
+msgstr "正確な読み上げ速度"
+
+#, python-format
+msgid "Filter %s"
+msgstr "フィルター %s"
+
+msgid "Filter:"
+msgstr "フィルター"
+
+msgid "Finnish"
+msgstr "フィンランド語"
+
+msgid "French"
+msgstr "フランス語"
+
+msgid "French Canadian"
+msgstr "フランス語 (カナダ)"
+
+msgid "Frequency in hertz (1–24000):"
+msgstr "周波数（ヘルツ、1～24000）:"
+
+msgid "Gain in dB (-12 to +12):"
+msgstr "ゲイン（dB、-12～+12）:"
+
+msgid "German"
+msgstr "ドイツ語"
+
+msgid "Greek"
+msgstr "ギリシャ語"
+
+msgid "Hertz pitch off; using the ECI pitch scale."
+msgstr "ヘルツ指定の高さを無効にしました。ECI の高さスケールを使用します。"
+
+msgid "IBM TTS Dictionaries"
+msgstr "IBM TTS 辞書"
+
+msgid "Imported NVDA dictionary"
+msgstr "インポートした NVDA 辞書"
+
+#, python-format
+msgid "Imported NVDA dictionary entries: %s"
+msgstr "インポートした NVDA 辞書の項目数: %s"
+
+#, python-format
+msgid "Installed version: %s"
+msgstr "インストール済みのバージョン：%s"
+
+msgid "Italian"
+msgstr "イタリア語"
+
+msgid "Japanese"
+msgstr "日本語"
+
+msgid "Korean"
+msgstr "韓国語"
+
+msgid "Language of the dictionary:"
+msgstr "辞書の言語:"
+
+msgid "Latin American Spanish"
+msgstr "スペイン語 (ラテンアメリカ)"
+
+msgid "Main words"
+msgstr "主な単語"
+
+msgid "Mandarin Chinese"
+msgstr "中国語（普通話）"
+
+msgid "Midrange (1200 Hz, -12 to +12 dB):"
+msgstr "中音（1200 Hz、-12～+12 dB）:"
+
+msgid "Move &down"
+msgstr "下へ(&D)"
+
+msgid "Move &up"
+msgstr "上へ(&U)"
+
+msgid "NVDA"
+msgstr "NVDA"
+
+msgid "NVDA cannot save dictionaries in this mode."
+msgstr "このモードでは NVDA は辞書を保存できません。"
+
+#, python-format
+msgid "NVDA dictionary edit failed: %s"
+msgstr "NVDA 辞書の編集に失敗しました: %s"
+
+#, python-format
+msgid "NVDA dictionary removal failed: %s"
+msgstr "NVDA 辞書の削除に失敗しました: %s"
+
+msgid "NVDA dictionary voice"
+msgstr "NVDA 辞書の音声"
+
+msgid "NVDA speech dictionaries"
+msgstr "NVDA 音声辞書"
+
+msgid "NVDA speech dictionary"
+msgstr "NVDA音声辞書"
+
+msgid "Native C synthesizer with fifteen language variants at 8 to 48 kHz, including Aragonese, Japanese, Korean, Chinese and Greek."
+msgstr "8～48 kHz に対応し、アラゴン語、日本語、韓国語、中国語、ギリシャ語を含む 15 種類の言語を備えたネイティブ C 音声エンジンです。"
+
+msgid "Never"
+msgstr "短くしない"
+
+#, python-format
+msgid "New dictionary files: %s"
+msgstr "新しい辞書ファイル: %s"
+
+msgid "No newer published add-on package is available."
+msgstr "公開済みの新しいアドオンはありません。"
+
+msgid "Only at text end"
+msgstr "発話の最後のみ"
+
+msgid "Open dictionary &folder"
+msgstr "フォルダーを開く(&F)"
+
+msgid "Own dictionaries updated."
+msgstr "個人辞書を更新しました。"
+
+msgid "Own entries override community entries. Original files are kept unchanged."
+msgstr "個人辞書の項目はコミュニティ辞書より優先されます。元のファイルは変更されません。"
+
+msgid "Per-language acoustic timing"
+msgstr "言語ごとの音響タイミング"
+
+msgid "Persian"
+msgstr "ペルシア語"
+
+msgid "Persian (Pinglish)"
+msgstr "ペルシア語 (Pinglish)"
+
+msgid "Phrase &prediction"
+msgstr "&句の予測"
+
+msgid "Pitch in hertz"
+msgstr "高さ（ヘルツ）"
+
+msgid "Process &ECI tags"
+msgstr "ECIタグを処理(&E)"
+
+msgid "Pronunciation dictionaries"
+msgstr "発音辞書"
+
+msgid "Rate in words per minute"
+msgstr "速度（毎分の単語数）"
+
+msgid "Remove this imported copy? The original dictionary is kept."
+msgstr "このインポート済みコピーを削除しますか？元の辞書は保持されます。"
+
+msgid "Rou&ghness"
+msgstr "ざらつき(&G)"
+
+msgid "Select Eloquence C as the synthesizer first."
+msgstr "最初に Eloquence C を音声エンジンとして選択してください。"
+
+msgid "Shorten pa&uses"
+msgstr "ポーズを短縮(&U):"
+
+msgid "Smooth"
+msgstr "滑らか"
+
+msgid "Speech rate in words per minute (1–6000):"
+msgstr "読み上げ速度（毎分の単語数、1～6000）:"
+
+msgid "Split &camel-case words (all languages)"
+msgstr "&キャメルケースを分割（すべての言語）"
+
+msgid "Split camel case"
+msgstr "キャメルケースを分割"
+
+msgid "Split unfamiliar &English words"
+msgstr "&未知の英単語を分割"
+
+msgid "Split unfamiliar English words"
+msgstr "未知の英単語を分割"
+
+msgid "Test build with Persian and Pinglish."
+msgstr "ペルシャ語とピングリッシュを含むテスト版です。"
+
+msgid "The number of new dictionary files could not be determined."
+msgstr "新しい辞書ファイル数を特定できませんでした。"
+
+msgid "The selected pronunciation dictionaries could not be loaded. Speech will resume when they are available. Check the dictionary settings, or select another synthesizer."
+msgstr "選択した発音辞書を読み込めませんでした。辞書が利用可能になると読み上げを再開します。辞書設定を確認するか、別の音声エンジンを選択してください。"
+
+#, python-format
+msgid "This NVDA dictionary was already imported. Entries: %s"
+msgstr "この NVDA 辞書は既にインポートされています。項目数: %s"
+
+msgid "Treble (3000 Hz, -12 to +12 dB):"
+msgstr "高音（3000 Hz、-12～+12 dB）:"
+
+#, python-format
+msgid "Update failed: %s"
+msgstr "更新に失敗しました：%s"
+
+msgid "Update handed to NVDA."
+msgstr "更新を NVDA に引き渡しました。"
+
+msgid "Update installation cancelled."
+msgstr "更新のインストールをキャンセルしました。"
+
+msgid "Updating pronunciation dictionaries…"
+msgstr "辞書をダウンロード中…"
+
+msgid "Use &abbreviation dictionary"
+msgstr "略語辞書を使用(&A)"
+
+msgid "Use &community pronunciation dictionaries"
+msgstr "コミュニティ辞書を使用(&D)"
+
+msgid "Use &original Eloquence acoustic timing (5 ms)"
+msgstr "&元の音響タイミング（5ミリ秒）"
+
+msgid "Use base pitch in &hertz"
+msgstr "基準の高さをヘルツで指定(&H)"
+
+msgid "Use original &question intonation"
+msgstr "&元の疑問文のイントネーションを使用"
+
+msgid "Use pitch in hertz"
+msgstr "音の高さをヘルツで設定"
+
+msgid "Use rate in words per minute"
+msgstr "速度を毎分の単語数で指定"
+
+msgid "Use speech rate in &words per minute"
+msgstr "読み上げ速度を毎分の単語数で指定(&W)"
+
+#, python-format
+msgid "Version %s is available."
+msgstr "バージョン %s が利用できます。"
+
+msgid "WPM rate off; using the normal rate scale."
+msgstr "毎分の単語数による速度を無効にしました。通常の速度スケールを使用します。"
+
+msgid "Wait for the dictionary update to finish."
+msgstr "辞書の更新が完了するまでお待ちください。"
+
+msgid "Warm"
+msgstr "暖かい"
+
+msgid "Word roots"
+msgstr "語根"

@@ -64,7 +64,7 @@ def main():
                                         if col != 4:
                                             assert a.controls[col] == b.controls[col], (tag, a.tick, col)
                                     delta = a.controls[4] - b.controls[4]
-                                    assert 0 <= delta <= 3, (tag, a.tick, delta)
+                                    assert 0 <= delta <= 9, (tag, a.tick, delta)
                                     if delta:
                                         assert start <= a.tick < end + (5 if clock else 0), (tag, a.tick)
                                         affected = True

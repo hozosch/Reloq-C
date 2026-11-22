@@ -1,5 +1,7 @@
 """Exercise live Hertz/WPM preview and NVDA's Apply/Cancel lifecycle."""
 import builtins
+import gettext
+import io
 import importlib.util
 from pathlib import Path
 import sys
@@ -29,7 +31,14 @@ def module(name,**values):
 
 
 def main():
-    builtins._=lambda x:x
+    locale=sys.argv[1] if len(sys.argv)>1 else None
+    if locale:
+        from build_translations import translation_entries
+        entries=translation_entries()
+        translate=gettext.GNUTranslations(io.BytesIO(entries[f'locale/{locale}/LC_MESSAGES/nvda.mo'])).gettext
+    else:
+        translate=lambda value:value
+    builtins._=translate
     module('addonHandler',initTranslation=lambda:None,
            getCodeAddon=lambda:types.SimpleNamespace(manifest={'name':'reloqC','version':'test'}))
     class Configuration(dict):
@@ -73,7 +82,16 @@ def main():
     panel=plugin.EloquenceSettingsPanel();panel.makeSettings(Widget())
     assert panel.pitch_hz_mode.enabled and not panel.pitch_hz_value.enabled
     assert panel.wpm_mode.enabled and not panel.wpm_value.enabled
-    assert panel.pitch_hz_value.name=='Base pitch in hertz (1–24000):'
+    assert panel.pitch_hz_value.name==translate('Base pitch in hertz (1–24000):')
+    assert panel.pitch_hz_mode.label==translate('Use base pitch in &hertz')
+    assert panel.wpm_mode.label==translate('Use speech rate in &words per minute')
+    assert panel.eq_mode.label==translate('Enable &equalizer')
+    assert panel.community.label==translate('Use &community pronunciation dictionaries')
+    assert panel.add_dictionary.label==translate('&Add file…')
+    assert panel.package_button.label==translate('Check for add-on updates')
+    if locale:
+        assert panel.pitch_hz_value.name!='Base pitch in hertz (1–24000):',locale
+        assert panel.package_button.label!='Check for add-on updates',locale
     assert panel.camel_case.enabled and not panel.camel_case.GetValue()
     panel.pitch_hz_mode.SetValue(True);panel.on_pitch_changed(Widget())
     assert panel.pitch_hz_value.enabled and panel.pitch_dirty
@@ -138,7 +156,7 @@ def main():
     assert not panel.pitch_hz_mode.GetValue() and not panel.pitch_hz_value.enabled
     synth._camelCase=False;panel.onPanelActivated()
     assert not panel.camel_case.GetValue()
-    print('NVDA settings panel: live Hertz/WPM/EQ preview, apply, cancel and refresh passed')
+    print(f'NVDA settings panel ({locale or "en"}): translations, live Hertz/WPM/EQ preview, apply, cancel and refresh passed')
 
 
 if __name__=='__main__':main()

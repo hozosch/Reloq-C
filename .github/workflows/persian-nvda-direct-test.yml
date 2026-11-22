@@ -43,6 +43,11 @@ on:
       - experiments/persian/test_persian_front_a_duration.py
       - experiments/persian/test_persian_r_source.py
       - experiments/persian/test_persian_u_final_r_voice.py
+      - experiments/persian/test_persian_u_final_r_spectrum.py
+      - experiments/persian/test_other_language_isolation.py
+      - addon/test_hertz_settings_panel.py
+      - addon/test_translation_catalogs.py
+      - addon/synth/locale/**
       - experiments/persian/test_persian_o_r_transition.py
       - experiments/persian/test_persian_back_vowel_r_transition.py
       - experiments/persian/test_persian_final_r_transition.py
@@ -196,6 +201,12 @@ jobs:
           run-id: ${{ steps.acoustic.outputs.early_run_id }}
           github-token: ${{ github.token }}
           path: candidate
+      - uses: actions/download-artifact@v8
+        with:
+          name: persian-windows-baseline-early
+          run-id: 45080704288
+          github-token: ${{ github.token }}
+          path: previous-dev38-core
       - name: Obtain portable NVDA
         shell: pwsh
         env:
@@ -233,8 +244,12 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian short A timing failed' }
           python -B experiments/persian/test_persian_r_source.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Persian R source transition failed' }
-          python -B experiments/persian/test_persian_u_final_r_voice.py --library "$dll"
+          python -B experiments/persian/test_persian_u_final_r_voice.py --library "$dll" --previous previous-dev38-core/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian final R after U failed' }
+          python -B experiments/persian/test_persian_u_final_r_spectrum.py --candidate "$dll" --previous previous-dev38-core/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Persian voiced final R spectrum failed' }
+          python -B experiments/persian/test_other_language_isolation.py --candidate "$dll" --previous previous-dev38-core/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Other language acoustic isolation failed' }
           python -B experiments/persian/test_persian_o_r_transition.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Persian O-to-R resonance transition failed' }
           python -B experiments/persian/test_persian_back_vowel_r_transition.py --library "$dll"
@@ -367,8 +382,9 @@ jobs:
         shell: bash
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
-          if [ "$GITHUB_REF_NAME" = "codex/persian-unified-dev35-20261122" ]; then version=2.0.0-dev35; elif [ "$GITHUB_REF_NAME" = "codex/persian-unified-dev33-20261122" ]; then version=2.0.0-dev37; elif [ "$GITHUB_REF_NAME" = "codex/persian-native-u-20261121" ]; then version=2.0.0-dev33; elif [ "$GITHUB_REF_NAME" = "codex/persian-finnish-nasal-swedish-20261120" ]; then version=2.0.0-dev5; elif [ "$GITHUB_REF_NAME" = "codex/persian-native-sv-probe-20261120" ]; then version=1.5.0-dev187; elif [ "$GITHUB_REF_NAME" = "codex/persian-transition-streaming-20261120" ]; then version=1.5.0-dev186; elif [ "$GITHUB_REF_NAME" = "codex/persian-context-native-20261120" ]; then version=1.5.0-dev185; elif [ "$GITHUB_REF_NAME" = "codex/persian-sentence-linear-20261120" ]; then version=1.5.0-dev184; elif [ "$GITHUB_REF_NAME" = "codex/persian-sentence-core-20261120" ]; then version=1.5.0-dev183; elif [ "$GITHUB_REF_NAME" = "codex/persian-virgule-20261120" ]; then version=1.5.0-dev182; elif [ "$GITHUB_REF_NAME" = "codex/persian-native-fast-pilot-20261120" ]; then version=1.5.0-dev181; elif [ "$GITHUB_REF_NAME" = "codex/persian-native-transitions-20261120" ]; then version=1.5.0-dev180; elif [ "$GITHUB_REF_NAME" = "codex/persian-issue49-solh-20261120" ]; then version=1.5.0-dev179; elif [ "$GITHUB_REF_NAME" = "codex/persian-native-20261120" ]; then version=1.5.0-dev175; elif [ "$GITHUB_REF_NAME" = "codex/persian-core-20261119" ]; then version=1.5.0-dev174; elif [ "$GITHUB_REF_NAME" = "codex/persian-ra-pinglish-20261119" ]; then version=1.5.0-dev173; elif [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev172; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; elif [ "$GITHUB_REF_NAME" = "codex/persian-vowels-20261117" ]; then version=1.5.0-dev142; else version=1.5.0-dev141; fi
+          if [ "$GITHUB_REF_NAME" = "codex/persian-unified-dev35-20261122" ]; then version=2.0.0-dev35; elif [ "$GITHUB_REF_NAME" = "codex/persian-unified-dev33-20261122" ]; then version=2.0.0-dev39; elif [ "$GITHUB_REF_NAME" = "codex/persian-native-u-20261121" ]; then version=2.0.0-dev33; elif [ "$GITHUB_REF_NAME" = "codex/persian-finnish-nasal-swedish-20261120" ]; then version=2.0.0-dev5; elif [ "$GITHUB_REF_NAME" = "codex/persian-native-sv-probe-20261120" ]; then version=1.5.0-dev187; elif [ "$GITHUB_REF_NAME" = "codex/persian-transition-streaming-20261120" ]; then version=1.5.0-dev186; elif [ "$GITHUB_REF_NAME" = "codex/persian-context-native-20261120" ]; then version=1.5.0-dev185; elif [ "$GITHUB_REF_NAME" = "codex/persian-sentence-linear-20261120" ]; then version=1.5.0-dev184; elif [ "$GITHUB_REF_NAME" = "codex/persian-sentence-core-20261120" ]; then version=1.5.0-dev183; elif [ "$GITHUB_REF_NAME" = "codex/persian-virgule-20261120" ]; then version=1.5.0-dev182; elif [ "$GITHUB_REF_NAME" = "codex/persian-native-fast-pilot-20261120" ]; then version=1.5.0-dev181; elif [ "$GITHUB_REF_NAME" = "codex/persian-native-transitions-20261120" ]; then version=1.5.0-dev180; elif [ "$GITHUB_REF_NAME" = "codex/persian-issue49-solh-20261120" ]; then version=1.5.0-dev179; elif [ "$GITHUB_REF_NAME" = "codex/persian-native-20261120" ]; then version=1.5.0-dev175; elif [ "$GITHUB_REF_NAME" = "codex/persian-core-20261119" ]; then version=1.5.0-dev174; elif [ "$GITHUB_REF_NAME" = "codex/persian-ra-pinglish-20261119" ]; then version=1.5.0-dev173; elif [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev172; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; elif [ "$GITHUB_REF_NAME" = "codex/persian-vowels-20261117" ]; then version=1.5.0-dev142; else version=1.5.0-dev141; fi
           dll=$(find candidate -name eci.dll -print -quit)
+          python -B addon/test_translation_catalogs.py
           python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version "$version" --output "dist/reloq-c-persian-pinglish-$version.nvda-addon"
           python -B experiments/persian/build_soundlab_nvda.py --output dist/reloq-c-lautlabor-0.3.1.nvda-addon
       - name: Check Unicode spelling through NVDA's speech pipeline
@@ -379,6 +395,10 @@ jobs:
           export RELOQ_TEST_ADDON="$RUNNER_TEMP/reloq-unicode-test.nvda-addon"
           python -B -c 'import os,sys; from pathlib import Path; sys.path.insert(0,"addon"); from build_synth import build; build(Path(os.environ["RELOQ_TEST_ADDON"]),Path(os.environ["RELOQ_TEST_DLL"]),refresh_dictionaries=False)'
           python -B addon/test_synth_native.py --library "$RELOQ_TEST_DLL" --addon "$RELOQ_TEST_ADDON" --spelling-only
+          for ui_locale in de fa es fr it fi el ja ko pt_BR zh_CN zh_TW an; do
+            RELOQ_UI_LOCALE="$ui_locale" python -B -c 'import os,sys; from pathlib import Path; sys.path.insert(0,"addon"); import test_synth; sys.argv=["test_synth.py",os.environ["RELOQ_UI_LOCALE"]]; test_synth.main(package_path=Path(os.environ["RELOQ_TEST_ADDON"]))'
+            python -B addon/test_hertz_settings_panel.py "$ui_locale"
+          done
           persian_addon=$(find dist -maxdepth 1 -name 'reloq-c-persian-pinglish-*.nvda-addon' -print -quit)
           test -n "$persian_addon"
           python -B experiments/persian/test_nvda_unicode_spelling.py --library "$RELOQ_TEST_DLL" --addon "$persian_addon"
@@ -414,44 +434,14 @@ jobs:
             gh run download "${{ steps.acoustic.outputs.run_id }}" --name persian-windows-baseline-early --dir verified-acoustic --repo "$GITHUB_REPOSITORY"
             cmp -s candidate/eci.dll verified-acoustic/eci.dll || { echo 'The tested and fully verified Windows DLLs differ' >&2; exit 1; }
           fi
-      - name: Upload the Persian NVDA add-on directly
-        id: direct-addon
+      - name: Upload the tested Persian NVDA add-on
         uses: actions/upload-artifact@v7
         with:
-          path: dist/reloq-c-persian-pinglish-*.nvda-addon
-          archive: false
+          name: persian-nvda-dev39
+          path: dist/reloq-c-persian-pinglish-2.0.0-dev39.nvda-addon
+          compression-level: 0
           if-no-files-found: error
-          retention-days: 30
-      # Artifact metadata can take a moment to appear in the run listing,
-      # even after upload-artifact has returned its ID. Wait for that exact
-      # ID before asking download-artifact to verify the uploaded file.
-      - name: Wait for the direct artifact to appear
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          ARTIFACT_ID: ${{ steps.direct-addon.outputs.artifact-id }}
-        run: |
-          case "$ARTIFACT_ID" in *[!0-9]*|'') echo 'Invalid artifact ID' >&2; exit 1;; esac
-          for attempt in $(seq 1 30); do
-            found=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" \
-              --jq ".artifacts[] | select(.id == $ARTIFACT_ID) | .id" 2>/dev/null || true)
-            if [ "$found" = "$ARTIFACT_ID" ]; then exit 0; fi
-            sleep 2
-          done
-          echo 'The direct add-on artifact did not appear in the run listing' >&2
-          exit 1
-      - name: Download the direct add-on artifact
-        uses: actions/download-artifact@v8
-        with:
-          artifact-ids: ${{ steps.direct-addon.outputs.artifact-id }}
-          path: verified-direct-addon
-          github-token: ${{ github.token }}
-      - name: Verify the direct add-on artifact
-        shell: bash
-        run: |
-          addon=$(find dist -maxdepth 1 -name 'reloq-c-persian-pinglish-*.nvda-addon' -print -quit)
-          test -n "$addon"
-          cmp "$addon" "verified-direct-addon/$(basename "$addon")"
+          retention-days: 14
       - uses: actions/upload-artifact@v7
         if: always()
         with:

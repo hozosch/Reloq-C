@@ -266,6 +266,7 @@ jobs:
             eci/eci.dll
           key: persian-windows-host-gcc14-v2-${{ hashFiles('eci/Makefile', 'eci/reloq_eci_fixed_math.c', 'src/**', 'include/**', 'vendor/openevv61/**', '!vendor/openevv61/build/**', 'experiments/persian/direct_fa_*.c', 'experiments/persian/direct_fa_*.h', 'experiments/persian/direct_fa_*.inc', 'tools/prepare_persian_provider.py', 'experiments/persian/build_native_probe.py', 'experiments/aragonese/build_native_probe.py') }}
           restore-keys: |
+            persian-windows-host-gcc14-v2-d71c9cf65e0da4addd2cd507e736edfe08d2172847a5c0fac720ae90a545854d
             persian-windows-host-gcc14-v2-327dfdcb26be7b18cbb34433921f8b4bacd0497e76a3c33525c66b2e274ca9d7
             persian-windows-host-gcc14-v2-89fe1c68ffc01ee0d0c40f0061a3fe4ac3dee2197657891dc14ab8919c009156
             persian-windows-host-gcc14-v2-550359d015dcee8e8741f8de1460dec5bf725f325c3b4c9e33a8e6ae8e1f5d28
@@ -274,7 +275,6 @@ jobs:
             persian-windows-host-gcc14-v2-bdc1db30fb89d5b74756a0a4004095d3e1fd78de1a2d1b522df02f1f05c17c9c
             persian-windows-host-gcc14-v2-768d67b0405a722cb2963006a93c4bd82098b60f54ead2434822d7703f7cf858
             persian-windows-host-gcc14-v2-c9271a83e4aa463ba48644fd5727688aa3ce3fbf6b4452a211f99357010d4eb7
-            persian-windows-host-gcc14-v2-32260b50bc1d953680e539a8182b9a61260f2c7d5f7b4c09c02a681570c1c7ff
       - name: Restore cached provider timestamps
         if: steps.reuse.outputs.reusable != 'true' && steps.provider.outputs.cache-hit == 'true'
         shell: bash
