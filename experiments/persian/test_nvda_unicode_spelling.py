@@ -88,10 +88,13 @@ def main():
                     spelling_config[key] = value
                 dictionary = api.speak.__globals__['speechDictHandler']
 
-                def run(items, *, level=0):
+                def run(items, *, level=0, direct=False):
                     done.clear(); projected.clear(); native_text.clear()
                     before = {id(player): len(player.buffers) for player in players}
-                    api.speak(items, symbolLevel=level)
+                    if direct:
+                        driver.speak(items)
+                    else:
+                        api.speak(items, symbolLevel=level)
                     assert done.wait(30), (items, errors)
                     if errors:
                         raise errors[-1]
@@ -117,12 +120,12 @@ def main():
                                                     ('سلام دونقطه. دنیا', api.symbols.SymbolLevel.NONE)):
                                     _, projected_colon, _ = run([text], level=level)
                                     tags = ' '.join(tag for _, tag in projected_colon)
-                                    assert '`[.0do.0noR.1te]' in tags, (text, tags)
+                                    assert '`[.0do.1noR.0te]' in tags, (text, tags)
                                     checks.append((locale, 'connected colon name', text))
                             single_character_audio = {}
                             for char in ('⚭', 'Ж', 'α', '⚽', '≪', '«', '»', '€', '×', '→', '∑', '\u00a0', '\u200b',
                                          '\u202a', '\u202b', '\u202c', '\u202d', '\u202e', '✓', '➔',
-                                         '@', '+', '?', 'a', '1', ' ', '\t', '\n', '\r', '\x7f'):
+                                         '@', '+', '?', ':', 'a', '1', ' ', '\t', '\n', '\r', '\x7f'):
                                 try:
                                     expected, _, _ = run([character_mode(True), module.NativeDictionaryWord(char),
                                                           character_mode(False)])
@@ -237,6 +240,18 @@ def main():
                                 emoji, _, _ = run(switched('🙂'))
                                 assert emoji != reference, (locale, 'emoji at language boundary')
                                 checks.append((locale, 'emoji at language boundary'))
+                            # Exercise the same command sequence after NVDA's
+                            # preprocessing as well, as the real synth sees it.
+                            direct_reference, _, _ = run(switched(' '), direct=True)
+                            direct_symbol, _, _ = run(switched('⚭'), direct=True)
+                            direct_emoji, _, _ = run(switched('🙂'), direct=True)
+                            assert direct_symbol == direct_reference and direct_emoji != direct_reference, locale
+                            single, _, _ = run([language('en_US'), '⚭'], direct=True)
+                            spelled_single, _, _ = run([language('en_US'), character_mode(True),
+                                                        module.NativeDictionaryWord('⚭'),
+                                                        character_mode(False)], direct=True)
+                            assert single == spelled_single, (locale, 'isolated switched character')
+                            checks.append((locale, 'direct language boundary'))
 
                             # Keep the user's explicit NVDA dictionary mapping.
                             original_dict = dictionary.processText

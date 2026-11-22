@@ -71,7 +71,7 @@ def main():
                          ('دو', 'کتاب'), ('چهار', 'کتاب')):
         fused, joined = project(prefix+noun), project(prefix+'‌'+noun)
         assert fused == joined, (prefix, noun, fused, joined)
-    assert project('دونقطه') == '`[.0do.0noR.1te]'
+    assert project('دونقطه') == '`[.0do.1noR.0te]'
     assert project('دوست') == '`[.1dust]'
     assert project('دولت') == '`[.0do.1lAt]'
     project('هشتید', covered=False)  # A verb ending, not هشت + ید.

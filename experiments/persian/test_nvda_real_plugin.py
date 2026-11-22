@@ -668,7 +668,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                               for locale in ('de_DE', 'en_US', 'fa_IR', 'fa_Latn')
                               for char in ('⚭', '≪', 'Ж', 'α', '🙂', '«', '»', '€', '×', '→', '\u00a0', '\u200b',
                                            '\u202e', '✓',
-                                           '@', '+', '?', 'a', '1', ' ', '\t', '\n', '\r', '\x7f')
+                                           '@', '+', '?', ':', 'a', '1', ' ', '\t', '\n', '\r', '\x7f')
                               for mode in ('unicode_single_on', 'unicode_single_off', 'unicode_single_direct',
                                            'unicode_single_reference'))
             self.cases.extend((locale, text, mode) for locale, original, reference in (
@@ -903,7 +903,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                             raise AssertionError('NVDA lost the Unicode name while spelling: ' + ascii((locale, char)))
                     for char in ('⚭', '≪', 'Ж', 'α', '🙂', '«', '»', '€', '×', '→', '\u00a0', '\u200b',
                                  '\u202e', '✓',
-                                 '@', '+', '?', 'a', '1', ' ', '\t', '\n', '\r', '\x7f'):
+                                 '@', '+', '?', ':', 'a', '1', ' ', '\t', '\n', '\r', '\x7f'):
                         reference = sound(locale, char, 'unicode_single_reference')
                         for mode in ('unicode_single_on', 'unicode_single_off', 'unicode_single_direct'):
                             if sound(locale, char, mode) != reference:
@@ -1256,7 +1256,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             if spelling in ('issue50_compact_colon_most', 'issue50_compact_colon_split_most',
                             'issue50_compact_colon_reference_none'):
                 tags = ' '.join(self.projected[self.before_projected:])
-                if '`[.0do.0noR.1te]' not in tags:
+                if '`[.0do.1noR.0te]' not in tags:
                     raise AssertionError('NVDA colon name lost its connected numeral vowel: ' + ascii((text, tags)))
             if spelling == 'issue50_hundred_short':
                 tags = ' '.join(self.projected[self.before_projected:])
