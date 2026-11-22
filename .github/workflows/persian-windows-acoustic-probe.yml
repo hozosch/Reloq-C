@@ -275,7 +275,6 @@ jobs:
             persian-windows-host-gcc14-v2-c9271a83e4aa463ba48644fd5727688aa3ce3fbf6b4452a211f99357010d4eb7
             persian-windows-host-gcc14-v2-32260b50bc1d953680e539a8182b9a61260f2c7d5f7b4c09c02a681570c1c7ff
             persian-windows-host-gcc14-v2-919f203ba3281c47932aaa750f203a5cbbd8aeae140bfc7e107dc0c43482f76a
-            persian-windows-host-gcc14-v2-315d8e6213d9a22ae30b229094495b3f50d0b93bed882604fc4a2b5cab13b216
       - name: Restore cached provider timestamps
         if: steps.reuse.outputs.reusable != 'true' && steps.provider.outputs.cache-hit == 'true'
         shell: bash
