@@ -89,8 +89,9 @@ static int suffix_preserves_a(const char *stem,const char *formed,char suffix)
 }
 
 /* A Persian-script homograph may differ from the explicit Pinglish vowels.
- * When the vowel counts align, retain the dictionary's syllables and stress
- * while replacing the vowel sounds in order. Otherwise use marked spelling. */
+ * Comparing only counts of one vowel misses a swap with another vowel.
+ * When all counts align, retain the dictionary's syllables and stress while
+ * replacing the vowel sounds in order. Otherwise use marked spelling. */
 static int pinglish_apply_vowels(const char *roman,char *tag)
 {
     char expected[1025];size_t count=0;

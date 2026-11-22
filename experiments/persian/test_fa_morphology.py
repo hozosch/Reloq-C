@@ -47,7 +47,8 @@ def main():
     for word, tag in (('بدید', '`[.1be.0did]'), ('بدم', '`[.0be.1dAm]'),
                       ('می‌گذارد', '`[.1mi.0go.0za.0rAd]'),
                       ('می‌فشاند', '`[.1mi.0fe.0Sa.0nAd]'),
-                      ('نشستم', '`[.1ne.0SAs.0tAm]')):
+                      ('نشستم', '`[.1ne.0SAs.0tAm]'),
+                      ('نکند', '`[.1nA.0ko.0nAd]')):
         assert project(word)==tag, (word, project(word))
     assert project('به‌روز')=="`[.0be.1ruz]"
     assert project('به‌روزرسانی')=="`[.0be.2ruz.0re.1sa.0ni]"
