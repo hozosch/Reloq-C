@@ -150,7 +150,9 @@ static unsigned char *decode_eci_text(struct reloq_eci_engine *e,const void *inp
 {
     int wide=!!(e->language_dialect&0x800),code=1252;
     switch(e->language) {
-    case 0x60000:code=936;break;case 0x60001:code=950;break;
+    /* Eloquence_64 uses GB18030 for Mandarin. It extends GBK with four-byte
+     * sequences for characters such as German ä and emoji. */
+    case 0x60000:code=54936;break;case 0x60001:code=950;break;
     case 0x80000:code=932;break;case 0xa0000:code=949;break;case 0x120000:code=1253;break;
     default:break;
     }
@@ -167,6 +169,12 @@ static unsigned char *decode_eci_text(struct reloq_eci_engine *e,const void *inp
     else {
         if(n>INT_MAX)goto invalid;
         count=MultiByteToWideChar((unsigned)code,MB_ERR_INVALID_CHARS,input,(int)n,NULL,0);
+        /* Some ECI clients still send the Windows-936 extension, notably
+         * its single-byte euro sign, which is not valid GB18030. */
+        if(n&&!count&&code==54936) {
+            code=936;
+            count=MultiByteToWideChar((unsigned)code,MB_ERR_INVALID_CHARS,input,(int)n,NULL,0);
+        }
         if(n&&!count)goto invalid;
         allocated=count?malloc((size_t)count*sizeof *allocated):NULL;
         if(count&&!allocated){*error=RELOQ_ECI_MEMORY;free(out);return NULL;}
@@ -193,11 +201,19 @@ static unsigned char *decode_eci_text(struct reloq_eci_engine *e,const void *inp
     }
     *length=used;
 #else
-    char encoding[16];snprintf(encoding,sizeof encoding,"CP%d",code);
+    char encoding[16];
+    if(code==54936)strcpy(encoding,"GB18030");
+    else snprintf(encoding,sizeof encoding,"CP%d",code);
     iconv_t converter=iconv_open("UTF-8",wide?"UTF-16LE":encoding);
     if(converter==(iconv_t)-1)goto invalid;
     char *from=(char *)input,*to=(char *)out;size_t left=n,room=capacity-1;
     size_t result=iconv(converter,&from,&left,&to,&room);iconv_close(converter);
+    if((result==(size_t)-1||left)&&!wide&&code==54936) {
+        converter=iconv_open("UTF-8","CP936");
+        if(converter==(iconv_t)-1)goto invalid;
+        from=(char *)input;to=(char *)out;left=n;room=capacity-1;
+        result=iconv(converter,&from,&left,&to,&room);iconv_close(converter);
+    }
     if(result==(size_t)-1||left)goto invalid;
     *length=(size_t)(to-(char *)out);
 #endif

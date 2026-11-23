@@ -268,6 +268,23 @@ static void foreign_boundary(delta_state*d,struct reloq61_english_bank*p)
  for(unsigned guard=0;guard<16;++guard){
   int32_t next;char c=input_character(d,at,&next);
   if(c==' '||c=='\t'){at=next;continue;}
+  if(c=='`'){
+   /* Eloquence_64 places `p0 or `p1 immediately before punctuation. The
+    * command belongs to the Mandarin host, but the English bank still
+    * needs the following punctuation for its own phrase contour. For a
+    * positive pause, remove the donor's natural tail so it does not hide
+    * or add to the explicit host pause. */
+   at=next;c=input_character(d,at,&next);if(c!='p')break;
+   at=next;unsigned value=0,digits=0;
+   while(digits<6){c=input_character(d,at,&next);if(c<'0'||c>'9')break;
+    value=value*10+(unsigned)(c-'0');++digits;at=next;}
+   if(!digits||value>60000||(c>='0'&&c<='9'))break;
+   while(c==' '||c=='\t'){at=next;c=input_character(d,at,&next);}
+   if(c&&strchr(",.;:!?",c)){size_t n=strlen(p->text);
+    if(n+1<sizeof p->text){p->text[n]=c;p->text[n+1]=0;}}
+   if(value)p->trim_pause=1;
+   break;
+  }
   if(c&&strchr(",.;:!?",c)){size_t n=strlen(p->text);
    if(n+1<sizeof p->text){p->text[n]=c;p->text[n+1]=0;}
   }
@@ -290,9 +307,10 @@ int reloq_zhcn61_bank_speech(void*state,int32_t machine)
  if(reloq_zhcn61_set_klattparms(state,machine))goto done;
  f->loc[0].value=left;if(reloq_zhcn61_text_index(state,machine,EVV_REF(f->loc)))goto done;
  if(!bank->emitted){int32_t phrase=owner_record(d,bank->host_left,5);bank->trim_pause=phrase&&right_point(d,record_end(phrase),4)!=right_point(d,bank->host_right,4);
+  foreign_boundary(d,bank);
   int32_t next=projected_record(d,bank->host_right,4);
   bank->shorten_release=bank->trim_pause&&next&&!((const unsigned char*)TFLDS(EVV_AT(void*,next)))[9];
-  foreign_boundary(d,bank);if(reloq61_english_bank_render(state,bank,bank->trim_pause))goto done;int32_t duration=bank->spans[bank->span_count-1].to;if(bank->trim_pause&&bank->pause_to>bank->pause_from)duration=(int32_t)bank->pause_from;
+  if(reloq61_english_bank_render(state,bank,bank->trim_pause))goto done;int32_t duration=bank->spans[bank->span_count-1].to;if(bank->trim_pause&&bank->pause_to>bank->pause_from)duration=(int32_t)bank->pause_from;
   if(duration<=0||duration>32767)goto done;uint8_t ms[2]={(uint8_t)(duration>>8),(uint8_t)duration};
   f->loc[0].value=bank->host_left;f->loc[1].value=bank->host_right;lpta_rpta_loadp(d,(const delta_token*)f->loc,(const delta_token*)(f->loc+1));if(insert_2pt_i(d,8,2,ms,0))goto done;
   memcpy((char*)d+DG_BASE+248,&bank->host_left,4);memcpy((char*)d+DG_BASE+256,&bank->host_right,4);

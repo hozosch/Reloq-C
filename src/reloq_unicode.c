@@ -443,6 +443,28 @@ static int language_unknown(struct buffer *b,uint32_t c,int locale)
     for(size_t i=0;hex[i];++i)if(add(b,hex+i,1)||add(b," ",1))return -1;
     return 0;
 }
+
+struct unicode_url_cache {size_t begin,end;int valid,matched;};
+static int url_token_char(unsigned char c)
+{
+    return c>32&&c<127&&!strchr("()[]{}<>\"'`",c);
+}
+/* Keep the native URL grammar intact before Mandarin symbol expansion.
+ * Cache a token at a time, so a long address with many slashes stays linear. */
+static int unicode_url_character(const unsigned char *text,size_t length,size_t at,
+                                 struct unicode_url_cache *cache)
+{
+    if(cache->valid&&at>=cache->begin&&at<cache->end)return cache->matched;
+    size_t begin=at,end=at;
+    while(begin&&url_token_char(text[begin-1]))--begin;
+    while(end<length&&url_token_char(text[end]))++end;
+    size_t n=end-begin;
+    cache->begin=begin;cache->end=end;cache->valid=1;
+    cache->matched=(n>=7&&!memcmp(text+begin,"http://",7))||
+                   (n>=8&&!memcmp(text+begin,"https://",8))||
+                   (n>=4&&!memcmp(text+begin,"www.",4));
+    return cache->matched;
+}
 static int language_owns(uint32_t c,int language)
 {
     int family=language>>16;
@@ -471,6 +493,7 @@ static int unicode_admit(const unsigned char *text,size_t length,
     if(!text||!output||!written||!map||length>SIZE_MAX/sizeof(size_t)-1)return -1;
     size_t *offsets=malloc((length+1)*sizeof *offsets);if(!offsets)return -2;
     struct buffer b={0};int rc=-1,native_run=0,source_spelling=0;
+    struct unicode_url_cache url={0};
     int locale=language?reloq_character_locale(language):-1;
     for(size_t i=0;i<length;) {
         uint32_t c;size_t n,begin=i,old;
@@ -561,7 +584,9 @@ static int unicode_admit(const unsigned char *text,size_t length,
                 if(p<length&&!decode(text+p,length-p,&z,&next)&&next==0x20e3){end=p+z;c=' ';}
             }
             const char *symbol=NULL;
-            if(!mode&&(language==0x60000||language==0x60001)) {
+            int is_url=!mode&&c<128&&(language==0x60000||language==0x60001)&&
+                strchr("/\\_~@|",(int)c)&&unicode_url_character(text,length,begin,&url);
+            if(!mode&&!is_url&&(language==0x60000||language==0x60001)) {
                 int traditional=language==0x60001;
                 switch(c) {
                 case '<': case 0xff1c:
@@ -619,7 +644,7 @@ static int unicode_admit(const unsigned char *text,size_t length,
                 int failed=0;
                 /* The original CJK symbol table calls @ a mail/address
                    mark. Use the standard Chinese reading in prose. */
-                if(c=='@'&&(language==0x60000||language==0x60001)) {
+                if(c=='@'&&!is_url&&(language==0x60000||language==0x60001)) {
                     failed=add(&b,"at",2);
                     if(!failed){offsets[begin]=old;offsets[end]=b.n;i=end;continue;}
                 }
