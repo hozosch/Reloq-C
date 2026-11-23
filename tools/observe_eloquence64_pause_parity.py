@@ -87,7 +87,7 @@ def child(library, driver_root, case_number, implementation):
     dll = C.WinDLL(str(library))
     cbtype = configure(dll)
 
-    def render(parts):
+    def render(parts, speed):
         h = dll.eciNewEx(language)
         if not h:
             h = dll.eciNewEx(0x10000)
@@ -109,7 +109,9 @@ def child(library, driver_root, case_number, implementation):
             if dll.eciSetOutputBuffer(h,len(buf),buf)<=0: raise RuntimeError('output buffer refused')
             if dll.eciSetParam(h,1,1)<0 or dll.eciSetParam(h,5,1)<0: raise RuntimeError('ECI setup refused')
             if dll.eciCopyVoice(h,1,0)<0: raise RuntimeError('voice preset refused')
-            if dll.eciSetVoiceParam(h,0,6,50)<0: raise RuntimeError('speed refused')
+            if implementation == 'reloq' and dll.eciSetParam(h,0x101b,1)<0:
+                raise RuntimeError('Eloquence_64 original 5 ms clock refused')
+            if dll.eciSetVoiceParam(h,0,6,speed)<0: raise RuntimeError('speed refused')
             for part in parts:
                 if not dll.eciAddText(h,part): raise RuntimeError('eciAddText refused')
             if not dll.eciInsertIndex(h,0xffff): raise RuntimeError('final index refused')
@@ -122,23 +124,24 @@ def child(library, driver_root, case_number, implementation):
 
     records = []
     try:
-        for sample_index, text in enumerate(texts):
-            for mode in (0,1,2):
-                options = text_builder.BuildOptions(volume=80, rate=50, pause_mode=mode,
-                    backquote_tags=False, abbreviation_dict=False, phrase_prediction=False)
-                text_bytes = text_builder.build(text,language,options)
-                tail = text_builder.trailing_pause(text_bytes,options)
-                parts = [text_bytes] + ([tail] if tail else [])
-                result = render(parts)
-                records.append({'language':case_name,'kind':'driver','sample':sample_index,
-                    'text':text,'mode':mode,'input_hex':[p.hex() for p in parts],**result})
-        if language == 0x60000:
-            for before in ('你好','Hello'):
-                for pause in (0,1,50,250):
-                    message = f'`pp0 `da0 `vv80 {before} `p{pause}, 世界。'.encode('gb18030')
-                    result = render([message])
-                    records.append({'language':case_name,'kind':'explicit','text':before,
-                        'pause':pause,'input_hex':[message.hex()],**result})
+        for speed in (50,95,135):
+            for sample_index, text in enumerate(texts):
+                for mode in (0,1,2):
+                    options = text_builder.BuildOptions(volume=80, rate=round((speed-40)*100/110), pause_mode=mode,
+                        backquote_tags=False, abbreviation_dict=False, phrase_prediction=False)
+                    text_bytes = text_builder.build(text,language,options)
+                    tail = text_builder.trailing_pause(text_bytes,options)
+                    parts = [text_bytes] + ([tail] if tail else [])
+                    result = render(parts,speed)
+                    records.append({'language':case_name,'kind':'driver','sample':sample_index,
+                        'text':text,'mode':mode,'speed':speed,'input_hex':[p.hex() for p in parts],**result})
+            if language == 0x60000:
+                for before in ('你好','Hello'):
+                    for pause in (0,1,50,250):
+                        message = f'`pp0 `da0 `vv80 {before} `p{pause}, 世界。'.encode('gb18030')
+                        result = render([message],speed)
+                        records.append({'language':case_name,'kind':'explicit','text':before,
+                            'pause':pause,'speed':speed,'input_hex':[message.hex()],**result})
         return records
     finally:
         directory.close()
