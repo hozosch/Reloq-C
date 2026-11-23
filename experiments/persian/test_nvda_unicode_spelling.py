@@ -138,16 +138,19 @@ def main():
                                     assert actual == expected, (locale, char, enabled)
                                     checks.append((locale, 'plain single character', char, enabled))
                             # With NVDA leaving a raw symbol untouched,
-                            # even a recognized Persian name belongs only to
-                            # an isolated character, not a sentence fragment.
+                            # ordinary symbols stay silent in a sentence;
+                            # foreign Greek letters retain alphabet names.
                             before, after = ('سلام ', ' دنیا') if locale == 'fa_IR' else ('salam ', ' donya')
                             with mock.patch.object(api.symbols, 'processSpeechSymbols',
                                                    side_effect=lambda loc, text, level: text):
                                 reference, _, _ = run([before, index(73), ' ', index(74), after])
-                                for char in ('⚭', 'α', '≪', '\u202e', '✓', '➔'):
+                                for char in ('⚭', '≪', '\u202e', '✓', '➔'):
                                     actual, _, _ = run([before, index(73), char, index(74), after])
                                     assert actual == reference, (locale, char, 'running text')
                                     checks.append((locale, 'raw running text', char))
+                                actual, _, _ = run([before, index(73), 'α', index(74), after])
+                                assert actual != reference, (locale, 'Greek letter in running text')
+                                checks.append((locale, 'Greek letter in running text'))
                                 for char in ('⚽', '🙂', '🌍'):
                                     actual, _, _ = run([before, index(73), char, index(74), after])
                                     assert actual != reference, (locale, char, 'emoji in running text')
@@ -247,7 +250,7 @@ def main():
                                 reference, _, _ = run(switched(' '))
                                 for char in ('⚭', 'Ж', 'α', '\u200b'):
                                     actual, _, _ = run(switched(char))
-                                    assert actual == reference, (locale, char, 'language boundary')
+                                    assert (actual != reference) == (char == 'α'), (locale, char, 'language boundary')
                                     spelled, _, _ = run(switched(char, explicit=True))
                                     assert spelled != reference, (locale, char, 'explicit character mode')
                                     checks.append((locale, 'language boundary', char))

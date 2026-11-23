@@ -184,9 +184,13 @@ def main():
                         for locale in ('de_DE', 'en_US'):
                             driver.language = locale
                             reference = run(['Hallo ', index(73), ' ', index(74), ' Welt'])
-                            for char in ('⚭', 'α'):
+                            for char in ('⚭',):
                                 assert run(['Hallo ', index(73), char, index(74), ' Welt']) == reference, (locale, char)
                                 report['checks'] += 1
+                            # Foreign Greek letters are spoken by their
+                            # alphabet names even in ordinary running text.
+                            assert run(['Hallo ', index(73), 'α', index(74), ' Welt']) != reference, locale
+                            report['checks'] += 1
                             for char in ('@', '+', '?'):
                                 # A text fragment between indexes is still
                                 # part of the sentence, not a character job.
