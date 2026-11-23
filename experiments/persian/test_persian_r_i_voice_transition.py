@@ -69,7 +69,11 @@ def main():
             for text, change in (('ظهور', False), ('ظهور ناگهانی', False),
                                  ('ظهوری', True), ('فوری', True), ('خوری', True),
                                  ('یاوری', True), ('گلرهای', False),
-                                 ('یاور', False), ('پسر', False)):
+                                 ('یاور', False), ('پسر', False),
+                                 ('ظهوری heading level 4', True),
+                                 ('فوری heading level 4', True),
+                                 ('ظهور heading level 4', False),
+                                 ('پنجشنبه 5 آذر heading level 4', False)):
                 results = []
                 for owner in owners:
                     pcm, marks = bytearray(), []
