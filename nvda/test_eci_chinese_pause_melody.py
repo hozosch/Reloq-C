@@ -111,6 +111,10 @@ def main():
                                     ('你好, Hello!', '你好 `p1, Hello `p1!'),
                                     ('Hello, 你好.', 'Hello `p1, 你好 `p1.'),
                                     ('Tonhöhe, Lautstärke.', 'Tonhöhe `p1, Lautstärke `p1.'),
+                                    ('你好，世界！', '你好 `p1，世界 `p1！'),
+                                    ('这是一个测试。欢迎使用。', '这是一个测试 `p1。欢迎使用 `p1。'),
+                                    ('中文，测试，句子。', '中文 `p1，测试 `p1，句子 `p1。'),
+                                    ('你好,世界!', '你好 `p1,世界 `p1!'),
                                 ):
                                     engine.set_parameter(PAUSE_MODE, 2)
                                     native = render([plain, EciIndex(9)])[0]

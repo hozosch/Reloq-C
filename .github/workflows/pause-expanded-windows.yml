@@ -1,0 +1,31 @@
+name: Verify expanded Mandarin pause cases on Windows
+on:
+  push:
+    branches: ['codex/pause-host-parity-20261123']
+    paths: ['.github/workflows/pause-expanded-windows.yml']
+permissions:
+  actions: read
+  contents: read
+jobs:
+  expanded:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+          architecture: x64
+      - uses: actions/download-artifact@v8
+        with:
+          name: pause-fixed-eci-win-x64
+          path: candidate-fixed
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: 45269173373
+      - name: Compare pure and mixed Chinese speech contours
+        shell: pwsh
+        run: |
+          python -B nvda/test_eci_chinese_pause_melody.py --library candidate-fixed/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Expanded Mandarin pause contour regression failed' }
