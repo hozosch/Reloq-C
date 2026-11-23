@@ -61,6 +61,9 @@ def main():
         # change merely because a Persian-script reading was recovered.
         table = (ROOT / 'experiments/persian/direct_fa_pinglish_lexicon.inc').read_text(encoding='utf8')
         roman_words = re.findall(r'^\s*\{"([a-z]+)", "[^"\\]+"\},', table, re.M)
+        # These newly admitted symbol-name bases were already pronounced
+        # correctly by Pinglish; recovery must not need a second alias.
+        roman_words.extend(('hejaai', 'kaarun'))
         for frontend in (old, current):
             fn = frontend._dll.eciPersianPinglishWord
             fn.argtypes = (ctypes.c_char_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t)

@@ -76,6 +76,49 @@ def generate(library: Path) -> str:
     return '\n'.join(lines)
 
 
+def matches_without_redundant_additions(library: Path, current: str, generated: str) -> bool:
+    """Accept added mappings only if the running core already says them identically.
+
+    A new Persian word can become available without needing a Pinglish alias:
+    the explicit Roman spelling may already produce the very same phones.
+    Existing entries, source fingerprints and all other generated text must
+    still match exactly; a genuinely missing alias still requires regeneration.
+    """
+    pattern = re.compile(r'^\s*\{"([a-z]+)", "([^"\\]+)"\},$', re.M)
+    old = dict(pattern.findall(current))
+    proposed = dict(pattern.findall(generated))
+    if any(proposed.get(key) != word for key, word in old.items()):
+        return False
+    added = {key: word for key, word in proposed.items() if key not in old}
+    if not added:
+        return False
+    dll = ctypes.CDLL(str(library.resolve()))
+    pinglish = dll.eciPersianPinglishWord
+    pinglish.argtypes = (ctypes.c_char_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t)
+    pinglish.restype = ctypes.c_int
+    translate, release = dll.eciPersianTranslateUtf8, dll.eciPersianRelease
+    translate.argtypes = (ctypes.c_char_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_void_p),
+                          ctypes.POINTER(ctypes.POINTER(ctypes.c_size_t)), ctypes.POINTER(ctypes.c_size_t))
+    translate.restype = ctypes.c_int
+    release.argtypes = (ctypes.c_void_p,)
+    for key, word in added.items():
+        raw = key.encode('ascii'); actual = ctypes.create_string_buffer(2048)
+        if pinglish(raw, len(raw), actual, len(actual)) != 1:
+            return False
+        raw = word.encode('utf8'); expected = ctypes.c_void_p()
+        mapping, error = ctypes.POINTER(ctypes.c_size_t)(), ctypes.c_size_t()
+        if translate(raw, len(raw), ctypes.byref(expected), ctypes.byref(mapping), ctypes.byref(error)):
+            return False
+        try:
+            if actual.value != ctypes.string_at(expected):
+                return False
+        finally:
+            release(expected);release(mapping)
+    filtered = '\n'.join(line for line in generated.split('\n')
+                         if not ((match := pattern.fullmatch(line)) and match.group(1) in added))
+    return filtered == current
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--library', required=True, type=Path)
@@ -84,7 +127,8 @@ def main():
     args = parser.parse_args()
     value = generate(args.library)
     if args.check:
-        if args.output.read_text(encoding='utf8') != value:
+        current = args.output.read_text(encoding='utf8')
+        if current != value and not matches_without_redundant_additions(args.library, current, value):
             raise SystemExit('additional Pinglish spellings need regeneration')
     else:
         args.output.write_text(value, encoding='utf8', newline='\n')
