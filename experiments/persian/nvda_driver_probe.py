@@ -643,7 +643,11 @@ class PersianProbeLanguageEngine(LanguageEngine):
                     positions[-1] = (begin, at + 1, previous_name, kind)
                     continue
                 if combining_text:
-                    base = preceding_base(part_index, at, text)
+                    # Most marks immediately follow their base, including
+                    # common Persian vowel marks. Only scan older fragments
+                    # when a previous combining mark hides that base.
+                    base = (preceding_base(part_index, at, text)
+                            if unicodedata.category(prev_char).startswith('M') else prev_char)
                     if (base and (ord(base) == 0xb5 or 0x370 <= ord(base) <= 0x3ff or
                                   0x1f00 <= ord(base) <= 0x1fff) and
                             greek_name(base, logical) is not None):

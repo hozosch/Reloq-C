@@ -45,6 +45,10 @@ def main():
             plain = (EciIndex(10), before + 'α', EciIndex(11), EciIndex(12), after, EciIndex(13))
             accented = (EciIndex(10), before + 'α', EciIndex(11), '\u0301', EciIndex(12), after, EciIndex(13))
             assert render(engine, accented) == render(engine, plain), profile.locale
+            plain = (EciIndex(10), before + 'α', EciIndex(11), EciIndex(12), EciIndex(13), after, EciIndex(14))
+            accented = (EciIndex(10), before + 'α', EciIndex(11), '\u0301', EciIndex(12),
+                        '\u0308', EciIndex(13), after, EciIndex(14))
+            assert render(engine, accented) == render(engine, plain), profile.locale
     finally:
         engine.close()
     print('Passed native Greek alphabet names and mixed Persian/Pinglish source-mark routing.')
