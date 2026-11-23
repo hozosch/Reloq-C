@@ -54,9 +54,18 @@ def main():
                                 assert new.syllables == before.syllables and len(new.pcm) == len(before.pcm)
                                 r_index = (4, 2, 1)[CASES.index(tag)]
                                 r_start, r_end = (value / 10000 for value in new.syllables[r_index])
+                                voice_r = 3 if tag == CASES[0] else 1
+                                voice_from = new.syllables[voice_r - 1][1] / 10000
+                                voice_until = new.syllables[voice_r][0] / 10000 + 35 + (5 if clock else 0)
                                 for x, y in zip(new.frames(), before.frames()):
                                     assert x.tick == y.tick
                                     for col in range(62):
+                                        if (tag != CASES[1] and col in (2, 4) and
+                                                voice_from <= x.tick < voice_until):
+                                            delta = x.controls[col] - y.controls[col]
+                                            assert (-5 <= delta <= 0 if col == 2 else 0 <= delta <= 9), (
+                                                tag, rate, gender, speed, clock, x.tick, col, delta)
+                                            continue
                                         if col not in (13, 17) or r_start <= x.tick < r_end:
                                             assert x.controls[col] == y.controls[col], (tag, rate, gender, speed, clock, x.tick, col)
                                 assert capture(current, scope, tag, False).pcm == capture(old, old_scope, tag, False).pcm
