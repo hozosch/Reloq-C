@@ -177,14 +177,16 @@ def main():
         assert actual[-3:]==[28,1,10],actual  # /r a d/ from classified verb + known stem
         spaced=analyze('نمی پذیرد',complete=True)
         assert spaced[0]==0 and [e[1] for e in spaced[1] if e[0]==PHONE]==actual
-        # Without the verbal-prefix context the ambiguous uncovered word
-        # remains on the general grapheme rule, not the verb inflection.
+        # The previously uncovered citation now has the old, validated
+        # reference pronunciation available without a reference process.
         citation=[e[1] for e in analyze('پذیرد',complete=True)[1] if e[0]==PHONE]
-        assert citation[-2:]==[28,10],citation
+        assert citation[-3:]==[28,1,10],citation
         for verb,ending in (('کوشم',[19,1,25]),('کوشیم',[19,4,25]),
                             ('کوشید',[19,4,10]),('کوشند',[19,1,26,10]),
                             ('آویزد',[18,1,10])):
-            assert analyze(verb)[0]==1,verb
+            citation=analyze(verb)
+            cphones=[e[1] for e in citation[1] if e[0]==PHONE]
+            assert citation[0]==0 and cphones[-len(ending):]==ending,(verb,cphones)
             joined=analyze('می‌'+verb,complete=True)
             spaced=analyze('می '+verb,complete=True)
             assert analyze('می‌'+verb)[1]==joined[1]
