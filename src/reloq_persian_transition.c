@@ -294,7 +294,24 @@ int reloq_persian_plan_stop_r_onsets(struct reloq_fa_frame *frames,size_t count,
         if(!starts[edge])continue;
         size_t boundary=ends[edge-1],onset=starts[edge],end=ends[edge];
         const float *left=frames[boundary-1].controls;
-        if(!isfinite(left[2]) || left[2]>0)continue;
+        if(!isfinite(left[2]))return -1;
+        if(left[2]>0) {
+            /* A voiced English /d,b,g/ can end in a voiced closure rather
+             * than a silent or noisy burst. The caller has already verified
+             * the final English stop phone; additionally require a sustained
+             * closed, low-F1 tract with no aspiration or frication. Never
+             * alter those English frames. */
+            size_t first=edge>=2?ends[edge-2]:0;
+            size_t i=boundary;double closure=0;
+            while(i>first && closure<4) {
+                const float *c=frames[--i].controls;
+                if(!isfinite(c[0]) || c[0]<=0 || c[0]>20 || !isfinite(c[2]) ||
+                   !isfinite(c[7]) || !isfinite(c[8]) || !isfinite(c[9]))return -1;
+                if(c[2]>50 || c[7]>1 || c[8]>1 || c[9]>300)break;
+                closure+=c[0];
+            }
+            if(closure<4)continue;
+        }
         double duration=0;int valid=1;
         for(size_t i=boundary;i<onset;++i) {
             const float *c=frames[i].controls;

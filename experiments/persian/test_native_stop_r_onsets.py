@@ -64,6 +64,11 @@ def main():
         check(stop, lead, real_r, vowel, expected=True)
         # A female voice may have almost no aspiration during its lead.
         check(stop, [row(48, 3, 0)] * 35, real_r, vowel, expected=True)
+        closure = row(35, 0, 0)
+        closure.controls[9] = 228
+        check([row(48, 34, 0)] * 5 + [closure] * 8, lead, real_r, vowel, expected=True)
+        check([row(48, 34, 0)] * 5 + [closure] * 3, lead, real_r, vowel, expected=False)
+        check([row(35, 0, 0)] * 8, lead, real_r, vowel, expected=False)
         check([row(48, 34, 0)] * 8, lead, real_r, vowel, expected=False)
         check(stop, [row(20, 0, 0)] * 35, real_r, vowel, expected=False)
         check(stop, [row(48, 34, 20)] * 35, real_r, vowel, expected=False)

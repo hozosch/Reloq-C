@@ -139,7 +139,8 @@ first 25 ms of the I. The separate noise source and the I's steady state are
 unchanged. The captured reference and the two NVDA routes are tested across
 voices and sample rates; the perceived result still requires listener review.
 The NVDA mixed planner also uses a shared C transition helper for a verified
-English stop followed by a Persian initial R. If the target context contains
+English stop, including a verified voiced closure, followed by a Persian
+initial R. If the target context contains
 a stale voiced lead before the independently measured first syllable, it
 removes that lead and limits a few inherited voiced frames at the start of R.
 The English stop, all real R frames and the aspiration and frication controls

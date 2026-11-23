@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import ctypes
+import itertools
 import os
 from pathlib import Path
 import sys
@@ -11,7 +12,8 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT / 'experiments/persian'), str(ROOT / 'nvda')]
 
-from _reloq_eci_direct import EciIndex, GENDER, NATIVE_SPEED, SAMPLE_RATE
+from _reloq_eci_direct import (EciIndex, GENDER, HEAD_SIZE, NATIVE_SPEED,
+                               ORIGINAL_ACOUSTIC_CLOCK, SAMPLE_RATE)
 from _reloq_persian_frames import NativeFrame
 import continuous_driver
 import continuous_plan
@@ -27,6 +29,8 @@ def main():
     parser.add_argument('--library', required=True, type=Path)
     parser.add_argument('--transition-library', type=Path,
                         help='optional separate transition library for baseline diagnostics')
+    parser.add_argument('--exhaustive', action='store_true',
+                        help='exercise additional voice sizes, speeds and acoustic clocks')
     args = parser.parse_args()
     transition_library = ctypes.CDLL(str(args.transition_library)) if args.transition_library else None
     transition = None
@@ -88,8 +92,13 @@ def main():
 
     try:
         checks = 0
-        for rate, gender, speed in ((3, 0, 65), (2, 1, 40), (6, 0, 100)):
-            for parameter, value in ((SAMPLE_RATE, rate), (GENDER, gender), (NATIVE_SPEED, speed)):
+        configurations = (itertools.product((1, 3, 6), (0, 1), (40, 65, 100, 140),
+                                             (0, 1), (22, 50)) if args.exhaustive else
+                          ((3, 0, 65, 0, 50), (2, 1, 40, 1, 50),
+                           (6, 0, 100, 0, 50), (1, 0, 100, 0, 22)))
+        for rate, gender, speed, clock, head in configurations:
+            for parameter, value in ((SAMPLE_RATE, rate), (GENDER, gender), (NATIVE_SPEED, speed),
+                                     (ORIGINAL_ACOUSTIC_CLOCK, clock), (HEAD_SIZE, head)):
                 voice.set_parameter(parameter, value)
             for prefix, require_cut in (('heading    level 3  ۱,۹۰۰,۰۰۰ ', True),
                                         ('heading level 3 1,900,000 ', True),
