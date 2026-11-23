@@ -708,6 +708,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 ('fa_IR', 'سلام ⚭ دنیا', 'سلام   دنیا'),
                 ('fa_Latn', 'salam ⚭ donya', 'salam   donya'))
                 for text, mode in ((original, 'unicode_flow'), (reference, 'unicode_flow_reference')))
+            # Exercise the reported Greek regression through actual NVDA,
+            # with indexes separating the letters from their surrounding text.
+            self.cases.extend((locale, text, 'unicode_greek_flow')
+                              for locale in ('de_DE', 'en_US', 'fr_FR', 'zh_CN', 'fa_IR', 'fa_Latn')
+                              for text in ('αβ', ' '))
+            self.cases.extend(('fa_IR', text, 'english_contraction_flow') for text in (
+                'Some developers say they’ve stopped opening it.',
+                "Some developers say they've stopped opening it.",
+                'Some developers say they ve stopped opening it.'))
             self.cases.extend((locale, left + char + right, 'unicode_control_flow')
                               for locale, left, right in (('fa_IR', 'سلام ', ' دنیا'),
                                                           ('fa_Latn', 'salam ', ' donya'))
@@ -953,6 +962,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 def sound(locale, text, mode):
                     return next(row['pcm_sha256'] for row in self.results
                                 if row['locale'] == locale and row['text'] == text and row['spelling'] == mode)
+                for locale in ('de_DE', 'en_US', 'fr_FR', 'zh_CN', 'fa_IR', 'fa_Latn'):
+                    if sound(locale, 'αβ', 'unicode_greek_flow') == sound(locale, ' ', 'unicode_greek_flow'):
+                        raise AssertionError('NVDA lost Greek letters in running text: ' + locale)
+                apostrophe = lambda text: sound('fa_IR', text, 'english_contraction_flow')
+                if (apostrophe('Some developers say they’ve stopped opening it.') !=
+                        apostrophe("Some developers say they've stopped opening it.") or
+                        apostrophe('Some developers say they’ve stopped opening it.') ==
+                        apostrophe('Some developers say they ve stopped opening it.')):
+                    raise AssertionError('NVDA split the English contraction reported in issue 49')
                 for locale in ('fa_IR', 'fa_Latn'):
                     reference = sound(locale, ' ', 'unicode_language_flow_reference')
                     if sound(locale, '⚭', 'unicode_language_flow') != reference:
@@ -1098,6 +1116,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                             self.index_command(19000 + self.index)]
             elif spelling in ('unicode_flow', 'unicode_flow_reference', 'unicode_control_flow'):
                 sequence = [text]
+            elif spelling == 'unicode_greek_flow':
+                before, after = {
+                    'de_DE': ('Hallo ', ' Welt'), 'en_US': ('Hello ', ' world'),
+                    'fr_FR': ('Bonjour ', ' monde'), 'zh_CN': ('你好 ', ' 世界'),
+                    'fa_IR': ('سلام ', ' دنیا'), 'fa_Latn': ('salam ', ' donya'),
+                }[locale]
+                sequence = [before, self.index_command(19003), text,
+                            self.index_command(19004), after]
+            elif spelling == 'english_contraction_flow':
+                sequence = [text]
             elif spelling == 'issue49_korean_spelling':
                 sequence = [self.character(True), text, self.character(False)]
             elif spelling in ('issue49_h_z', 'issue49_h_z_language', 'issue49_h_s', 'issue49_h_f'):
@@ -1174,7 +1202,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                                                           'issue49_character_navigation',
                                                           'unicode_spelling_on', 'unicode_spelling_off',
                                                           'unicode_single_on', 'unicode_single_off', 'unicode_single_reference',
-                                                          'unicode_flow', 'unicode_flow_reference', 'unicode_control_flow')
+                                                          'unicode_flow', 'unicode_flow_reference', 'unicode_control_flow',
+                                                          'unicode_greek_flow', 'english_contraction_flow')
             self.pipeline = self.pipeline or spelling in ('issue49_version_some', 'issue49_version_split',
                                                            'issue49_emoji_some', 'issue49_emoji_split',
                                                            'issue49_heading', 'issue49_heading_split',
