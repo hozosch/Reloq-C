@@ -1,7 +1,7 @@
 name: SAPI5 installer and Windows validation
 on:
   push:
-    branches: [main, codex/release110]
+    branches: [main, codex/release110, codex/persian-sapi-installer-dev39-20261123, codex/persian-sapi-installer-dev42-20261123]
     paths:
       - .github/workflows/sapi-installer.yml
       - sapi/**
