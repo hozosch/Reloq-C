@@ -37,10 +37,15 @@ def main():
                 language.locale, 'emoji in longer source')
             checks += 3
             reference = render(engine, ['Test ', EciIndex(13), ' ', EciIndex(14), ' Ende'])
-            for char in (('⚭', 'α') if language.id != 0x120000 else ('⚭',)):
+            for char in ('⚭',):
                 assert render(engine, ['Test ', EciIndex(13), char, EciIndex(14), ' Ende']) == reference, (
                     language.locale, char, 'running text')
                 checks += 1
+            if language.id != 0x120000:
+                for char in ('α', 'Ω'):
+                    assert render(engine, ['Test ', EciIndex(13), char, EciIndex(14), ' Ende']) != reference, (
+                        language.locale, char, 'Greek letter missing from running text')
+                    checks += 1
             emoji = render(engine, ['Test ', EciIndex(13), '🙂', EciIndex(14), ' Ende'])
             assert emoji != reference, (language.locale, 'emoji in running text')
             checks += 1

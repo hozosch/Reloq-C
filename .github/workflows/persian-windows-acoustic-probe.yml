@@ -248,6 +248,7 @@ jobs:
           path: vendor/openevv61/build/windows-release
           key: persian-windows-provider-gcc14-v2-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c', 'src/reloq_persian_acoustics.c', 'src/reloq_persian_acoustics.h', 'tools/prepare_persian_provider.py', 'experiments/persian/build_native_probe.py', 'experiments/aragonese/build_native_probe.py') }}
           restore-keys: |
+            persian-windows-provider-gcc14-v2-08cc491619811e01f8c42c55aa5ecf8c060bc1b9a151c6c70afc2c7e41af7984
             persian-windows-provider-gcc14-v2-b79a57ae4c2ae97eeb8bf35dc23cb5bba40ffc28200ae396907ea7bf5fb53d39
             persian-windows-provider-gcc14-v2-5de40772759289fd47368c9f81b7a6276d78aba213423fcb60a098f9fd168b6a
             persian-windows-provider-gcc14-v2-ca576de950b66d8fbb873c89445a60993dddf2e0528e6da62ba39ba5d4d46999
@@ -256,7 +257,6 @@ jobs:
             persian-windows-provider-gcc14-v2-4edfcf5f09f279de3e60241a807f6da8ee0269a801e9ce9fa6db6de9eba9a7ea
             persian-windows-provider-gcc14-v2-02eff3929fd30e8fdebed50f38e28587951afe693dc8f0aa800f0512c3cf5f6b
             persian-windows-provider-gcc14-v2-782694288976480b757bf5220770ab738c651bf3e9222a0c071b2a7198289a63
-            persian-windows-provider-gcc14-v2-04cc9a755afeb7ef13a3aebfa7900e2fcef9ceaa6dec69c8d88257a01ecfdbac
       - uses: actions/cache/restore@v6
         id: host
         if: steps.reuse.outputs.reusable != 'true'

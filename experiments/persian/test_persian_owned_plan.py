@@ -291,6 +291,10 @@ def main():
         # The English event refers to the exact source bytes so another host
         # can render it without NVDA, eSpeak or a Persian pronunciation guess.
         for text, mode, expected in (('سلام NVDA دنیا', 0, ['NVDA']),
+                                     ('سلام they’ve دنیا', 0, ['they’ve']),
+                                     ("سلام they've دنیا", 0, ["they've"]),
+                                     ('سلام αβ دنیا', 0, ['αβ']),
+                                     ('salam αβ donya', 1, ['αβ']),
                                      ('NVDAسلام', 0, ['NVDA']),
                                      ('سلام txt دنیا', 0, ['txt']),
                                      ('سلام v1.5.0 دنیا', 0, ['v1.5.0']),
@@ -299,7 +303,7 @@ def main():
             raw=text.encode('utf8')
             result,events,positions,_=analyze(text,mode=mode,offsets=range(len(raw)+1))
             assert result==0 and positions==sorted(positions), (text,result,events,positions)
-            actual=[raw[e[1]:e[1]+e[2]].decode('ascii') for e in events if e[0]==ENGLISH]
+            actual=[raw[e[1]:e[1]+e[2]].decode('utf8') for e in events if e[0]==ENGLISH]
             assert actual==expected,(text,actual,expected)
             assert any(e[0]==PHONE for e in events),(text,events)
         assert analyze('NVDA',offsets=[2],indexes=[0])[0]==3

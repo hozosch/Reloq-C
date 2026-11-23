@@ -563,6 +563,40 @@ class PersianProbeLanguageEngine(LanguageEngine):
                     return value[0] if direction > 0 else value[-1]
                 index += direction
             return ''
+        def preceding_base(index, offset, current):
+            # Combining accents may arrive in a separate NVDA text fragment
+            # after one or more source indexes. Find their base without
+            # moving the indexes or crossing a language/character boundary.
+            value = current[:offset]
+            while True:
+                for char in reversed(value):
+                    if not unicodedata.category(char).startswith('M'):
+                        return char
+                index -= 1
+                while index >= 0 and isinstance(parts[index], (EciIndex, EciPitch, EciPitchHz, EciProsody)):
+                    index -= 1
+                if index < 0:
+                    return ''
+                item = parts[index]
+                if isinstance(item, str):
+                    value = item
+                elif isinstance(item, EciText) and not (item.character_mode or item.is_control or
+                                                         item.segmentation_guarded):
+                    value = item.text
+                else:
+                    return ''
+                if '`' in value:
+                    return ''
+        def greek_name(char, key):
+            engine = self._activate(key)
+            function = (getattr(engine._voice._dll, 'eciUnicodeGreekName', None)
+                        if isinstance(engine, OwnedPersianEngine) else None)
+            if function is None:
+                return None
+            function.argtypes = (ctypes.c_uint32, ctypes.c_char_p, ctypes.c_size_t)
+            function.restype = ctypes.c_int
+            label = ctypes.create_string_buffer(128)
+            return label.value.decode('ascii') if function(ord(char), label, len(label)) == 1 else None
         expanded, logical, names, previous_char = [], self._home, {}, None
         for part_index, part in enumerate(parts):
             if isinstance(part, EciLanguage):
@@ -604,6 +638,30 @@ class PersianProbeLanguageEngine(LanguageEngine):
                 prev_char = (text[at - 1] if at else adjoining(part_index, -1)) if category.startswith('M') else ''
                 combining_text = bool(prev_char and (prev_char.isalpha() or
                                       unicodedata.category(prev_char).startswith('M')))
+                if combining_text and positions and positions[-1][1] == at and positions[-1][3] == 2:
+                    begin, _end, previous_name, kind = positions[-1]
+                    positions[-1] = (begin, at + 1, previous_name, kind)
+                    continue
+                if combining_text:
+                    base = preceding_base(part_index, at, text)
+                    if (base and (ord(base) == 0xb5 or 0x370 <= ord(base) <= 0x3ff or
+                                  0x1f00 <= ord(base) <= 0x1fff) and
+                            greek_name(base, logical) is not None):
+                        # The letter was already named in an earlier source
+                        # fragment; do not separately spell its accent.
+                        positions.append((at, at + 1, '', False))
+                        continue
+                # English contractions belong to the English run. A curly
+                # apostrophe within a Latin word must reach the US frontend
+                # intact even when an NVDA index splits the source there.
+                # The normal US Unicode policy then treats it like ASCII '.
+                if logical[0] == PERSIAN_PROBE.id and char in ('\u2018', '\u2019'):
+                    left = text[at - 1] if at else adjoining(part_index, -1)
+                    right = text[at + 1] if at + 1 < len(text) else adjoining(part_index, 1)
+                    if (left and right and left.isalpha() and right.isalpha() and
+                            unicodedata.name(left, '').startswith('LATIN ') and
+                            unicodedata.name(right, '').startswith('LATIN ')):
+                        continue
                 # The Persian frontend already treats silent angle quotes as
                 # brackets; retain that contour in multi-character speech.
                 if (cp < 128 or 0x600 <= cp <= 0x8ff or 0xfb50 <= cp <= 0xfeff or
@@ -615,11 +673,23 @@ class PersianProbeLanguageEngine(LanguageEngine):
                 engine = self._activate(logical)
                 emoji = isinstance(engine, OwnedPersianEngine) and engine.is_emoji_character(char)
                 if not isolated and not emoji:
+                    # The common native Unicode table owns Greek alphabet
+                    # names. Route a consecutive foreign Greek run through
+                    # English as a single phrase, preserving source marks
+                    # between separately supplied NVDA text fragments.
+                    name = greek_name(char, logical)
+                    if name is not None:
+                        if positions and positions[-1][1] == at and positions[-1][3] == 2:
+                            begin, _end, previous_name, _kind = positions[-1]
+                            positions[-1] = (begin, at + 1, previous_name + ' ' + name, 2)
+                        else:
+                            positions.append((at, at + 1, name, 2))
+                        continue
                     # Keep dash punctuation as a dash: it separates language
                     # runs and affects sentence timing even when its Unicode
                     # name must not be spoken in running text.
                     replacement = '-' if category == 'Pd' else ' '
-                    positions.append((at, replacement, False))
+                    positions.append((at, at + 1, replacement, False))
                     continue
                 if char not in names:
                     if not isinstance(engine, OwnedPersianEngine):
@@ -628,19 +698,19 @@ class PersianProbeLanguageEngine(LanguageEngine):
                         named = engine._frontend.analyze_character(char).parts[0]
                         names[char] = named.text if named.language == 'en-us' else None
                 if names[char] is not None:
-                    positions.append((at, names[char], True))
+                    positions.append((at, at + 1, names[char], True))
             if not positions:
                 expanded.append(part)
                 continue
             start = 0
-            for at, name, announce in positions:
+            for at, end, name, announce in positions:
                 if at > start:
                     expanded.append(replace(part, text=text[start:at]) if isinstance(part, EciText) else text[start:at])
                 if announce:
                     expanded.extend((EciLanguage(US_ENGLISH.id, logical[1]), name, EciLanguage(*logical)))
-                else:
+                elif name:
                     expanded.append(replace(part, text=name) if isinstance(part, EciText) else name)
-                start = at + 1
+                start = end
             if start < len(text):
                 expanded.append(replace(part, text=text[start:]) if isinstance(part, EciText) else text[start:])
         parts = tuple(expanded)

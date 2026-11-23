@@ -85,8 +85,12 @@ def main():
                         # instantly. The sustained R retains its voicing and
                         # formants; its noise is now up to four dB softer.
                         for col in (2, 7, 9, 13, 15, 17, 35, 36, 37, 38):
-                            assert abs(median(row[col] for row in current) -
-                                       median(row[col] for row in reference)) <= 2, (gender, rate, speed, tag, col)
+                            difference = (median(row[col] for row in current) -
+                                          median(row[col] for row in reference))
+                            # The voiced component of final U-R is now softer;
+                            # all other sounds and the noise remain unchanged.
+                            low = -7 if vowel == 'u' and col == 2 else -2
+                            assert low <= difference <= 2, (gender, rate, speed, tag, col, difference)
                         source_difference = (max(row[8] for row in reference) -
                                              max(row[8] for row in current))
                         assert -2 <= source_difference <= 5, (

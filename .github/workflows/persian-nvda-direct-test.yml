@@ -87,6 +87,8 @@ on:
       - addon/test_synth.py
       - addon/test_synth_native.py
       - experiments/persian/test_nvda_unicode_spelling.py
+      - experiments/persian/test_english_apostrophes.py
+      - experiments/persian/test_greek_running_text.py
       - experiments/persian/test_unicode_fallback_routing.py
       - eci/test_persian_native_runs_render.py
       - eci/test_persian_native_characters.py
@@ -204,9 +206,9 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: persian-windows-baseline-early
-          run-id: 45080704288
+          run-id: 45085741716
           github-token: ${{ github.token }}
-          path: previous-dev38-core
+          path: previous-dev39-core
       - name: Obtain portable NVDA
         shell: pwsh
         env:
@@ -226,6 +228,12 @@ jobs:
           $dll = (Get-ChildItem candidate -Recurse -Filter eci.dll | Select-Object -First 1).FullName
           $espeak = (Resolve-Path portable-nvda/synthDrivers/espeak.dll).Path
           $data = (Resolve-Path portable-nvda/synthDrivers).Path
+          python -B experiments/persian/test_english_apostrophes.py --library "$dll"
+          if ($LASTEXITCODE -ne 0) { throw 'English apostrophe routing failed' }
+          python -B experiments/persian/test_greek_running_text.py --library "$dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Greek letter routing failed' }
+          python -B nvda/test_eci_unicode_single.py --library "$dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Running Greek and Unicode isolation failed' }
           python -B experiments/persian/test_unicode_fallback_routing.py --native-library "$dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
           if ($LASTEXITCODE -ne 0) { throw 'Mixed Unicode name routing failed' }
           python -B experiments/persian/test_alave_vowel.py --native-library "$dll" --scope-probe "$dll" --espeak-library "$espeak" --data-parent "$data"
@@ -244,11 +252,11 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian short A timing failed' }
           python -B experiments/persian/test_persian_r_source.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Persian R source transition failed' }
-          python -B experiments/persian/test_persian_u_final_r_voice.py --library "$dll" --previous previous-dev38-core/eci.dll
+          python -B experiments/persian/test_persian_u_final_r_voice.py --library "$dll" --previous previous-dev39-core/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian final R after U failed' }
-          python -B experiments/persian/test_persian_u_final_r_spectrum.py --candidate "$dll" --previous previous-dev38-core/eci.dll
+          python -B experiments/persian/test_persian_u_final_r_spectrum.py --candidate "$dll" --previous previous-dev39-core/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian voiced final R spectrum failed' }
-          python -B experiments/persian/test_other_language_isolation.py --candidate "$dll" --previous previous-dev38-core/eci.dll
+          python -B experiments/persian/test_other_language_isolation.py --candidate "$dll" --previous previous-dev39-core/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Other language acoustic isolation failed' }
           python -B experiments/persian/test_persian_o_r_transition.py --library "$dll"
           if ($LASTEXITCODE -ne 0) { throw 'Persian O-to-R resonance transition failed' }
@@ -382,7 +390,7 @@ jobs:
         shell: bash
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
-          if [ "$GITHUB_REF_NAME" = "codex/persian-unified-dev35-20261122" ]; then version=2.0.0-dev35; elif [ "$GITHUB_REF_NAME" = "codex/persian-unified-dev33-20261122" ]; then version=2.0.0-dev39; elif [ "$GITHUB_REF_NAME" = "codex/persian-native-u-20261121" ]; then version=2.0.0-dev33; elif [ "$GITHUB_REF_NAME" = "codex/persian-finnish-nasal-swedish-20261120" ]; then version=2.0.0-dev5; elif [ "$GITHUB_REF_NAME" = "codex/persian-native-sv-probe-20261120" ]; then version=1.5.0-dev187; elif [ "$GITHUB_REF_NAME" = "codex/persian-transition-streaming-20261120" ]; then version=1.5.0-dev186; elif [ "$GITHUB_REF_NAME" = "codex/persian-context-native-20261120" ]; then version=1.5.0-dev185; elif [ "$GITHUB_REF_NAME" = "codex/persian-sentence-linear-20261120" ]; then version=1.5.0-dev184; elif [ "$GITHUB_REF_NAME" = "codex/persian-sentence-core-20261120" ]; then version=1.5.0-dev183; elif [ "$GITHUB_REF_NAME" = "codex/persian-virgule-20261120" ]; then version=1.5.0-dev182; elif [ "$GITHUB_REF_NAME" = "codex/persian-native-fast-pilot-20261120" ]; then version=1.5.0-dev181; elif [ "$GITHUB_REF_NAME" = "codex/persian-native-transitions-20261120" ]; then version=1.5.0-dev180; elif [ "$GITHUB_REF_NAME" = "codex/persian-issue49-solh-20261120" ]; then version=1.5.0-dev179; elif [ "$GITHUB_REF_NAME" = "codex/persian-native-20261120" ]; then version=1.5.0-dev175; elif [ "$GITHUB_REF_NAME" = "codex/persian-core-20261119" ]; then version=1.5.0-dev174; elif [ "$GITHUB_REF_NAME" = "codex/persian-ra-pinglish-20261119" ]; then version=1.5.0-dev173; elif [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev172; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; elif [ "$GITHUB_REF_NAME" = "codex/persian-vowels-20261117" ]; then version=1.5.0-dev142; else version=1.5.0-dev141; fi
+          if [ "$GITHUB_REF_NAME" = "codex/persian-unified-dev35-20261122" ]; then version=2.0.0-dev35; elif [ "$GITHUB_REF_NAME" = "codex/persian-unified-dev33-20261122" ]; then version=2.0.0-dev40; elif [ "$GITHUB_REF_NAME" = "codex/persian-native-u-20261121" ]; then version=2.0.0-dev33; elif [ "$GITHUB_REF_NAME" = "codex/persian-finnish-nasal-swedish-20261120" ]; then version=2.0.0-dev5; elif [ "$GITHUB_REF_NAME" = "codex/persian-native-sv-probe-20261120" ]; then version=1.5.0-dev187; elif [ "$GITHUB_REF_NAME" = "codex/persian-transition-streaming-20261120" ]; then version=1.5.0-dev186; elif [ "$GITHUB_REF_NAME" = "codex/persian-context-native-20261120" ]; then version=1.5.0-dev185; elif [ "$GITHUB_REF_NAME" = "codex/persian-sentence-linear-20261120" ]; then version=1.5.0-dev184; elif [ "$GITHUB_REF_NAME" = "codex/persian-sentence-core-20261120" ]; then version=1.5.0-dev183; elif [ "$GITHUB_REF_NAME" = "codex/persian-virgule-20261120" ]; then version=1.5.0-dev182; elif [ "$GITHUB_REF_NAME" = "codex/persian-native-fast-pilot-20261120" ]; then version=1.5.0-dev181; elif [ "$GITHUB_REF_NAME" = "codex/persian-native-transitions-20261120" ]; then version=1.5.0-dev180; elif [ "$GITHUB_REF_NAME" = "codex/persian-issue49-solh-20261120" ]; then version=1.5.0-dev179; elif [ "$GITHUB_REF_NAME" = "codex/persian-native-20261120" ]; then version=1.5.0-dev175; elif [ "$GITHUB_REF_NAME" = "codex/persian-core-20261119" ]; then version=1.5.0-dev174; elif [ "$GITHUB_REF_NAME" = "codex/persian-ra-pinglish-20261119" ]; then version=1.5.0-dev173; elif [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev172; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; elif [ "$GITHUB_REF_NAME" = "codex/persian-vowels-20261117" ]; then version=1.5.0-dev142; else version=1.5.0-dev141; fi
           dll=$(find candidate -name eci.dll -print -quit)
           python -B addon/test_translation_catalogs.py
           python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version "$version" --output "dist/reloq-c-persian-pinglish-$version.nvda-addon"
@@ -437,8 +445,8 @@ jobs:
       - name: Upload the tested Persian NVDA add-on
         uses: actions/upload-artifact@v7
         with:
-          name: persian-nvda-dev39
-          path: dist/reloq-c-persian-pinglish-2.0.0-dev39.nvda-addon
+          name: persian-nvda-dev40
+          path: dist/reloq-c-persian-pinglish-2.0.0-dev40.nvda-addon
           compression-level: 0
           if-no-files-found: error
           retention-days: 14

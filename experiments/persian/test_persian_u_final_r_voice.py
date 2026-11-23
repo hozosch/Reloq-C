@@ -45,6 +45,7 @@ def main():
                             result = capture(current, scope, tag)
                             start = result.syllables[r_index][0] / 10000
                             end = result.syllables[r_index + 1][0] / 10000
+                            transition = result.syllables[r_index - 1][1] / 10000
                             rows = result.frames()
                             assert any(start <= row.tick < end and row.controls[4] > 0 for row in rows), (
                                 rate, gender, speed, clock, tag, 'voiced R profile missing')
@@ -61,12 +62,14 @@ def main():
                                 for a, b in zip(rows, old):
                                     assert a.tick == b.tick
                                     for col in range(62):
-                                        if col != 4:
+                                        if col not in (2, 4):
                                             assert a.controls[col] == b.controls[col], (tag, a.tick, col)
                                     delta = a.controls[4] - b.controls[4]
                                     assert 0 <= delta <= 9, (tag, a.tick, delta)
-                                    if delta:
-                                        assert start <= a.tick < end + (5 if clock else 0), (tag, a.tick)
+                                    voice_drop = b.controls[2] - a.controls[2]
+                                    assert 0 <= voice_drop <= 5, (tag, a.tick, voice_drop)
+                                    if delta or voice_drop:
+                                        assert transition <= a.tick < min(end, start + 35) + (5 if clock else 0), (tag, a.tick)
                                         affected = True
                                 assert affected, (rate, gender, speed, clock, tag, 'voiced R profile unchanged')
                                 # At the fastest speed the entire R may be

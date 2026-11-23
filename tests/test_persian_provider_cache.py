@@ -16,6 +16,14 @@ import reuse_persian_provider_cache as cache
 
 
 class CacheReuseTests(unittest.TestCase):
+    def test_dev39_accepts_only_the_verified_additive_headers(self):
+        good = dict(cache.DEV39_HEADERS)
+        self.assertTrue(cache.eligible_dev39(cache.DEV39_KEY, good, good))
+        self.assertFalse(cache.eligible_dev39(cache.DEV39_KEY, set(), good))
+        self.assertFalse(cache.eligible_dev39(cache.DEV39_KEY, set(good) | {'include/other.h'}, good))
+        self.assertFalse(cache.eligible_dev39(cache.DEV39_KEY, good, {**good, 'include/reloq_eci.h': 'wrong'}))
+        self.assertFalse(cache.eligible_dev39(cache.DEV39_KEY + '-wrong', good, good))
+
     def test_dev200_checks_inputs_and_rebuilds_only_changed_rules(self):
         for changed, accepted in ((cache.DEV200_ALLOWED, True),
                                   (cache.DEV200_ALLOWED | {'include/other.h'}, False),

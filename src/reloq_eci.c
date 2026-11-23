@@ -976,6 +976,8 @@ int ECICALL eciPersianIgnorableTextCharacter(uint32_t codepoint)
 
 int ECICALL eciUnicodeIsEmoji(uint32_t codepoint)
 {return reloq_unicode_is_emoji(codepoint);}
+int ECICALL eciUnicodeGreekName(uint32_t codepoint,char *output,size_t capacity)
+{return reloq_unicode_greek_name_english(codepoint,output,capacity);}
 
 int ECICALL eciPersianTranslateUtf8(const char *text,size_t bytes,char **output,
     size_t **source_map,size_t *error_offset)

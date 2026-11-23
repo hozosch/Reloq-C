@@ -101,6 +101,24 @@ static void exercise_english_source_indices(const char *text,const char *word)
     }
 }
 
+static void exercise_english_utf8_indices(void)
+{
+    const char *text="سلام they’ve دنیا.",*apostrophe=strstr(text,"’");
+    assert(apostrophe);
+    size_t at=(size_t)(apostrophe-text),bytes=strlen(text),error=0;
+    size_t offsets[]={0,at,at+1,at+2,at+3,bytes};
+    struct reloq_fa_prepared prepared={0};
+    assert(!reloq_fa_prepare_native(text,bytes,0,offsets,6,&error,&prepared));
+    const char *projected=strstr(prepared.backend.text,"they’ve");assert(projected);
+    size_t mark=(size_t)(projected-prepared.backend.text)+4;
+    assert(prepared.positions[1]==mark && prepared.positions[2]==mark &&
+           prepared.positions[3]==mark && prepared.positions[4]==mark+3);
+    reloq_fa_prepared_clear(&prepared);
+    struct output plain=speak_native(text,0,NULL,0,3,0);
+    struct output marked=speak_native(text,0,offsets,6,3,0);
+    assert(plain.samples==marked.samples && plain.hash==marked.hash);
+}
+
 static void exercise(const char *source,int variant,int compare)
 {
     size_t bytes=strlen(source),end=bytes,source_marks[4]={0,bytes};size_t mark_count=2;
@@ -172,6 +190,7 @@ int main(void)
     exercise("سلام NVDA دنیا؟",0,0);
     exercise_english_source_indices("سلام NVDA دنیا؟","NVDA");
     exercise_english_source_indices("سلام ۱۲۳ Windows دنیا.","Windows");
+    exercise_english_utf8_indices();
     for(int rate=0;rate<7;++rate)for(int gender=0;gender<2;++gender) {
         const char *text="برای راه‌اندازی رایانه باید این گزینه انتخاب شود.";
         size_t offsets[]={0,strlen(text)};

@@ -310,6 +310,9 @@ ECIAPI void ECICALL eciPersianRelease(void *pointer);
 ECIAPI int ECICALL eciPersianIgnorableTextCharacter(uint32_t codepoint);
 /* Recognize Unicode/CLDR emoji components without requiring a host library. */
 ECIAPI int ECICALL eciUnicodeIsEmoji(uint32_t codepoint);
+/* Resolve a Greek letter to the common English alphabet name. Returns 1 for
+ * a name, 0 for another scalar, or -1 for an insufficient destination. */
+ECIAPI int ECICALL eciUnicodeGreekName(uint32_t codepoint,char *output,size_t capacity);
 
 /* Shared Persian text frontend. mode 0 reads Persian script; mode 1 accepts
  * Persian script and Pinglish. Both use the same lexical/stress rules and

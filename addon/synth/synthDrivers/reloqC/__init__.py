@@ -1222,7 +1222,7 @@ class SynthDriver(BaseSynthDriver):
         order = {ident: position for position, ident in enumerate(LANGUAGE_DISPLAY_ORDER)}
         for language in sorted(self._languages.values(), key=lambda item: order.get(item.id, len(order))):
             info = LanguageInfo(language.locale)
-            info.displayName = _(language.name)
+            info.displayName = language.name
             result[language.locale] = info
         return result
 

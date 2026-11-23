@@ -104,6 +104,7 @@ int reloq_fa_prepare_native_runs(const char *text,size_t bytes,int variant,
     if(!text || !error_offset || bytes==SIZE_MAX || (variant!=0 && variant!=1) ||
        (index_count && !source_offsets) || index_count>SIZE_MAX/sizeof(size_t) ||
        memchr(text,0,bytes))return -1;
+    const char *source_text=text;
     char *filtered=NULL;
     int admission=reloq_fa_text_symbols(text,bytes,run_ends,run_modes,run_count,
                                        &filtered,error_offset);
@@ -181,6 +182,9 @@ int reloq_fa_prepare_native_runs(const char *text,size_t bytes,int variant,
             size_t from=events[event].value,length=events[event].flags;
             size_t at=source_offsets[i];
             if(at>from && at-from<length) {
+                /* An index inside a UTF-8 scalar maps to that scalar's
+                 * start; never split a curly apostrophe's encoded bytes. */
+                while(at>from && ((unsigned char)source_text[at]&0xc0)==0x80)--at;
                 size_t begin=plan.offsets[event],end=plan.offsets[event+1];
                 if(begin<end && plan.text[begin]==' ')++begin;
                 if(end-begin<6 || length>end-begin-6 ||

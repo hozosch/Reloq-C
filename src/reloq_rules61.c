@@ -1276,6 +1276,12 @@ struct rule_span {
 struct quiet_cut { int64_t from,to,after; };
 struct rule_control { int64_t tick;size_t ordinal;int parameter,value; };
 struct rule_fa_phone {int32_t from,to,articulation_end;unsigned phone;};
+static int fa_tuned_vowel(unsigned phone)
+{
+    return phone==RELOQ_FA_TUNE_FRONT_A || phone==RELOQ_FA_TUNE_BACK_A ||
+           phone==RELOQ_FA_TUNE_E || phone==RELOQ_FA_TUNE_O ||
+           phone==RELOQ_FA_TUNE_U;
+}
 extern int reloq61_generate_with_pauses(const struct reloq61_request *,struct reloq61_result *,
     int,void (*)(void *,int64_t,int64_t,int64_t),void *);
 struct rule_playback;
@@ -1294,7 +1300,7 @@ struct rule_plan {
     float fa_vr_previous_resonance[2],fa_vr_back_anchor[2];
     unsigned fa_vr_previous_valid,fa_vr_active;
     size_t fa_vr_back_phone;int fa_vr_back_set;
-    int64_t fa_r_noise_clock;float fa_r_noise_reduction,fa_r_asp_reduction,fa_r_voice_tilt;int fa_r_noise_valid;
+    int64_t fa_r_noise_clock;float fa_r_noise_reduction,fa_r_asp_reduction,fa_r_voice_tilt,fa_r_voice_reduction;int fa_r_noise_valid;
     int fa_phone_failed;
     struct reloq_session *session;
     int memory,retracted_filter,retracted_st,word_volume,cjk_volume,managed_voice_controls,word_pitch,native_pitch,word_speed,german_af_markers,original_clock;
@@ -1384,7 +1390,7 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
                                     (double)tick,duration,rate,release_ms);
         }
     }
-    float r_noise_reduction=0,r_asp_reduction=0,r_voice_tilt=0;
+    float r_noise_reduction=0,r_asp_reduction=0,r_voice_tilt=0,r_voice_reduction=0;
     if(tuning && native>=p->from && native<to) {
         /* Soften the actual frication of the voiced Persian coda R, not its
          * duration, voicing, or the vowel preceding it. Its selected donor
@@ -1414,15 +1420,42 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
         double edge=fmin(1.0,fmax(0.0,fmin(in,out)/4.0));
         edge=edge*edge*(3.0-2.0*edge);
         r_noise_reduction=(float)floor(4.0*shape*edge+0.5);
-        /* The reported U-final-R has a sharp periodic component. Use the
-         * native glottal-source rolloff only for that selected coda. This
-         * shapes voiced excitation before aspiration or frication join it;
-         * AV, AH, AF, the vowel and the phone's duration stay unchanged. */
-        if(final_r_after_u)r_voice_tilt=(float)floor(9.0*shape*edge+0.5);
+        /* Retain the accepted R's source tilt. The additional smoothing is
+         * restricted to the transition from U and the start of the R: it
+         * fades back to the existing coda voice without changing either
+         * aspiration or frication. A following vowel has its own transition. */
+        if(final_r_after_u) {
+            double base=9.0*shape*edge;
+            r_voice_tilt=(float)floor(base+0.5);
+            if(!(s->fa_phone_next+1<s->fa_phone_count &&
+                 fa_tuned_vowel(s->fa_phones[s->fa_phone_next+1].phone))) {
+                const struct rule_fa_phone *vowel=s->fa_phones+s->fa_phone_next-1;
+                double voice_edge=vowel->articulation_end<p->from?
+                    fmin(1.0,fmax(0.0,out/4.0)):edge;
+                double voiced=fmin(1.0,fmax(0.0,(controls[2]-4.0)/11.0))*voice_edge;
+                voiced*=fmin(1.0,fmax(0.0,(5.0-controls[36])/5.0));
+                double fade=fmin(1.0,fmax(0.0,(35.0-in)/25.0));
+                fade=fade*fade*(3.0-2.0*fade);
+                r_voice_tilt=(float)floor(fmax(base,base+(9.0*voiced-base)*fade)+0.5);
+                r_voice_reduction=(float)floor(5.0*voiced*fade+0.5);
+            }
+        }
         /* The medial Finnish-derived R carries most of its noise in the
          * aspiration source rather than the coda donor's frication source.
          * Reduce that component only for a rounded vowel-R-I sequence. */
         if(rounded_r_before_i)r_asp_reduction=r_noise_reduction;
+    }
+    if(tuning && p->phone==RELOQ_FA_TUNE_U && s->fa_phone_next+1<s->fa_phone_count &&
+       s->fa_phones[s->fa_phone_next+1].phone==RELOQ_FA_TUNE_R &&
+       !(s->fa_phone_next+2<s->fa_phone_count &&
+         fa_tuned_vowel(s->fa_phones[s->fa_phone_next+2].phone)) &&
+       p->articulation_end<to && native>=p->articulation_end && native<to && controls[35]<5) {
+        double progress=(double)(native-p->articulation_end)/(to-p->articulation_end);
+        double weight=fmin(1.0,fmax(0.0,progress));
+        weight=weight*weight*(3.0-2.0*weight);
+        weight*=fmin(1.0,fmax(0.0,(5.0-controls[36])/5.0));
+        r_voice_tilt=(float)floor(9.0*weight+0.5);
+        r_voice_reduction=(float)floor(5.0*weight+0.5);
     }
     if(tuning && s->original_clock) {
         int64_t clock=tick-tick%5;
@@ -1430,11 +1463,13 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
             r_noise_reduction=s->fa_r_noise_reduction;
             r_asp_reduction=s->fa_r_asp_reduction;
             r_voice_tilt=s->fa_r_voice_tilt;
+            r_voice_reduction=s->fa_r_voice_reduction;
         }
         else {
             s->fa_r_noise_clock=clock;s->fa_r_noise_reduction=r_noise_reduction;
             s->fa_r_asp_reduction=r_asp_reduction;
             s->fa_r_voice_tilt=r_voice_tilt;
+            s->fa_r_voice_reduction=r_voice_reduction;
             s->fa_r_noise_valid=1;
         }
     }
@@ -1512,6 +1547,11 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
     }
     s->fa_r_previous_voice=controls[2];s->fa_r_previous_noise=controls[8];
     s->fa_r_previous_band3=controls[37];s->fa_r_previous_band4=controls[38];
+    /* Keep the original voice level for the release detector above; only
+     * change the periodic source fed to the synthesizer. Never cut it to
+     * zero, which would also change the noise generator's voicing mask. */
+    if(tuning && controls[2]>0 && r_voice_reduction>0)
+        controls[2]=fmaxf(1.0f,controls[2]-r_voice_reduction);
 }
 static struct rule_span *new_span(struct rule_plan *s)
 {

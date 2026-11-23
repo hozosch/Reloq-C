@@ -36,7 +36,7 @@ def main():
                 assert render(engine, spelled) != render(engine, [
                     'Test ', EciIndex(22), to,
                     EciText(char, segmentation_guarded=True), EciIndex(23), back, ' Ende'
-                ]) or char == '🙂', (language.locale, char, 'explicit character mode')
+                ]) or char in ('🙂', 'α'), (language.locale, char, 'explicit character mode')
                 checks += 1
     finally:
         engine.close()

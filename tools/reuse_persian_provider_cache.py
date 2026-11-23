@@ -19,6 +19,13 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 PROVIDER = ROOT / 'vendor/openevv61'
 BUILD = PROVIDER / 'build/windows-release'
+DEV39_BASE = '0804518e1ce4f45d8dc43103927f2ccc9843f79d'
+DEV39_KEY = ('persian-windows-provider-gcc14-v2-'
+             '08cc491619811e01f8c42c55aa5ecf8c060bc1b9a151c6c70afc2c7e41af7984')
+DEV39_HEADERS = {
+    'include/reloq_eci.h': 'cbbec98bb7384128054e5da30ff685c704ccc908',
+    'include/reloq_unicode.h': '32f322807476abad794a618fc2cd74351d233fc2',
+}
 DEV200_BASE = '1a891a6586e5e5f3e500435dbe7ffa5a5122cbf9'
 DEV200_KEY = ('persian-windows-provider-gcc14-v2-'
               'b79a57ae4c2ae97eeb8bf35dc23cb5bba40ffc28200ae396907ea7bf5fb53d39')
@@ -214,6 +221,10 @@ def eligible_recent(key, changed, blobs):
             blobs == RECENT_HEADERS)
 
 
+def eligible_dev39(key, changed, blobs):
+    return key == DEV39_KEY and set(changed) == set(DEV39_HEADERS) and blobs == DEV39_HEADERS
+
+
 def reuse_dev156_generated(expected=frozenset({'delta_rules_c02_fifi.c'}), added=frozenset(),
                            original_count=21):
     """Regenerate and byte-check every source, rebuilding only expected units."""
@@ -254,6 +265,22 @@ def reuse_dev156_generated(expected=frozenset({'delta_rules_c02_fifi.c'}), added
 def main():
     try:
         key = os.environ.get('PERSIAN_PROVIDER_CACHE_KEY', '')
+        if key == DEV39_KEY:
+            changed = set(git('diff', '--name-only', DEV39_BASE, 'HEAD', '--', *INPUTS).splitlines())
+            blobs = {path: git('rev-parse', 'HEAD:' + path) for path in DEV39_HEADERS}
+            if not eligible_dev39(key, changed, blobs):
+                raise ValueError('provider inputs differ from the verified Greek API addition')
+            if not BUILD.is_dir() or not (BUILD / 'libreloq61.a').is_file():
+                raise ValueError('cached provider archive is missing')
+            for dep in BUILD.rglob('*.d'):
+                value = dep.read_text(encoding='utf8', errors='replace')
+                if any(Path(path).name in value for path in DEV39_HEADERS):
+                    raise ValueError('a provider object depends on a changed public header')
+            for path in BUILD.rglob('*'):
+                if path.is_file():
+                    os.utime(path, None)
+            print('Reused provider cache after checking the additive Greek API headers.')
+            return
         if key == DEV200_KEY:
             changed = set(git('diff', '--name-only', DEV200_BASE, 'HEAD', '--', *INPUTS).splitlines())
             if changed != DEV200_ALLOWED:

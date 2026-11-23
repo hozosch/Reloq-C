@@ -286,6 +286,31 @@ static int selector(const char *s,size_t bytes,size_t *consumed,int *variant)
 static int ascii_letter(unsigned char c)
 {return (c>='A' && c<='Z') || (c>='a' && c<='z');}
 
+/* The common English core already owns the short names of Greek letters.
+ * Keep consecutive letters together as a foreign run; never interpret them
+ * as Persian words or duplicate a Greek alphabet in a platform driver. */
+static int greek_run(const char *text,size_t at,size_t end,size_t *last)
+{
+    if(at>=end || (unsigned char)text[at]<0xc2)return 0;
+    size_t p=at;
+    while(p<end) {
+        size_t next=p;uint32_t cp=0;char name[128];
+        if(reloq_utf8_next((const unsigned char *)text,end,&next,&cp)!=1 ||
+           reloq_unicode_greek_name_english(cp,name,sizeof name)!=1)break;
+        /* Canonically decomposed Greek accents belong to the same letter. */
+        while(next<end) {
+            size_t after=next;uint32_t mark=0;
+            if(reloq_utf8_next((const unsigned char *)text,end,&after,&mark)!=1)break;
+            uint32_t combined=reloq_unicode_compose(cp,mark);
+            if(!combined || reloq_unicode_greek_name_english(combined,name,sizeof name)!=1)break;
+            cp=combined;next=after;
+        }
+        p=next;
+    }
+    if(p==at)return 0;
+    *last=p;return 1;
+}
+
 /* Latin words in Persian text belong to English; in Pinglish they stay in
  * the Persian analyzer whenever its native word rules accept them. Keep the
  * source slice rather than attempting to pronounce English here. */
@@ -293,7 +318,24 @@ static int english_run(const char *text,size_t at,size_t end,int variant,int com
 {
     if(at>=end || !ascii_letter((unsigned char)text[at]))return 0;
     size_t p=at;
-    while(p<end && ascii_letter((unsigned char)text[p]))++p;
+    while(p<end) {
+        if(ascii_letter((unsigned char)text[p])){++p;continue;}
+        /* In the Persian-script profile, a contraction is one English
+         * word. Preserve both ASCII and typographic apostrophes, but only
+         * between Latin letters; outer quotation marks remain punctuation.
+         * Pinglish retains its existing independent word rules. */
+        if(!variant && p>at && ascii_letter((unsigned char)text[p-1])) {
+            size_t width=0;
+            if(text[p]=='\'')width=1;
+            else if(end-p>=3 && (unsigned char)text[p]==0xe2 &&
+                    (unsigned char)text[p+1]==0x80 &&
+                    ((unsigned char)text[p+2]==0x98 || (unsigned char)text[p+2]==0x99))width=3;
+            if(width && width<end-p && ascii_letter((unsigned char)text[p+width])) {
+                p+=width;continue;
+            }
+        }
+        break;
+    }
     size_t letters=p-at;
     int numeric=0;
     while(p<end && ((text[p]>='0' && text[p]<='9') ||
@@ -377,7 +419,8 @@ static int analyze_runs(const char *text,size_t bytes,int mode,
                 int parsed=selector(text+at,end-at,&used,&next);
                 if(!parsed) {
                     size_t last=at;
-                    int foreign=english_run(text,at,end,mode,complete,&last);
+                    int foreign=greek_run(text,at,end,&last);
+                    if(!foreign)foreign=english_run(text,at,end,mode,complete,&last);
                     if(foreign<0){*error_offset=at;result=foreign;break;}
                     if(!foreign){at=last>at?last:at+1;continue;}
                     size_t err=0;

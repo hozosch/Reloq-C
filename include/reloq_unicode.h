@@ -7,6 +7,9 @@ uint32_t reloq_unicode_compose(uint32_t base,uint32_t combining_mark);
  * Return 1 for a name, 0 for an unnamed/invalid scalar and -1 for an
  * insufficient buffer. The destination remains unchanged on failure. */
 int reloq_unicode_name_english(uint32_t codepoint, char *output, size_t capacity);
+/* Short English Greek alphabet name, or 0 when the scalar is not in the
+ * shared Greek-letter inventory. Output is unchanged on failure. */
+int reloq_unicode_greek_name_english(uint32_t codepoint, char *output, size_t capacity);
 /* Whether a scalar can participate in a Unicode/CLDR emoji presentation. */
 int reloq_unicode_is_emoji(uint32_t codepoint);
 /* A scalar rendered as emoji without requiring an emoji variation selector. */

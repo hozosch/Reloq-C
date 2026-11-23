@@ -34,8 +34,8 @@ def main():
         assert 55 <= frames[107][8] <= 57, ('medial R noise', frames[107][8])
         final = capture(current, scope, '`[.0zo.1hur]')
         frames = {row.tick: row.controls for row in final.frames()}
-        assert tuple(frames[227][j] for j in (2, 7, 8)) == (15, 15, 0)
-        assert tuple(frames[243][j] for j in (2, 7)) == (25, 20)
+        assert 10 <= frames[227][2] <= 15 and tuple(frames[227][j] for j in (7, 8)) == (15, 0)
+        assert 20 <= frames[243][2] <= 25 and frames[243][7] == 20
         assert 50 <= frames[243][8] <= 52, ('final R noise', frames[243][8])
         checks += 2
         # The original acoustic clock must also hold the newly adjusted
@@ -67,9 +67,12 @@ def main():
                             reduced = False
                             for x, y in zip(a, b):
                                 assert x.tick == y.tick
-                                for column in (0, 1, 2, 35, 36, 37, 38, 39, 40, 41, 42):
+                                for column in (0, 1, 35, 36, 37, 38, 39, 40, 41, 42):
                                     assert x.controls[column] == y.controls[column], (
                                         rate, gender, speed, tag, x.tick, column)
+                                voice_drop = y.controls[2] - x.controls[2]
+                                assert (0 <= voice_drop <= 5 if tag in ('`[.0zo.1hur]', '`[.1ur] `[.1di]')
+                                        else voice_drop == 0), (tag, x.tick, voice_drop)
                                 aspiration = y.controls[7] - x.controls[7]
                                 assert (0 <= aspiration <= 4 if tag == '`[.0fo.1ri]'
                                         else aspiration == 0), (rate, gender, speed, tag, x.tick, aspiration)

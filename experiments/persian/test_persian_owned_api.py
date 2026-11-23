@@ -27,6 +27,10 @@ def main():
     complete.argtypes,complete.restype=analyze.argtypes,analyze.restype
     dll.eciPersianRelease.argtypes=(ctypes.c_void_p,)
     for source,mode,expected in (('سلام NVDA دنیا',0,['NVDA']),
+                                 ('سلام they’ve دنیا',0,['they’ve']),
+                                 ("سلام they've دنیا",0,["they've"]),
+                                 ('سلام αβ دنیا',0,['αβ']),
+                                 ('salam αβ donya',1,['αβ']),
                                  ('salam phone donya',1,['phone']),
                                  ('NVDAسلام',0,['NVDA'])):
         raw=source.encode('utf8');length=len(raw)
@@ -39,7 +43,7 @@ def main():
                        ctypes.byref(events),ctypes.byref(count),mapped,ctypes.byref(error))
         try:
             assert status==0,(source,status,error.value)
-            foreign=[raw[e.value:e.value+e.flags].decode('ascii') for e in events[:count.value] if e.kind==8]
+            foreign=[raw[e.value:e.value+e.flags].decode('utf8') for e in events[:count.value] if e.kind==8]
             assert foreign==expected,(source,foreign)
             assert any(e.kind==2 for e in events[:count.value])
             assert list(mapped)==sorted(mapped)

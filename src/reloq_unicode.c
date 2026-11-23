@@ -390,6 +390,14 @@ static const char *greek_label(uint32_t cp,int locale)
     return lo<COUNT(unicode_greek_labels)&&!strcmp(unicode_greek_labels[lo].english,alias)?
         unicode_greek_labels[lo].local[locale+1]:NULL;
 }
+int reloq_unicode_greek_name_english(uint32_t cp,char *output,size_t capacity)
+{
+    const char *name=greek_label(cp,255);
+    if(!name)return 0;
+    size_t length=strlen(name);
+    if(!output || capacity<=length)return -1;
+    memcpy(output,name,length+1);return 1;
+}
 static const char *language_label(const char *key,int locale)
 {
     if(locale!=255 && (unsigned)locale>=9)return NULL;
@@ -551,9 +559,9 @@ static int unicode_admit(const unsigned char *text,size_t length,
             }
         }
         {
-            /* Foreign Greek letters have an alphabet-name route for an
-             * explicitly requested character. Native Greek text remains
-             * untouched, as do names explicitly supplied by the caller. */
+            /* Foreign Greek letters use their alphabet names in continuous
+             * text as well as in explicit spelling. Native Greek remains
+             * untouched and is still read by its own language rules. */
             const char *greek=(c==0xb5||c>=0x370)&&(!language||!language_owns(c,language))?
                 greek_label(c,language?locale:255):NULL;
             if(greek) {
@@ -563,7 +571,7 @@ static int unicode_admit(const unsigned char *text,size_t length,
                 old=b.n;
                 if((native_run||source_spelling)&&add(&b," `ts0 ",6)){rc=-2;goto fail;}
                 native_run=0;
-                if((mode||source_spelling?say(&b,greek):add(&b," ",1)) ||
+                if(say(&b,greek) ||
                    (source_spelling&&add(&b,source_spelling==1?" `ts1 ":" `ts2 ",6))){rc=-2;goto fail;}
                 offsets[begin]=old;
                 for(size_t j=begin+1;j<end;++j)offsets[j]=b.n;

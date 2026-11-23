@@ -313,7 +313,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert driver.voice == "1"
                 assert list(driver.availableVoices) == list(map(str, range(1, 9)))
                 assert driver.description == "Eloquence C"
-                assert driver.availableLanguages["de_DE"].displayName == translation.gettext("German")
+                assert driver.availableLanguages["de_DE"].displayName == "German"
                 assert isinstance(driver.availableLanguages["de_DE"], sys.modules["synthDriverHandler"].LanguageInfo)
                 assert [v.displayName for v in driver.availableVoices.values()] == [
                     "Reed", "Shelly", "Bobby", "Rocko", "Glen", "Sandy", "Grandma", "Grandpa"]
@@ -407,13 +407,13 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert driver.languageIsSupported("en-US")
                 assert driver.languageIsSupported("pt-BR")
                 assert driver.languageIsSupported("fi-FI")
-                assert driver.availableLanguages["pt_BR"].displayName == translation.gettext("Brazilian Portuguese")
-                assert driver.availableLanguages["fi_FI"].displayName == translation.gettext("Finnish")
+                assert driver.availableLanguages["pt_BR"].displayName == "Brazilian Portuguese"
+                assert driver.availableLanguages["fi_FI"].displayName == "Finnish"
                 assert LangChangeCommand in driver.supportedCommands
                 assert driver_module._parts(["Ein", LangChangeCommand("de-AT"),
                     " Satz", LangChangeCommand("hu-HU"), " bleibt", LangChangeCommand(None),
                     " zusammen."]) == [driver_module.EciText("Ein Satz bleibt zusammen.")]
-                assert driver.availableLanguages["en_US"].displayName == translation.gettext("American English")
+                assert driver.availableLanguages["en_US"].displayName == "American English"
                 assert driver_module._parts(["Hello", LangChangeCommand("en-US"), "world",
                     LangChangeCommand(None), "Hallo"]) == [driver_module.EciText("Hello"), driver_module.EciLanguage(65536,"1"),
                     driver_module.EciText("world"), driver_module.EciLanguage(262144,"1"), driver_module.EciText("Hallo")]
