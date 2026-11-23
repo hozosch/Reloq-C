@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import ctypes
 from pathlib import Path
 import re
 import sys
@@ -56,7 +57,26 @@ def main():
             assert current_result == previous, (word, previous, current_result)
             checked += 1
         assert checked > 30000, checked
-    print(f'Passed 7 reported words in context and {checked} existing native word analyses.')
+        # Explicit vowels in the established Roman-script lexicon must not
+        # change merely because a Persian-script reading was recovered.
+        table = (ROOT / 'experiments/persian/direct_fa_pinglish_lexicon.inc').read_text(encoding='utf8')
+        roman_words = re.findall(r'^\s*\{"([a-z]+)", "[^"\\]+"\},', table, re.M)
+        for frontend in (old, current):
+            fn = frontend._dll.eciPersianPinglishWord
+            fn.argtypes = (ctypes.c_char_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t)
+            fn.restype = ctypes.c_int
+        roman_checked = 0
+        for word in roman_words:
+            raw = word.encode('ascii'); outputs = []
+            for frontend in (old, current):
+                buf = ctypes.create_string_buffer(4096)
+                status = frontend._dll.eciPersianPinglishWord(raw, len(raw), buf, len(buf))
+                outputs.append((status, buf.value))
+            if outputs[0][0] == 1:
+                assert outputs[0] == outputs[1], (word, outputs)
+                roman_checked += 1
+        assert roman_checked > 30000, roman_checked
+    print(f'Passed 7 reported words and {checked} Persian plus {roman_checked} Pinglish existing analyses.')
 
 
 if __name__ == '__main__':
