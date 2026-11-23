@@ -43,6 +43,9 @@ def speech_api(driver, on_sequence):
         data = ns["SpeechSymbols"]()
         path = (SOURCE.parents[2] / "experiments/persian/reference-nvda/fa_symbols_2026_3_1.dic"
                 if locale == "fa" else SOURCE / "locale" / locale / "symbols.dic")
+        # Persian's optional reference data is absent from non-Persian builds.
+        if locale == "fa" and not path.is_file():
+            continue
         data.load(str(path))
         sources[locale] = (data, ns["SpeechSymbols"]())
     ns["SpeechSymbolProcessor"].localeSymbols = ns["LocaleDataMap"](lambda locale: sources[locale])

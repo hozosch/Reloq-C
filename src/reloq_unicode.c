@@ -507,6 +507,24 @@ static int unicode_admit(const unsigned char *text,size_t length,
             if(!((i-back)&1)) {
                 struct reloq_inline_tag t=reloq_inline_tag_read(text+i,length-i,0);
                 if(t.kind==RELOQ_TAG_SPELL)source_spelling=t.value;
+                /* The Mandarin English bank needs a word boundary before a
+                 * positive pause at the end of a sentence. Some ECI clients
+                 * supply the command in a separate AddText call without a
+                 * separating space; otherwise the native parser drops it. */
+                if(language==0x60000&&i&&t.kind==RELOQ_TAG_PAUSE&&t.value>0) {
+                    size_t previous=i-1,z;uint32_t before,after=0;
+                    while(previous&&(text[previous]&0xc0)==0x80)--previous;
+                    int latin=!decode(text+previous,i-previous,&z,&before)&&z==i-previous&&
+                        ((before>='A'&&before<='Z')||(before>='a'&&before<='z')||
+                         (before>='0'&&before<='9')||
+                         (before>=0xc0&&before<=0xff&&before!=0xd7&&before!=0xf7));
+                    size_t following=i+t.length;
+                    int final=following==length;
+                    if(following<length&&!decode(text+following,length-following,&z,&after))
+                        final=after=='.'||after=='?'||after=='!'||
+                              after==0x3002||after==0xff01||after==0xff1f;
+                    if(latin&&final&&add(&b," ",1)){rc=-2;goto fail;}
+                }
             }
         }
         /* Canonical base+accent composition spans ECI fragment boundaries. */

@@ -78,6 +78,24 @@ def main():
                 outputs.append((plain, normal, short, p50, p250))
                 checks += 3
             assert outputs[0] == outputs[1], (first, punctuation, "encoding")
+
+        # NVDA BreakCommand is delivered in a separate AddText fragment and
+        # can touch the preceding English word. Sentence-final punctuation
+        # must not swallow its requested duration, including Chinese marks.
+        for engine in engines:
+            for first in ("Hello", "Tonhö", "1000"):
+                for ending in (". world", "? world", "。世界", ""):
+                    lengths = {}
+                    for duration in (50, 250):
+                        tag = f"`p{duration}"
+                        joined = render(engine, [first + tag + ending])[0]
+                        fragmented = render(engine, [first, tag + ending])[0]
+                        indexed = render(engine, [first, EciIndex(20), tag + ending, EciIndex(21)])
+                        assert joined == fragmented == indexed[0], (first, ending, duration)
+                        assert indexed[1] == [20, 21]
+                        lengths[duration] = len(joined)
+                    assert lengths[250] - lengths[50] == 200 * 11 * 2, (first, ending, lengths)
+                    checks += 1
     finally:
         for engine in engines:
             engine.close()

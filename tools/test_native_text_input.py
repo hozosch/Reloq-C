@@ -48,7 +48,7 @@ def main():
     with tempfile.TemporaryDirectory() as folder:
         current,greek_words=compile_rom(Path(folder)/"current.so",ROOT/"vendor/openevv61/rom/cjk/reloq_cjk_romanizer.c")
         old=compile_rom(Path(folder)/"old.so",a.baseline_source)[0] if a.baseline_source else None
-        expected={"發":["fa1"],"髮":["fa4"],"隻":["zhi1"],"只":["zhi3"],
+        expected={"發":["fa1"],"髮":["fa4"],"瞭":["liao3"],"了":["le0"],"隻":["zhi1"],"只":["zhi3"],
             "臟":["zang4"],"髒":["zang1"],"癥":["zheng1"],"症":["zheng4"],
             "頭髮":["tou2","fa0"],"理髮":["li3","fa4"],"發展":["fa1","zhan3"],
             "發現":["fa1","xian4"],"幹部":["gan4","bu4"],"乾坤":["qian2","kun1"]}
@@ -68,14 +68,14 @@ def main():
         # but add no timed pause; numbers and Pinyin use the Chinese path too.
         # Ordinary sentence punctuation keeps determining its own pause.
         for text,expected in {
-            "你好 Hello 世界":" `ga_ni3hao3   `g9_Hello   `gb_shi4jie4",
-            "Hello 你好":" `g9_Hello   `ga_ni3hao3",
-            "你好 Hello":" `ga_ni3hao3   `g9_Hello",
+            "你好 Hello 世界":" `ga_ni2hao3   `g9_Hello   `gb_shi4jie4",
+            "Hello 你好":" `g9_Hello   `ga_ni2hao3",
+            "你好 Hello":" `ga_ni2hao3   `g9_Hello",
             "Hello ni3 hao3":" `g9_Hello  ni3 hao3",
             "ni3 hao3 Hello":"ni3 hao3   `g9_Hello",
             "Version: 2026.3":" `g9_Version:  2026.3",
-            "你好. Hello":" `ga_ni3hao3.  `g9_Hello",
-            "你好 `p20 Hello":" `ga_ni3hao3 `p20   `g9_Hello",
+            "你好. Hello":" `ga_ni2hao3.  `g9_Hello",
+            "你好 `p20 Hello":" `ga_ni2hao3 `p20   `g9_Hello",
             "https: 斜杠  斜杠 www 点 nvaccess 点 org":
                 " `g9_https:   `gH_xie2gang4   `gH_xie2gang4   `g9_www   `gQ_dian3   `g9_nvaccess   `gQ_dian3   `g9_org",
         }.items():

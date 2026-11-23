@@ -798,7 +798,7 @@ static int chinese(struct cjk_romanizer *r,const unsigned char *text,size_t n)
             char key[8*4+1],original[8*4+1];size_t at=0,original_at=0,p=i,end=i+used,best_end=end;
             const struct traditional_reading *identities[8]={0};
             const char *best_reading=NULL;size_t best_size=0,best_key_size=0;char best_category='N';int changed=0;
-            char reading[192],modal_reading[192];
+            char reading[192],modal_reading[192],identity_reading[32];
             for(unsigned count=0;count<8&&p<n;++count) {
                 /* Keep 和 + 解锁 separate without splitting 了解 + 锁定. */
                 if(count&&best_category=='C'&&
@@ -819,15 +819,20 @@ static int chinese(struct cjk_romanizer *r,const unsigned char *text,size_t n)
                 if(word){best_reading=(const char *)chinese_strings+word->reading;best_size=strlen(best_reading);best_category=(char)word->category;best_end=p;best_key_size=at;}
                 else if(!count&&identities[0]) {
                     const struct chinese_word *base=find_word(key);
-                    best_reading=identities[0]->readings;
-                    best_size=strcspn(best_reading," ");
+                    /* The table lists alternatives, but a standalone Han
+                     * character has exactly one default pronunciation.
+                     * Later context rules expect a NUL-terminated reading. */
+                    best_size=strcspn(identities[0]->readings," ");
+                    if(best_size>=sizeof identity_reading)return -1;
+                    memcpy(identity_reading,identities[0]->readings,best_size);
+                    identity_reading[best_size]=0;best_reading=identity_reading;
                     best_category=base?(char)base->category:'N';best_end=p;best_key_size=at;
                 }
             }
             if(best_reading) {
                 /* Corrections describe the matched word, not speculative lookahead. */
                 key[best_key_size]=0;
-                if(best_end==end && !strcmp(single_key,"了") && !strcmp(best_reading,"liao3")) {
+                if(best_end==end && !identities[0] && !strcmp(single_key,"了") && !strcmp(best_reading,"liao3")) {
                     best_reading="le0";best_size=3;
                 } else {
                     best_reading=phrase_reading(key,best_reading);
