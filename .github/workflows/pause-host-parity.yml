@@ -1,0 +1,98 @@
+name: Compare Eloquence 64 host pause behavior
+'on':
+  push:
+    branches: ['codex/pause-host-parity-*']
+    paths: [.github/workflows/pause-host-parity.yml]
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: windows-2022
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+          architecture: x86
+      - name: Prepare exact released v28 reference and ReLoq C 2.0
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib, pathlib, struct, urllib.request, zipfile
+          root = pathlib.Path.cwd()
+          ref_archive = root/'reference-v28.zip'
+          urllib.request.urlretrieve('https://github.com/fastfinge/eloquence_64/releases/download/v28/Eloquence-v28.nvda-addon', ref_archive)
+          assert hashlib.sha256(ref_archive.read_bytes()).hexdigest() == 'd4cd114d24e03f0b6988e6a9765f9d465d07147afe260559e5cd23e179c79cf9'
+          ref = root/'reference'; ref.mkdir()
+          with zipfile.ZipFile(ref_archive) as z:
+              for name in z.namelist():
+                  lo = name.lower()
+                  if lo.startswith('synthdrivers/eloquence/') and lo.endswith(('.dll','.syn','.ini')):
+                      (ref/pathlib.PurePosixPath(name).name).write_bytes(z.read(name))
+                  elif name in ('synthDrivers/_eloquence_text.py','synthDrivers/_text_preprocessing.py','synthDrivers/_script_conversion.py') or name.startswith('synthDrivers/t2s_data/'):
+                      target=root/'driver'/pathlib.PurePosixPath(name)
+                      target.parent.mkdir(parents=True,exist_ok=True)
+                      if not name.endswith('/'): target.write_bytes(z.read(name))
+          ini=ref/'ECI.INI'; content=ini.read_text(encoding='latin1')
+          content=content.replace('C:\\dummy\\',str(ref.resolve())+'\\')
+          assert 'C:\\dummy\\' not in content
+          ini.write_text(content,encoding='ascii')
+          release=root/'reloq-2.0.nvda-addon'
+          urllib.request.urlretrieve('https://github.com/hozosch/Reloq-C/releases/download/v2.0.0/reloq-c-synth-x64-2.0.0.nvda-addon', release)
+          assert hashlib.sha256(release.read_bytes()).hexdigest()=='4c8e624c612d188a618dc7bf20ae1281a9781057df95ec109c8dfce1dcfb1294'
+          candidate=root/'candidate';candidate.mkdir()
+          with zipfile.ZipFile(release) as z:
+              (candidate/'eci.dll').write_bytes(z.read('synthDrivers/reloqC/eci.dll'))
+          def machine(p):
+              data=p.read_bytes();offset=struct.unpack_from('<I',data,60)[0]
+              assert data[offset:offset+4]==b'PE\0\0'
+              return struct.unpack_from('<H',data,offset+4)[0]
+          assert machine(ref/'ECI.DLL')==0x14c
+          assert machine(candidate/'eci.dll')==0x8664
+          print('Prepared v28 x86 reference and signed-off ReLoq 2.0 x64 package.')
+          PY
+      - name: Measure the 32-bit host at the unchanged v28 inputs
+        continue-on-error: true
+        run: python tools/observe_eloquence64_pause_parity.py --library reference/ECI.DLL --driver-root driver --engine original --output observations/original.json
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+          architecture: x64
+      - name: Measure the released 64-bit ReLoq core at identical inputs
+        continue-on-error: true
+        run: python tools/observe_eloquence64_pause_parity.py --library candidate/eci.dll --driver-root driver --engine reloq --output observations/reloq.json
+      - name: Compare results and report coverage
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          base=pathlib.Path('observations')
+          left=json.loads((base/'original.json').read_text())
+          right=json.loads((base/'reloq.json').read_text())
+          assert left['pointer_bits']==32 and right['pointer_bits']==64
+          print('Errors:',json.dumps({'original':left['errors'],'reloq':right['errors']}))
+          def key(r):
+              return (r['language'],r['kind'],r.get('sample'),r.get('mode'),r.get('text'),r.get('pause'))
+          a={key(r):r for r in left['cases']}; b={key(r):r for r in right['cases']}
+          common=sorted(a.keys() & b.keys(),key=str)
+          assert common and all(a[k]['input_hex']==b[k]['input_hex'] for k in common)
+          print('Comparable inputs:',len(common),'of',len(a),'original and',len(b),'ReLoq cases')
+          for k in common:
+              x,y=a[k],b[k]
+              print(json.dumps({'key':k, 'original_ms':round(x['samples']/11.025),
+                  'reloq_ms':round(y['samples']/11.025),
+                  'original_quiet':x['quiet_spans_ms'], 'reloq_quiet':y['quiet_spans_ms'],
+                  'original_trailing':x['trailing_quiet_ms'],'reloq_trailing':y['trailing_quiet_ms']}))
+          if left['errors'] or right['errors'] or set(a)!=set(b):
+              raise SystemExit('Some comparison cases were unavailable; see report.')
+          PY
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: eloquence64-host-pause-comparison
+          path: observations/
+          if-no-files-found: warn
+          retention-days: 7
