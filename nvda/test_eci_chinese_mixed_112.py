@@ -163,9 +163,11 @@ def main():
                 return len(render(engine,[s,EciIndex(9)])[0])/(16000*2)*1000
             hello=milliseconds('你好 Hello 世界')
             world=milliseconds('你好 world 世界')
-            assert 999<=hello<1010,(hex(dialect),'hello return',hello)
-            assert 973<=world<982,(hex(dialect),'world return',world)
-            assert 775<=milliseconds('你好 Hello')<=785,(hex(dialect),'Chinese to English')
+            # 你好 now uses the correct third-tone sandhi. Its first syllable
+            # is eight milliseconds shorter than the former pronunciation.
+            assert 991<=hello<1002,(hex(dialect),'hello return',hello)
+            assert 965<=world<974,(hex(dialect),'world return',world)
+            assert 767<=milliseconds('你好 Hello')<=777,(hex(dialect),'Chinese to English')
             assert milliseconds('你好 Hello，世界')>hello+100,(hex(dialect),'comma pause')
             assert milliseconds('你好 Hello `p50 世界')>hello+20,(hex(dialect),'explicit pause')
             long_english='The quick brown fox jumps over the lazy dog '*8
