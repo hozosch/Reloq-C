@@ -187,13 +187,17 @@ def main():
                 raise AssertionError(f'Settings dialog exited with {result}')
             time.sleep(.1)
         assert window, 'Settings dialog did not appear'
-        tags, segmentation, abbreviations, camel = (user32.GetDlgItem(window, control)
-                                                     for control in (110, segmentation_id, 111, camel_id))
-        assert tags and segmentation and abbreviations and camel
+        tags, segmentation, prediction, camel = (user32.GetDlgItem(window, control)
+                                                  for control in (110, segmentation_id, 112, camel_id))
+        assert tags and segmentation and prediction and camel
         assert text(window, segmentation_id) and text(window, camel_id)
         assert user32.GetNextDlgTabItem(window, tags, False) == segmentation
-        assert user32.GetNextDlgTabItem(window, segmentation, False) == abbreviations
-        assert user32.GetNextDlgTabItem(window, abbreviations, False) == camel
+        assert user32.GetNextDlgTabItem(window, segmentation, False) == prediction
+        assert user32.GetNextDlgTabItem(window, prediction, False) == camel
+        prediction_rect, camel_rect = wintypes.RECT(), wintypes.RECT()
+        assert user32.GetWindowRect(prediction, ctypes.byref(prediction_rect))
+        assert user32.GetWindowRect(camel, ctypes.byref(camel_rect))
+        assert prediction_rect.right <= camel_rect.left
         saved_segmentation, saved_camel = checked(window, segmentation_id), checked(window, camel_id)
         set_checked(window, segmentation_id, not saved_segmentation)
         set_checked(window, camel_id, not saved_camel)
@@ -216,18 +220,29 @@ def main():
         else:
             assert user32.GetNextDlgTabItem(window, override, False) == clock
         assert user32.GetNextDlgTabItem(window, clock, False) == rate
-        assert user32.GetNextDlgTabItem(window, pauses, False) == tags
+        actions = [user32.GetDlgItem(window, control) for control in (141, 153)]
+        assert all(actions)
+        assert user32.GetNextDlgTabItem(window, pauses, False) == actions[0]
+        assert user32.GetNextDlgTabItem(window, actions[0], False) == actions[1]
+        assert user32.GetNextDlgTabItem(window, actions[1], False) == tags
         speed_rectangles = [wintypes.RECT() for _ in range(3)]
         for control, rect in zip((override, boost, clock), speed_rectangles):
             assert user32.GetWindowRect(control, ctypes.byref(rect))
         assert speed_rectangles[0].bottom <= speed_rectangles[1].top
         assert speed_rectangles[1].bottom <= speed_rectangles[2].top
-        # The remaining program actions do not interrupt the speed controls.
-        actions = [user32.GetDlgItem(window, control) for control in (141, 153)]
-        assert all(actions)
-        assert user32.GetNextDlgTabItem(window, user32.GetDlgItem(window, 113), False) == actions[0]
-        assert user32.GetNextDlgTabItem(window, actions[0], False) == actions[1]
-        assert user32.GetNextDlgTabItem(window, actions[1], False) == user32.GetDlgItem(window, 120)
+        # Abbreviations, community dictionary and its source, personal files,
+        # updates and folder are one uninterrupted keyboard group.
+        dictionary_ids = (111, 113, 120, 155, 121, 115, 116)
+        dictionary = [user32.GetDlgItem(window, control) for control in dictionary_ids]
+        assert all(dictionary) and all(text(window, control) for control in (111, 113, 155, 121, 116))
+        assert user32.GetNextDlgTabItem(window, user32.GetDlgItem(window, 122), False) == dictionary[0]
+        for first, second in zip(dictionary, dictionary[1:]):
+            assert user32.GetNextDlgTabItem(window, first, False) == second
+        dictionary_rects = [wintypes.RECT() for _ in dictionary[:3]]
+        for control, rect in zip(dictionary[:3], dictionary_rects):
+            assert user32.GetWindowRect(control, ctypes.byref(rect))
+        assert dictionary_rects[0].bottom <= dictionary_rects[1].top
+        assert dictionary_rects[1].bottom <= dictionary_rects[2].top
         rectangles = [wintypes.RECT() for _ in range(3)]
         for control, rect in zip((rate, mellow, pauses), rectangles):
             assert user32.GetWindowRect(control, ctypes.byref(rect))

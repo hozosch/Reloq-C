@@ -59,19 +59,24 @@ def main():
                                 assert result.syllables == before.syllables and len(result.pcm) == len(before.pcm)
                                 assert len(rows) == len(old)
                                 affected = False
+                                body_affected = False
                                 for a, b in zip(rows, old):
                                     assert a.tick == b.tick
                                     for col in range(62):
                                         if col not in (2, 4):
                                             assert a.controls[col] == b.controls[col], (tag, a.tick, col)
                                     delta = a.controls[4] - b.controls[4]
-                                    assert 0 <= delta <= 9, (tag, a.tick, delta)
+                                    assert 0 <= delta <= 15, (tag, a.tick, delta)
                                     voice_drop = b.controls[2] - a.controls[2]
                                     assert 0 <= voice_drop <= 5, (tag, a.tick, voice_drop)
                                     if delta or voice_drop:
-                                        assert transition <= a.tick < min(end, start + 35) + (5 if clock else 0), (tag, a.tick)
+                                        assert transition <= a.tick < end + (5 if clock else 0), (tag, a.tick)
                                         affected = True
+                                        if start + 35 <= a.tick < end:
+                                            body_affected = True
                                 assert affected, (rate, gender, speed, clock, tag, 'voiced R profile unchanged')
+                                if tag == changed[0][0] and end - start >= 45:
+                                    assert body_affected, (rate, gender, speed, clock, tag, 'voiced R body unchanged')
                                 # At the fastest speed the entire R may be
                                 # shorter than one glottal period. A source
                                 # filter must not create an extra pulse.

@@ -1420,10 +1420,11 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
         double edge=fmin(1.0,fmax(0.0,fmin(in,out)/4.0));
         edge=edge*edge*(3.0-2.0*edge);
         r_noise_reduction=(float)floor(4.0*shape*edge+0.5);
-        /* Retain the accepted R's source tilt. The additional smoothing is
-         * restricted to the transition from U and the start of the R: it
-         * fades back to the existing coda voice without changing either
-         * aspiration or frication. A following vowel has its own transition. */
+        /* Keep the accepted noise. In U-final-R, continue the voice-only
+         * smoothing over the voiced R itself: fading out at 35 ms left most
+         * of the steady R unchanged. Ramp its extra source tilt in from the
+         * existing U-to-R transition, then release it at the native R end.
+         * An R followed by a vowel uses its existing separate transition. */
         if(final_r_after_u) {
             double base=9.0*shape*edge;
             r_voice_tilt=(float)floor(base+0.5);
@@ -1434,10 +1435,10 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
                     fmin(1.0,fmax(0.0,out/4.0)):edge;
                 double voiced=fmin(1.0,fmax(0.0,(controls[2]-4.0)/11.0))*voice_edge;
                 voiced*=fmin(1.0,fmax(0.0,(5.0-controls[36])/5.0));
-                double fade=fmin(1.0,fmax(0.0,(35.0-in)/25.0));
-                fade=fade*fade*(3.0-2.0*fade);
-                r_voice_tilt=(float)floor(fmax(base,base+(9.0*voiced-base)*fade)+0.5);
-                r_voice_reduction=(float)floor(5.0*voiced*fade+0.5);
+                double rise=fmin(1.0,fmax(0.0,in/12.0));
+                rise=rise*rise*(3.0-2.0*rise);
+                r_voice_tilt=(float)floor(fmax(base,(9.0+6.0*rise)*voiced)+0.5);
+                r_voice_reduction=(float)floor(5.0*voiced+0.5);
             }
         }
         /* The medial Finnish-derived R carries most of its noise in the

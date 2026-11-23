@@ -1,4 +1,4 @@
-"""Measure the periodic source at the U-to-final-R transition, without noise."""
+"""Measure the periodic source in the body of final R after U, without noise."""
 from __future__ import annotations
 
 import argparse
@@ -34,10 +34,10 @@ def voice_band_power(path, gender, clock):
         samples.frombytes(pcm)
         if sys.byteorder != 'little':
             samples.byteswap()
-        # Only measure the start of the R, where the preceding U feeds the
-        # same voiced tract. The established remainder of the R is retained.
-        end = min(end, start + 35)
-        region = samples[round(start * 16):round(end * 16)]
+        # The previous adjustment faded out by 35 ms. Measure the following
+        # sustained voice as well, while excluding the initial U transition.
+        end = min(end, start + 75)
+        region = samples[round((start + 35) * 16):round(end * 16)]
         assert len(region) > 100
         windowed = [sample * (0.5 - 0.5 * math.cos(math.tau * i / (len(region) - 1)))
                     for i, sample in enumerate(region)]
@@ -68,7 +68,7 @@ def main():
             new = voice_band_power(args.candidate, gender, clock)
             assert old > 0 and new / old < 0.9, (
                 gender, clock, old, new, new / old if old else None)
-    print('Passed four isolated voiced U-to-R transition comparisons with both acoustic clocks.')
+    print('Passed four isolated voiced final-R body comparisons with both acoustic clocks.')
 
 
 if __name__ == '__main__':
