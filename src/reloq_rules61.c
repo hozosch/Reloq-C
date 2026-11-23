@@ -1388,6 +1388,34 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
                 phone=RELOQ_FA_TUNE_BACK_A_AFTER_R;
             reloq_fa_tuning_targets(controls,phone,p->from/10000.0,to/10000.0,
                                     (double)tick,duration,rate,release_ms);
+            if(tuning==1 && s->fa_phone_next) {
+                unsigned previous=s->fa_phones[s->fa_phone_next-1].phone;
+                int before_i=p->phone==RELOQ_FA_TUNE_R_BEFORE_I &&
+                    (previous==RELOQ_FA_TUNE_O || previous==RELOQ_FA_TUNE_U ||
+                     previous==RELOQ_FA_TUNE_FRONT_A || previous==RELOQ_FA_TUNE_BACK_A);
+                /* The mixed-language planner can project English heading's
+                 * initial H as a transition directly to E, so a following
+                 * vowel does not prove that an A-R is medial. Limit this
+                 * broader context to A; retain the existing U-R-before-vowel
+                 * exception. R-before-I and R-before-back-A are separate. */
+                int coda=p->phone==RELOQ_FA_TUNE_R &&
+                    (previous==RELOQ_FA_TUNE_FRONT_A || previous==RELOQ_FA_TUNE_BACK_A ||
+                     (previous==RELOQ_FA_TUNE_U &&
+                      !(s->fa_phone_next+1<s->fa_phone_count &&
+                        fa_tuned_vowel(s->fa_phones[s->fa_phone_next+1].phone))));
+                if(before_i && controls[11]==RELOQ_FA_TUNING_MARKER+RELOQ_FA_TUNE_R_BEFORE_I)
+                    controls[11]=(float)(RELOQ_FA_TUNING_MARKER+RELOQ_FA_TUNE_R_VOICE_BEFORE_I);
+                else if(coda) {
+                    int32_t end=to==INT32_MAX?p->articulation_end:to;
+                    double centre=(double)tick+duration/2.0;
+                    double gain=fmin(1.0,fmin(fmax(0.0,(centre-p->from/10000.0)/8.0),
+                                              fmax(0.0,(end/10000.0-centre)/8.0)));
+                    if(gain>0) {
+                        controls[11]=(float)(RELOQ_FA_TUNING_MARKER+RELOQ_FA_TUNE_R_VOICE_CODA);
+                        controls[12]=(float)gain;
+                    }
+                }
+            }
         }
     }
     float r_noise_reduction=0,r_asp_reduction=0,r_voice_tilt=0,r_voice_reduction=0;

@@ -541,6 +541,11 @@ struct reloq_core_voiced_frame {
     long glottal_profile;
     float flutter;
     float diplophonia;
+    /* Optional narrow cut on periodic excitation before aspiration joins it. */
+    float periodic_notch_hz,periodic_notch_width,periodic_notch_db;
+};
+struct reloq_core_periodic_notch {
+    double x1,x2,y1,y2;
 };
 struct reloq_core_voiced_frame_state {
     struct reloq_core_noise_frame_state noise;
@@ -555,6 +560,7 @@ struct reloq_core_voiced_frame_state {
     struct reloq_rate_transfer rate_transfer;
     struct reloq_rate_transfer noise_transfer;
     struct reloq_noise_profile noise_profile;
+    struct reloq_core_periodic_notch periodic_notch;
 };
 int reloq_core_voiced_frame_initialize(
     struct reloq_core_voiced_frame_state *state,

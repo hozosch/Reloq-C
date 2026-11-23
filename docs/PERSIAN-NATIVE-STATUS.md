@@ -11,6 +11,13 @@ NVDA's eSpeak DLL is installed; it does not package or load the eSpeak helper
 modules. Covered words use the existing native analyses. For uncovered
 written words the C analyzer infers short vowels, which can differ from the
 earlier reference-backed development voice and needs listening validation.
+To recover the earlier reference-backed readings, the shared C analyzer now
+also includes previously uncovered spellings from the existing Lilak word
+inventory, provided their old eSpeak readings agree in four contexts and are
+accepted by the native phone parser. Existing native entries and productive
+rules have priority. This is generated offline; the runtime needs no eSpeak
+library. Agreement with the earlier reference is not proof that every
+unvowelled Persian spelling has only one correct pronunciation.
 Pinglish retains the explicit a/aa distinction. In the complete native
 analyzer, runs of three or more identical vowels are treated like a doubled
 vowel; this permits informal elongated spellings while leaving strict English
@@ -95,10 +102,13 @@ route likewise applies the Persian choice to its US parts while a Persian or
 Pinglish voice owns the utterance. This fixes inconsistent clock changes but
 does not merge the providers or remove the existing Python mixed-sentence
 planner. US English and Persian selection both finish preparing their
-background workers before accepting speech. The final voiced R after U has a
-scoped source-filter adjustment; the accepted R after O, R before I and
-unvoiced R contexts retain their previous sound. These changes need listening
-validation and do not establish Persian as a finished platform voice.
+background workers before accepting speech. A further scoped R adjustment
+attenuates a band around the third formant on the periodic source before
+aspiration and frication are mixed. It covers R after A, coda R after U and R
+before I after a rounded vowel; other languages and other R contexts keep their
+existing paths. Objective tests compare the isolated noise and voiced signals,
+but the audible result still needs the listeners' validation. These changes do
+not establish Persian as a finished platform voice.
 
 The language is not yet a normal, independent ECI voice. The remaining work
 includes registering Persian and Pinglish dialects, completing the C sentence

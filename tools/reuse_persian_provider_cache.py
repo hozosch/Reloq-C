@@ -33,6 +33,13 @@ DEV42_HEADERS = {
     **DEV39_HEADERS,
     'include/reloq_eci.h': 'd2ac091a8519186057561f70d282fcfc5822e128',
 }
+# Dev43 adds a periodic-source field and two metadata identities. Rebuild
+# every cached provider object that includes either changed header.
+DEV43_HEADERS = {
+    **DEV42_HEADERS,
+    'include/reloq_core.h': '64bbbc10eb8b1eae0c3d424f1eeefa8827b0cc6e',
+    'include/reloq_persian_tuning.h': '7dd52730ef351a27ef39305ad842d1e403546d2b',
+}
 DEV200_BASE = '1a891a6586e5e5f3e500435dbe7ffa5a5122cbf9'
 DEV200_KEY = ('persian-windows-provider-gcc14-v2-'
               'b79a57ae4c2ae97eeb8bf35dc23cb5bba40ffc28200ae396907ea7bf5fb53d39')
@@ -229,8 +236,9 @@ def eligible_recent(key, changed, blobs):
 
 
 def eligible_dev39(key, changed, blobs):
-    return (key == DEV39_KEY and set(changed) == set(DEV39_HEADERS) and
-            blobs in (DEV39_HEADERS, DEV42_HEADERS))
+    return (key == DEV39_KEY and
+            ((set(changed) == set(DEV39_HEADERS) and blobs in (DEV39_HEADERS, DEV42_HEADERS)) or
+             (set(changed) == set(DEV43_HEADERS) and blobs == DEV43_HEADERS)))
 
 
 def reuse_dev156_generated(expected=frozenset({'delta_rules_c02_fifi.c'}), added=frozenset(),
@@ -275,18 +283,37 @@ def main():
         key = os.environ.get('PERSIAN_PROVIDER_CACHE_KEY', '')
         if key == DEV39_KEY:
             changed = set(git('diff', '--name-only', DEV39_BASE, 'HEAD', '--', *INPUTS).splitlines())
-            blobs = {path: git('rev-parse', 'HEAD:' + path) for path in DEV39_HEADERS}
+            checked = DEV43_HEADERS if changed == set(DEV43_HEADERS) else DEV39_HEADERS
+            blobs = {path: git('rev-parse', 'HEAD:' + path) for path in checked}
             if not eligible_dev39(key, changed, blobs):
                 raise ValueError('provider inputs differ from the verified additive API headers')
             if not BUILD.is_dir() or not (BUILD / 'libreloq61.a').is_file():
                 raise ValueError('cached provider archive is missing')
-            for dep in BUILD.rglob('*.d'):
+            rebuild = []
+            deps = list(BUILD.rglob('*.d'))
+            for dep in deps:
                 value = dep.read_text(encoding='utf8', errors='replace')
                 if any(Path(path).name in value for path in DEV39_HEADERS):
                     raise ValueError('a provider object depends on a changed public header')
+                if checked is DEV43_HEADERS and any(Path(path).name in value for path in
+                        ('include/reloq_core.h', 'include/reloq_persian_tuning.h')):
+                    obj = dep.with_suffix('.o')
+                    if not obj.is_file():
+                        raise ValueError('provider dependency has no matching object')
+                    rebuild.append(obj)
+            if checked is DEV43_HEADERS:
+                required = {BUILD / 'src/reloq61_bridge.o', BUILD / 'lang/fifi/delta_rules_c13_fifi.o'}
+                if not required <= set(rebuild):
+                    raise ValueError('provider tuning dependency list is incomplete')
             for path in BUILD.rglob('*'):
                 if path.is_file():
                     os.utime(path, None)
+            if rebuild:
+                for obj in rebuild:
+                    obj.unlink()
+                (BUILD / 'libreloq61.a').unlink()
+                print(f'Reused provider cache; rebuilding {len(rebuild)} header-dependent objects.')
+                return
             print('Reused provider cache after checking the additive public API headers.')
             return
         if key == DEV200_KEY:

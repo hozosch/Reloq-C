@@ -97,9 +97,11 @@ static void tuning_prepare(struct reloq_fa_tuning_filter *f,const float c[62],in
     static const int revised_u_gains[5]={1,3,6,12,9};
     if(!f || !c)return;
     int marker=isfinite(c[11]) && c[11]>=RELOQ_FA_TUNING_MARKER+1 &&
-               c[11]<=RELOQ_FA_TUNING_MARKER+RELOQ_FA_TUNE_U ? (int)c[11]-RELOQ_FA_TUNING_MARKER:0;
+               c[11]<=RELOQ_FA_TUNING_MARKER+RELOQ_FA_TUNE_R_VOICE_CODA ? (int)c[11]-RELOQ_FA_TUNING_MARKER:0;
     unsigned phone=(marker>=1 && (marker<=5 || marker==RELOQ_FA_TUNE_U) &&
                     c[11]==(float)(RELOQ_FA_TUNING_MARKER+marker)) ? (unsigned)marker:0;
+    if(marker==RELOQ_FA_TUNE_R_VOICE_BEFORE_I &&
+       c[11]==(float)(RELOQ_FA_TUNING_MARKER+marker))phone=RELOQ_FA_TUNE_R_BEFORE_I;
     double weight=c[12];
     if(!fa_tuning_on || rate<8000 || rate>48000 || !isfinite(weight) || weight<=0 || weight>1)phone=0;
     if(revision && (fa_tuning_on!=1 ||

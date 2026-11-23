@@ -34,6 +34,32 @@ void reloq_core_scale_output(int64_t *samples, long count, float gain)
     }
 }
 
+/* A peaking cut on the periodic source alone, before the independent
+ * aspiration and frication sources. With the cut disabled the samples are
+ * untouched; retain only two inputs so entry starts without a filter reset. */
+static void periodic_notch(struct reloq_core_periodic_notch *s,float *samples,size_t count,
+                           double frequency,double width,double gain,int rate)
+{
+    if(!count)return;
+    if(gain<0 && isfinite(gain) && isfinite(frequency) && isfinite(width) &&
+       frequency>=30 && frequency<rate*.475 && width>0) {
+        double q=fmax(.5,fmin(12.0,frequency/width));
+        double omega=6.2831853071795864769*frequency/rate;
+        double alpha=sin(omega)/(2*q),a=pow(10.0,gain/40.0),den=1+alpha/a;
+        double b0=(1+alpha*a)/den,b1=-2*cos(omega)/den,b2=(1-alpha*a)/den;
+        double a1=b1,a2=(1-alpha/a)/den;
+        for(size_t i=0;i<count;++i) {
+            double x=samples[i];
+            double y=b0*x+b1*s->x1+b2*s->x2-a1*s->y1-a2*s->y2;
+            s->x2=s->x1;s->x1=x;s->y2=s->y1;s->y1=y;
+            samples[i]=(float)y;
+        }
+    } else {
+        if(count>1)s->x2=samples[count-2];else s->x2=s->x1;
+        s->x1=samples[count-1];s->y1=s->x1;s->y2=s->x2;
+    }
+}
+
 void reloq_core_pcm16_from_i64(const int64_t *source, int16_t *destination,
                                 size_t count)
 {
@@ -2167,6 +2193,8 @@ static int voiced_frame_render_owned(
         /* Colour only the periodic excitation, before aspiration joins
          * it. The common tract and the complete AF branch stay intact. */
         reloq_rate_transfer_process_voice(&state->rate_transfer,part,length);
+        periodic_notch(&state->periodic_notch,part,length,frame->periodic_notch_hz,
+                       frame->periodic_notch_width,frame->periodic_notch_db,noise->sample_rate);
         struct reloq_core_noise_gate gate = {.closed_mask = part_mask};
         if(state->rate_transfer.presence_rate>0) {
             float breath[200]={0};

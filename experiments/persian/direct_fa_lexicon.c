@@ -26,6 +26,14 @@ struct fa_stress_class { uint16_t bank,offset; unsigned char flags; };
 #include "direct_fa_stress_classes.inc"
 #include "direct_fa_adjective_final_y.inc"
 #include "direct_fa_city_stems.inc"
+#include "direct_fa_classified_words.inc"
+#include "direct_fa_classified_plurals.inc"
+
+_Static_assert(RELOQ_FA_CLASSIFIED_FINGERPRINT == RELOQ_FA_CLASSIFIED_PLURAL_FINGERPRINT,
+               "plural admissions must use the same recovered stem table");
+_Static_assert(sizeof fa_classified_plural_mask ==
+               (sizeof fa_classified_entries / sizeof fa_classified_entries[0] + 7u) / 8u,
+               "plural admissions must cover the recovered stem table");
 
 _Static_assert(sizeof fa_stress_adjective_final_y ==
                (sizeof fa_stress_classes / sizeof fa_stress_classes[0] + 7u) / 8u,
@@ -2276,8 +2284,61 @@ static int direct_context_depth(const char *word,size_t bytes,int follows_word,
     return result;
 }
 
+/* Existing morphology sometimes calls the public lookup recursively. Do not
+ * introduce newly recovered stems inside those old derivations: an already
+ * covered word must retain its prior native analysis. */
+static _Thread_local unsigned fa_context_lookup_depth;
 int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
                                  char *output,size_t capacity)
 {
-    return direct_context_depth(word,bytes,follows_word,output,capacity,0);
+    unsigned outer=fa_context_lookup_depth++;
+    int status=direct_context_depth(word,bytes,follows_word,output,capacity,0);
+    --fa_context_lookup_depth;
+    if(outer || status || !word || !bytes || !output || !capacity)return status;
+    /* These are previously uncovered whole words. Keep every existing exact,
+     * contextual and productive native rule ahead of the recovered table. */
+    size_t lo=0,hi=sizeof fa_classified_entries / sizeof fa_classified_entries[0];
+    while(lo<hi) {
+        size_t m=lo+(hi-lo)/2;
+        const char *key=fa_classified_entries[m].word;
+        size_t n=strlen(key),common=bytes<n?bytes:n;
+        int order=memcmp(word,key,common);
+        if(!order)order=bytes<n?-1:bytes>n?1:0;
+        if(order<0)hi=m;
+        else if(order>0)lo=m+1;
+        else {
+            const char *tag=follows_word?fa_classified_entries[m].nonfinal:fa_classified_entries[m].final;
+            n=strlen(tag);
+            if(n>=capacity)return -2;
+            memcpy(output,tag,n+1);
+            apply_persian_stress(word,bytes,output,1);
+            apply_function_word_context(word,bytes,follows_word,output);
+            return 1;
+        }
+    }
+    /* The reference-admitted -یان plural keeps the recovered stem phones.
+     * Full native readings and full recovered words have already won above. */
+    size_t stem=0;
+    if(ends_with(word,bytes,"ان",&stem)) {
+        lo=0;hi=sizeof fa_classified_entries / sizeof fa_classified_entries[0];
+        while(lo<hi) {
+            size_t m=lo+(hi-lo)/2;
+            const char *key=fa_classified_entries[m].word;
+            size_t n=strlen(key),common=stem<n?stem:n;
+            int order=memcmp(word,key,common);
+            if(!order)order=stem<n?-1:stem>n?1:0;
+            if(order<0)hi=m;
+            else if(order>0)lo=m+1;
+            else {
+                if(!(fa_classified_plural_mask[m/8] & (1u << (m%8))))return 0;
+                const char *tag=fa_classified_entries[m].final;
+                n=strlen(tag);
+                if(n>=2048)return -2;
+                char base[2048];memcpy(base,tag,n+1);
+                stress_unaccent(base);
+                return append_phone_tags(base,"`[.1jan]",output,capacity);
+            }
+        }
+    }
+    return 0;
 }

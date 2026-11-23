@@ -21,7 +21,9 @@ enum reloq_fa_tuned_phone {
     RELOQ_FA_TUNE_E=3, RELOQ_FA_TUNE_O=4, RELOQ_FA_TUNE_R_BEFORE_I=5,
     RELOQ_FA_TUNE_R_BEFORE_BACK_A=6, RELOQ_FA_TUNE_BACK_A_AFTER_R=7,
     RELOQ_FA_TUNE_BEFORE_FINAL_H=8, RELOQ_FA_TUNE_U=9,
-    RELOQ_FA_TUNE_R=10
+    RELOQ_FA_TUNE_R=10,
+    /* Capture/replay metadata, not provider phone identities. */
+    RELOQ_FA_TUNE_R_VOICE_BEFORE_I=11, RELOQ_FA_TUNE_R_VOICE_CODA=12
 };
 
 /* Slots 11 and 12 are unused by the acoustic frame adapter. They carry

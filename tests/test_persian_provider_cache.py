@@ -21,11 +21,37 @@ class CacheReuseTests(unittest.TestCase):
         self.assertTrue(cache.eligible_dev39(cache.DEV39_KEY, good, good))
         owned = dict(cache.DEV42_HEADERS)
         self.assertTrue(cache.eligible_dev39(cache.DEV39_KEY, owned, owned))
+        newest = dict(cache.DEV43_HEADERS)
+        self.assertTrue(cache.eligible_dev39(cache.DEV39_KEY, newest, newest))
+        self.assertFalse(cache.eligible_dev39(cache.DEV39_KEY, newest, {**newest, 'include/reloq_core.h': 'wrong'}))
         self.assertFalse(cache.eligible_dev39(cache.DEV39_KEY, owned, {**owned, 'include/reloq_eci.h': 'wrong'}))
         self.assertFalse(cache.eligible_dev39(cache.DEV39_KEY, set(), good))
         self.assertFalse(cache.eligible_dev39(cache.DEV39_KEY, set(good) | {'include/other.h'}, good))
         self.assertFalse(cache.eligible_dev39(cache.DEV39_KEY, good, {**good, 'include/reloq_eci.h': 'wrong'}))
         self.assertFalse(cache.eligible_dev39(cache.DEV39_KEY + '-wrong', good, good))
+
+    def test_dev43_rebuilds_all_objects_using_changed_headers(self):
+        for complete in (False, True):
+            with self.subTest(complete=complete), tempfile.TemporaryDirectory() as tmp:
+                build=Path(tmp)/'windows-release';build.mkdir()
+                (build/'libreloq61.a').touch()
+                names=('src/reloq61_bridge', 'lang/fifi/delta_rules_c13_fifi')
+                for name in names if complete else names[:1]:
+                    obj=build/(name+'.o');obj.parent.mkdir(parents=True,exist_ok=True);obj.touch()
+                    obj.with_suffix('.d').write_text('obj: include/reloq_persian_tuning.h')
+                unaffected=build/'src/other.o';unaffected.touch()
+                def git(*args):
+                    if args[0]=='diff': return '\n'.join(cache.DEV43_HEADERS)
+                    return cache.DEV43_HEADERS[args[1].split(':',1)[1]]
+                with patch.object(cache,'BUILD',build),patch.object(cache,'git',side_effect=git), \
+                     patch.dict(os.environ,{'PERSIAN_PROVIDER_CACHE_KEY':cache.DEV39_KEY}), \
+                     contextlib.redirect_stdout(io.StringIO()):
+                    cache.main()
+                self.assertEqual(build.exists(),complete)
+                if complete:
+                    self.assertTrue(unaffected.exists())
+                    self.assertFalse((build/'libreloq61.a').exists())
+                    for name in names:self.assertFalse((build/(name+'.o')).exists())
 
     def test_dev200_checks_inputs_and_rebuilds_only_changed_rules(self):
         for changed, accepted in ((cache.DEV200_ALLOWED, True),

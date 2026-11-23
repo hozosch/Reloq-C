@@ -1,4 +1,5 @@
 #include "reloq_frame_adapter.h"
+#include "reloq_persian_tuning.h"
 
 #include <math.h>
 #include <string.h>
@@ -34,6 +35,15 @@ int reloq_frame_adapter_map(
     next.open_percent = controls[3];
     next.flutter = controls[5];
     next.diplophonia = controls[6];
+    /* These markers travel in previously unused tracks, including through
+     * native frame capture and replay. Never modify the noise controls. */
+    if ((controls[11] == RELOQ_FA_TUNING_MARKER+RELOQ_FA_TUNE_R_VOICE_BEFORE_I ||
+         controls[11] == RELOQ_FA_TUNING_MARKER+RELOQ_FA_TUNE_R_VOICE_CODA) &&
+        controls[12] > 0 && controls[12] <= 1 && controls[15] > 30) {
+        next.periodic_notch_hz=controls[15];
+        next.periodic_notch_width=fmaxf(300.0f,2.0f*controls[16]);
+        next.periodic_notch_db=-5.5f*controls[12];
+    }
     noise->bypass_level = controls[43];
     tract->highest_formant = fhighest;
 
