@@ -8,6 +8,7 @@ from _reloq_languages import ACOUSTIC_CLOCK_BITS,FINNISH,US_ENGLISH
 from _reloq_eci_direct import GENDER,NATIVE_SPEED,ORIGINAL_ACOUSTIC_CLOCK,SAMPLE_RATE
 from _reloq_persian_frames import FrameReplay,FrameStream
 import continuous_driver
+import nvda_driver_probe as driver
 
 
 def actual(engine,text):
@@ -83,10 +84,13 @@ def main():
                            (PINGLISH_PROBE, ('salaam donyaa', 'salaam NVDA donyaa'))):
         owner=make_language_engine(dll,dll,None,Path('/unavailable-espeak'),Path('/unavailable'),
                                    language=profile.id,native_sentences=True)
+        legacy=make_language_engine(dll,dll,None,Path('/unavailable-espeak'),Path('/unavailable'),
+                                    language=profile.id,native_sentences=False)
         try:
             bit=ACOUSTIC_CLOCK_BITS[profile.id];en_bit=ACOUSTIC_CLOCK_BITS[US_ENGLISH.id]
             for desired, mask in ((1,bit),(0,en_bit)):
                 owner.set_acoustic_clocks(mask)
+                legacy.set_acoustic_clocks(mask)
                 observed=[];activate=owner._activate
                 def watch(key):
                     engine=activate(key)
@@ -94,11 +98,27 @@ def main():
                         observed.append(engine._dll.eciGetParam(engine._handle,ORIGINAL_ACOUSTIC_CLOCK))
                     return engine
                 for text in texts:
+                    observed.clear()
+                    native_routes=[]
+                    native=driver.try_native_persian_sentence
+                    def watch_native(*args,**kwargs):
+                        result=native(*args,**kwargs)
+                        native_routes.append(result)
+                        return result
                     samples=bytearray()
-                    with patch.object(owner,'_activate',side_effect=watch):
+                    with patch.object(owner,'_activate',side_effect=watch), \
+                         patch.object(driver,'try_native_persian_sentence',new=watch_native):
                         assert owner.speak((text,),samples.extend,lambda _:None)
-                    assert samples and observed and all(value==desired for value in observed), (
-                        profile.locale,text,desired,observed)
+                    expected=bytearray()
+                    assert legacy.speak((text,),expected.extend,lambda _:None)
+                    assert samples and samples==expected,(profile.locale,text,'clock changed native audio')
+                    target=owner._activate(owner._key(profile.id,'1'))._voice
+                    owned=getattr(target._dll,'eciPersianPrepareUsPilot',None) is not None
+                    if not observed:
+                        assert owned and True in native_routes,(profile.locale,text,'no US clock source')
+                    else:
+                        assert observed and all(value==desired for value in observed), (
+                            profile.locale,text,desired,observed)
                 en=owner._activate(owner._key(US_ENGLISH.id,'1'))
                 assert en._dll.eciGetParam(en._handle,ORIGINAL_ACOUSTIC_CLOCK)==int(bool(mask&en_bit))
                 owner._activate(owner._home)
@@ -119,7 +139,7 @@ def main():
             assert owner.speak(('Independent English.',),pcm.extend,lambda _:None) and pcm
             assert en._dll.eciGetParam(en._handle,ORIGINAL_ACOUSTIC_CLOCK)==0
             count+=1
-        finally:owner.close()
+        finally:owner.close();legacy.close()
     print(f'Passed {count} Persian/Pinglish real-US-contour clock, restoration and isolation cases.')
 
 if __name__=='__main__':main()

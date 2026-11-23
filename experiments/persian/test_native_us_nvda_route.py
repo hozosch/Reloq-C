@@ -70,7 +70,19 @@ def main():
                 assert render(owners[0], parts) == render(owners[1], parts), parts
                 assert len(routes) == before, (parts, 'unsupported input used native short route')
                 checks += 1
-            # Stop both native handles and verify the next request has no
+            # The native short route owns its US pilot; it should not switch
+            # the driver's active language to English for a Persian request.
+            owner = owners[1]
+            owner.select_voice(driver.PERSIAN_PROBE.id, '1')
+            if getattr(owner._activate(owner._home)._voice._dll, 'eciPersianPrepareUsPilot', None):
+                activate = owner._activate
+                def assert_no_english(key):
+                    assert key[0] != driver.US_ENGLISH.id, 'driver acquired a separate US pilot'
+                    return activate(key)
+                with patch.object(owner, '_activate', side_effect=assert_no_english):
+                    assert render(owner, ('سلام دنیا',)) == render(owners[0], ('سلام دنیا',))
+                checks += 1
+            # Stop the owned transaction and verify the next request has no
             # stale stop, callback or queued samples.
             owner = owners[1]
             owner.select_voice(driver.PERSIAN_PROBE.id, '1')
@@ -80,7 +92,7 @@ def main():
                 deadline = time.monotonic() + 3
                 while time.monotonic() < deadline:
                     with owner._guard:
-                        active = getattr(owner, '_native_persian_pilot', None) is not None
+                        active = getattr(owner, '_native_persian_active', False)
                     if active:
                         entered.set(); owner.cancel(); return
                     time.sleep(.0002)

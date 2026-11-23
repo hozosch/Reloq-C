@@ -632,9 +632,18 @@ ECIAPI int ECICALL eciPersianTransferUsSamples(struct reloq_fa_frame *target,siz
 ECIAPI int ECICALL eciPersianReplayUsCapture(ECIHand voice,
     const struct reloq_fa_owned_capture *target,const struct reloq_fa_owned_capture *donor,
     const uint32_t *syllables_per_word,const struct reloq_fa_frame_mark *marks,size_t mark_count);
+/* Preload the experimental native Persian renderer's owned, silent US pilot.
+ * The configured Finnish-backed handle must be idle and empty. This is
+ * optional: passing a null pilot to the sentence APIs prepares it on demand.
+ * Returns 0 on success, -1 for invalid state, -2 for allocation or provider
+ * initialization failure, or -4 if cancelled while preparing. */
+ECIAPI int ECICALL eciPersianPrepareUsPilot(ECIHand voice);
 /* Experimental end-to-end C renderer for plain Persian or Pinglish text.
- * A configured Finnish-backed acoustic handle and a separate US pilot must be
- * idle, empty and set to the same sample rate. The renderer prepares the
+ * A configured Finnish-backed acoustic handle must be idle and empty. When
+ * pilot is non-null, the separate US pilot must also be idle, empty and set
+ * to the same sample rate. With a null pilot the voice owns and synchronizes
+ * a US pilot until deletion; eciStop(voice) also stops that owned pilot.
+ * The renderer prepares the
  * Persian plan, captures both contours, fits the US melody and replays it
  * through voice. Ordered source byte offsets and non-negative index values
  * are delivered through voice's callback. The pilot is silent. No NVDA or
@@ -644,8 +653,8 @@ ECIAPI int ECICALL eciPersianReplayUsCapture(ECIHand voice,
  * This initial route rejects mixed English prose and inline controls and does not
  * yet include all of the established NVDA sentence/transition rules or
  * incremental playback; it is not the registered Persian voice. Unknown
- * Persian words still use experimental orthographic inference. Stop on voice
- * is checked between stages; also stop pilot to interrupt a pilot capture.
+ * Persian words still use experimental orthographic inference. With an
+ * external pilot, also stop that pilot to interrupt a pilot capture.
  * Return 0 success, 1 unsupported input/contour, -1 invalid input,
  * -2 allocation failure, -3 synthesis failure, -4 cancellation. */
 ECIAPI int ECICALL eciPersianSpeakUsNativeUtf8(ECIHand voice,ECIHand pilot,

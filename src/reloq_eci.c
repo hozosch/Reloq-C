@@ -166,6 +166,9 @@ struct reloq_eci_dictionary {
 struct reloq_eci_engine {
     struct reloq_session *session;
     struct reloq_session *text_session;
+    /* An optional, private US contour worker for the experimental native
+     * Persian renderer. Ordinary language handles never allocate one. */
+    struct reloq_eci_engine *persian_us_pilot;
     void *rule_worker;
     char *dictionary_path;
     struct reloq_german_lexicon_file lexicon;
@@ -781,6 +784,9 @@ ECIHand ECICALL eciDelete(ECIHand handle)
     if (!e) return NULL;
     /* The owner must first join an active render and any concurrent Stop. */
     if (epoch_get(&e->busy)){(void)eci_refuse(e,0);return NULL;}
+    /* As with this handle, the owner has joined rendering and Stop before
+     * deletion. No callback or separately owned handle escapes here. */
+    if(e->persian_us_pilot)(void)eciDelete(e->persian_us_pilot);
     clear_queue(e);
     reloq_german_lexicon_file_clear(&e->lexicon);
     reloq_session_destroy(e->session);
@@ -1636,7 +1642,9 @@ int ECICALL eciStop(ECIHand handle)
     lock_session(&e->session_lock);
     reloq_session_cancel(e->session);
     reloq_session_cancel(e->text_session);
+    struct reloq_eci_engine *persian_us_pilot=e->persian_us_pilot;
     unlock_session(&e->session_lock);
+    if(persian_us_pilot)(void)eciStop(persian_us_pilot);
     return 1;
 }
 
@@ -2804,6 +2812,68 @@ static void reloq_fa_join_donor(reloq_fa_donor_thread thread)
 {(void)pthread_join(thread,NULL);}
 #endif
 
+/* The native sentence API may own its silent US pilot. Synchronize the
+ * effective voice and shared settings before each request, but keep the
+ * provider and its dictionaries across requests. This is opt-in and does
+ * not turn the experimental Finnish bridge into a registered Persian voice. */
+static int reloq_fa_prepare_us_pilot(struct reloq_eci_engine *e,unsigned before,
+    struct reloq_eci_engine **result)
+{
+    *result=NULL;
+    if(!e || epoch_get(&e->busy) || e->queued ||
+       (e->language_dialect&~0xff00)!=0x90000 ||
+       e->voice_mode!=RELOQ_ECI_VOICE_GENERIC)return -1;
+    lock_session(&e->session_lock);
+    struct reloq_eci_engine *pilot=e->persian_us_pilot;
+    unlock_session(&e->session_lock);
+    if(!pilot) {
+        struct reloq_eci_engine *candidate=eciNewEx(RELOQ_ECI_ENGLISH);
+        if(!candidate)return -2;
+        lock_session(&e->session_lock);
+        if(!e->persian_us_pilot)e->persian_us_pilot=candidate;
+        else pilot=e->persian_us_pilot;
+        unlock_session(&e->session_lock);
+        if(pilot)(void)eciDelete(candidate);else pilot=candidate;
+    }
+    if(epoch_get(&e->stop_epoch)!=before)return -4;
+    if(epoch_get(&pilot->busy) || pilot->queued)return -1;
+    if(eciSetParam(pilot,RELOQ_ECI_SAMPLE_RATE,e->sample_rate_code)<0 ||
+       eciSetParam(pilot,RELOQ_ECI_GENDER,e->gender)<0 ||
+       eciSetParam(pilot,RELOQ_ECI_HEAD_SIZE,e->head_size)<0)return -2;
+    struct queued_voice voice=capture_voice(e);
+    apply_voice(pilot,&voice);
+    pilot->real_world_units=e->real_world_units;
+    pilot->high_rate_profile=e->high_rate_profile;
+    pilot->dictionary_disabled=e->dictionary_disabled;
+    pilot->phrase_prediction=e->phrase_prediction;
+    pilot->original_questions=e->original_questions;
+    pilot->mellow_mode=e->mellow_mode;
+    pilot->original_acoustic_clock=e->original_acoustic_clock;
+    pilot->word_segmentation=e->word_segmentation;
+    pilot->camel_case=e->camel_case;
+    pilot->pause_mode=e->pause_mode;
+    pilot->eq_low=e->eq_low;pilot->eq_mid=e->eq_mid;pilot->eq_high=e->eq_high;
+    memcpy(pilot->eq_filters,e->eq_filters,sizeof pilot->eq_filters);
+    const char *a=e->dictionary_path,*b=pilot->dictionary_path;
+    if((a && !b) || (!a && b) || (a && b && strcmp(a,b))) {
+        if(!eciSetDictionaryPath(pilot,a))return -2;
+    }
+    if(!pilot->rule_worker) {
+        pilot->rule_worker=reloq61_worker_new(pilot->language);
+        if(!pilot->rule_worker)return -2;
+    }
+    if(epoch_get(&e->stop_epoch)!=before)return -4;
+    *result=pilot;
+    return 0;
+}
+
+int ECICALL eciPersianPrepareUsPilot(ECIHand handle)
+{
+    struct reloq_eci_engine *e=handle,*pilot=NULL;
+    if(!e)return -1;
+    return reloq_fa_prepare_us_pilot(e,epoch_get(&e->stop_epoch),&pilot);
+}
+
 static int reloq_fa_speak_us_native(ECIHand handle,ECIHand pilot_handle,
     const char *text,size_t bytes,int mode,const size_t *run_ends,
     const unsigned char *run_modes,size_t run_count,int use_runs,
@@ -2812,17 +2882,26 @@ static int reloq_fa_speak_us_native(ECIHand handle,ECIHand pilot_handle,
 {
     struct reloq_eci_engine *e=handle,*pilot=pilot_handle;
     if(error_offset)*error_offset=0;
-    if(!e || !pilot || e==pilot || !text || !error_offset || bytes==SIZE_MAX ||
+    if(!e || !text || !error_offset || bytes==SIZE_MAX ||
        (mode!=0 && mode!=1) || (index_count && (!source_offsets || !index_values)) ||
        index_count>4096 || !maximum_frames || maximum_frames>120000 ||
-       epoch_get(&e->busy) || epoch_get(&pilot->busy) || e->queued || pilot->queued ||
-       e->voice_mode!=RELOQ_ECI_VOICE_GENERIC || pilot->voice_mode!=RELOQ_ECI_VOICE_GENERIC ||
-       (e->language_dialect&~0xff00)!=0x90000 || pilot->language!=0x10000 ||
-       e->sample_rate_code!=pilot->sample_rate_code || memchr(text,0,bytes))return -1;
+       epoch_get(&e->busy) || e->queued ||
+       e->voice_mode!=RELOQ_ECI_VOICE_GENERIC ||
+       (e->language_dialect&~0xff00)!=0x90000 || memchr(text,0,bytes))return -1;
     for(size_t i=0;i<index_count;++i)
         if(source_offsets[i]>bytes || index_values[i]<0 ||
            (i && source_offsets[i]<source_offsets[i-1]))return -1;
-    unsigned before=epoch_get(&e->stop_epoch),pilot_before=epoch_get(&pilot->stop_epoch);
+    unsigned before=epoch_get(&e->stop_epoch);
+    if(!pilot) {
+        int prepared=reloq_fa_prepare_us_pilot(e,before,&pilot);
+        if(prepared)return prepared;
+        pilot_handle=pilot;
+    }
+    if(e==pilot || epoch_get(&pilot->busy) || pilot->queued ||
+       pilot->voice_mode!=RELOQ_ECI_VOICE_GENERIC || pilot->language!=0x10000 ||
+       e->sample_rate_code!=pilot->sample_rate_code)return -1;
+    if(epoch_get(&e->stop_epoch)!=before)return -4;
+    unsigned pilot_before=epoch_get(&pilot->stop_epoch);
     /* Like eciAddTextUtf8's context bit, run bit 4 says that a scalar
      * belongs to a larger host utterance. Explicit character mode and emoji
      * remain named. Strip the bit before passing modes to the analyzer. */

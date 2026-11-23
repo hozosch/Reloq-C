@@ -26,6 +26,13 @@ DEV39_HEADERS = {
     'include/reloq_eci.h': 'cbbec98bb7384128054e5da30ff685c704ccc908',
     'include/reloq_unicode.h': '32f322807476abad794a618fc2cd74351d233fc2',
 }
+# Only an API declaration and its documentation were added after dev40.
+# The cache reuse below still verifies that no provider object includes
+# either changed public header before keeping any compiled object.
+DEV42_HEADERS = {
+    **DEV39_HEADERS,
+    'include/reloq_eci.h': 'd2ac091a8519186057561f70d282fcfc5822e128',
+}
 DEV200_BASE = '1a891a6586e5e5f3e500435dbe7ffa5a5122cbf9'
 DEV200_KEY = ('persian-windows-provider-gcc14-v2-'
               'b79a57ae4c2ae97eeb8bf35dc23cb5bba40ffc28200ae396907ea7bf5fb53d39')
@@ -222,7 +229,8 @@ def eligible_recent(key, changed, blobs):
 
 
 def eligible_dev39(key, changed, blobs):
-    return key == DEV39_KEY and set(changed) == set(DEV39_HEADERS) and blobs == DEV39_HEADERS
+    return (key == DEV39_KEY and set(changed) == set(DEV39_HEADERS) and
+            blobs in (DEV39_HEADERS, DEV42_HEADERS))
 
 
 def reuse_dev156_generated(expected=frozenset({'delta_rules_c02_fifi.c'}), added=frozenset(),
@@ -269,7 +277,7 @@ def main():
             changed = set(git('diff', '--name-only', DEV39_BASE, 'HEAD', '--', *INPUTS).splitlines())
             blobs = {path: git('rev-parse', 'HEAD:' + path) for path in DEV39_HEADERS}
             if not eligible_dev39(key, changed, blobs):
-                raise ValueError('provider inputs differ from the verified Greek API addition')
+                raise ValueError('provider inputs differ from the verified additive API headers')
             if not BUILD.is_dir() or not (BUILD / 'libreloq61.a').is_file():
                 raise ValueError('cached provider archive is missing')
             for dep in BUILD.rglob('*.d'):
@@ -279,7 +287,7 @@ def main():
             for path in BUILD.rglob('*'):
                 if path.is_file():
                     os.utime(path, None)
-            print('Reused provider cache after checking the additive Greek API headers.')
+            print('Reused provider cache after checking the additive public API headers.')
             return
         if key == DEV200_KEY:
             changed = set(git('diff', '--name-only', DEV200_BASE, 'HEAD', '--', *INPUTS).splitlines())

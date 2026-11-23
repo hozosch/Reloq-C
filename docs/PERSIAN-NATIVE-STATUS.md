@@ -77,6 +77,17 @@ native complete Pinglish analysis also accepts bracket boundaries directly.
 These paths still use the accepted Finnish-based acoustic bridge and the US
 prosody pilot; they do not constitute an independently registered voice.
 
+The experimental C sentence handle can now own, preload and reuse its US
+pilot. Before each utterance it applies the Persian voice's current acoustic
+clock, rate, anatomy and other shared controls; stopping the Persian handle
+also stops the owned pilot. The NVDA short, ordinary-sentence route selects
+this C-owned pilot when available and keeps the previous explicit pilot as a
+compatibility fallback. Tests compare the output and source indexes with the
+existing route at all seven sample rates, across both genders and clocks,
+including cancellation and subsequent speech. This removes one driver-owned
+handle from that route; it does not yet move mixed-language planning,
+long-text streaming or voice registration into the shared core.
+
 The C-only US-contour transaction now uses the Persian voice's effective
 acoustic clock for its pilot, restoring the caller's independently selected
 English clock afterwards, including on cancellation. The current NVDA mixed

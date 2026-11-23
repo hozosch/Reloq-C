@@ -329,16 +329,13 @@ def try_native_persian_sentence(owner, parts, on_pcm, on_index, *, fa_ids):
     speak = getattr(target._dll, 'eciPersianSpeakUsNativeUtf8', None)
     if speak is None:
         return None
-    pilot_key = owner._key(US_ENGLISH.id, key[1])
-    pilot = owner._activate(pilot_key)
-    owner._activate(key)
+    pilot = None
     with owner._guard:
         if owner._cancelled.is_set():
             return False
         engine._cancelled.clear()
         target._cancelled.clear()
-        pilot._cancelled.clear()
-        owner._native_persian_pilot = pilot
+        owner._native_persian_active = True
     size, integer = ctypes.c_size_t, ctypes.c_int
     speak.argtypes = (ctypes.c_void_p, ctypes.c_void_p, ctypes.c_char_p, size, integer,
                       ctypes.POINTER(size), ctypes.POINTER(integer), size, size, ctypes.POINTER(size))
@@ -355,10 +352,28 @@ def try_native_persian_sentence(owner, parts, on_pcm, on_index, *, fa_ids):
         nonlocal emitted
         emitted = True
         on_index(value)
-    target._callback_error = None
-    target._on_pcm, target._on_index = pcm, index
     try:
-        status = speak(target._handle, pilot._handle, bytes(text), len(text),
+        prepare = getattr(target._dll, 'eciPersianPrepareUsPilot', None)
+        owned = False
+        if prepare is not None:
+            prepare.argtypes, prepare.restype = (ctypes.c_void_p,), integer
+            prepared = prepare(target._handle)
+            if prepared == -4 or owner._cancelled.is_set():
+                return False
+            owned = prepared == 0
+        if not owned:
+            # Older cores keep the previously established explicit pilot.
+            pilot = owner._activate(owner._key(US_ENGLISH.id, key[1]))
+            owner._activate(key)
+            with owner._guard:
+                if owner._cancelled.is_set():
+                    return False
+                pilot._cancelled.clear()
+                owner._native_persian_pilot = pilot
+        target._callback_error = None
+        target._on_pcm, target._on_index = pcm, index
+        status = speak(target._handle, pilot._handle if pilot is not None else None,
+                       bytes(text), len(text),
                        int(key[0] == PINGLISH_PROBE.id), positions, indexes,
                        len(offsets), 30000, ctypes.byref(error))
         if target._callback_error is not None:
@@ -374,10 +389,30 @@ def try_native_persian_sentence(owner, parts, on_pcm, on_index, *, fa_ids):
         target._on_pcm = target._on_index = None
         with owner._guard:
             owner._native_persian_pilot = None
+            owner._native_persian_active = False
 
 
 class PersianProbeLanguageEngine(LanguageEngine):
     """Use English for explicit and clear Latin-script boundaries."""
+
+    def _preload_native_persian_pilot(self, language):
+        if not getattr(self, '_native_sentences', False):
+            return
+        home = self._home
+        try:
+            engine = self._activate(self._key(language, home[1]))
+            if not isinstance(engine, ScopedDirectPersianEngine):
+                return
+            target = engine._voice
+            prepare = getattr(target._dll, 'eciPersianPrepareUsPilot', None)
+            if prepare is not None:
+                prepare.argtypes, prepare.restype = (ctypes.c_void_p,), ctypes.c_int
+                prepare(target._handle)
+        except (AttributeError, OSError, RuntimeError, UnicodeError, ValueError):
+            # The legacy driver route remains usable with an older core.
+            pass
+        finally:
+            self._activate(home)
 
     def _acoustic_clock_for(self, language):
         shared = getattr(self, '_persian_request_clock', None)
@@ -421,6 +456,7 @@ class PersianProbeLanguageEngine(LanguageEngine):
         if (persian_id not in (PERSIAN_PROBE.id, PINGLISH_PROBE.id) or
                 not isinstance(self._engines.get(persian_id), ScopedDirectPersianEngine)):
             return
+        self._preload_native_persian_pilot(persian_id)
         if (getattr(self, '_persian_contour_worker', None) is None and
                 (os.cpu_count() or 1) > 1):
             if __package__:
@@ -966,4 +1002,8 @@ def make_language_engine(library, native_library, worker, espeak_library, data_p
                                         languages=PROFILES if languages is None else languages,
                                         engine_factory=factory)
     engine._native_sentences = bool(native_sentences)
+    if engine._native_sentences:
+        persian_id = PERSIAN_PROBE.id if engine._home[0] == US_ENGLISH.id else engine._home[0]
+        if persian_id in (PERSIAN_PROBE.id, PINGLISH_PROBE.id) and persian_id in engine._engines:
+            engine._preload_native_persian_pilot(persian_id)
     return engine

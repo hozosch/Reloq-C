@@ -19,6 +19,9 @@ class CacheReuseTests(unittest.TestCase):
     def test_dev39_accepts_only_the_verified_additive_headers(self):
         good = dict(cache.DEV39_HEADERS)
         self.assertTrue(cache.eligible_dev39(cache.DEV39_KEY, good, good))
+        owned = dict(cache.DEV42_HEADERS)
+        self.assertTrue(cache.eligible_dev39(cache.DEV39_KEY, owned, owned))
+        self.assertFalse(cache.eligible_dev39(cache.DEV39_KEY, owned, {**owned, 'include/reloq_eci.h': 'wrong'}))
         self.assertFalse(cache.eligible_dev39(cache.DEV39_KEY, set(), good))
         self.assertFalse(cache.eligible_dev39(cache.DEV39_KEY, set(good) | {'include/other.h'}, good))
         self.assertFalse(cache.eligible_dev39(cache.DEV39_KEY, good, {**good, 'include/reloq_eci.h': 'wrong'}))
