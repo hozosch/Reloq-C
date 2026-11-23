@@ -15,7 +15,9 @@ To recover the earlier reference-backed readings, the shared C analyzer now
 also includes previously uncovered spellings from the existing Lilak word
 inventory, provided their old eSpeak readings agree in four contexts and are
 accepted by the native phone parser. Existing native entries and productive
-rules have priority. This is generated offline; the runtime needs no eSpeak
+rules have priority. Half-space compounds remain on their existing native
+morphology and fallback paths so the recovered whole-word table cannot bypass
+verbal prefixes or compound rules. This is generated offline; the runtime needs no eSpeak
 library. Agreement with the earlier reference is not proof that every
 unvowelled Persian spelling has only one correct pronunciation.
 Pinglish retains the explicit a/aa distinction. In the complete native

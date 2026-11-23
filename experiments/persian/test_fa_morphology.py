@@ -92,7 +92,8 @@ def main():
     assert project('دونقطه') == '`[.0do.0noR.1te]'
     assert project('دوست') == '`[.1dust]'
     assert project('دولت') == '`[.0do.1lAt]'
-    project('هشتید', covered=False)  # A verb ending, not هشت + ید.
+    # The recovered verb is a whole-word reading, not هشت + ید.
+    assert project('هشتید')=='`[.1hAS.0tid]'
     # Native composition covers classified -ختیار/-ختیاری derivatives and
     # -زاده surnames using their own recognized stems, without asking eSpeak.
     assert project('بختیار')=="`[.0bAG.0ti.1jar]"

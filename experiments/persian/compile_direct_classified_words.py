@@ -38,6 +38,12 @@ def generate(api, voice, frontend):
     candidates = inventory()
     rows, outcomes, parser_cache = [], Counter(), {}
     for index, word in enumerate(candidates, 1):
+        # Productive compounds and verbal prefixes are governed by the
+        # existing half-space rules, including their contextual stress.
+        # Do not replace a whole joined form with a reference guess.
+        if '\u200c' in word:
+            outcomes['joined_deferred'] += 1
+            continue
         if frontend.analyze_direct(word) is not None:
             outcomes['already_native'] += 1
             continue

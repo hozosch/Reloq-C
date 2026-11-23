@@ -40,6 +40,11 @@ DEV43_HEADERS = {
     'include/reloq_core.h': '64bbbc10eb8b1eae0c3d424f1eeefa8827b0cc6e',
     'include/reloq_persian_tuning.h': '7dd52730ef351a27ef39305ad842d1e403546d2b',
 }
+DEV42_PROVIDER_BASE = '470f405da953b6e7832aeaff60e18a798b09f0d6'
+DEV42_PROVIDER_KEY = ('persian-windows-provider-gcc14-v2-'
+                      'abbc9e9e36aaac8f19a304e92ed6e31915db2a42b4ff8778bf55e943ee72a828')
+DEV42_PROVIDER_HEADERS = {path: DEV43_HEADERS[path] for path in
+                          ('include/reloq_core.h', 'include/reloq_persian_tuning.h')}
 DEV200_BASE = '1a891a6586e5e5f3e500435dbe7ffa5a5122cbf9'
 DEV200_KEY = ('persian-windows-provider-gcc14-v2-'
               'b79a57ae4c2ae97eeb8bf35dc23cb5bba40ffc28200ae396907ea7bf5fb53d39')
@@ -241,6 +246,34 @@ def eligible_dev39(key, changed, blobs):
              (set(changed) == set(DEV43_HEADERS) and blobs == DEV43_HEADERS)))
 
 
+def eligible_dev42_provider(key, changed, blobs):
+    return (key == DEV42_PROVIDER_KEY and set(changed) == set(DEV42_PROVIDER_HEADERS)
+            and blobs == DEV42_PROVIDER_HEADERS)
+
+
+def rebuild_header_dependencies(headers):
+    if not BUILD.is_dir() or not (BUILD / 'libreloq61.a').is_file():
+        raise ValueError('cached provider archive is missing')
+    rebuild = []
+    for dep in BUILD.rglob('*.d'):
+        value = dep.read_text(encoding='utf8', errors='replace')
+        if any(Path(path).name in value for path in headers):
+            obj = dep.with_suffix('.o')
+            if not obj.is_file():
+                raise ValueError('provider dependency has no matching object')
+            rebuild.append(obj)
+    required = {BUILD / 'src/reloq61_bridge.o', BUILD / 'lang/fifi/delta_rules_c13_fifi.o'}
+    if not required <= set(rebuild):
+        raise ValueError('provider tuning dependency list is incomplete')
+    for path in BUILD.rglob('*'):
+        if path.is_file():
+            os.utime(path, None)
+    for obj in rebuild:
+        obj.unlink()
+    (BUILD / 'libreloq61.a').unlink()
+    print(f'Reused provider cache; rebuilding {len(rebuild)} header-dependent objects.')
+
+
 def reuse_dev156_generated(expected=frozenset({'delta_rules_c02_fifi.c'}), added=frozenset(),
                            original_count=21):
     """Regenerate and byte-check every source, rebuilding only expected units."""
@@ -281,6 +314,13 @@ def reuse_dev156_generated(expected=frozenset({'delta_rules_c02_fifi.c'}), added
 def main():
     try:
         key = os.environ.get('PERSIAN_PROVIDER_CACHE_KEY', '')
+        if key == DEV42_PROVIDER_KEY:
+            changed = set(git('diff', '--name-only', DEV42_PROVIDER_BASE, 'HEAD', '--', *INPUTS).splitlines())
+            blobs = {path: git('rev-parse', 'HEAD:' + path) for path in DEV42_PROVIDER_HEADERS}
+            if not eligible_dev42_provider(key, changed, blobs):
+                raise ValueError('provider inputs differ from the checked dev42 headers')
+            rebuild_header_dependencies(DEV42_PROVIDER_HEADERS)
+            return
         if key == DEV39_KEY:
             changed = set(git('diff', '--name-only', DEV39_BASE, 'HEAD', '--', *INPUTS).splitlines())
             checked = DEV43_HEADERS if changed == set(DEV43_HEADERS) else DEV39_HEADERS

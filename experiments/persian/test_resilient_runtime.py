@@ -100,8 +100,9 @@ def main():
             assert analysis and analysis.parts[0].text == expected, (word, analysis)
             assert render((word,))[0], word
         # A two-letter remainder is not sufficient evidence for -وند:
-        # this independently named river is not derived from ار + وند.
-        assert frontend.analyze_direct('اروند') is None
+        # this river must use its recovered whole-word reading rather than
+        # inventing a compound from ار + وند.
+        assert frontend.analyze_direct('اروند').parts[0].text == '`[.0Ar.1vAnd]'
         assert frontend._worker is None
         # NVDA's CLDR expands ⏺ to this phrase even at symbol level NONE.
         # Preserve the explicit ezafe and finish the utterance across indexes.

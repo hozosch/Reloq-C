@@ -53,6 +53,33 @@ class CacheReuseTests(unittest.TestCase):
                     self.assertFalse((build/'libreloq61.a').exists())
                     for name in names:self.assertFalse((build/(name+'.o')).exists())
 
+    def test_dev42_provider_cache_rebuilds_changed_header_dependants(self):
+        good = dict(cache.DEV42_PROVIDER_HEADERS)
+        self.assertTrue(cache.eligible_dev42_provider(cache.DEV42_PROVIDER_KEY, good, good))
+        self.assertFalse(cache.eligible_dev42_provider(cache.DEV42_PROVIDER_KEY, good | {'extra': 'x'}, good))
+        self.assertFalse(cache.eligible_dev42_provider(cache.DEV42_PROVIDER_KEY, good, {**good, 'include/reloq_core.h': 'bad'}))
+        for complete in (False, True):
+            with self.subTest(complete=complete), tempfile.TemporaryDirectory() as tmp:
+                build=Path(tmp)/'windows-release';build.mkdir()
+                (build/'libreloq61.a').touch()
+                names=('src/reloq61_bridge', 'lang/fifi/delta_rules_c13_fifi')
+                for name in names if complete else names[:1]:
+                    obj=build/(name+'.o');obj.parent.mkdir(parents=True,exist_ok=True);obj.touch()
+                    obj.with_suffix('.d').write_text('obj: include/reloq_persian_tuning.h')
+                other=build/'src/other.o';other.touch()
+                def git(*args):
+                    if args[0]=='diff': return '\n'.join(good)
+                    return good[args[1].split(':',1)[1]]
+                with patch.object(cache,'BUILD',build),patch.object(cache,'git',side_effect=git), \
+                     patch.dict(os.environ,{'PERSIAN_PROVIDER_CACHE_KEY':cache.DEV42_PROVIDER_KEY}), \
+                     contextlib.redirect_stdout(io.StringIO()):
+                    cache.main()
+                self.assertEqual(build.exists(),complete)
+                if complete:
+                    self.assertTrue(other.exists())
+                    self.assertFalse((build/'libreloq61.a').exists())
+                    for name in names:self.assertFalse((build/(name+'.o')).exists())
+
     def test_dev200_checks_inputs_and_rebuilds_only_changed_rules(self):
         for changed, accepted in ((cache.DEV200_ALLOWED, True),
                                   (cache.DEV200_ALLOWED | {'include/other.h'}, False),

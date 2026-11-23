@@ -42,6 +42,11 @@ def main():
             for phrase in (f'{word} آمد.', f'من {word} آمد.'):
                 result = current.analyze_direct(phrase)
                 assert result and phones(reference) in phones(result.parts[0].text), (word, phrase, result)
+        # A whole-word recovery must never swallow the established
+        # half-space/prefix fallback route.
+        for word in ('نمی‌آراست',):
+            assert old.analyze_direct(word) is current.analyze_direct(word) is None
+            assert old.project_fallback_word(word) == current.project_fallback_word(word), word
         checked = 0
         for word in inventory():
             previous = old.analyze_direct(word)
