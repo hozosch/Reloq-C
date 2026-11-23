@@ -2,7 +2,7 @@ name: Persian and Pinglish NVDA test package
 on:
   workflow_dispatch:
   push:
-    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116, codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117, codex/persian-us-contour-20261117, codex/persian-adjectives-20261117, claude/persian-sound-variant]
+    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116, codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117, codex/persian-us-contour-20261117, codex/persian-adjectives-20261117]
     paths:
       - .github/workflows/persian-windows-acoustic-probe.yml
       - experiments/persian/build_experimental_nvda.py
@@ -336,7 +336,7 @@ jobs:
         run: |
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
           dll=$(find candidate -name eci.dll -print -quit)
-          if [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev172; elif [ "$GITHUB_REF_NAME" = "claude/persian-sound-variant" ]; then version=1.5.0-dev200; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; else version=1.5.0-dev142; fi
+          if [ "$GITHUB_REF_NAME" = "codex/persian-adjectives-20261117" ]; then version=1.5.0-dev172; elif [ "$GITHUB_REF_NAME" = "codex/persian-us-contour-20261117" ]; then version=1.5.0-dev143; else version=1.5.0-dev142; fi
           python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version "$version" --output "dist/reloq-c-persian-pinglish-$version.nvda-addon"
       - name: Test the candidate in real NVDA
         shell: pwsh
@@ -346,15 +346,6 @@ jobs:
           $addon = (Get-ChildItem dist -Filter *.nvda-addon | Select-Object -First 1).FullName
           python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon "$addon" --plugin experiments/persian/test_nvda_real_plugin.py --work persian-nvda-results
           if ($LASTEXITCODE -ne 0) { throw 'Actual NVDA Persian profile test failed' }
-      - name: Build the same add-on with the candidate Persian sound
-        if: github.ref_name == 'claude/persian-sound-variant'
-        shell: bash
-        run: |
-          # Identical to the tested package except for the bundled variant
-          # marker. Built after the NVDA test, which uses the first add-on.
-          export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
-          dll=$(find candidate -name eci.dll -print -quit)
-          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version 1.5.0-dev201 --sound-variant 1 --output dist/reloq-c-persian-pinglish-1.5.0-dev201.nvda-addon
       - uses: actions/upload-artifact@v7
         with:
           name: persian-pinglish-nvda-test

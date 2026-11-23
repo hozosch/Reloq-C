@@ -201,8 +201,8 @@ R followed by H. Finally, a uvular directly before another consonant, as in
 `مغرور`, is a stop without the added post-release frication.
 
 The NVDA test package applies a variant when it contains a one-line file
-`persian_sound_variant.txt` next to the driver. The package workflow builds
-the usual add-on without that file and, for the listening branch, a second
+`persian_sound_variant.txt` next to the driver. The NVDA direct-test workflow
+builds the usual add-on without that file and, for the listening branch, a second
 add-on with `1`; only the first is run through the NVDA test.
 `experiments/persian/test_persian_sound_variant.py` checks the switch, that
 switching back restores the previous audio exactly, and the tap's voice dip.
