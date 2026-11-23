@@ -4,6 +4,10 @@
 #include <math.h>
 #include <string.h>
 
+/* Fractional marker carries the voice-only U-to-final-R transition weight.
+ * The original U project still receives its own weight in track 12. */
+#define FA_U_FINAL_R_MARKER (RELOQ_FA_TUNING_MARKER+13.0f)
+
 /* The reference numeric frame has two unused slots between F1 and F2.
  * F1/B1 are 9/10, F2/B2 start at 13/14, and F8/B8 end at 25/26. */
 static const unsigned char oral_center[RELOQ_CORE_ORAL_FORMANTS] = {
@@ -37,12 +41,17 @@ int reloq_frame_adapter_map(
     next.diplophonia = controls[6];
     /* These markers travel in previously unused tracks, including through
      * native frame capture and replay. Never modify the noise controls. */
+    float notch_weight=0.0f;
     if ((controls[11] == RELOQ_FA_TUNING_MARKER+RELOQ_FA_TUNE_R_VOICE_BEFORE_I ||
          controls[11] == RELOQ_FA_TUNING_MARKER+RELOQ_FA_TUNE_R_VOICE_CODA) &&
-        controls[12] > 0 && controls[12] <= 1 && controls[15] > 30) {
+        controls[12] > 0 && controls[12] <= 1)
+        notch_weight=controls[12];
+    else if (controls[11]>=FA_U_FINAL_R_MARKER && controls[11]<FA_U_FINAL_R_MARKER+1.0f)
+        notch_weight=controls[11]-FA_U_FINAL_R_MARKER;
+    if (notch_weight>0 && controls[15] > 30) {
         next.periodic_notch_hz=controls[15];
-        next.periodic_notch_width=fmaxf(300.0f,2.0f*controls[16]);
-        next.periodic_notch_db=-5.5f*controls[12];
+        next.periodic_notch_width=fmaxf(650.0f,2.0f*controls[16]);
+        next.periodic_notch_db=-9.0f*notch_weight;
     }
     noise->bypass_level = controls[43];
     tract->highest_formant = fhighest;

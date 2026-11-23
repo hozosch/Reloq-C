@@ -20,6 +20,11 @@ morphology and fallback paths so the recovered whole-word table cannot bypass
 verbal prefixes or compound rules. This is generated offline; the runtime needs no eSpeak
 library. Agreement with the earlier reference is not proof that every
 unvowelled Persian spelling has only one correct pronunciation.
+Recovered stems now also participate in the native productive plural and
+comparative suffix rules. A written half-space supplies the boundary; when
+the half-space is omitted, a compact offline-checked admission mask avoids
+splitting unrelated spellings. Both variants retain the stem's known vowels,
+and previously covered whole words still take precedence.
 Pinglish retains the explicit a/aa distinction. In the complete native
 analyzer, runs of three or more identical vowels are treated like a doubled
 vowel; this permits informal elongated spellings while leaving strict English

@@ -1410,6 +1410,10 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
                     double centre=(double)tick+duration/2.0;
                     double gain=fmin(1.0,fmin(fmax(0.0,(centre-p->from/10000.0)/8.0),
                                               fmax(0.0,(end/10000.0-centre)/8.0)));
+                    /* Continue the preceding U-to-R source fade across the
+                     * phone boundary instead of briefly restoring the peak. */
+                    if(previous==RELOQ_FA_TUNE_U)
+                        gain=fmin(1.0,fmax(0.0,(end/10000.0-centre)/8.0));
                     if(gain>0) {
                         controls[11]=(float)(RELOQ_FA_TUNING_MARKER+RELOQ_FA_TUNE_R_VOICE_CODA);
                         controls[12]=(float)gain;
@@ -1483,6 +1487,13 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
         double weight=fmin(1.0,fmax(0.0,progress));
         weight=weight*weight*(3.0-2.0*weight);
         weight*=fmin(1.0,fmax(0.0,(5.0-controls[36])/5.0));
+        if(tuning==1) {
+            /* Tracks 11/12 are metadata. Keep the old U project weight in
+             * track 12 and encode this separate, smooth voice-only fade in
+             * the fractional part of a private marker. No noise is changed. */
+            if(controls[11]!=(float)(RELOQ_FA_TUNING_MARKER+RELOQ_FA_TUNE_U))controls[12]=0;
+            controls[11]=(float)(RELOQ_FA_TUNING_MARKER+13.0+fmin(0.998,weight));
+        }
         r_voice_tilt=(float)floor(9.0*weight+0.5);
         r_voice_reduction=(float)floor(5.0*weight+0.5);
     }

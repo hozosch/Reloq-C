@@ -16,10 +16,10 @@ from test_persian_r_after_i_contexts import capture
 from test_us_articulation import voice
 
 
-def components(path, tag, phone, gender, clock):
+def components(path, tag, phone, gender, clock, sample_rate=3):
     engine, scope = voice(path.resolve(), 0x90000)
     try:
-        for key, value in ((SAMPLE_RATE, 3), (GENDER, gender), (NATIVE_SPEED, 65),
+        for key, value in ((SAMPLE_RATE, sample_rate), (GENDER, gender), (NATIVE_SPEED, 65),
                            (ORIGINAL_ACOUSTIC_CLOCK, clock)):
             engine.set_parameter(key, value)
         captured = capture(engine, scope, tag)
