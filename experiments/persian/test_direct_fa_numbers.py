@@ -73,7 +73,7 @@ def main():
         accents = re.findall(r'\.([012])', tagged)
         assert status == 0 and accents and accents[-1] == '1', (text, tagged)
     examples = {
-        '1001': "`[.2jek] `[.0he.2za.0ro] `[.1jek]",
+        '1001': "`[.0he.2za.0ro] `[.1jek]",
         '003': "`[.0sefr] `[.0sefr] `[.1se]",
         '۳٫۱۴': '`[.2se] `[.0noR.2te] `[.0jek] `[.0Ca.1har]',
         '−۳': "`[.0mAn.1fi] `[.1se]",

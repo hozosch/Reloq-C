@@ -334,12 +334,15 @@ static int append_heh_ezafe(const char *base,char *output,size_t capacity)
  * consonant analysis; explicit marks, long-vowel carriers and word-final
  * heh take precedence. A permissible final consonant cluster is retained.
  * This routine is shared by standalone hosts and does not invoke eSpeak. */
+static int guessed_linked_word(const char *word,size_t bytes,char *output,size_t capacity);
 int reloq_fa_direct_guess_word(const char *word,size_t bytes,char *output,size_t capacity)
 {
     struct unit {char consonant,vowel;unsigned char sukun,geminate,explicit_vowel;} units[512];
     size_t at=0,count=0;
     if(!word || !bytes || !output || !capacity || memchr(word,0,bytes))return -1;
     int joined=guessed_joined_word(word,bytes,output,capacity);
+    if(joined)return joined;
+    joined=guessed_linked_word(word,bytes,output,capacity);
     if(joined)return joined;
     char ezafe_stem[1025],ezafe_base[2048];
     size_t ezafe_bytes=heh_ezafe_stem(word,bytes,ezafe_stem,sizeof ezafe_stem);
@@ -353,6 +356,18 @@ int reloq_fa_direct_guess_word(const char *word,size_t bytes,char *output,size_t
         if(reloq_utf8_next((const unsigned char *)word,bytes,&next,&cp)!=1)return -1;
         at=next;
         if(cp==0x200c || cp==0x200d || cp==0x0640)continue;
+        if(cp==0x064b) {
+            /* Final tanwin, written before or after its alef: /an/. */
+            size_t look=at;uint32_t following=0;
+            if(look<bytes && (reloq_utf8_next((const unsigned char *)word,bytes,&look,&following)!=1 ||
+                              following!=0x0627 || look!=bytes))return 0;
+            if(!count || !units[count-1].consonant || units[count-1].sukun ||
+               (units[count-1].vowel && units[count-1].vowel!='a') ||
+               count==sizeof units/sizeof units[0])return 0;
+            units[count-1].vowel='A';units[count-1].explicit_vowel=1;
+            units[count++]=(struct unit){'n',0,0,0,0};
+            break;
+        }
         if(cp==0x064e || cp==0x064f || cp==0x0650 || cp==0x0651 || cp==0x0652) {
             if(!count)return 0;
             struct unit *u=&units[count-1];
@@ -419,7 +434,10 @@ int reloq_fa_direct_guess_word(const char *word,size_t bytes,char *output,size_t
         if(u.vowel && nucleus) {
             output[used++]='.';output[used++]=nucleus+1==nuclei?'1':'0';
         }
-        if(u.consonant){output[used++]=u.consonant;if(u.geminate)output[used++]=u.consonant;}
+        /* Like the lexicon, a guessed word does not begin with an explicit
+         * glottal stop for initial ع or hamza before its vowel. */
+        if(u.consonant && !(i==0 && u.consonant=='w' && u.vowel && !u.geminate))
+            {output[used++]=u.consonant;if(u.geminate)output[used++]=u.consonant;}
         if(u.vowel){output[used++]=u.vowel;++nucleus;}
     }
     /* The acoustic bridge needs its silent carrier after a final /h/; the
@@ -2391,9 +2409,301 @@ static int nominal_suffix_word(const char *word,size_t bytes,char *output,size_t
     return 0;
 }
 
+/* ---- Reviewed readings and linked compounds ------------------------------
+ * The generated tables keep some readings that a Persian speaker would not
+ * use, mostly Arabic-article compounds and a few frequent words that fell
+ * out of the generator. Readings listed here were checked by hand and take
+ * precedence over every generated table. Keep the list short: productive
+ * patterns belong in the rules below, not in this table. */
+static const struct fa_direct_entry fa_reviewed_entries[]={
+    {"نخست", "`[.0no.1Gost]"}, {"نخست‌وزیر", "`[.0no.0Gost.0vA.1zir]"},
+    {"جست‌وجو", "`[.0Jos.0to.1Ju]"}, {"جست‌وجوی", "`[.0Jos.0to.1Ju.0je]"},
+    {"جست‌و‌جو", "`[.0Jos.0to.1Ju]"}, {"جست‌و‌جوی", "`[.0Jos.0to.1Ju.0je]"},
+    {"شست‌وشو", "`[.0Sos.0to.1Su]"}, {"شست‌وشوی", "`[.0Sos.0to.1Su.0je]"},
+    {"شست‌و‌شو", "`[.0Sos.0to.1Su]"}, {"شست‌و‌شوی", "`[.0Sos.0to.1Su.0je]"},
+    {"فوق‌العاده", "`[.0fo.0Ro.0la.1de]"}, {"فوقالعاده", "`[.0fo.0Ro.0la.1de]"},
+    {"بین‌المللی", "`[.0bej.0nol.0me.0lA.1li]"},
+    {"دارالفنون", "`[.0da.0rol.0fo.1nun]"},
+    {"علی‌رغم", "`[.0A.0la.1rARm]"}, {"علیرغم", "`[.0A.0la.1rARm]"},
+    {"الحمدلله", "`[.0Al.0hAm.0do.0lel.1lahw]"},
+    {"ان‌شاءالله", "`[.0en.0Sa.0wAl.1lahw]"}, {"انشاءالله", "`[.0en.0Sa.0wAl.1lahw]"},
+    {"ان‌شاالله", "`[.0en.0Sa.0wAl.1lahw]"}, {"انشاالله", "`[.0en.0Sa.0wAl.1lahw]"},
+    {"عادت", "`[.0a.1dAt]"}, {"عمر", "`[.1omr]"}, {"عمه", "`[.0Am.1me]"},
+    {"عمق", "`[.1omR]"}, {"عملیات", "`[.0A.0mA.0li.1jat]"},
+    {"عناصر", "`[.0A.0na.1ser]"}, {"علایم", "`[.0A.0la.1jem]"},
+    {"عنایت", "`[.0e.0na.1jAt]"}, {"عطارد", "`[.0o.0ta.1red]"},
+    {"عمران", "`[.0om.1ran]"},
+    {"عمرا", "`[.0om.1rAn]"}, {"عمراً", "`[.0om.1rAn]"},
+    {"عمدا", "`[.0Am.1dAn]"}, {"عمداً", "`[.0Am.1dAn]"},
+    {"عملا", "`[.0A.0mA.1lAn]"}, {"عملاً", "`[.0A.0mA.1lAn]"},
+    {"عمیقا", "`[.0A.0mi.1RAn]"}, {"عمیقاً", "`[.0A.0mi.1RAn]"},
+    {"سرتاسر", "`[.0sAr.0ta.1sAr]"}, {"اصطکاک", "`[.0es.0te.1kak]"},
+    {"مستأجر", "`[.0mos.0tAw.1Jer]"}, {"مستاجر", "`[.0mos.0tAw.1Jer]"},
+    {"متقاضی", "`[.0mo.0te.0Ra.1zi]"}, {"متقاضیان", "`[.0mo.0te.0Ra.0zi.1jan]"},
+    {"اینستاگرام", "`[.0ins.0ta.0ge.1ram]"},
+};
+
+static int reviewed_word(const char *word,size_t bytes,char *output,size_t capacity)
+{
+    /* A written ezafe kasra keeps the reviewed reading of its base word. */
+    size_t stem=0;
+    if(bytes>2 && ends_with(word,bytes,"\xd9\x90",&stem)) {
+        char base[256];
+        int found=reviewed_word(word,stem,base,sizeof base);
+        if(found!=1)return found;
+        size_t n=strlen(base);
+        if(n+4>=capacity)return -2;
+        char last=base[n-2];
+        if(last=='w' && base[n-3]=='h') {--n;last='h';}
+        if(strchr("Aaeiou",last)) {memcpy(output,base,n-1);memcpy(output+n-1,".0je]",6);}
+        else {
+            memcpy(output,base,n-2);
+            output[n-2]='.';output[n-1]='0';output[n]=last;memcpy(output+n+1,"e]",3);
+        }
+        return 1;
+    }
+    for(size_t i=0;i<sizeof fa_reviewed_entries/sizeof fa_reviewed_entries[0];++i) {
+        const char *key=fa_reviewed_entries[i].word;
+        if(strlen(key)!=bytes || memcmp(key,word,bytes))continue;
+        size_t n=strlen(fa_reviewed_entries[i].tag);
+        if(n>=capacity)return -2;
+        memcpy(output,fa_reviewed_entries[i].tag,n+1);return 1;
+    }
+    return 0;
+}
+
+/* One component of a linked compound, looked up with every table that a
+ * separately written word would use. The depth guard bounds the mutual
+ * recursion between these rules, the lookup and the guesser. */
+static _Thread_local unsigned fa_link_depth;
+static int link_part(const char *word,size_t bytes,int guess,char *output,size_t capacity)
+{
+    if(!bytes || fa_link_depth>2)return 0;
+    unsigned saved=fa_context_lookup_depth;
+    fa_context_lookup_depth=0;++fa_link_depth;
+    int status=reloq_fa_direct_context_word(word,bytes,0,output,capacity);
+    if(!status && guess)status=reloq_fa_direct_guess_word(word,bytes,output,capacity);
+    --fa_link_depth;fa_context_lookup_depth=saved;
+    if(status==1 && !single_phone_tag(output))return 0;
+    return status;
+}
+
+static size_t link_joiner(const char *word,size_t bytes,size_t from)
+{
+    for(size_t i=from;i+3<=bytes;++i)
+        if(!memcmp(word+i,"\xe2\x80\x8c",3))return i;
+    return SIZE_MAX;
+}
+
+/* Join two readings through a linking vowel that belongs to neither word:
+ * the /o/ of گفت‌وگو or the article vowel of حق‌الزحمه. A consonant-final
+ * left part gives its last consonant to the linking syllable. With an
+ * article, a vowel-final left part instead shortens its own last vowel
+ * (فی + ال > fel). `coda` is 0, /l/ or the doubled sun consonant; before a
+ * vowel it becomes the onset of the right part. `left` may be NULL for a
+ * word-initial article. The result has final stress, like other compounds. */
+static int link_join(const char *left,char vowel,char coda,const char *right,
+                     int article,char *output,size_t capacity)
+{
+    static const char consonants[]="bdfghjklmnprstvzSZGRCJw";
+    size_t a=left?strlen(left):0,b=strlen(right),used=0;
+    if(b<6 || right[2]!='.')return 0;
+    if(a>SIZE_MAX-b-16 || a+b+16>capacity)return -2;
+    if(!left) {
+        memcpy(output,"`[.0",4);used=4;output[used++]=vowel;
+    } else {
+        if(a<5)return 0;
+        char last=left[a-2];
+        if(last=='w' && left[a-3]=='h') {--a;last='h';}   /* drop the final-H carrier */
+        if(strchr(consonants,last)) {
+            if(!strchr("AaeiouOy'",left[a-3]) && !strchr(consonants,left[a-3]))return 0;
+            memcpy(output,left,a-2);used=a-2;
+            output[used++]='.';output[used++]='0';output[used++]=last;output[used++]=vowel;
+        } else if(article) {
+            size_t keep=a-2;char final=last;
+            if(last=='\'') {
+                if(a<8 || left[a-3]!=':' || left[a-5]!='\'')return 0;
+                final=left[a-4];keep=a-5;
+            }
+            if(!strchr("Aaeiou",final))return 0;
+            memcpy(output,left,keep);used=keep;
+            output[used++]=final=='i'?'e':final=='u'?'o':final=='a'?'A':final;
+        } else return 0;
+    }
+    int vowel_initial=strchr("AaeiouOy'",right[4])!=NULL;
+    if(coda && vowel_initial) {
+        memcpy(output+used,right+2,2);used+=2;output[used++]=coda;
+        memcpy(output+used,right+4,b-3);
+    } else {
+        if(coda)output[used++]=coda;
+        memcpy(output+used,right+2,b-1);
+    }
+    size_t count=stress_syllables(output);
+    if(!count)return 0;
+    stress_primary(output,count-1);
+    return 1;
+}
+
+/* Coordinated compounds written with a half-space keep the conjunction as a
+ * linking /o/: گفت‌وگو, جست‌وجو, کسب‌وکار, رفت‌وآمد. Both written forms are
+ * accepted (X‌وY and X‌و‌Y). A tail that is itself a classified word, as
+ * in هم‌وطن or نخست‌وزیر, is left to the ordinary compound rule. */
+static int linked_va_compound(const char *word,size_t bytes,char *output,size_t capacity)
+{
+    static const char va[]="و";
+    size_t split=link_joiner(word,bytes,0);
+    if(split==SIZE_MAX || split<4 || bytes-split<3+2+4)return 0;
+    const char *tail=word+split+3;size_t tail_bytes=bytes-split-3;
+    if(memcmp(tail,va,2))return 0;
+    const char *rest=tail+2;size_t rest_bytes=tail_bytes-2;
+    if(rest_bytes>3 && !memcmp(rest,"\xe2\x80\x8c",3)) {rest+=3;rest_bytes-=3;}
+    else if(reloq_fa_direct_word_classes(tail,tail_bytes))return 0;
+    if(rest_bytes<4 || link_joiner(rest,rest_bytes,0)!=SIZE_MAX)return 0;
+    char left[2048],right[2048];
+    int x=link_part(word,split,0,left,sizeof left);
+    if(x!=1)return x<0?x:0;
+    /* A final ی after a vowel-final second part is the written ezafe of the
+     * compound (گفت‌وگوی), not part of a different word (گوی). */
+    size_t stem=0;
+    if(rest_bytes>=6 && ends_with(rest,rest_bytes,"ی",&stem)) {
+        int y=link_part(rest,stem,0,right,sizeof right);
+        if(y<0)return y;
+        size_t n=y==1?strlen(right):0;
+        if(n>4 && strchr("aou'",right[n-2])) {
+            char base[2048];
+            int joined=link_join(left,'o',0,right,0,base,sizeof base);
+            if(joined!=1)return joined;
+            return append_phone_tags(base,"`[.0je]",output,capacity);
+        }
+    }
+    int y=link_part(rest,rest_bytes,0,right,sizeof right);
+    if(y!=1)return y<0?y:0;
+    return link_join(left,'o',0,right,0,output,capacity);
+}
+
+/* The Arabic article assimilates to these following letters. */
+static int article_sun_letter(const char *text,size_t bytes)
+{
+    static const char *const letters[]={"ت","ث","د","ذ","ر","ز","س","ش","ص","ض","ط","ظ","ل","ن"};
+    if(bytes<2)return 0;
+    for(size_t i=0;i<sizeof letters/sizeof letters[0];++i)
+        if(!memcmp(text,letters[i],2))return 1;
+    return 0;
+}
+
+/* X + ال + Y, e.g. حق‌الزحمه /haqqozzahme/, فی‌البداهه /felbedahe/ and
+ * نصرالله. `rest` is Y. The article is /ol/ after the first word (/al/ after
+ * مع), not a separately read "al", and its /l/ becomes the following sun
+ * consonant. `left` is NULL for a word that begins with the article. */
+static int article_join(const char *left,const char *left_word,size_t left_bytes,
+                        const char *rest,size_t rest_bytes,const char *right,
+                        char *output,size_t capacity)
+{
+    char coda='l';
+    if(article_sun_letter(rest,rest_bytes)) {
+        if(!strchr("tdrzsSln",right[4]))return 0;
+        coda=right[4];
+    }
+    if(!left)return link_join(NULL,'A',coda,right,1,output,capacity);
+    if(stress_word_is(left_word,left_bytes,"علی"))left="`[.0A.1la]";
+    char vowel=stress_word_is(left_word,left_bytes,"مع")?'A':'o';
+    return link_join(left,vowel,coda,right,1,output,capacity);
+}
+
+static int linked_article_part(const char *rest,size_t rest_bytes,int guess,
+                               char *right,size_t capacity)
+{
+    if(stress_word_is(rest,rest_bytes,"له")) {     /* ...الله */
+        memcpy(right,"`[.1lahw]",sizeof "`[.1lahw]");return 1;
+    }
+    return link_part(rest,rest_bytes,guess,right,capacity);
+}
+
+static int linked_article_compound(const char *word,size_t bytes,char *output,size_t capacity)
+{
+    size_t split=link_joiner(word,bytes,0);
+    if(split==SIZE_MAX || split<4 || bytes-split<3+4+2)return 0;
+    const char *tail=word+split+3;
+    if(memcmp(tail,"ال",4))return 0;
+    const char *rest=tail+4;size_t rest_bytes=bytes-split-7;
+    if(link_joiner(rest,rest_bytes,0)!=SIZE_MAX)return 0;
+    char left[2048],right[2048];
+    int x=link_part(word,split,1,left,sizeof left);
+    if(x!=1)return x<0?x:0;
+    int y=linked_article_part(rest,rest_bytes,1,right,sizeof right);
+    if(y!=1)return y<0?y:0;
+    return article_join(left,word,split,rest,rest_bytes,right,output,capacity);
+}
+
+/* Last resort for a word that no table or rule covers, before its vowels
+ * are guessed letter by letter:
+ *  - a leading Arabic article before a known word (الوصل, النصر);
+ *  - a known word, the article and a known word written together;
+ *  - two known words written together (سیدمهدی, روشندلان).
+ * Both parts must already have a reading and the first must be a classified
+ * word. The second must be classified too unless both have at least four
+ * letters, so an unrelated spelling is not split merely because it contains
+ * the letters of a short word. */
+static int guessed_linked_word(const char *word,size_t bytes,char *output,size_t capacity)
+{
+    if(fa_link_depth || link_joiner(word,bytes,0)!=SIZE_MAX)return 0;
+    char left[2048],right[2048];
+    if(bytes>=4+4 && !memcmp(word,"ال",4)) {
+        int y=link_part(word+4,bytes-4,0,right,sizeof right);
+        if(y<0)return y;
+        if(y==1) {
+            int joined=article_join(NULL,NULL,0,word+4,bytes-4,right,output,capacity);
+            if(joined)return joined;
+        }
+    }
+    for(size_t at=4;at+4+2<=bytes;at+=2) {
+        if(((unsigned char)word[at]&0xc0)==0x80 || memcmp(word+at,"ال",4))continue;
+        const char *rest=word+at+4;size_t rest_bytes=bytes-at-4;
+        int allah=stress_word_is(rest,rest_bytes,"له");
+        if(!allah && (rest_bytes<4 || !reloq_fa_direct_word_classes(rest,rest_bytes)))continue;
+        if(!reloq_fa_direct_word_classes(word,at))continue;
+        int x=link_part(word,at,0,left,sizeof left);
+        if(x<0)return x;
+        if(x!=1)continue;
+        int y=linked_article_part(rest,rest_bytes,0,right,sizeof right);
+        if(y<0)return y;
+        if(y!=1)continue;
+        int joined=article_join(left,word,at,rest,rest_bytes,right,output,capacity);
+        if(joined)return joined;
+    }
+    /* Prefer the longest known first word. */
+    for(size_t at=bytes-6;at>=6 && at<bytes;at-=2) {
+        if(((unsigned char)word[at]&0xc0)==0x80)continue;
+        if(!reloq_fa_direct_word_classes(word,at) ||
+           ((at<8 || bytes-at<8) && !reloq_fa_direct_word_classes(word+at,bytes-at)))continue;
+        int x=link_part(word,at,0,left,sizeof left);
+        if(x<0)return x;
+        if(x!=1)continue;
+        int y=link_part(word+at,bytes-at,0,right,sizeof right);
+        if(y<0)return y;
+        if(y!=1)continue;
+        (void)shorten_written_final_e(word,at,left);
+        int joined=append_phone_tags(left,right,output,capacity);
+        if(joined!=1)return joined;
+        size_t count=stress_syllables(output);
+        if(count)stress_primary(output,count-1);
+        return 1;
+    }
+    return 0;
+}
+
 int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
                                  char *output,size_t capacity)
 {
+    if(!fa_context_lookup_depth && word && bytes && bytes!=SIZE_MAX && output && capacity &&
+       !memchr(word,0,bytes)) {
+        /* Hand-checked readings and linked compounds precede the tables. */
+        int linked=reviewed_word(word,bytes,output,capacity);
+        if(!linked)linked=linked_va_compound(word,bytes,output,capacity);
+        if(!linked)linked=linked_article_compound(word,bytes,output,capacity);
+        if(linked)return linked;
+        output[0]=0;
+    }
     unsigned outer=fa_context_lookup_depth++;
     int status=direct_context_depth(word,bytes,follows_word,output,capacity,0);
     --fa_context_lookup_depth;

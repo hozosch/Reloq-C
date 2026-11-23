@@ -47,7 +47,7 @@ int main(void)
        !check_text("کتاب‌ها؟", "`[.1ke.0tab.1ha]?") ||
        !check_text("۱۲", "`[.0dA.1vaz.0dAhw]") ||
        !check_text("۳٫۱۴", "`[.2se] `[.0noR.2t'e:'] `[.0jek] `[.1Ca.0har]") ||
-       !check_text("1001", "`[.2jek] `[.0he.2za.0ro] `[.1jek]") ||
+       !check_text("1001", "`[.0he.2za.0ro] `[.1jek]") ||
        !check_text("−۳", "`[.1mAn.0fi] `[.1se]") ||
        !check_text("+۳", "`[.1mos.0bAt] `[.1se]") ||
        !check_text("012", "`[.0sefr] `[.0jek] `[.1do]") ||

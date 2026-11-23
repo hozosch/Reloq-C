@@ -157,6 +157,31 @@ experimental speech entry point does not support all of these and must not be
 presented as a finished replacement. Unknown written words still need
 linguistic and pronunciation validation.
 
+## Reviewed readings and linked compounds
+
+A short hand-checked table in `experiments/persian/direct_fa_lexicon.c` now
+takes precedence over the generated tables. It holds frequent words that the
+generator dropped (several begin with ع, such as `عادت`, `عمر` and `عملیات`)
+and a few readings that were wrong in the reference, such as `نخست`. Their
+inflected forms (`عمرم`, `عادتش`) are still guessed; the reason those stems
+are missing from the generated tables has not been found.
+
+Three productive rules were added before the tables or before the letter by
+letter guess. A half-space compound with a written `و` keeps it as a linking
+/o/ (`گفت‌وگو`), unless the tail is a classified word of its own (`هم‌وطن`).
+The Arabic article inside a compound is read /ol/ with sun-letter
+assimilation and a shortened preceding vowel (`حق‌الزحمه`, `فی‌البداهه`,
+`روح‌الله`); a word that begins with the article and is otherwise unknown
+uses the known reading of the rest (`الوصل`). An unknown word made of two
+known words written together is read as those words (`سیدمهدی`). A final
+tanwin in a guessed word no longer makes the whole phrase fail, and a guessed
+word no longer begins with an explicit glottal stop, matching the lexicon.
+Numbers from 1000 to 1999 are read without a leading «یک».
+
+`experiments/persian/test_direct_fa_linked.py` checks these cases against the
+direct text library. It is not yet part of a workflow. These readings were
+checked by reading and by synthesis, not by a native listener.
+
 ## First-audio latency
 
 The direct Persian acoustic path already uses the same native span delivery

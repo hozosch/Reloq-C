@@ -82,7 +82,10 @@ static int plan_cardinal(struct number_plan *p,const char *digits,size_t n,int f
         if(!groups[position])continue;
         int lower=0;
         for(size_t j=0;j<position;++j)if(groups[j])lower=1;
-        if(add_event(p,RELOQ_FA_NUMBER_GROUP,groups[position],0,
+        /* Persian reads 1000-1999 as "hezar ...", not "yek hezar ...". The
+         * multiplier stays for million and milliard ("yek milyun"). */
+        if(!(position==1 && groups[position]==1) &&
+           add_event(p,RELOQ_FA_NUMBER_GROUP,groups[position],0,
                      position?(lower?2:1):(following?2:0),1))return -2;
         /* The linked form has an unstressed final linking vowel. */
         if(position && add_event(p,RELOQ_FA_NUMBER_SCALE,(uint32_t)(position-1),
