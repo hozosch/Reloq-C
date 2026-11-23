@@ -23,9 +23,10 @@ def main():
                     engine.set_parameter(NATIVE_SPEED, speed)
 
                     def render(parts):
-                        pcm, indices = [], []
-                        assert engine.speak(parts, pcm.append, indices.append)
-                        return b''.join(pcm), indices
+                        pcm, indices = bytearray(), []
+                        assert engine.speak(parts, pcm.extend,
+                                            lambda index: indices.append((index, len(pcm))))
+                        return bytes(pcm), indices
 
                     for word in ('안녕', '테스트', '안녕하세요'):
                         for duration in (0, 1, 50, 250):
@@ -38,7 +39,8 @@ def main():
                                 assert actual[0] and actual == separated, (
                                     encoding, rate, speed, word, tag,
                                     len(actual[0]), len(separated[0]), actual[1], separated[1])
-                                assert actual[1] == [11, 12]
+                                assert [index for index, _ in actual[1]] == [11, 12]
+                                assert actual[1][-1][1] == len(actual[0])
                                 # Joining the source must not change the result.
                                 joined = render([word + tag])
                                 assert joined[0] == actual[0], (encoding, word, tag)
