@@ -1,0 +1,58 @@
+name: Record Mandarin pause intonation investigation
+'on':
+  push:
+    branches: [main]
+    paths: [.github/workflows/update-2.0-melody-note.yml]
+permissions:
+  contents: write
+jobs:
+  update-release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Update release notes without changing downloads or tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess, sys
+          from pathlib import Path
+          sys.path.insert(0, 'tools')
+          from release_packages import release_body
+
+          repo = os.environ['GITHUB_REPOSITORY']
+          assert repo == 'hozosch/Reloq-C'
+          def gh(*args, input=None):
+              return subprocess.check_output(['gh', *args], input=input, text=True)
+
+          endpoint = f'repos/{repo}/releases/tags/v2.0.0'
+          before = json.loads(gh('api', endpoint))
+          manifest = json.loads(Path('.github/release.json').read_text())
+          assert manifest['release_version'] == '2.0.0'
+          assert before['tag_name'] == 'v2.0.0' and not before['draft'] and not before['prerelease']
+          assets = {a['name']: (a['size'], a['digest']) for a in before['assets']}
+          assert set(assets) == set(manifest['assets'])
+          for name, value in manifest['assets'].items():
+              assert assets[name] == (value['size'], 'sha256:' + value['sha256'])
+          ref_endpoint = f'repos/{repo}/git/ref/tags/v2.0.0'
+          ref = json.loads(gh('api', ref_endpoint))['object']
+          assert ref['sha'] == before['target_commitish']
+          body = release_body(Path('docs/releases/2.0.0.md').read_text(encoding='utf8'), manifest.get('build_epoch'))
+          assert 'docs/APPLE.en.md' in body and 'docs/APPLE.de.md' in body
+          assert 'Speech during the first unlock after a restart was confirmed' in body
+          assert 'Android speech before the first unlock still needs testing' not in body
+          assert 'without ReLoq-specific driver changes' in body
+          assert 'difference in Mandarin intonation when pauses are shortened' in body
+          assert 'Its v28 driver also needs a separate change' not in body
+          patch = json.dumps({'body': body})
+          gh('api', '--method', 'PATCH', f"repos/{repo}/releases/{before['id']}", '--input', '-', input=patch)
+          after = json.loads(gh('api', endpoint))
+          after_ref = json.loads(gh('api', ref_endpoint))['object']
+          assert after['body'] == body and not after['draft'] and not after['prerelease']
+          assert after_ref == ref and after['target_commitish'] == before['target_commitish']
+          assert {a['name']: (a['size'], a['digest']) for a in after['assets']} == assets
+          print('Recorded Mandarin intonation report; release tag and all asset hashes unchanged.')
+          PY
