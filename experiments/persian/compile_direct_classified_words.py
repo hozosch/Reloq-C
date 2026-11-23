@@ -18,7 +18,6 @@ from compile_direct_lexicon import (EXPECTED_DICT, EXPECTED_SOURCES, SOURCE, dig
                                    is_persian_word, lexical_fingerprint, reference_words)
 from espeak_ng_probe import EspeakPhonemeProbe
 from hybrid_fa_frontend import DirectFirstPersian
-from test_selected_probe import engine, set_confirmed_persian_probe
 from text_frontend import UnsupportedPronunciation, native_sequence_accepted, word_tag
 
 HERE = Path(__file__).resolve().parent
@@ -88,6 +87,9 @@ def generate(api, voice, frontend):
 
 
 def main():
+    # NumPy is needed by the offline acoustic probe, not by runtime tests
+    # which only import this module's spelling inventory.
+    from test_selected_probe import engine, set_confirmed_persian_probe
     parser = argparse.ArgumentParser(description=__doc__)
     for option in ('native-library', 'espeak-library', 'data-parent', 'probe'):
         parser.add_argument('--' + option, type=Path, required=True)

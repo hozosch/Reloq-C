@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 import argparse
+import array
+import math
 from pathlib import Path
 import sys
-import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'nvda'))
@@ -39,14 +40,27 @@ def components(path, tag, phone, gender, clock):
 
 
 def band_power(pcm, interval):
-    samples = np.frombuffer(pcm, dtype='<i2').astype(float)
+    samples = array.array('h')
+    samples.frombytes(pcm)
+    if sys.byteorder != 'little':
+        samples.byteswap()
     start, end = interval
     segment = samples[round((start+8)*16):round(min(end-5, start+45)*16)]
     assert len(segment) > 80, (interval, len(segment))
-    windowed = segment * np.hanning(len(segment))
-    spectrum = np.fft.rfft(windowed, n=4096)
-    frequencies = np.fft.rfftfreq(4096, 1/16000)
-    return float(np.sum(np.abs(spectrum[(frequencies >= 1800) & (frequencies <= 3100)])**2))
+    windowed = [sample * (0.5 - 0.5 * math.cos(math.tau * i / (len(segment)-1)))
+                for i, sample in enumerate(segment)]
+    power = 0.0
+    for frequency in range(1800, 3101, 100):
+        angle = math.tau * frequency / 16000
+        sine, cosine = math.sin(angle), math.cos(angle)
+        re = im = 0.0
+        x, y = 1.0, 0.0
+        for sample in windowed:
+            re += sample*x
+            im += sample*y
+            x, y = x*cosine-y*sine, x*sine+y*cosine
+        power += re*re + im*im
+    return power
 
 
 def main():
