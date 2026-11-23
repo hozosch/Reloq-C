@@ -11,9 +11,11 @@
     <string name="browser_update">Se ha abierto la descarga. Usa el navegador y el proceso de instalación habitual de Android. Mantén Play Protect activado.</string>
     <string name="engine_help">Síntesis de voz sin conexión. Elige un idioma y una voz para probarlos, o selecciona ReLoq C en los ajustes de texto a voz de Android.</string>
     <string name="language">Idioma</string>
+    <string name="auto_fallback">Idioma base para detección automática (números, símbolos, escrituras desconocidas)</string>
     <string name="profile">Voz</string>
     <string name="sample_rate">Frecuencia de muestreo</string>
     <string name="pause_mode">Acortar pausas</string>
+    <string name="number_mode">Lectura de números</string>
     <string name="sample_text">Texto para leer</string>
     <string name="speak">Leer texto de prueba</string>
     <string name="stop">Detener</string>
@@ -26,10 +28,16 @@
         <item>Al final</item>
         <item>Siempre</item>
     </string-array>
+    <string-array name="number_modes">
+        <item>Valor</item>
+        <item>Dígitos</item>
+        <item>Automático</item>
+    </string-array>
     <string name="voice_settings">Idioma y voz</string>
     <string name="android_voice">Controlar el idioma y la voz mediante Android</string>
     <string name="android_rate">Controlar la velocidad mediante Android</string>
     <string name="android_pitch">Controlar el tono mediante Android</string>
+    <string name="android_controls">Controlar velocidad y tono mediante Android</string>
     <string name="speed">Velocidad manual, palabras por minuto</string>
     <string name="pitch">Tono manual</string>
     <string name="rate_boost">Aumento de velocidad</string>
@@ -41,8 +49,13 @@
     <string name="roughness">Aspereza</string>
     <string name="breathiness">Aire en la voz</string>
     <string name="reset_profile">Restablecer el perfil de voz seleccionado</string>
+    <string name="reset_done">Restablecido</string>
+    <string name="reset_not_needed">No es necesario restablecer</string>
+    <string name="reset_equalizer">Restablecer ecualizador</string>
     <string name="output_settings">Salida de voz</string>
     <string name="eci_tags">Procesar etiquetas ECI</string>
+    <string name="volume_gain">Aumento de volumen</string>
+    <string name="equalizer_settings">Ajustes del ecualizador</string>
     <string name="dictionaries">Diccionarios de pronunciación</string>
     <string name="community_dictionaries">Usar diccionarios de la comunidad</string>
     <string name="update_dictionaries">Actualizar los diccionarios de la comunidad desde el master actual</string>
@@ -107,7 +120,7 @@
     <string name="equalizer_mid">Medios (dB)</string>
     <string name="equalizer_high">Agudos (dB)</string>
     <string-array name="equalizer_presets"><item>Equilibrado</item><item>Cálido</item><item>Brillante</item><item>Suave</item><item>Personalizado</item></string-array>
-    <string name="equalizer_advanced">Filtros avanzados…</string>
+    <string name="equalizer_advanced">Filtros avanzados</string>
     <string name="filter_title">Filtros avanzados del ecualizador</string>
     <string name="filter_select">Filtro</string>
     <string name="filter_name">Filtro</string>
@@ -116,6 +129,8 @@
     <string name="filter_gain">Ganancia (dB)</string>
     <string name="filter_width" formatted="false">Ancho (% de octava)</string>
     <string name="filter_nyquist" formatted="false">100 % equivale a una octava. Las frecuencias desde la mitad de la frecuencia de muestreo no se aplican.</string>
+    <string name="battery_check_normal">Verificación de permisos: normal</string>
+    <string name="battery_check_missing">Verificación de permisos: falta optimización de batería. Toque para solicitar.</string>
     <string name="automatic_updates">Buscar actualizaciones automáticamente</string>
     <string name="notification_settings">Configuración de notificaciones</string>
     <string name="notification_explanation">Permite las notificaciones para saber cuándo hay nuevas versiones de ReLoq C. También puedes buscar manualmente.</string>

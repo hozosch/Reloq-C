@@ -11,9 +11,11 @@
     <string name="browser_update">Η λήψη άνοιξε. Χρησιμοποιήστε το πρόγραμμα περιήγησης και την κανονική διαδικασία εγκατάστασης του Android. Διατηρήστε το Play Protect ενεργό.</string>
     <string name="engine_help">Σύνθεση ομιλίας χωρίς σύνδεση. Επιλέξτε γλώσσα και φωνή για δοκιμή ή επιλέξτε το ReLoq C στις ρυθμίσεις μετατροπής κειμένου σε ομιλία του Android.</string>
     <string name="language">Γλώσσα</string>
+    <string name="auto_fallback">Βασική γλώσσα αυτόματης ανίχνευσης (αριθμοί, σύμβολα, άγνωστες γραφές)</string>
     <string name="profile">Φωνή</string>
     <string name="sample_rate">Ρυθμός δειγματοληψίας</string>
     <string name="pause_mode">Συντόμευση παύσεων</string>
+    <string name="number_mode">Ανάγνωση αριθμών</string>
     <string name="sample_text">Κείμενο προς ανάγνωση</string>
     <string name="speak">Ανάγνωση δοκιμαστικού κειμένου</string>
     <string name="stop">Διακοπή</string>
@@ -26,10 +28,16 @@
         <item>Στο τέλος</item>
         <item>Πάντα</item>
     </string-array>
+    <string-array name="number_modes">
+        <item>Τιμή</item>
+        <item>Ψηφία</item>
+        <item>Αυτόματα</item>
+    </string-array>
     <string name="voice_settings">Γλώσσα και φωνή</string>
     <string name="android_voice">Έλεγχος γλώσσας και φωνής μέσω Android</string>
     <string name="android_rate">Έλεγχος ταχύτητας μέσω Android</string>
     <string name="android_pitch">Έλεγχος ύψους φωνής μέσω Android</string>
+    <string name="android_controls">Έλεγχος ταχύτητας και ύψους φωνής μέσω Android</string>
     <string name="speed">Χειροκίνητη ταχύτητα, λέξεις ανά λεπτό</string>
     <string name="pitch">Χειροκίνητο ύψος φωνής</string>
     <string name="rate_boost">Ενίσχυση ταχύτητας</string>
@@ -41,8 +49,13 @@
     <string name="roughness">Βραχνάδα</string>
     <string name="breathiness">Αναπνευστική χροιά</string>
     <string name="reset_profile">Επαναφορά επιλεγμένου προφίλ φωνής</string>
+    <string name="reset_done">Έγινε επαναφορά</string>
+    <string name="reset_not_needed">Δεν απαιτείται επαναφορά</string>
+    <string name="reset_equalizer">Επαναφορά ισοσταθμιστή</string>
     <string name="output_settings">Έξοδος ομιλίας</string>
     <string name="eci_tags">Επεξεργασία ετικετών ECI</string>
+    <string name="volume_gain">Ενίσχυση έντασης</string>
+    <string name="equalizer_settings">Ρυθμίσεις ισοσταθμιστή</string>
     <string name="dictionaries">Λεξικά προφοράς</string>
     <string name="community_dictionaries">Χρήση λεξικών κοινότητας</string>
     <string name="update_dictionaries">Ενημέρωση λεξικών κοινότητας από τον τρέχοντα κλάδο master</string>
@@ -107,7 +120,7 @@
     <string name="equalizer_mid">Μεσαία (dB)</string>
     <string name="equalizer_high">Πρίμα (dB)</string>
     <string-array name="equalizer_presets"><item>Ισορροπημένο</item><item>Ζεστό</item><item>Φωτεινό</item><item>Απαλό</item><item>Προσαρμοσμένο</item></string-array>
-    <string name="equalizer_advanced">Προηγμένα φίλτρα…</string>
+    <string name="equalizer_advanced">Προηγμένα φίλτρα</string>
     <string name="filter_title">Προηγμένα φίλτρα ισοσταθμιστή</string>
     <string name="filter_select">Φίλτρο</string>
     <string name="filter_name">Φίλτρο</string>
@@ -116,6 +129,8 @@
     <string name="filter_gain">Ενίσχυση (dB)</string>
     <string name="filter_width" formatted="false">Εύρος (% οκτάβας)</string>
     <string name="filter_nyquist" formatted="false">Το 100% ισούται με μία οκτάβα. Συχνότητες από το μισό του ρυθμού δειγματοληψίας είναι ανενεργές.</string>
+    <string name="battery_check_normal">Έλεγχος αδειών: φυσιολογικός</string>
+    <string name="battery_check_missing">Έλεγχος αδειών: βελτιστοποίηση μπαταρίας που λείπει. Αγγίξτε για αίτημα.</string>
     <string name="automatic_updates">Αυτόματος έλεγχος ενημερώσεων</string>
     <string name="notification_settings">Ρυθμίσεις ειδοποιήσεων</string>
     <string name="notification_explanation">Επιτρέψτε ειδοποιήσεις για τις νέες εκδόσεις του ReLoq C. Μπορείτε επίσης να ελέγξετε χειροκίνητα.</string>

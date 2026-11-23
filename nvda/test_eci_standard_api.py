@@ -23,15 +23,15 @@ def main():
  CB=(ctypes.WINFUNCTYPE if hasattr(ctypes,'WINFUNCTYPE') else ctypes.CFUNCTYPE)(I,H,I,I,H)
  lib.eciRegisterCallback.argtypes=(H,CB,H);lib.eciRegisterCallback.restype=None
  checks=0;count=I(0)
- assert lib.eciGetAvailableLanguages(None,ctypes.byref(count))==0 and count.value==15
- languages=(ctypes.c_uint*17)(*([0xdeadbeef]*17));capacity=I(15)
- assert not lib.eciGetAvailableLanguages(languages,ctypes.byref(capacity));assert capacity.value==15
- assert languages[15]==languages[16]==0xdeadbeef;checks+=3
+ assert lib.eciGetAvailableLanguages(None,ctypes.byref(count))==0 and count.value==16
+ languages=(ctypes.c_uint*18)(*([0xdeadbeef]*18));capacity=I(16)
+ assert not lib.eciGetAvailableLanguages(languages,ctypes.byref(capacity));assert capacity.value==16
+ assert languages[16]==languages[17]==0xdeadbeef;checks+=3
  small=(ctypes.c_uint*2)(0,0xdeadbeef);n=I(1)
  assert lib.eciGetAvailableLanguages(small,ctypes.byref(n))==0 and n.value==1 and small[1]==0xdeadbeef
  bad=I(-1);assert lib.eciGetAvailableLanguages(None,ctypes.byref(bad))==0x80;checks+=2
  h=lib.eciNew();assert h and lib.eciGetParam(h,9)==0x10000;lib.eciDelete(h);checks+=1
- for language in languages[:15]:
+ for language in languages[:16]:
   h=lib.eciNewEx(language);assert h and lib.eciGetParam(h,9)==language;lib.eciDelete(h);checks+=1
  h=lib.eciNewEx(0x10000);buffer=(ctypes.c_short*1100)();audio=bytearray();indices=[]
  @CB
@@ -100,6 +100,27 @@ def main():
    assert lib.eciLoadDict(h,d,3,str(path).encode())==7
    assert not lib.eciDeleteDict(h,d) and not lib.eciGetDict(h)
    assert speak(b'TokenX.')==unmodified;checks+=9
+  # Dictionary slots for the new language remain independent of its
+  # Castilian parent when one ECI handle changes language.
+  with tempfile.TemporaryDirectory() as temp:
+   an_path=Path(temp)/'an.dic';es_path=Path(temp)/'es.dic'
+   an_path.write_bytes(b'TokenX\tcasa\n');es_path.write_bytes(b'TokenX\tnaranja\n')
+   assert lib.eciSetParam(h,9,0x130000)>=0
+   an_expected=speak(b'casa.');an_dict=lib.eciNewDict(h);assert an_dict
+   assert lib.eciLoadDict(h,an_dict,0,str(an_path).encode())==0
+   assert lib.eciSetDict(h,an_dict)==0 and speak(b'TokenX.')==an_expected
+   assert lib.eciSetParam(h,9,0x20000)>=0 and not lib.eciGetDict(h)
+   es_expected=speak(b'naranja.');es_dict=lib.eciNewDict(h);assert es_dict
+   assert lib.eciLoadDict(h,es_dict,0,str(es_path).encode())==0
+   assert lib.eciSetDict(h,es_dict)==0 and speak(b'TokenX.')==es_expected
+   assert lib.eciSetParam(h,9,0x130000)>=0 and lib.eciGetDict(h)==an_dict
+   assert speak(b'TokenX.')==an_expected
+   assert lib.eciSetParam(h,9,0x20000)>=0 and lib.eciGetDict(h)==es_dict
+   assert speak(b'TokenX.')==es_expected
+   assert not lib.eciDeleteDict(h,es_dict)
+   assert lib.eciSetParam(h,9,0x130000)>=0 and not lib.eciDeleteDict(h,an_dict)
+   assert lib.eciSetParam(h,9,0x40000)>=0
+   checks+=12
   normal=speak(b'Abc.')
   assert lib.eciSetParam(h,2,1)==0
   assert speak(b'Abc.')!=normal

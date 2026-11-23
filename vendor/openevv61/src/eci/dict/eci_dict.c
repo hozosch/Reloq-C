@@ -30,6 +30,7 @@
 #include "evv_abi.h"
 #include "evv_arena.h"
 #include "eci_old.h"
+#include "reloq61_family_count.h"
 
 /* The dictionary in force for one language and dialect. Families run from
    one to eighteen and dialects are nought or one.
@@ -43,8 +44,9 @@
    the first slot the loop looks at, so the slot its store reaches into is
    one nothing ever reads. */
 #define ACTIVE_DICT(h, family, dialect) \
-    (*(evv_ref *)((char *)(h) + 0x60c + (family) * 8 + (dialect) * 4))
-#define DICT_FAMILIES   0x12
+    (*((family)==19 ? (evv_ref *)&(h)->extra_active_dict[dialect] : \
+       (evv_ref *)((char *)(h) + 0x60c + (family) * 8 + (dialect) * 4)))
+#define DICT_FAMILIES   RELOQ61_ECI_FAMILIES
 #define DICT_DIALECTS   2
 
 #define ENV_LANGUAGE    9
@@ -170,6 +172,9 @@ int32_t ed_add_active_dict(OldInst *h, void *dict)
     int32_t lang;
     int32_t rc = api_get_dict_language(OI_NEW(h), dict, &lang);
 
+    if (rc >= 0 && (((lang & 0xff0000) >> 16) < 1 ||
+                    ((lang & 0xff0000) >> 16) > DICT_FAMILIES || (lang & 0xff) >= DICT_DIALECTS))
+        return -1;
     if (rc >= 0)
         ACTIVE_DICT(h, (lang & 0xff0000) >> 16, lang & 0xff) = EVV_REF(dict);
     return rc;
@@ -184,6 +189,9 @@ int32_t ed_delete_active_dict(OldInst *h, void *dict)
     if (rc >= 0) {
         int family = (lang & 0xff0000) >> 16;
         int dialect = lang & 0xff;
+
+        if (family < 1 || family > DICT_FAMILIES || dialect >= DICT_DIALECTS)
+            return -1;
 
         if (EVV_AT(void *, ACTIVE_DICT(h, family, dialect)) == dict)
             ACTIVE_DICT(h, family, dialect) = 0;

@@ -66,7 +66,8 @@ public final class DictionaryActivity extends Activity {
         content.addView(list,new LinearLayout.LayoutParams(-1,(int)(200*getResources().getDisplayMetrics().density)));
         int first=DictionaryStore.prefs(this).getInt("language",3);
         language=select(R.string.dictionary_language,Catalog.LANGUAGES,first);
-        format=select(R.string.dictionary_format,getResources().getStringArray(R.array.dictionary_formats),0);
+        int savedFormat=VoiceSettings.bounded(DictionaryStore.prefs(this).getInt("dictionaryFormat",0),0,2);
+        format=select(R.string.dictionary_format,getResources().getStringArray(R.array.dictionary_formats),savedFormat);
         volume=select(R.string.dictionary_volume,getResources().getStringArray(R.array.dictionary_volumes),0);
         String[] voices=new String[Catalog.PROFILES.length+1];voices[0]=getString(R.string.dictionary_all_voices);
         System.arraycopy(Catalog.PROFILES,0,voices,1,Catalog.PROFILES.length);
@@ -74,6 +75,9 @@ public final class DictionaryActivity extends Activity {
         format.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
             public void onNothingSelected(android.widget.AdapterView<?> parent) {}
             public void onItemSelected(android.widget.AdapterView<?> parent,View view,int position,long id) {
+                if(!loading)
+                    DictionaryStore.prefs(DictionaryActivity.this).edit()
+                        .putInt("dictionaryFormat",VoiceSettings.bounded(position,0,2)).apply();
                 updateFormatControls();
             }
         });

@@ -25,6 +25,7 @@
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
 #include "reloq61_rule_calls_eses61.h"
+#include "reloq61_aragonese.h"
 
 /* Where each global the rules touch lands in the state,
    as a distance from the first cell. */
@@ -5255,6 +5256,21 @@ int32_t reloq_eses61_insert_span_spr_phone(void *state, int32_t p0, int32_t p1, 
     r0 = reloq61_typed_get_parm(DELTA_ENTRY_get_parm, state, (delta_loc *)(base + (-12)), EVV_AT(delta_loc *, (int32_t)PARAM(int32_t, 1)), (int16_t)(-6));
     r0 = reloq61_typed_get_parm(DELTA_ENTRY_get_parm, state, (delta_loc *)(base + (-20)), EVV_AT(delta_loc *, (int32_t)PARAM(int32_t, 2)), (int16_t)(-6));
     r0 = reloq61_typed_fence(DELTA_ENTRY_fence, state, (int8_t)(0), EVV_AT(const uint8_t *, delta_sym_ref[1244]));
+    /* Aragonese has /sh/; the Castilian SPR reader does not expose it. */
+    if(delta_lang_now()->id==RELOQ61_ARAGONESE) {
+        const uint8_t letter=46,phone=16;
+        r0=reloq61_typed_lpta_loadp(DELTA_ENTRY_lpta_loadp,state,(const delta_token *)(base-12));
+        r0=reloq61_typed_setscan_r(DELTA_ENTRY_setscan_r,state,1);
+        if(!r0&&!reloq61_typed_test_string_s(DELTA_ENTRY_test_string_s,state,1,1,&letter)) {
+            reloq61_typed_inline61_lflags(DELTA_ENTRY_inline61_lflags,state,1);
+            reloq61_typed_inline61_lnode(DELTA_ENTRY_inline61_lnode,state,(int32_t)AT(int32_t,-16));
+            reloq61_typed_inline61_loffset(DELTA_ENTRY_inline61_loffset,state,0);
+            if(!reloq61_typed_test_ptr(DELTA_ENTRY_test_ptr,state)) {
+                reloq61_typed_lpta_rpta_loadp(DELTA_ENTRY_lpta_rpta_loadp,state,(const delta_token *)(base-12),(const delta_token *)(base-20));
+                if(!reloq61_typed_insert_2pt_s(DELTA_ENTRY_insert_2pt_s,state,4,1,&phone,0))goto L7242;
+            }
+        }
+    }
     r0 = reloq61_typed_lpta_loadp(DELTA_ENTRY_lpta_loadp, state, (const delta_token *)(base + (-12)));
     r0 = reloq61_typed_setscan_r(DELTA_ENTRY_setscan_r, state, (uint8_t)(1));
     if (r0 == 0) goto L191;

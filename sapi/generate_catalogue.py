@@ -13,7 +13,10 @@ from _reloq_eci_direct import SAMPLE_RATES, GENDER, HEAD_SIZE, NATIVE_PITCH, NAT
 LCIDS = {'de_DE': 0x407, 'en_US': 0x409, 'en_GB': 0x809, 'es_ES': 0xc0a,
          'es_MX': 0x80a, 'fr_FR': 0x40c, 'fr_CA': 0xc0c, 'it_IT': 0x410,
          'pt_BR': 0x416, 'fi_FI': 0x40b, 'zh_CN': 0x804, 'ja_JP': 0x411,
-         'ko_KR': 0x412, 'el_GR': 0x408}
+         'ko_KR': 0x412, 'el_GR': 0x408,
+         # SAPI needs a persistent Windows LCID. Aragonese has no assigned
+         # LCID; use Spain for the test voice while retaining its an_ES tag.
+         'an_ES': 0xc0a}
 
 
 def generate():

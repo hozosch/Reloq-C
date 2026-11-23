@@ -50,7 +50,8 @@ def main():
     parser.add_argument('--output', type=Path)
     args = parser.parse_args()
     western, other = labels(); checks = 0
-    locale = {2: 0, 3: 1, 5: 2, 6: 3, 7: 4, 8: 5, 9: 6, 10: 7, 18: 8}
+    # Aragonese currently shares the Castilian character-name table.
+    locale = {2: 0, 3: 1, 5: 2, 6: 3, 7: 4, 8: 5, 9: 6, 10: 7, 18: 8, 19: 0}
     for language in LANGUAGES.values():
         engine = DirectEciEngine(args.library.resolve(), dialect=language.id,
             encoding='utf8', native_voice=True)

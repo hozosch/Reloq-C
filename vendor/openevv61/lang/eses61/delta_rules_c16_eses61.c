@@ -25,6 +25,7 @@
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
 #include "reloq61_rule_calls_eses61.h"
+#include "reloq61_aragonese.h"
 
 /* Where each global the rules touch lands in the state,
    as a distance from the first cell. */
@@ -6814,6 +6815,10 @@ int32_t reloq_eses61_apply_span_d_rules(void *state, int32_t p0, int32_t p1, int
     if(delta_lang_now()->id==0x120000&&
        reloq_elgr61_digit_two(state,(const delta_token *)(base-12))) {
         AT(uint8_t,-24)=8;phone=base-24; /* native /D/ */
+    }
+    if(delta_lang_now()->id==RELOQ61_ARAGONESE&&
+       reloq61_an_liaison_d(state,RELOQ61_WORKSPACE_REF(frame,reloq_workspace_ref,200))) {
+        AT(uint8_t,-24)=8;phone=base-24; /* voiced dental approximant */
     }
     r0 = reloq61_typed_insert_2pt_s(DELTA_ENTRY_insert_2pt_s, state, 4, 1, phone, 0);
     if (r0 != 0) goto L207;

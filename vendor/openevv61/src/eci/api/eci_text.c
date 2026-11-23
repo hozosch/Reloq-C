@@ -30,6 +30,7 @@
 #include "evv_abi.h"
 #include "evv_arena.h"
 #include "eci_old.h"
+#include "reloq61_family_count.h"
 
 /* Which of the eighteen settings say how text is to be handled. */
 #define ENV_SYNTHMODE   0
@@ -220,7 +221,7 @@ void et_processAnnotations(void *concat, int32_t *voice, int32_t *env,
             n = lg_splitLanguageString(text + r, &family, &dialect, &extra);
             if (n <= 0)
                 continue;
-            if (family < 1 || family > 0x12)
+            if (family < 1 || family > RELOQ61_ECI_FAMILIES)
                 break;
             if (dialect + 1 > 2)
                 break;

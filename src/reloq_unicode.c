@@ -53,6 +53,110 @@ static int scalar(struct buffer *b,uint32_t c)
     unsigned char s[4];size_t n=encode(s,c);
     return add(b,s,n);
 }
+static int spelling_space(uint32_t c)
+{
+    return c==' '||c=='\t'||c=='\r'||c=='\n'||c==0xa0||c==0x1680||
+        (c>=0x2000&&c<=0x200a)||c==0x2028||c==0x2029||c==0x202f||
+        c==0x205f||c==0x3000;
+}
+static int spelling_word_character(uint32_t c)
+{
+    if(c<128)return (c>='a'&&c<='z')||(c>='A'&&c<='Z')||
+        (c>='0'&&c<='9')||c=='_';
+    unsigned char base;
+    return reloq_character_latin_base(c,&base)==1;
+}
+static int preceding_scalar(const unsigned char *text,size_t end,size_t *begin,uint32_t *c)
+{
+    if(!end)return 0;
+    size_t at=end-1,n;while(at&&(text[at]&0xc0)==0x80)--at;
+    if(decode(text+at,end-at,&n,c)||n!=end-at)return 0;
+    *begin=at;return 1;
+}
+
+/* NVDA can submit consecutive spelled letters as separate character-mode
+ * fragments with ordinary spaces between them. Such fragments are one
+ * spelling run, whereas ordinary text on either side is not. */
+static int aragonese_one_mode_character(const unsigned char *text,size_t length,
+    const unsigned char *modes,size_t begin,size_t end)
+{
+    if(!modes||!modes[begin])return 0;
+    for(size_t p=begin;p;) {
+        size_t at=p-1,n;uint32_t c;
+        while(at&&(text[at]&0xc0)==0x80)--at;
+        if(decode(text+at,p-at,&n,&c)||n!=p-at)return 0;
+        if(modes[at])return 0;
+        if(!spelling_space(c))break;
+        p=at;
+    }
+    for(size_t p=end;p<length;) {
+        size_t n;uint32_t c;if(decode(text+p,length-p,&n,&c))return 0;
+        if(modes[p])return 0;
+        if(!spelling_space(c))break;
+        p+=n;
+    }
+    return 1;
+}
+
+/* Check an explicit `ts1/`ts2 span without counting the control tags as
+ * letters. Do not mistake the v inside a different ECI control for input. */
+static int aragonese_one_inline_character(const unsigned char *text,size_t length,
+    const unsigned char *modes,size_t begin)
+{
+    size_t start=0,stop=length;int active=0;
+    for(size_t p=0;p<length;) {
+        if(text[p]=='`'&&(!modes||!modes[p])) {
+            size_t back=p;while(back&&text[back-1]=='\\')--back;
+            struct reloq_inline_tag t=reloq_inline_tag_read(text+p,length-p,0);
+            if(!((p-back)&1)&&t.kind!=RELOQ_TAG_NONE) {
+                if(p<=begin&&begin<p+t.length)return 0;
+                if(t.kind==RELOQ_TAG_SPELL) {
+                    if(p<begin){start=p+t.length;active=t.value;}
+                    else {stop=p;break;}
+                }
+                p+=t.length;continue;
+            }
+        }
+        size_t n;uint32_t c;if(decode(text+p,length-p,&n,&c))return 0;p+=n;
+    }
+    if(!active)return 0;
+    unsigned count=0;
+    for(size_t p=start;p<stop;) {
+        if(text[p]=='`'&&(!modes||!modes[p])) {
+            struct reloq_inline_tag t=reloq_inline_tag_read(text+p,stop-p,0);
+            if(t.kind!=RELOQ_TAG_NONE){p+=t.length;continue;}
+        }
+        size_t n;uint32_t c;if(decode(text+p,stop-p,&n,&c))return 0;
+        if(!spelling_space(c)){if(p!=begin||++count>1)return 0;}
+        p+=n;
+    }
+    return count==1;
+}
+
+static int aragonese_single_v(const unsigned char *text,size_t length,
+    const unsigned char *modes,size_t begin,size_t end,int source_spelling)
+{
+    if(modes&&modes[begin])return aragonese_one_mode_character(text,length,modes,begin,end);
+    if(source_spelling)return aragonese_one_inline_character(text,length,modes,begin);
+    /* A single V in a sentence is still the letter name. A V inside a word,
+     * or alongside other single-letter tokens, belongs to a spelling run. */
+    size_t at,n;uint32_t c;
+    if(preceding_scalar(text,begin,&at,&c)&&spelling_word_character(c))return 0;
+    if(end<length&&(!decode(text+end,length-end,&n,&c))&&spelling_word_character(c))return 0;
+    size_t p=begin;int spaced=0;
+    while(preceding_scalar(text,p,&at,&c)&&spelling_space(c)){p=at;spaced=1;}
+    if(spaced&&preceding_scalar(text,p,&at,&c)&&spelling_word_character(c)) {
+        size_t prior;uint32_t before;
+        if(!preceding_scalar(text,at,&prior,&before)||!spelling_word_character(before))return 0;
+    }
+    p=end;spaced=0;
+    while(p<length&&!decode(text+p,length-p,&n,&c)&&spelling_space(c)){p+=n;spaced=1;}
+    if(spaced&&p<length&&!decode(text+p,length-p,&n,&c)&&spelling_word_character(c)) {
+        p+=n;
+        if(p==length||decode(text+p,length-p,&n,&c)||!spelling_word_character(c))return 0;
+    }
+    return 1;
+}
 static int ascii_number_range(const unsigned char *text,size_t length,size_t begin,size_t end)
 {
     uint32_t c;size_t used;
@@ -128,6 +232,7 @@ static const char *name(uint32_t c,char tmp[NAME_CAPACITY],int en)
     }
     return NULL;
 }
+
 static const char *language_name(uint32_t cp,int locale,char tmp[NAME_CAPACITY])
 {
     if(locale==255)return name(cp,tmp,1);
@@ -186,13 +291,6 @@ static int one(struct buffer *b,uint32_t c,int mode,int en,int tags)
         while(lo<hi){size_t m=lo+(hi-lo)/2;if(unicode_compat[m].cp<c)lo=m+1;else hi=m;}
         if(lo<COUNT(unicode_compat)&&unicode_compat[lo].cp==c) {
             const char *fold=STR(unicode_compat[lo].fold);return add(b,fold,strlen(fold));
-        }
-        /* Greek is the deliberate exception: letter names are meaningful in
-         * ordinary prose as well as in explicit character navigation. */
-        lo=0;hi=COUNT(unicode_greek);
-        while(lo<hi){size_t m=lo+(hi-lo)/2;if(unicode_greek[m]<c)lo=m+1;else hi=m;}
-        if(lo<COUNT(unicode_greek)&&unicode_greek[lo]==c) {
-            char temp[NAME_CAPACITY];const char *s=name(c,temp,en);if(s)return say(b,s);
         }
         /* Other symbol names belong to explicit character navigation. */
         return add(b," ",1);
@@ -254,6 +352,14 @@ static const char *greek_label(uint32_t cp,int locale)
     while(lo<hi){size_t m=lo+(hi-lo)/2;if(strcmp(unicode_greek_labels[m].english,alias)<0)lo=m+1;else hi=m;}
     return lo<COUNT(unicode_greek_labels)&&!strcmp(unicode_greek_labels[lo].english,alias)?
         unicode_greek_labels[lo].local[locale+1]:NULL;
+}
+int reloq_unicode_greek_name_english(uint32_t cp,char *output,size_t capacity)
+{
+    const char *name=greek_label(cp,255);
+    if(!name)return 0;
+    size_t length=strlen(name);
+    if(!output || capacity<=length)return -1;
+    memcpy(output,name,length+1);return 1;
 }
 static const char *language_label(const char *key,int locale)
 {
@@ -317,6 +423,18 @@ static const char *emoji_label(const unsigned char *text,size_t length,
     }
     return label;
 }
+int reloq_unicode_is_default_emoji(uint32_t cp)
+{
+    if(!cp || cp>0x10ffffu || (cp>=0xd800u && cp<=0xdfffu))return 0;
+    return emoji_presentation(cp) || (cp>=0x1f1e6 && cp<=0x1f1ff);
+}
+int reloq_unicode_is_emoji(uint32_t cp)
+{
+    if(!cp || cp>0x10ffffu || (cp>=0xd800u && cp<=0xdfffu))return 0;
+    if(reloq_unicode_is_default_emoji(cp))return 1;
+    unsigned char text[4];size_t length=encode(text,cp),matched=0;
+    return emoji_label(text,length,NULL,0,cp,1,0,0,1,&matched)!=NULL && matched==length;
+}
 static int language_unknown(struct buffer *b,uint32_t c,int locale)
 {
     static const char *const prefix[]={"Unicode U más","Unicode U plus","Unicode U più","统一码 U 加","Unicode U mais","ユニコード U プラス","Unicode U plus","유니코드 U 플러스","Γιούνικοντ U συν"};
@@ -324,6 +442,28 @@ static int language_unknown(struct buffer *b,uint32_t c,int locale)
     char hex[16];snprintf(hex,sizeof hex,"%04X",c);
     for(size_t i=0;hex[i];++i)if(add(b,hex+i,1)||add(b," ",1))return -1;
     return 0;
+}
+
+struct unicode_url_cache {size_t begin,end;int valid,matched;};
+static int url_token_char(unsigned char c)
+{
+    return c>32&&c<127&&!strchr("()[]{}<>\"'`",c);
+}
+/* Keep the native URL grammar intact before Mandarin symbol expansion.
+ * Cache a token at a time, so a long address with many slashes stays linear. */
+static int unicode_url_character(const unsigned char *text,size_t length,size_t at,
+                                 struct unicode_url_cache *cache)
+{
+    if(cache->valid&&at>=cache->begin&&at<cache->end)return cache->matched;
+    size_t begin=at,end=at;
+    while(begin&&url_token_char(text[begin-1]))--begin;
+    while(end<length&&url_token_char(text[end]))++end;
+    size_t n=end-begin;
+    cache->begin=begin;cache->end=end;cache->valid=1;
+    cache->matched=(n>=7&&!memcmp(text+begin,"http://",7))||
+                   (n>=8&&!memcmp(text+begin,"https://",8))||
+                   (n>=4&&!memcmp(text+begin,"www.",4));
+    return cache->matched;
 }
 static int language_owns(uint32_t c,int language)
 {
@@ -347,12 +487,13 @@ static int reading(struct buffer *b,const struct reloq_character_extension *r)
     return 0;
 }
 static int unicode_admit(const unsigned char *text,size_t length,
-    const unsigned char *modes,int english,int language,int tags,unsigned char **output,
+    const unsigned char *modes,int english,int language,int tags,unsigned protected_v,unsigned char **output,
     size_t *written,size_t **map)
 {
     if(!text||!output||!written||!map||length>SIZE_MAX/sizeof(size_t)-1)return -1;
     size_t *offsets=malloc((length+1)*sizeof *offsets);if(!offsets)return -2;
     struct buffer b={0};int rc=-1,native_run=0,source_spelling=0;
+    struct unicode_url_cache url={0};
     int locale=language?reloq_character_locale(language):-1;
     for(size_t i=0;i<length;) {
         uint32_t c;size_t n,begin=i,old;
@@ -366,12 +507,43 @@ static int unicode_admit(const unsigned char *text,size_t length,
             if(!((i-back)&1)) {
                 struct reloq_inline_tag t=reloq_inline_tag_read(text+i,length-i,0);
                 if(t.kind==RELOQ_TAG_SPELL)source_spelling=t.value;
+                /* The Mandarin English bank needs a word boundary before a
+                 * positive pause at the end of a sentence. Some ECI clients
+                 * supply the command in a separate AddText call without a
+                 * separating space; otherwise the native parser drops it. */
+                if(language==0x60000&&i&&t.kind==RELOQ_TAG_PAUSE&&t.value>0) {
+                    size_t previous=i-1,z;uint32_t before,after=0;
+                    while(previous&&(text[previous]&0xc0)==0x80)--previous;
+                    int latin=!decode(text+previous,i-previous,&z,&before)&&z==i-previous&&
+                        ((before>='A'&&before<='Z')||(before>='a'&&before<='z')||
+                         (before>='0'&&before<='9')||
+                         (before>=0xc0&&before<=0xff&&before!=0xd7&&before!=0xf7));
+                    size_t following=i+t.length;
+                    int final=following==length;
+                    if(following<length&&!decode(text+following,length-following,&z,&after))
+                        final=after=='.'||after=='?'||after=='!'||
+                              after==0x3002||after==0xff01||after==0xff1f;
+                    if(latin&&final&&add(&b," ",1)){rc=-2;goto fail;}
+                }
             }
         }
         /* Canonical base+accent composition spans ECI fragment boundaries. */
         while(end<length&&(!modes||modes[end]==mode)) {
             uint32_t mark;size_t z;if(decode(text+end,length-end,&z,&mark))goto fail;
             uint32_t merged=reloq_unicode_compose(c,mark);if(!merged)break;c=merged;end+=z;
+        }
+        /* Aragonese uses the distinct full name for a letter read alone,
+         * but a short "ve" inside a spelled sequence. */
+        if(language==0x130000&&(c=='v'||c=='V')&&
+           (mode||source_spelling||!(protected_v&(c=='v'?1u:2u)))&&
+           aragonese_single_v(text,length,modes,begin,end,source_spelling)) {
+            old=b.n;
+            if((native_run||source_spelling)&&add(&b," `ts0 ",6)){rc=-2;goto fail;}
+            native_run=0;
+            if(say(&b,"ve baixa")||(source_spelling&&
+               add(&b,source_spelling==1?" `ts1 ":" `ts2 ",6))){rc=-2;goto fail;}
+            offsets[begin]=old;for(size_t j=begin+1;j<end;++j)offsets[j]=b.n;
+            offsets[end]=b.n;i=end;continue;
         }
         /* Keep the existing US-English Unicode reading of numeric ranges. */
         if(english==1&&!mode&&!source_spelling&&(c==0x2013||c==0x2014)&&
@@ -391,9 +563,9 @@ static int unicode_admit(const unsigned char *text,size_t length,
             }
         }
         {
-            /* Foreign Greek letters have one alphabet-name route in both
-             * sentence and character reading. This includes the CP1252
-             * micro sign, whose Unicode alphabet alias is Greek mu. */
+            /* Foreign Greek letters use their alphabet names in continuous
+             * text as well as in explicit spelling. Native Greek remains
+             * untouched and is still read by its own language rules. */
             const char *greek=(c==0xb5||c>=0x370)&&(!language||!language_owns(c,language))?
                 greek_label(c,language?locale:255):NULL;
             if(greek) {
@@ -403,7 +575,8 @@ static int unicode_admit(const unsigned char *text,size_t length,
                 old=b.n;
                 if((native_run||source_spelling)&&add(&b," `ts0 ",6)){rc=-2;goto fail;}
                 native_run=0;
-                if(say(&b,greek)||(source_spelling&&add(&b,source_spelling==1?" `ts1 ":" `ts2 ",6))){rc=-2;goto fail;}
+                if(say(&b,greek) ||
+                   (source_spelling&&add(&b,source_spelling==1?" `ts1 ":" `ts2 ",6))){rc=-2;goto fail;}
                 offsets[begin]=old;
                 for(size_t j=begin+1;j<end;++j)offsets[j]=b.n;
                 offsets[end]=b.n;i=end;continue;
@@ -427,6 +600,33 @@ static int unicode_admit(const unsigned char *text,size_t length,
                 size_t p=end,z;uint32_t next;
                 if(!decode(text+p,length-p,&z,&next)&&next==0xfe0f)p+=z;
                 if(p<length&&!decode(text+p,length-p,&z,&next)&&next==0x20e3){end=p+z;c=' ';}
+            }
+            const char *symbol=NULL;
+            int is_url=!mode&&c<128&&(language==0x60000||language==0x60001)&&
+                strchr("/\\_~@|",(int)c)&&unicode_url_character(text,length,begin,&url);
+            if(!mode&&!is_url&&(language==0x60000||language==0x60001)) {
+                int traditional=language==0x60001;
+                switch(c) {
+                case '<': case 0xff1c:
+                    symbol=traditional?u8"小於":u8"小于";break;
+                case '>': case 0xff1e:
+                    symbol=traditional?u8"大於":u8"大于";break;
+                case '\\': case 0xff3c:
+                    symbol=traditional?u8"反斜線":u8"反斜杠";break;
+                case '/': case 0xff0f:
+                    symbol=traditional?u8"斜線":u8"斜杠";break;
+                case '_': case 0xff3f:
+                    symbol=traditional?u8"底線":u8"下划线";break;
+                case '|': case 0xff5c:
+                    symbol=traditional?u8"豎線":u8"竖线";break;
+                case '~': case 0xff5e:
+                    symbol=traditional?u8"波浪號":u8"波浪号";break;
+                }
+            }
+            if(symbol) {
+                old=b.n;
+                if(say(&b,symbol)){rc=-2;goto fail;}
+                offsets[begin]=old;offsets[end]=b.n;i=end;continue;
             }
             int native=c>32&&!(c>=0x7f&&c<=0x9f)&&(cp1252(c)||language_owns(c,language));
             struct reloq_character_extension extension={0};int terminal=0;
@@ -460,6 +660,12 @@ static int unicode_admit(const unsigned char *text,size_t length,
                     if(s?say(&b,s):language_unknown(&b,c,locale)){rc=-2;goto fail;}}
             } else {
                 int failed=0;
+                /* The original CJK symbol table calls @ a mail/address
+                   mark. Use the standard Chinese reading in prose. */
+                if(c=='@'&&!is_url&&(language==0x60000||language==0x60001)) {
+                    failed=add(&b,"at",2);
+                    if(!failed){offsets[begin]=old;offsets[end]=b.n;i=end;continue;}
+                }
                 if((c<32&&c!=9&&c!=10&&c!=13)||(c>=0x7f&&c<=0x9f)||
                    c==0x1680||(c>=0x2000&&c<=0x200a)||c==0x2028||c==0x2029||
                    c==0x202f||c==0x205f||c==0x3000)c=' ';
@@ -473,8 +679,6 @@ static int unicode_admit(const unsigned char *text,size_t length,
                     size_t lo=0,hi=COUNT(unicode_compat);
                     while(lo<hi){size_t m=lo+(hi-lo)/2;if(unicode_compat[m].cp<c)lo=m+1;else hi=m;}
                     if(lo<COUNT(unicode_compat)&&unicode_compat[lo].cp==c)failed=add(&b,STR(unicode_compat[lo].fold),strlen(STR(unicode_compat[lo].fold)));
-                    else if(c>=0x370&&c<=0x3ff){char key[5]={0};encode((unsigned char *)key,c);
-                        const char *s=language_label(key,locale);failed=s?say(&b,s):add(&b," ",1);}
                     else failed=add(&b," ",1);
                 }
                 if(failed){rc=-2;goto fail;}
@@ -542,9 +746,8 @@ static int unicode_admit(const unsigned char *text,size_t length,
         struct reloq_character_reading native_reading;
         int native=mode&&(!label||matched<=end)&&
             reloq_character_read_native(c,english,&native_reading)==1;
-        /* The native underscore reading already has noun stress. Route this
-         * explicit character through that reading, not the ambiguous word. */
-        int raw=mode&&!english&&c!='`'&&c!='_'&&(!label||matched<=end)&&
+        /* Native character rules own their names, including underscore. */
+        int raw=mode&&!english&&c!='`'&&(!label||matched<=end)&&
             reloq_character_native_available(c,0);
         if(native_run&&!raw) {
             if(add(&b," `ts0 ",6)){rc=-2;goto fail;}
@@ -572,14 +775,20 @@ int reloq_unicode_admit(const unsigned char *text,size_t length,
     const unsigned char *modes,int english,int tags,unsigned char **output,
     size_t *written,size_t **map)
 {
-    return unicode_admit(text,length,modes,english,0,tags,output,written,map);
+    return unicode_admit(text,length,modes,english,0,tags,0,output,written,map);
+}
+int reloq_unicode_admit_language_masked(const unsigned char *text,size_t length,
+    const unsigned char *modes,int language,int tags,unsigned protected_v,
+    unsigned char **output,size_t *written,size_t **map)
+{
+    if(language==0x40000||language==0x10000)return unicode_admit(text,length,modes,language==0x10000,0,tags,0,output,written,map);
+    if(reloq_character_locale(language)<0)return -1;
+    int family=language>>16,policy=family==6||family==8||family==10||family==18?3:2;
+    return unicode_admit(text,length,modes,policy,language,tags,protected_v,output,written,map);
 }
 int reloq_unicode_admit_language(const unsigned char *text,size_t length,
     const unsigned char *modes,int language,int tags,unsigned char **output,
     size_t *written,size_t **map)
 {
-    if(language==0x40000||language==0x10000)return unicode_admit(text,length,modes,language==0x10000,0,tags,output,written,map);
-    if(reloq_character_locale(language)<0)return -1;
-    int family=language>>16,policy=family==6||family==8||family==10||family==18?3:2;
-    return unicode_admit(text,length,modes,policy,language,tags,output,written,map);
+    return reloq_unicode_admit_language_masked(text,length,modes,language,tags,0,output,written,map);
 }

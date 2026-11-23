@@ -21,7 +21,7 @@ static inline int sapi_dictionary_guess(const wchar_t *path,int *dialect,unsigne
         {L"ENU",0x10000},{L"ENG",0x10001},{L"ESP",0x20000},{L"ESM",0x20001},
         {L"FRA",0x30000},{L"FRC",0x30001},{L"DEU",0x40000},{L"ITA",0x50000},
         {L"CHS",0x60000},{L"PTB",0x70000},{L"JPN",0x80000},{L"FIN",0x90000},
-        {L"KOR",0xa0000},{L"ELL",0x120000}};
+        {L"KOR",0xa0000},{L"ELL",0x120000},{L"ARA",0x130000}};
     static const wchar_t *const suffixes[]={L"main.dic",L"root.dic",L"abbr.dic"};
     if(!path||!dialect||!volume)return 0;
     const wchar_t *name=path;

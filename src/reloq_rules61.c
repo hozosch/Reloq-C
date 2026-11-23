@@ -6,6 +6,7 @@
 #include "reloq_german_lexicon.h"
 #include "reloq_german_spr.h"
 #include "reloq_inline_tags.h"
+#include "reloq_english_currency.h"
 #include "reloq_character.h"
 #include "reloq_cp1252.h"
 #include "reloq_utf8.h"
@@ -371,6 +372,16 @@ static int wordseg_maybe_plural_acronym(const unsigned char *a,size_t n)
     return 0;
 }
 
+/* A following digit must not force a pronounceable uppercase word to be
+ * spelt. Do this even when optional segmentation settings are off. */
+static int wordseg_maybe_upper_number(const unsigned char *a,size_t n)
+{
+    for(size_t i=2;i<n;++i)
+        if(a[i]>='0'&&a[i]<='9'&&a[i-1]>='A'&&a[i-1]<='Z'&&
+           a[i-2]>='A'&&a[i-2]<='Z')return 1;
+    return 0;
+}
+
 /* For a base the original voice already spells as individual letters,
  * retain its actual letter names and attach the plural to the final one.
  * Pronounceable acronyms (such as PAC and NASA) are intentionally skipped. */
@@ -542,7 +553,8 @@ static int wordseg_input(unsigned char **text,size_t **source,size_t *length,int
     struct reloq_wordseg_options options=reloq_wordseg_current();
     int english=(language==0x10000||language==0x10001);
     if(!options.camel&&!(english&&options.english)&&
-       (!(english||language==0x40000)||!wordseg_maybe_plural_acronym(*text,*length)))return 0;
+       (!(english||language==0x40000)||!wordseg_maybe_plural_acronym(*text,*length))&&
+       !wordseg_maybe_upper_number(*text,*length))return 0;
     int family=language>>16,utf8=family==6||family==8||family==10||family==18;
     const unsigned char *a=*text;const size_t *map=*source,n=*length;
     struct german_shared_buffer b={0};int changed=0,spelling=0;
@@ -583,8 +595,23 @@ static int wordseg_input(unsigned char **text,size_t **source,size_t *length,int
             if(last>options.protected_length)last=options.protected_length;
             for(size_t j=first;j<last;++j)if(options.protected_text[j]){protected=1;break;}
         }
-        if(protected||wordseg_mark_inside(marks,map[i],map[end])||
-           wordseg_dictionary(dictionary,a+i,end-i,english,utf8,abbreviations_disabled)) {
+        if(protected||wordseg_dictionary(dictionary,a+i,end-i,english,utf8,abbreviations_disabled)) {
+            if(german_shared_append(&b,a+i,map+i,end-i,0))goto fail;
+            i=end;continue;
+        }
+        /* Reuse each language's own reading of the uppercase word and its
+         * number. Preserve whole dictionary entries and caller spelling. */
+        size_t digits=i;
+        while(digits<end&&a[digits]>='A'&&a[digits]<='Z')++digits;
+        size_t after=digits;
+        while(after<end&&a[after]>='0'&&a[after]<='9')++after;
+        if(digits-i>=2&&digits<end&&after==end) {
+            if(german_shared_append(&b,a+i,map+i,digits-i,0)||
+               german_shared_append(&b,(const unsigned char *)" ",NULL,1,map[digits])||
+               german_shared_append(&b,a+digits,map+digits,end-digits,0))goto fail;
+            changed=1;i=end;continue;
+        }
+        if(wordseg_mark_inside(marks,map[i],map[end])) {
             if(german_shared_append(&b,a+i,map+i,end-i,0))goto fail;
             i=end;continue;
         }
@@ -1173,6 +1200,7 @@ int reloq_rules61_phonemes(int language,const unsigned char *text,size_t length,
     if(wordseg_input(&input,&map,&n,language,&wordseg_marks)) {
         free(input);free(map);return -2;
     }
+    if(family==1)reloq_english_currency_case(input,n,tags);
     if(language==0x40000) {
         german_compact_input(input,map,&n,tags);
         if(german_main_input(&input,&map,&n,tags)){free(input);free(map);return -2;}
@@ -1702,6 +1730,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     struct wordseg_marks wordseg_marks={.indices=indices,.index_count=index_count,
         .pitches=pitches,.pitch_count=pitch_count};
     if(wordseg_input(&a,&map,&n,language,&wordseg_marks))goto memory;
+    if(family==1)reloq_english_currency_case(a,n,tags);
     if(language==0x40000)german_compact_input(a,map,&n,tags);
     if(tags&&!plan.cjk_volume&&normalize_word_voice_controls(&a,&map,&n,family==18))goto memory;
     if(language==0x40000&&german_main_input(&a,&map,&n,tags))goto memory;

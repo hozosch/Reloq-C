@@ -30,6 +30,7 @@ def main():
     parser.add_argument("--library", type=Path, required=True)
     parser.add_argument("--addon", type=Path, help="Test this exact existing package without rebuilding its translations")
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--spelling-only", action="store_true", help="Run the NVDA Unicode-spelling checks only")
     args = parser.parse_args()
     library = args.library.resolve()
     loader = ctypes.WinDLL if sys.platform == "win32" else ctypes.CDLL
@@ -141,6 +142,175 @@ def main():
 
             try:
                 driver.sampleRate = "3"
+                driver.voiceTags = False
+                driver.language = "de_DE"
+                speech_config = sys.modules['config'].conf['speech']
+                try:
+                    spelling_config = speech_config[driver.name]
+                except KeyError:
+                    speech_config[driver.name] = {}
+                    spelling_config = speech_config[driver.name]
+                for key, value in dict(useSpellingFunctionality=True, capPitchChange=0,
+                        sayCapForCapitals=False, beepForCapitals=False).items():
+                    spelling_config[key] = value
+                speech_dictionary = api.speak.__globals__['speechDictHandler']
+                with mock.patch.dict(sys.modules, {'speechDictHandler': speech_dictionary,
+                                                   'characterProcessing': api.symbols}):
+                    # A plain one-character utterance has no spelling or
+                    # normalization command. It must still use the same
+                    # native name as an explicit protected character.
+                    char_mode = sys.modules['speech.commands'].CharacterModeCommand
+                    index = sys.modules['speech.commands'].IndexCommand
+                    direct = module._parts([index(71), '⚭', index(72)])
+                    assert next(part for part in direct if isinstance(part, module.EciText)).character_mode
+                    guarded = module._parts([module.SegmentationGuard(True), '⚭', module.SegmentationGuard(False)])
+                    assert not next(part for part in guarded if isinstance(part, module.EciText)).character_mode
+                    for locale in (entry.locale for entry in driver._languages.values()):
+                        driver.language = locale
+                        for char in ('⚭', 'Ж', '≪', '«', '»', '€', '×', '→', '∑', '\u00a0', '\u200b',
+                                     '@', '+', '?', 'a', '1', ' ', '\t', '\n', '\r', '\x7f'):
+                            expected = run([char_mode(True), module.NativeDictionaryWord(char), char_mode(False)])
+                            for enabled in (False, True):
+                                spelling_config['useSpellingFunctionality'] = enabled
+                                actual = run([index(71), char, index(72)])
+                                assert actual == expected, (locale, char, enabled)
+                                report['checks'] += 1
+                    # If NVDA leaves a raw Unicode symbol in running text,
+                    # an index does not turn that fragment into an isolated
+                    # character. Emoji retain the existing CLDR handling.
+                    original_symbols = api.symbols.processSpeechSymbols
+                    with mock.patch.object(api.symbols, 'processSpeechSymbols',
+                                           side_effect=lambda locale, text, level: text):
+                        for locale in ('de_DE', 'en_US'):
+                            driver.language = locale
+                            reference = run(['Hallo ', index(73), ' ', index(74), ' Welt'])
+                            for char in ('⚭',):
+                                assert run(['Hallo ', index(73), char, index(74), ' Welt']) == reference, (locale, char)
+                                report['checks'] += 1
+                            # Foreign Greek letters are spoken by their
+                            # alphabet names even in ordinary running text.
+                            assert run(['Hallo ', index(73), 'α', index(74), ' Welt']) != reference, locale
+                            report['checks'] += 1
+                            for char in ('@', '+', '?'):
+                                # A text fragment between indexes is still
+                                # part of the sentence, not a character job.
+                                expected = run(['Hallo ' + char + ' Welt'])
+                                assert run(['Hallo ', index(73), char, index(74), ' Welt']) == expected, (locale, char)
+                                report['checks'] += 1
+                            assert run(['Hallo ', index(73), '🙂', index(74), ' Welt']) != reference
+                            report['checks'] += 1
+                    driver.language = 'de_DE'
+                    for use_spelling in (True, False):
+                        spelling_config['useSpellingFunctionality'] = use_spelling
+                        for char, name in (('∰', 'Volumenintegral'), ('⌘', 'Sehenswürdigkeitszeichen'),
+                                           ('⚭', 'Ehezeichen'), ('⊖', 'eingekreistes Minuszeichen'),
+                                           ('≪', 'sehr viel kleiner als')):
+                            sequence = list(api.getSpellingSpeech(char, locale='de_DE', endsUtterance=False))
+                            actual = run(sequence)
+                            submitted = received[-1]
+                            nvda_name = api.symbols.processSpeechSymbol('de_DE', char)
+                            expected = run([name if nvda_name == char else nvda_name])
+                            assert actual == expected, (use_spelling, char, name, sequence, submitted,
+                                                        len(actual), len(expected))
+                            report['checks'] += 1
+                    # Personal speech dictionaries retain priority over the
+                    # synth's fallback name when spelling mode is disabled.
+                    spelling_config['useSpellingFunctionality'] = False
+                    unknown = next(char for char in ('∰', '⌘', '⚭', '⊖', '≪')
+                                   if api.symbols.processSpeechSymbol('de_DE', char) == char)
+                    original_process = speech_dictionary.processText
+                    speech_dictionary.processText = lambda text: 'Benutzerwort' if text == unknown else text
+                    try:
+                        sequence = list(api.getSpellingSpeech(unknown, locale='de_DE', endsUtterance=False))
+                        actual = run(sequence)
+                        submitted = received[-1]
+                        expected = run(['Benutzerwort'])
+                        assert actual == expected, (sequence, submitted, len(actual), len(expected))
+                        assert run([unknown]) == expected, 'plain isolated character bypassed a personal dictionary'
+                    finally:
+                        speech_dictionary.processText = original_process
+                    report['checks'] += 1
+                    # An explicit dictionary deletion also has priority;
+                    # it must not be mistaken for symbol-level suppression.
+                    speech_dictionary.processText = lambda text: '' if text == unknown else text
+                    try:
+                        for enabled in (True, False):
+                            spelling_config['useSpellingFunctionality'] = enabled
+                            sequence = list(api.getSpellingSpeech(unknown, locale='de_DE', endsUtterance=False))
+                            prepared = driver._prepare_speech_sequence(sequence)
+                            driver._protect_before_speech(prepared, symbolLevel=0)
+                            assert unknown in prepared
+                            assert not any(type(part).__name__ == 'NativeDictionaryWord' and part.text == unknown
+                                           for part in prepared)
+                            plain = driver._prepare_speech_sequence([unknown])
+                            driver._protect_before_speech(plain, symbolLevel=0)
+                            assert unknown in plain
+                            assert not any(type(part).__name__ == 'NativeDictionaryWord' and part.text == unknown
+                                           for part in plain)
+                            report['checks'] += 1
+                    finally:
+                        speech_dictionary.processText = original_process
+                    original_imported = driver._imported_dictionaries
+                    class ImportedSymbolDictionary:
+                        records = (object(),)
+                        def matches(self, text, language, voice):
+                            return text == unknown and language == 0x40000
+                        def process(self, text, language, voice):
+                            return 'Benutzerwort' if self.matches(text, language, voice) else text
+                    driver._imported_dictionaries = ImportedSymbolDictionary()
+                    try:
+                        sequence = list(api.getSpellingSpeech(unknown, locale='de_DE', endsUtterance=False))
+                        assert run(sequence) == run(['Benutzerwort'])
+                        assert run([unknown]) == run(['Benutzerwort'])
+                    finally:
+                        driver._imported_dictionaries = original_imported
+                    report['checks'] += 1
+                    # The same symbol should keep its name across the two
+                    # NVDA spelling settings for other installed languages.
+                    for locale in ('en_US', 'es_ES', 'fr_FR'):
+                        driver.language = locale
+                        for char in ('∰', '⚭', '⊖', '≪', '\u2067'):
+                            for level in (0, 300):
+                                spelling_config['useSpellingFunctionality'] = True
+                                expected = run(list(api.getSpellingSpeech(char, locale=locale,
+                                                                         endsUtterance=False)), level=level)
+                                spelling_config['useSpellingFunctionality'] = False
+                                actual = run(list(api.getSpellingSpeech(char, locale=locale,
+                                                                       endsUtterance=False)), level=level)
+                                assert actual == expected, (locale, char, level)
+                                report['checks'] += 1
+                    # Unicode letters are not all punctuation or symbols.
+                    # A non-ASCII scalar in NVDA's explicit spelling path
+                    # must reach the same native name in every voice, even
+                    # when synthesizer spelling functionality is disabled.
+                    for locale in (entry.locale for entry in driver._languages.values()):
+                        driver.language = locale
+                        for char in ('Ж', 'א', 'ꜩ', '⚭'):
+                            spelling_config['useSpellingFunctionality'] = True
+                            expected = run(list(api.getSpellingSpeech(char, locale=locale, endsUtterance=False)))
+                            spelling_config['useSpellingFunctionality'] = False
+                            actual = run(list(api.getSpellingSpeech(char, locale=locale, endsUtterance=False)))
+                            assert actual == expected, (locale, char)
+                            report['checks'] += 1
+                    # NVDA still runs symbol processing in character mode.
+                    # Simulate a raw symbol which its current level suppresses.
+                    driver.language = 'de_DE'
+                    spelling_config['useSpellingFunctionality'] = True
+                    expected = run(list(api.getSpellingSpeech(unknown, locale='de_DE', endsUtterance=False)))
+                    original_symbols = api.symbols.processSpeechSymbols
+                    def hide_unknown(locale, text, level):
+                        return '' if text == unknown else original_symbols(locale, text, level)
+                    with mock.patch.object(api.symbols, 'processSpeechSymbols', side_effect=hide_unknown):
+                        for enabled in (True, False):
+                            spelling_config['useSpellingFunctionality'] = enabled
+                            actual = run(list(api.getSpellingSpeech(unknown, locale='de_DE', endsUtterance=False)))
+                            assert actual == expected, (enabled, unknown)
+                            report['checks'] += 1
+                    driver.language = 'de_DE'
+                spelling_config['useSpellingFunctionality'] = True
+                if args.spelling_only:
+                    print('NVDA Unicode spelling passed:', report['checks'], 'checks')
+                    return
                 driver.voiceTags = True
                 cases = {
                     "de_DE": ("Das ist eine ", "Nachricht", " mit einem Test."),

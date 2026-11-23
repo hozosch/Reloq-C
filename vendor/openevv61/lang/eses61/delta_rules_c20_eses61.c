@@ -25,6 +25,7 @@
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
 #include "reloq61_rule_calls_eses61.h"
+#include "reloq61_aragonese.h"
 
 /* Where each global the rules touch lands in the state,
    as a distance from the first cell. */
@@ -5658,7 +5659,12 @@ int32_t reloq_eses61_apply_span_b_rules(void *state, int32_t p0, int32_t p1, int
     r0 = reloq61_typed_get_parm(DELTA_ENTRY_get_parm, state, (delta_loc *)(base + (-20)), EVV_AT(delta_loc *, (int32_t)PARAM(int32_t, 2)), (int16_t)(-6));
     r0 = reloq61_typed_fence(DELTA_ENTRY_fence, state, (int8_t)(1), EVV_AT(const uint8_t *, delta_sym_ref[1137]));
     r0 = reloq61_typed_lpta_rpta_loadp(DELTA_ENTRY_lpta_rpta_loadp, state, (const delta_token *)(base + (-12)), (const delta_token *)(base + (-20)));
-    r0 = reloq61_typed_insert_2pt_s(DELTA_ENTRY_insert_2pt_s, state, (uint8_t)(4), (uint8_t)(1), EVV_AT(const uint8_t *, delta_sym_ref[1165]), (uint8_t)(0));
+    const uint8_t *phone=EVV_AT(const uint8_t *,delta_sym_ref[1165]);
+    if(delta_lang_now()->id==RELOQ61_ARAGONESE&&
+       reloq61_an_liaison_b(state,RELOQ61_WORKSPACE_REF(frame,reloq_workspace_ref,200))) {
+        AT(uint8_t,-24)=7;phone=base-24; /* voiced bilabial approximant */
+    }
+    r0 = reloq61_typed_insert_2pt_s(DELTA_ENTRY_insert_2pt_s, state, 4, 1, phone, 0);
     if (r0 != 0) goto L207;
     goto L235;
 L207:;

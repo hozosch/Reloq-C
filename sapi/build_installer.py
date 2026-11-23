@@ -8,6 +8,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 from version import VERSION
+from generate_catalogue import LANGUAGE_DISPLAY_ORDER
 
 
 def stage(build, packages):
@@ -61,7 +62,7 @@ def main():
     subprocess.run([str(args.iscc.resolve()), '/DAppVersion=' + VERSION, '/DPayload=' + str(payload),
                     '/DOutput=' + str(output), str(script)], check=True)
     installer = output / f'reloq-c-sapi5-{VERSION}-setup.exe'
-    report = {'version': VERSION, 'architectures': ['x86', 'x64'], 'languages': 14,
+    report = {'version': VERSION, 'architectures': ['x86', 'x64'], 'languages': len(LANGUAGE_DISPLAY_ORDER),
               'sha256': hashlib.sha256(installer.read_bytes()).hexdigest(),
               'bytes': installer.stat().st_size, 'payloads': snapshots,
               'shared_dictionary_copies': 1, 'uninstall': 'Inno Setup, both COM registry views'}

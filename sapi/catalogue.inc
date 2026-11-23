@@ -14,6 +14,7 @@ static const struct sapi_language sapi_languages[] = {
     {0xa0000,0x412,L"Korean",L"ko_KR",L"음성 테스트입니다. Windows computer."},
     {0x70000,0x416,L"Brazilian Portuguese",L"pt_BR",L"Este é um teste de voz."},
     {0x120000,0x408,L"Greek",L"el_GR",L"Αυτή είναι μια δοκιμή ομιλίας."},
+    {0x130000,0xc0a,L"Aragonese",L"an_ES",L"Esta ye una preba de voz."},
 };
 static const int sapi_rates[]={8000,11025,22050,16000,32000,44100,48000};
 static const WCHAR *const sapi_profiles[]={L"Reed",L"Shelly",L"Bobby",L"Rocko",L"Glen",L"Sandy",L"Grandma",L"Grandpa"};

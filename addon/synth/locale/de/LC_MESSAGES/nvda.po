@@ -197,6 +197,57 @@ msgstr "Immer"
 msgid "German"
 msgstr "Deutsch"
 
+msgid "Eloquence"
+msgstr "Eloquence"
+
+msgid "NVDA"
+msgstr "NVDA"
+
+msgid "Per-language acoustic timing"
+msgstr "Lauttakt pro Sprache"
+
+msgid "Pitch in hertz"
+msgstr "Tonhöhe in Hertz"
+
+msgid "Use pitch in hertz"
+msgstr "Tonhöhe in Hertz verwenden"
+
+msgid "American English"
+msgstr "Amerikanisches Englisch"
+
+msgid "British English"
+msgstr "Britisches Englisch"
+
+msgid "Brazilian Portuguese"
+msgstr "Brasilianisches Portugiesisch"
+
+msgid "Castilian Spanish"
+msgstr "Kastilisches Spanisch"
+
+msgid "Latin American Spanish"
+msgstr "Lateinamerikanisches Spanisch"
+
+msgid "French"
+msgstr "Französisch"
+
+msgid "French Canadian"
+msgstr "Kanadisches Französisch"
+
+msgid "Mandarin Chinese"
+msgstr "Mandarin-Chinesisch"
+
+msgid "Persian"
+msgstr "Persisch"
+
+msgid "Persian (Pinglish)"
+msgstr "Persisch (Pinglish)"
+
+msgid "Eloquence C: Persian and Pinglish test"
+msgstr "Eloquence C: Persisch- und Pinglish-Test"
+
+msgid "Test build with Persian and Pinglish."
+msgstr "Testversion mit Persisch und Pinglish."
+
 #. Translators: Voice preset labels, independent of the spoken language.
 #: nvda/_reloq_languages.py:77
 msgid "Male 1"
@@ -232,13 +283,13 @@ msgstr "Männlich 4"
 
 #. Translators: Add-on name shown in NVDA's add-on manager.
 #: addon/build_translations.py:30
-msgid "Eloquence C: fourteen language variants"
-msgstr "Eloquence C: vierzehn Sprachvarianten"
+msgid "Eloquence C: fifteen language variants"
+msgstr "Eloquence C: fünfzehn Sprachvarianten"
 
 #. Translators: Add-on description; this refers to the spoken language.
 #: addon/build_translations.py:32
-msgid "Native C synthesizer with fourteen language variants at 8 to 48 kHz, including Japanese, Korean, Chinese and Greek."
-msgstr "Nativer C-Synthesizer mit vierzehn Sprachvarianten bei 8 bis 48 kHz, einschließlich Japanisch, Koreanisch, Chinesisch und Griechisch."
+msgid "Native C synthesizer with fifteen language variants at 8 to 48 kHz, including Aragonese, Japanese, Korean, Chinese and Greek."
+msgstr "Nativer C-Synthesizer mit fünfzehn Sprachvarianten bei 8 bis 48 kHz, einschließlich Aragonesisch, Japanisch, Koreanisch, Chinesisch und Griechisch."
 
 msgid "English (United States)"
 msgstr "Englisch (USA)"
@@ -278,6 +329,9 @@ msgstr "Chinesisch"
 
 msgid "Greek"
 msgstr "Griechisch"
+
+msgid "Aragonese"
+msgstr "Aragonesisch"
 
 #: synthDrivers/reloqC/__init__.py
 msgid "Use &community pronunciation dictionaries"

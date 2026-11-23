@@ -59,7 +59,7 @@ def main():
                     changed+=fine!=original
                     assert engine.lib.eciSetParam(engine.h,CLOCK,2)>=0
                     automatic=engine.speak(''.join(parts))
-                    expected=original if language in (0x20000,0x120000) else fine
+                    expected=original if language in (0x20000,0x120000,0x130000) else fine
                     assert automatic==expected,(hex(language),rate,speed,'automatic')
                     assert engine.lib.eciSetParam(engine.h,CLOCK,0)>=0
                     assert engine.speak(''.join(parts))==fine,(hex(language),rate,speed,'restore')

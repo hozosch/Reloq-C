@@ -25,6 +25,7 @@
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
 #include "reloq61_rule_calls_eses61.h"
+#include "reloq61_aragonese.h"
 
 /* Where each global the rules touch lands in the state,
    as a distance from the first cell. */
@@ -2888,7 +2889,9 @@ L181:;
     reloq_local_192.i32 = ((int32_t)AT(int32_t, -4));
     reloq_local_196.i32 = (1500000);
 L197:;
-    STATE(int32_t, f20) = ((int32_t)reloq_local_196.i32);
+    STATE(int32_t, f20) = delta_lang_now()->id==RELOQ61_ARAGONESE&&
+        reloq61_an_standalone_sh(state,STATE_AT(w60,-4)) ?
+        (int32_t)((int64_t)reloq_local_196.i32*65/100) : (int32_t)reloq_local_196.i32;
     goto L514;
 L210:;
     r0 = reloq61_typed_bspush_ca_scan_boa(DELTA_ENTRY_bspush_ca_scan_boa, state, (int16_t)(2));

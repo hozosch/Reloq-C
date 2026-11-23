@@ -12,6 +12,13 @@ from test_eci_inline_queue import Engine
 ROOT = Path(__file__).resolve().parents[1]
 REFERENCE = ROOT / 'docs' / 'validation' / 'eci-original-vwpm-low.json'
 VALUES = (5, 8, 10, 12, 16, 20, 30, 50, 150, 200)
+# PR 55 applies third-tone sandhi to 你好 (ni2 hao3). The new pronunciation
+# has a different, still native, duration than the original ni3 hao3 sample.
+# Retain the original ECI oracle for every other language and utterance.
+MANDARIN_SANDHI_SAMPLES = {
+    5: 358930, 8: 224345, 10: 179465, 12: 149512, 16: 112101,
+    20: 89738, 30: 59774, 50: 35882, 150: 11891, 200: 8976,
+}
 ADDITIONAL = {
     0x60001: '你好。',
     0x120000: 'Γεια σου.',
@@ -40,9 +47,12 @@ def main():
         actual = samples(library, case['language'], case['text'], case['wpm'])
         # Original and ReLoq quantize 11.025 kHz in slightly different frame
         # blocks. Differences larger than 12 ms indicate a timing regression.
-        delta = abs(actual - case['samples'])
+        expected = (MANDARIN_SANDHI_SAMPLES[case['wpm']]
+                    if case['language'] == 0x60000 and case['text'] == '你好。'
+                    else case['samples'])
+        delta = abs(actual - expected)
         assert delta <= 133, (hex(case['language']), case['wpm'], actual,
-                              case['samples'], delta)
+                              expected, delta)
         checks += 1
     assert checks == 130, checks
     original_checks = checks
@@ -54,7 +64,9 @@ def main():
     # silent Canadian French case). These values use the 5-WPM native timing
     # with pitch-preserving streaming expansion, so check monotone timing and
     # the actual scale in every language, not the reference's broken samples.
-    cases = [(c['language'], c['text'], c['samples']) for c in reference['cases']
+    cases = [(c['language'], c['text'],
+              MANDARIN_SANDHI_SAMPLES[5] if c['language'] == 0x60000 and c['text'] == '你好。'
+              else c['samples']) for c in reference['cases']
              if c['wpm'] == 5]
     cases += [(language, text, samples(library, language, text, 5))
               for language, text in ADDITIONAL.items()]
@@ -93,7 +105,7 @@ def main():
         transition_checks += len(counts)
     finally:
         e.close()
-    print(f'VWPM: {original_checks} original timing checks and '
+    print(f'VWPM: {original_checks} native/reference timing checks and '
           f'{checks - original_checks} additional-language checks passed; '
           f'{slow_checks} very-slow and {transition_checks} transition checks passed')
 

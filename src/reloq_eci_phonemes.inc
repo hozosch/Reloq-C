@@ -77,8 +77,9 @@ int ECICALL eciGeneratePhonemes(ECIHand handle,int room,void *buffer)
     }
     text[length]=0;
     unsigned char *admitted=NULL;size_t admitted_length=0;
-    int admission=reloq_unicode_admit_language(text,length,modes,e->language,
-        e->process_tags,&admitted,&admitted_length,&map);
+    int admission=reloq_unicode_admit_language_masked(text,length,modes,e->language,
+        e->process_tags,aragonese_dictionary_letters(e->rule_worker,e->language),
+        &admitted,&admitted_length,&map);
     if(admission){status=admission==-2?RELOQ_ECI_MEMORY:RELOQ_ECI_INVALID;goto done;}
     if(guards){unsigned char *mapped=project_guards(guards,length,admitted_length,map,0);
         if(!mapped){free(admitted);status=RELOQ_ECI_MEMORY;goto done;}
@@ -107,7 +108,10 @@ int ECICALL eciGeneratePhonemes(ECIHand handle,int room,void *buffer)
         reloq61_worker_dictionary_handle(e->rule_worker),e->dictionary_disabled,guards,length});
     int voice[8]={e->gender,e->head_size,e->native_pitch,e->native_inflection,
         e->roughness,e->breathiness,e->native_speed,e->native_volume};
-    int generated=reloq_rules61_phonemes(e->language,text,length,e->process_tags,
+    /* Unicode admission has already escaped disabled user tags and can add
+     * its own spelling controls. Interpret those controls just as the audio
+     * path does, even when the caller disabled user-supplied tags. */
+    int generated=reloq_rules61_phonemes(e->language,text,length,1,
         voice,ordinals,count,deliver_phonemes,phoneme_index,&output);
     reloq_wordseg_scope(wordseg);
     reloq61_cancel_scope(cancel);reloq61_text_options_scope(options);reloq61_worker_scope(worker);

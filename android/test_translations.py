@@ -23,6 +23,8 @@ def main():
     args = parser.parse_args()
     base = resources(RES / "values/strings.xml")
     expected = set(base) - {"app_name"}
+    zh_cn = resources(RES / "values-zh-rCN/strings.xml")
+    assert "设置" in (zh_cn["equalizer_advanced"].text or ""), "Chinese equalizer button must include 设置"
     paths = sorted(RES.glob("values-*/strings.xml"))
     locales = {p.parent.name[7:] for p in paths}
     required = {"de", "pt-rBR", "es", "fr", "it", "fi", "el", "zh-rCN", "zh-rTW", "ja", "ko"}
@@ -45,10 +47,10 @@ def main():
                 checks += 1
     catalog = (ROOT / "android/java/org/reloq/tts/Catalog.java").read_text()
     identifiers = [int(value, 16) for value in re.findall(r"new Language\((0x[0-9a-f]+),", catalog)]
-    assert len(identifiers) == len(set(identifiers)) == 15
+    assert len(identifiers) == len(set(identifiers)) == 16
     # Existing persisted indices must retain their language after an update.
     assert identifiers[:4] == [0x60000, 0x40000, 0x10001, 0x10000]
-    assert identifiers[-1] == 0x60001
+    assert identifiers[-2:] == [0x60001, 0x130000]
     if args.library:
         import ctypes as C
         lib = (C.WinDLL if hasattr(C, "WinDLL") else C.CDLL)(str(args.library.resolve()))
@@ -58,7 +60,7 @@ def main():
         values, count = (C.c_uint * 64)(), C.c_int(64)
         assert enum(values, C.byref(count)) == 0
         assert set(values[:count.value]) == set(identifiers), "Android/public ECI languages differ"
-    print(f"Android UI: {len(paths) + 1} locales, {checks} text/format/array checks; all 15 language variants and stored selection order covered")
+    print(f"Android UI: {len(paths) + 1} locales, {checks} text/format/array checks; all {len(identifiers)} language variants and stored selection order covered")
 
 
 if __name__ == "__main__": main()

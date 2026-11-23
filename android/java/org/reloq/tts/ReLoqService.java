@@ -77,14 +77,23 @@ public final class ReLoqService extends TextToSpeechService {
             for (int p=0;p<Catalog.PROFILES.length;++p)
                 result.add(new Voice(item.voice(p),item.locale,Voice.QUALITY_NORMAL,
                     Voice.LATENCY_VERY_LOW,false,Collections.emptySet()));
+        // Automatic detection voices: script runs switch engines per language.
+        for (int p=0;p<Catalog.PROFILES.length;++p)
+            result.add(new Voice(AutoLanguage.voice(p),java.util.Locale.US,
+                Voice.QUALITY_NORMAL,Voice.LATENCY_VERY_LOW,false,Collections.emptySet()));
         return result;
     }
     @Override public int onIsValidVoiceName(String name) {
-        return Catalog.forVoice(name)==null ? TextToSpeech.ERROR : TextToSpeech.SUCCESS;
+        return Catalog.forVoice(name)==null&&!AutoLanguage.isVoice(name)
+            ? TextToSpeech.ERROR : TextToSpeech.SUCCESS;
     }
     @Override public int onLoadVoice(String name) {
         Catalog.Language item=Catalog.forVoice(name);
-        if(item==null) return TextToSpeech.ERROR;
+        if(item==null) {
+            if(!AutoLanguage.isVoice(name)) return TextToSpeech.ERROR;
+            selected=Catalog.LANGUAGES[0];
+            return TextToSpeech.SUCCESS;
+        }
         selected=item;
         return TextToSpeech.SUCCESS;
     }
@@ -119,12 +128,27 @@ public final class ReLoqService extends TextToSpeechService {
     }
     @Override protected void onSynthesizeText(SynthesisRequest request,SynthesisCallback callback) {
         android.content.SharedPreferences preferences=BootPreferences.forService(this,BootPreferences.unlocked(this));
-        Catalog.Language item=Catalog.forVoice(request.getVoiceName());
-        if(item==null) item=Catalog.find(request.getLanguage(),request.getCountry());
+        Catalog.Language item=null;
+        boolean autoLanguage=AutoLanguage.isVoice(request.getVoiceName());
+        if(!autoLanguage) item=Catalog.forVoice(request.getVoiceName());
+        if(item==null&&!autoLanguage) item=Catalog.find(request.getLanguage(),request.getCountry());
         boolean androidVoice=preferences.getBoolean("androidVoice",true);
-        if(!androidVoice)
-            item=Catalog.LANGUAGES[VoiceSettings.bounded(preferences.getInt("language",3),0,Catalog.LANGUAGES.length-1)];
+        if(!androidVoice) {
+            int stored=VoiceSettings.bounded(preferences.getInt("language",3),0,AutoLanguage.INDEX);
+            autoLanguage=stored==AutoLanguage.INDEX;
+            if(autoLanguage) {
+                // Falls back to the stored base language for pure numbers,
+                // symbols and scripts without an Eloquence variant.
+                int base=VoiceSettings.bounded(preferences.getInt("autoBase",0),0,Catalog.LANGUAGES.length-1);
+                item=Catalog.LANGUAGES[base];
+            } else item=Catalog.LANGUAGES[stored];
+        }
+        if(autoLanguage&&item==null) {
+            int base=VoiceSettings.bounded(preferences.getInt("autoBase",0),0,Catalog.LANGUAGES.length-1);
+            item=Catalog.LANGUAGES[base];
+        }
         if(item==null) { callback.error(TextToSpeech.ERROR_INVALID_REQUEST); callback.done(); return; }
+        final boolean automatic=autoLanguage;
         selected=item;
         int profile=Catalog.profile(androidVoice?request.getVoiceName():null,
             preferences.getInt("profile",0));
@@ -132,6 +156,11 @@ public final class ReLoqService extends TextToSpeechService {
         int rate=VoiceSettings.bounded(settings.rate,0,Catalog.RATES.length-1);
         int[] controls=settings.controls(request.getSpeechRate(),request.getPitch(),item.id);
         String originalText=request.getCharSequenceText().toString();
+        if(!settings.tags && originalText.indexOf('`')>=0) {
+            // Formatting delimiters separate words but do not supply pause punctuation.
+            originalText=originalText.replaceAll("(?<!`)`++(?=[\\p{P}\\s]|$)","").replaceAll("`+"," ");
+        }
+        final String speechText=originalText;
         PcmQueue queue=new PcmQueue(16);
         active=queue;
         final int dialect=item.id;
@@ -167,9 +196,38 @@ public final class ReLoqService extends TextToSpeechService {
                                 speechDictionary=SpeechDictionary.load(path==null?null:new File(path),dialect,voice);
                                 speechDictionaryPath=path;speechDictionaryLanguage=dialect;speechDictionaryVoice=voice;
                             }
-                            SpeechDictionary.Result changed=speechDictionary.apply(originalText);
-                            success=NativeEngine.synthesize(handle,dialect,controls,
-                                changed.text.getBytes(StandardCharsets.UTF_8),queue,changed.matched);
+                            SpeechDictionary.Result changed=speechDictionary.apply(speechText);
+                            String prepared=NumberReading.prepare(changed.text,
+                                preferences.getInt("numberMode",NumberReading.AUTO),dialect);
+                            if(!automatic) {
+                                success=NativeEngine.synthesize(handle,dialect,controls,
+                                    prepared.getBytes(StandardCharsets.UTF_8),queue,changed.matched);
+                            } else {
+                                // The dictionary already ran on the whole text;
+                                // the guarded flag carries over to every segment.
+                                int latin=AutoLanguage.latinDialect(dialect);
+                                List<AutoLanguage.Segment> segments=
+                                    AutoLanguage.segments(prepared,latin,dialect);
+                                success=true;
+                                for(int segmentIndex=0;segmentIndex<segments.size();++segmentIndex) {
+                                    AutoLanguage.Segment segment=segments.get(segmentIndex);
+                                    if(queue.isCancelled())break;
+                                    if(segment.text.trim().isEmpty())continue;
+                                    // Voice controls such as the acoustic clock
+                                    // are per language, so recompute per segment.
+                                    // A language switch is not a sentence end.
+                                    // Keep punctuation pauses for the engine;
+                                    // only shorten an open-ended segment tail.
+                                    int[] segmentControls=settings.controls(
+                                        request.getSpeechRate(),request.getPitch(),segment.dialect);
+                                    if(segmentIndex<segments.size()-1&&segmentControls[9]==0&&
+                                       !NumberReading.endsWithPausePunctuation(segment.text))
+                                        segmentControls[9]=1;
+                                    if(!NativeEngine.synthesize(handle,segment.dialect,
+                                        segmentControls,segment.text.getBytes(StandardCharsets.UTF_8),
+                                        queue,changed.matched))success=false;
+                                }
+                            }
                         }
                     }
                 } catch(Throwable error) { Log.e("ReLoq","Synthesis failed",error); }
@@ -178,6 +236,7 @@ public final class ReLoqService extends TextToSpeechService {
             submitted=true;
             byte[] block;
             while((block=queue.read())!=null) {
+                if(settings.volumeGain)VolumeGain.apply(block);
                 for(int offset=0;offset<block.length;) {
                     int count=Math.min(callback.getMaxBufferSize(),block.length-offset);
                     if(count<=0 || queue.isCancelled() ||

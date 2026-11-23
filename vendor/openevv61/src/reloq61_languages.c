@@ -31,6 +31,8 @@ void delta_lang_bind_zhtw61(void);
 
 extern delta_language delta_lang_elgr61;
 void delta_lang_bind_elgr61(void);
+extern delta_language delta_lang_anar61;
+void delta_lang_bind_anar61(void);
 
 const delta_language *const delta_languages[] = {
     &delta_lang_enus61,
@@ -48,6 +50,7 @@ const delta_language *const delta_languages[] = {
     &delta_lang_zhcn61,
     &delta_lang_zhtw61,
     &delta_lang_elgr61,
+    &delta_lang_anar61,
     0,
 };
 
@@ -68,6 +71,7 @@ void delta_lang_bind_all(void)
     delta_lang_bind_zhcn61();
     delta_lang_bind_zhtw61();
     delta_lang_bind_elgr61();
+    delta_lang_bind_anar61();
 }
 
 int reloq61_language_supported(int language)
@@ -88,6 +92,7 @@ int reloq61_language_supported(int language)
     case 0x60000:
     case 0x60001:
     case 0x120000:
+    case 0x130000:
         return 1;
     default:return 0;
     }

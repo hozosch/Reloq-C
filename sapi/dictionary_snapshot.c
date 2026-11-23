@@ -21,7 +21,7 @@ static const struct volume volumes[]={
     {0x10000,L"ENU"},{0x10001,L"ENG"},{0x20000,L"ESP"},{0x20001,L"ESM"},
     {0x30000,L"FRA"},{0x30001,L"FRC"},{0x40000,L"DEU"},{0x50000,L"ITA"},
     {0x60000,L"CHS"},{0x70000,L"PTB"},{0x80000,L"JPN"},{0x90000,L"FIN"},
-    {0xa0000,L"KOR"},{0x120000,L"ELL"}};
+    {0xa0000,L"KOR"},{0x120000,L"ELL"},{0x130000,L"ARA"}};
 static const WCHAR *const suffixes[]={L"main.dic",L"Root.dic",L"abbr.dic"};
 /* Both Chinese dialects use the same native CHS dictionary filenames, as in
  * the NVDA manager. Files selected for either dialect therefore contribute

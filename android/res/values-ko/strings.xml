@@ -11,9 +11,11 @@
     <string name="browser_update">다운로드를 열었습니다. 브라우저와 Android의 일반적인 설치 절차를 사용하세요. Play 프로텍트를 켜 두세요.</string>
     <string name="engine_help">오프라인 음성 합성입니다. 테스트할 언어와 음성을 선택하거나 Android의 텍스트 읽어주기 설정에서 ReLoq C를 선택하세요.</string>
     <string name="language">언어</string>
+    <string name="auto_fallback">자동 감지 기본 언어(숫자, 기호, 알 수 없는 문자)</string>
     <string name="profile">음성</string>
     <string name="sample_rate">샘플링 주파수</string>
     <string name="pause_mode">일시 정지 줄이기</string>
+    <string name="number_mode">숫자 읽기</string>
     <string name="sample_text">읽을 텍스트</string>
     <string name="speak">테스트 텍스트 읽기</string>
     <string name="stop">중지</string>
@@ -26,10 +28,16 @@
         <item>끝에서만</item>
         <item>항상</item>
     </string-array>
+    <string-array name="number_modes">
+        <item>값</item>
+        <item>숫자</item>
+        <item>자동</item>
+    </string-array>
     <string name="voice_settings">언어 및 음성</string>
     <string name="android_voice">Android에서 언어와 음성 제어</string>
     <string name="android_rate">Android에서 속도 제어</string>
     <string name="android_pitch">Android에서 음높이 제어</string>
+    <string name="android_controls">Android에서 속도와 음높이 제어</string>
     <string name="speed">수동 속도, 분당 단어 수</string>
     <string name="pitch">수동 음높이</string>
     <string name="rate_boost">속도 향상</string>
@@ -41,8 +49,13 @@
     <string name="roughness">거친 정도</string>
     <string name="breathiness">숨소리 정도</string>
     <string name="reset_profile">선택한 음성 프로필 초기화</string>
+    <string name="reset_done">초기화됨</string>
+    <string name="reset_not_needed">초기화할 필요 없음</string>
+    <string name="reset_equalizer">이퀄라이저 초기화</string>
     <string name="output_settings">음성 출력</string>
     <string name="eci_tags">ECI 태그 처리</string>
+    <string name="volume_gain">볼륨 부스트</string>
+    <string name="equalizer_settings">이퀄라이저 설정</string>
     <string name="dictionaries">발음 사전</string>
     <string name="community_dictionaries">커뮤니티 사전 사용</string>
     <string name="update_dictionaries">현재 master에서 커뮤니티 사전 업데이트</string>
@@ -107,7 +120,7 @@
     <string name="equalizer_mid">중음 (dB)</string>
     <string name="equalizer_high">고음 (dB)</string>
     <string-array name="equalizer_presets"><item>균형</item><item>따뜻함</item><item>밝음</item><item>부드러움</item><item>사용자 지정</item></string-array>
-    <string name="equalizer_advanced">고급 필터…</string>
+    <string name="equalizer_advanced">고급 필터</string>
     <string name="filter_title">고급 이퀄라이저 필터</string>
     <string name="filter_select">필터</string>
     <string name="filter_name">필터</string>
@@ -116,6 +129,8 @@
     <string name="filter_gain">게인 (dB)</string>
     <string name="filter_width" formatted="false">대역폭 (옥타브의 %)</string>
     <string name="filter_nyquist" formatted="false">100%는 1옥타브입니다. 샘플 속도의 절반 이상인 주파수는 적용되지 않습니다.</string>
+    <string name="battery_check_normal">권한 확인: 정상</string>
+    <string name="battery_check_missing">권한 확인: 배터리 최적화 설정이 없습니다. 탭하여 요청하세요.</string>
     <string name="automatic_updates">앱 업데이트 자동 확인</string>
     <string name="notification_settings">알림 설정</string>
     <string name="notification_explanation">새 ReLoq C 버전 알림을 받으려면 알림을 허용하세요. 수동으로 확인할 수도 있습니다.</string>

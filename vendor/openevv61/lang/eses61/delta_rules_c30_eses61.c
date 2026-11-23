@@ -25,6 +25,7 @@
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
 #include "reloq61_rule_calls_eses61.h"
+#include "reloq61_aragonese.h"
 
 /* Where each global the rules touch lands in the state,
    as a distance from the first cell. */
@@ -2693,6 +2694,10 @@ L1143:;
     r0 = reloq61_typed_vretproc(DELTA_ENTRY_vretproc, state, (int32_t)(94));
     RELOQ_RULE_RETURN(94);
 L1162:;
+    if(delta_lang_now()->id==RELOQ61_ARAGONESE&&reloq61_an_aw(state,STATE_AT(w60,-4))) {
+        if(STATE(int16_t,s448)>300)STATE(int16_t,s448)-=(STATE(int16_t,s448)-300)*40/100;
+        if(STATE(int16_t,s450)>750)STATE(int16_t,s450)-=(STATE(int16_t,s450)-750)*40/100;
+    }
     r0 = reloq61_typed_succeed(DELTA_ENTRY_succeed, state);
     RELOQ_RULE_RETURN(0);
 }

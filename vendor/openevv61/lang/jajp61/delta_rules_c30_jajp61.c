@@ -1116,7 +1116,12 @@ L871:;
     AT(int32_t, -24) = (STATE_AT(s65, -2));
     AT(int32_t, -28) = (STATE_AT(f11, -4));
 L895:;
-    r0 = reloq_call_jajp61_addStreamArraySsVal(state, (int32_t)(FIELD(0)), (int32_t)((int32_t)AT(int32_t, -24)), (int32_t)(STATE_AT(s422, -2)), (int32_t)((int32_t)AT(int32_t, -28)), (int32_t)(STATE_AT(f12, -4)));
+    {
+        const int16_t release_ah = STATE(int16_t, s422);
+        if (release_ah == INT16_MIN) STATE(int16_t, s422) = 0;
+        r0 = reloq_call_jajp61_addStreamArraySsVal(state, (int32_t)(FIELD(0)), (int32_t)((int32_t)AT(int32_t, -24)), (int32_t)(STATE_AT(s422, -2)), (int32_t)((int32_t)AT(int32_t, -28)), (int32_t)(STATE_AT(f12, -4)));
+        STATE(int16_t, s422) = release_ah;
+    }
     AT(int32_t, -32) = (r0);
     goto L3619;
 L934:;
@@ -1304,7 +1309,12 @@ L2400:;
     AT(int32_t, -36) = ((int32_t)AT(int32_t, -4));
     AT(int32_t, -24) = (STATE_AT(s65, -2));
     AT(int32_t, -28) = (STATE_AT(f11, -4));
-    r0 = reloq_call_jajp61_addStreamArraySsVal(state, (int32_t)(FIELD(0)), (int32_t)((int32_t)AT(int32_t, -24)), (int32_t)(STATE_AT(s422, -2)), (int32_t)((int32_t)AT(int32_t, -28)), (int32_t)(STATE_AT(f12, -4)));
+    {
+        const int16_t release_ah = STATE(int16_t, s422);
+        if (release_ah == INT16_MIN) STATE(int16_t, s422) = 0;
+        r0 = reloq_call_jajp61_addStreamArraySsVal(state, (int32_t)(FIELD(0)), (int32_t)((int32_t)AT(int32_t, -24)), (int32_t)(STATE_AT(s422, -2)), (int32_t)((int32_t)AT(int32_t, -28)), (int32_t)(STATE_AT(f12, -4)));
+        STATE(int16_t, s422) = release_ah;
+    }
     AT(int32_t, -32) = (r0);
 L2458:;
     AT(int32_t, -36) = ((int32_t)AT(int32_t, -4));

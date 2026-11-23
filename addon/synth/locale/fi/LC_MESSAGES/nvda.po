@@ -1,0 +1,503 @@
+# Translations reuse ReLoq C platform UI wording and standard locale names.
+# Current messages are translated; native-speaker review is still needed.
+msgid ""
+msgstr "Project-Id-Version: Eloquence C 1.4.1\nLanguage: fi\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n"
+
+msgid "&Add file…"
+msgstr "&Lisää…"
+
+msgid "&Breathiness"
+msgstr "&Hengittävyys"
+
+msgid "&Head size"
+msgstr "&Pään koko"
+
+msgid "&Mellow mode (16 kHz and above)"
+msgstr "&Pehmeä tila (vähintään 16 kHz)"
+
+msgid "&Own dictionaries (NVDA and Eloquence):"
+msgstr "&Omat sanastot (NVDA ja Eloquence):"
+
+msgid "&Remove"
+msgstr "&Poista"
+
+msgid "&Sample rate"
+msgstr "&Näytteenottotaajuus:"
+
+msgid "&Update dictionaries now"
+msgstr "&Päivitä sanastot"
+
+msgid "100% is one octave. Frequencies at or above half the sample rate are inactive."
+msgstr "100 % vastaa yhtä oktaavia. Vähintään puolet näytteenottotaajuudesta olevat taajuudet eivät vaikuta."
+
+msgid "11.025 kHz"
+msgstr "11.025 kHz"
+
+msgid "16 kHz"
+msgstr "16 kHz"
+
+msgid "22.05 kHz"
+msgstr "22.05 kHz"
+
+msgid "32 kHz"
+msgstr "32 kHz"
+
+msgid "44.1 kHz"
+msgstr "44.1 kHz"
+
+msgid "48 kHz"
+msgstr "48 kHz"
+
+msgid "8 kHz"
+msgstr "8 kHz"
+
+msgid "Abbreviations"
+msgstr "Lyhenteet"
+
+msgid "Add-on updates"
+msgstr "Lisäosan päivitykset"
+
+msgid "Advanced equalizer filters"
+msgstr "Taajuuskorjaimen lisäsuodattimet"
+
+msgid "Advanced filters…"
+msgstr "Lisäsuodattimet…"
+
+msgid "All voices"
+msgstr "Kaikki äänet"
+
+msgid "Alternative IBM TTS Dictionaries"
+msgstr "Vaihtoehtoiset IBM TTS -sanastot"
+
+msgid "Always"
+msgstr "Aina"
+
+msgid "American English"
+msgstr "englanti (Yhdysvallat)"
+
+msgid "Apply to which voices?"
+msgstr "Mihin ääniin käytetään?"
+
+msgid "Aragonese"
+msgstr "aragonia"
+
+msgid "Automatically check for add-on updates"
+msgstr "Tarkista lisäosan päivitykset automaattisesti"
+
+msgid "Balanced"
+msgstr "Tasapainoinen"
+
+msgid "Bandwidth (% of an octave, 10–400):"
+msgstr "Kaistanleveys (% oktaavista, 10–400):"
+
+msgid "Base pitch in hertz (1–24000):"
+msgstr "Peruskorkeus hertseinä (1–24000):"
+
+msgid "Bass (250 Hz, -12 to +12 dB):"
+msgstr "Basso (250 Hz, -12–+12 dB):"
+
+msgid "Brazilian Portuguese"
+msgstr "portugali (Brasilia)"
+
+msgid "Bright"
+msgstr "Kirkas"
+
+msgid "British English"
+msgstr "englanti (Iso-Britannia)"
+
+msgid "Castilian Spanish"
+msgstr "espanja (Espanja)"
+
+msgid "Changing NVDA's normal pitch slider switches back to the ECI scale."
+msgstr "NVDA:n tavallisen äänenkorkeussäätimen muuttaminen palauttaa ECI-asteikon."
+
+msgid "Changing NVDA's normal rate or rate boost switches back to the normal rate scale."
+msgstr "NVDA:n tavallisen nopeuden tai nopeuden lisäyksen muuttaminen palauttaa normaalin nopeusasteikon."
+
+msgid "Check for add-on updates"
+msgstr "Tarkista päivitykset"
+
+msgid "Checking for updates…"
+msgstr "Tarkistetaan päivityksiä…"
+
+msgid "Choose a format…"
+msgstr "Valitse muoto…"
+
+msgid "Choose a pronunciation dictionary"
+msgstr "Valitse ääntämissanasto"
+
+msgid "Could not detect the format. Choose the dictionary format:"
+msgstr "Muotoa ei voitu tunnistaa. Valitse sanaston muoto:"
+
+msgid "Custom"
+msgstr "Mukautettu"
+
+#, python-format
+msgid "Dictionaries updated. Community revision: %s"
+msgstr "Sanastot päivitetty. Yhteisöversion tunniste: %s"
+
+msgid "Dictionary &source:"
+msgstr "Sanastojen &lähde:"
+
+msgid "Dictionary files (*.dic)|*.dic|All files (*.*)|*.*"
+msgstr "Sanastotiedostot (*.dic)|*.dic|Kaikki tiedostot (*.*)|*.*"
+
+#, python-format
+msgid "Dictionary files in total: %s"
+msgstr "Sanakirjatiedostoja yhteensä: %s"
+
+msgid "Dictionary format"
+msgstr "Sanaston muoto"
+
+msgid "Dictionary format:"
+msgstr "Sanaston muoto"
+
+#, python-format
+msgid "Dictionary import failed: %s"
+msgstr "Sanaston tuonti epäonnistui: %s"
+
+msgid "Dictionary language"
+msgstr "Sanaston kieli"
+
+#, python-format
+msgid "Dictionary loaded for the first time. Entries: %s"
+msgstr "Sanasto ladattu ensimmäistä kertaa. Merkintöjä: %s"
+
+msgid "Dictionary type"
+msgstr "Sanaston tyyppi:"
+
+msgid "Dictionary type:"
+msgstr "Sanaston tyyppi:"
+
+#, python-format
+msgid "Dictionary update complete. New entries: %s"
+msgstr "Sanaston päivitys valmis. Uusia merkintöjä: %s"
+
+msgid "Dictionary update complete. The number of new entries could not be determined."
+msgstr "Sanaston päivitys valmis. Uusien merkintöjen määrää ei voitu selvittää."
+
+#, python-format
+msgid "Dictionary update failed: %s"
+msgstr "Sanaston päivitys epäonnistui: %s"
+
+msgid "Download and install update"
+msgstr "Lataa ja asenna päivitys"
+
+msgid "Downloading update…"
+msgstr "Ladataan päivitystä…"
+
+msgid "Edit NVDA dictionary…"
+msgstr "Muokkaa NVDA:n sanastoa…"
+
+msgid "Eloquence"
+msgstr "Eloquence"
+
+msgid "Eloquence C"
+msgstr "Eloquence C"
+
+#, python-format
+msgid "Eloquence C version %s is available. Download and install it?"
+msgstr "Eloquence C:n versio %s on saatavilla. Ladataanko ja asennetaanko se?"
+
+msgid "Eloquence C: Persian and Pinglish test"
+msgstr "Eloquence C: persian ja pinglishin testiversio"
+
+msgid "Eloquence C: fifteen language variants"
+msgstr "Eloquence C: viisitoista kielimuunnelmaa"
+
+msgid "Eloquence files are saved with OK or Apply. NVDA imports and edits take effect immediately."
+msgstr "Eloquence-tiedostot tallennetaan OK- tai Käytä-painikkeella. NVDA-tuonnit ja -muokkaukset tulevat heti voimaan."
+
+msgid "Eloquence pronunciation dictionary"
+msgstr "Eloquence-sanasto"
+
+msgid "Enable &equalizer"
+msgstr "&Ota taajuuskorjain käyttöön"
+
+msgid "Enable equalizer"
+msgstr "Ota taajuuskorjain käyttöön"
+
+msgid "Enable filter"
+msgstr "Ota suodatin käyttöön"
+
+msgid "Equalizer"
+msgstr "Taajuuskorjain"
+
+msgid "Equalizer &preset:"
+msgstr "&Taajuuskorjaimen esiasetus:"
+
+msgid "Equalizer bass"
+msgstr "Taajuuskorjaimen basso"
+
+msgid "Equalizer filter bandwidth"
+msgstr "Taajuuskorjaimen suodattimen kaistanleveys"
+
+msgid "Equalizer filter enabled"
+msgstr "Taajuuskorjaimen suodatin käytössä"
+
+msgid "Equalizer filter frequency"
+msgstr "Taajuuskorjaimen suodattimen taajuus"
+
+msgid "Equalizer filter gain"
+msgstr "Taajuuskorjaimen suodattimen vahvistus"
+
+msgid "Equalizer midrange"
+msgstr "Taajuuskorjaimen keskialue"
+
+msgid "Equalizer preset"
+msgstr "Taajuuskorjaimen esiasetus"
+
+msgid "Equalizer treble"
+msgstr "Taajuuskorjaimen diskantti"
+
+msgid "Exact base pitch"
+msgstr "Tarkka peruskorkeus"
+
+msgid "Exact speech rate"
+msgstr "Tarkka puhenopeus"
+
+#, python-format
+msgid "Filter %s"
+msgstr "Suodatin %s"
+
+msgid "Filter:"
+msgstr "Suodatin"
+
+msgid "Finnish"
+msgstr "suomi"
+
+msgid "French"
+msgstr "ranska"
+
+msgid "French Canadian"
+msgstr "ranska (Kanada)"
+
+msgid "Frequency in hertz (1–24000):"
+msgstr "Taajuus hertseinä (1–24000):"
+
+msgid "Gain in dB (-12 to +12):"
+msgstr "Vahvistus dB (-12–+12):"
+
+msgid "German"
+msgstr "saksa"
+
+msgid "Greek"
+msgstr "kreikka"
+
+msgid "Hertz pitch off; using the ECI pitch scale."
+msgstr "Korkeus hertseinä poistettu käytöstä; käytetään ECI-asteikkoa."
+
+msgid "IBM TTS Dictionaries"
+msgstr "IBM TTS -sanastot"
+
+msgid "Imported NVDA dictionary"
+msgstr "Tuotu NVDA-sanasto"
+
+#, python-format
+msgid "Imported NVDA dictionary entries: %s"
+msgstr "Tuodut NVDA-sanaston merkinnät: %s"
+
+#, python-format
+msgid "Installed version: %s"
+msgstr "Asennettu versio: %s"
+
+msgid "Italian"
+msgstr "italia"
+
+msgid "Japanese"
+msgstr "japani"
+
+msgid "Korean"
+msgstr "korea"
+
+msgid "Language of the dictionary:"
+msgstr "Sanaston kieli:"
+
+msgid "Latin American Spanish"
+msgstr "espanja (Latinalainen Amerikka)"
+
+msgid "Main words"
+msgstr "Pääsanat"
+
+msgid "Mandarin Chinese"
+msgstr "mandariinikiina"
+
+msgid "Midrange (1200 Hz, -12 to +12 dB):"
+msgstr "Keskialue (1200 Hz, -12–+12 dB):"
+
+msgid "Move &down"
+msgstr "Siirrä &alas"
+
+msgid "Move &up"
+msgstr "Siirrä &ylös"
+
+msgid "NVDA"
+msgstr "NVDA"
+
+msgid "NVDA cannot save dictionaries in this mode."
+msgstr "NVDA ei voi tallentaa sanastoja tässä tilassa."
+
+#, python-format
+msgid "NVDA dictionary edit failed: %s"
+msgstr "NVDA-sanaston muokkaus epäonnistui: %s"
+
+#, python-format
+msgid "NVDA dictionary removal failed: %s"
+msgstr "NVDA-sanaston poisto epäonnistui: %s"
+
+msgid "NVDA dictionary voice"
+msgstr "NVDA-sanaston ääni"
+
+msgid "NVDA speech dictionaries"
+msgstr "NVDA:n puhesanastot"
+
+msgid "NVDA speech dictionary"
+msgstr "NVDA-puhesanasto"
+
+msgid "Native C synthesizer with fifteen language variants at 8 to 48 kHz, including Aragonese, Japanese, Korean, Chinese and Greek."
+msgstr "Natiivi C-puhesyntetisaattori, jossa on viisitoista kielimuunnelmaa 8–48 kHz:n näytteenottotaajuudella, mukaan lukien aragonia, japani, korea, kiina ja kreikka."
+
+msgid "Never"
+msgstr "Ei koskaan"
+
+#, python-format
+msgid "New dictionary files: %s"
+msgstr "Uudet sanakirjatiedostot: %s"
+
+msgid "No newer published add-on package is available."
+msgstr "Uudempaa julkaistua lisäosapakettia ei ole saatavilla."
+
+msgid "Only at text end"
+msgstr "Ilmauksen lopussa"
+
+msgid "Open dictionary &folder"
+msgstr "&Avaa kansio"
+
+msgid "Own dictionaries updated."
+msgstr "Omat sanastot päivitetty."
+
+msgid "Own entries override community entries. Original files are kept unchanged."
+msgstr "Omat merkinnät ohittavat yhteisön merkinnät. Alkuperäiset tiedostot säilytetään muuttumattomina."
+
+msgid "Per-language acoustic timing"
+msgstr "Kielikohtainen akustinen ajoitus"
+
+msgid "Persian"
+msgstr "persia"
+
+msgid "Persian (Pinglish)"
+msgstr "persia (Pinglish)"
+
+msgid "Phrase &prediction"
+msgstr "&Fraasien ennakointi"
+
+msgid "Pitch in hertz"
+msgstr "Äänenkorkeus hertseinä"
+
+msgid "Process &ECI tags"
+msgstr "Käsittele &ECI-tunnisteet"
+
+msgid "Pronunciation dictionaries"
+msgstr "Ääntämissanastot"
+
+msgid "Rate in words per minute"
+msgstr "Nopeus sanoina minuutissa"
+
+msgid "Remove this imported copy? The original dictionary is kept."
+msgstr "Poistetaanko tämä tuotu kopio? Alkuperäinen sanasto säilytetään."
+
+msgid "Rou&ghness"
+msgstr "&Karheus"
+
+msgid "Select Eloquence C as the synthesizer first."
+msgstr "Valitse ensin Eloquence C puhesyntetisaattoriksi."
+
+msgid "Shorten pa&uses"
+msgstr "Lyhennä &taukoja:"
+
+msgid "Smooth"
+msgstr "Pehmeä"
+
+msgid "Speech rate in words per minute (1–6000):"
+msgstr "Puhenopeus sanoina minuutissa (1–6000):"
+
+msgid "Split &camel-case words (all languages)"
+msgstr "&Jaa camelCase-sanat (kaikki kielet)"
+
+msgid "Split camel case"
+msgstr "Jaa camelCase-sanat"
+
+msgid "Split unfamiliar &English words"
+msgstr "&Jaa tuntemattomat englanninkieliset sanat"
+
+msgid "Split unfamiliar English words"
+msgstr "Jaa tuntemattomat englanninkieliset sanat"
+
+msgid "Test build with Persian and Pinglish."
+msgstr "Testiversio, jossa on persia ja pinglish."
+
+msgid "The number of new dictionary files could not be determined."
+msgstr "Uusien sanakirjatiedostojen määrää ei voitu selvittää."
+
+msgid "The selected pronunciation dictionaries could not be loaded. Speech will resume when they are available. Check the dictionary settings, or select another synthesizer."
+msgstr "Valittuja ääntämissanastoja ei voitu ladata. Puhe jatkuu, kun ne ovat saatavilla. Tarkista sanastoasetukset tai valitse toinen puhesyntetisaattori."
+
+#, python-format
+msgid "This NVDA dictionary was already imported. Entries: %s"
+msgstr "Tämä NVDA-sanasto on jo tuotu. Merkintöjä: %s"
+
+msgid "Treble (3000 Hz, -12 to +12 dB):"
+msgstr "Diskantti (3000 Hz, -12–+12 dB):"
+
+#, python-format
+msgid "Update failed: %s"
+msgstr "Päivitys epäonnistui: %s"
+
+msgid "Update handed to NVDA."
+msgstr "Päivitys annettu NVDA:lle."
+
+msgid "Update installation cancelled."
+msgstr "Päivityksen asennus peruttu."
+
+msgid "Updating pronunciation dictionaries…"
+msgstr "Ladataan sanastoja…"
+
+msgid "Use &abbreviation dictionary"
+msgstr "Käytä &lyhennesanastoa"
+
+msgid "Use &community pronunciation dictionaries"
+msgstr "Käytä &yhteisön sanastoja"
+
+msgid "Use &original Eloquence acoustic timing (5 ms)"
+msgstr "&Alkuperäinen ajoitus (5 ms)"
+
+msgid "Use base pitch in &hertz"
+msgstr "Käytä peruskorkeutta &hertseinä"
+
+msgid "Use original &question intonation"
+msgstr "&Käytä alkuperäistä kysymysintonaatiota"
+
+msgid "Use pitch in hertz"
+msgstr "Käytä äänenkorkeutta hertseinä"
+
+msgid "Use rate in words per minute"
+msgstr "Käytä nopeutta sanoina minuutissa"
+
+msgid "Use speech rate in &words per minute"
+msgstr "Käytä puhenopeutta &sanoina minuutissa"
+
+#, python-format
+msgid "Version %s is available."
+msgstr "Versio %s on saatavilla."
+
+msgid "WPM rate off; using the normal rate scale."
+msgstr "Nopeus sanoina minuutissa poistettu käytöstä; käytetään normaalia asteikkoa."
+
+msgid "Wait for the dictionary update to finish."
+msgstr "Odota, kunnes sanaston päivitys on valmis."
+
+msgid "Warm"
+msgstr "Lämmin"
+
+msgid "Word roots"
+msgstr "Sanavartalot"

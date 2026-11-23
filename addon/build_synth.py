@@ -23,7 +23,20 @@ from build_translations import translation_entries
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "addon" / "synth"
-DEFAULT_OUTPUT = ROOT / "dist" / "reloq-c-synth-x64-1.4.1.nvda-addon"
+
+def addon_version(manifest: Path = SOURCE / "manifest.ini") -> str:
+    matches = re.findall(r'^version\s*=\s*"(\d+\.\d+\.\d+(?:-(?:dev|rc)\d+)?)"\s*$',
+                         manifest.read_text(encoding="utf-8"), re.M)
+    if len(matches) != 1:
+        raise ValueError(f"invalid or ambiguous NVDA version: {manifest}")
+    return matches[0]
+
+def addon_output(version: str) -> Path:
+    if not re.fullmatch(r"\d+\.\d+\.\d+(?:-(?:dev|rc)\d+)?", version):
+        raise ValueError("invalid NVDA package version")
+    return ROOT / "dist" / f"reloq-c-synth-x64-{version}.nvda-addon"
+
+DEFAULT_OUTPUT = addon_output(addon_version())
 RLEX_HEADER = b"RELOQ-DE-SPR-1\n"
 HEX = re.compile(rb"[0-9A-F]+\Z")
 
@@ -95,8 +108,14 @@ def make_entries(dll_path: Path) -> dict[str, bytes]:
                    "_reloq_languages.py", "_reloq_dictionaries.py", "_reloq_dictionary_manager.py",
                    "_reloq_updates.py", "_reloq_nvda_dicts.py", "_reloq_wordseg.py"):
         entries[prefix + module] = (ROOT / "nvda" / module).read_bytes()
-    for name in ("enus-sayable", "enus-pieces", "engb-sayable", "engb-pieces"):
-        entries[prefix + "wordseg-data/" + name] = (ROOT / "nvda" / "wordseg-data" / name).read_bytes()
+    wordseg = ROOT / "nvda" / "wordseg-data"
+    american_pieces = (wordseg / "enus-pieces").read_bytes()
+    for name in ("enus-sayable", "engb-sayable"):
+        entries[prefix + "wordseg-data/" + name] = (wordseg / name).read_bytes()
+    entries[prefix + "wordseg-data/enus-pieces"] = american_pieces
+    british_pieces = (wordseg / "engb-pieces").read_bytes()
+    if british_pieces != american_pieces:
+        entries[prefix + "wordseg-data/engb-pieces"] = british_pieces
     entries["doc/licenses/OpenEVV-wordseg-NOTICE.txt"] = (ROOT / "nvda" / "wordseg-data" / "NOTICE").read_bytes()
     entries["doc/licenses/OpenEVV-wordseg-LICENSE.txt"] = (ROOT / "nvda" / "wordseg-data" / "LICENSE").read_bytes()
     entries["doc/licenses/ReLoq-C-LICENSE.txt"] = (ROOT / "LICENSE").read_bytes()
@@ -162,8 +181,12 @@ def build(output: Path, dll_path: Path, *, refresh_dictionaries: bool = True) ->
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for name, data in sorted(make_entries(dll_path).items()):
             info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
-            info.compress_type = zipfile.ZIP_DEFLATED
-            archive.writestr(info, data, compresslevel=9)
+            # NVDA 2026.1 and 2026.3.1 both extract ZIP-LZMA with their own
+            # AddonBundle and can load the resulting DLL. Apply it only to
+            # the large native library; extraction happens at install time.
+            info.compress_type = (zipfile.ZIP_LZMA if name == "synthDrivers/reloqC/eci.dll"
+                                  else zipfile.ZIP_DEFLATED)
+            archive.writestr(info, data, compresslevel=9 if info.compress_type == zipfile.ZIP_DEFLATED else None)
     return output
 
 

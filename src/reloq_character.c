@@ -85,6 +85,9 @@ int reloq_character_spelling1(uint32_t cp)
 }
 static int language_index(int language)
 {
+    /* Until native Aragonese character-name rules are authored, the test
+     * voice uses the parent Castilian table for existing letters/accents. */
+    if(language==0x130000)language=0x20000;
     size_t lo=0,hi=COUNT(multi_languages);
     while(lo<hi){size_t m=lo+(hi-lo)/2;if(multi_languages[m]<language)lo=m+1;else hi=m;}
     return lo<COUNT(multi_languages)&&multi_languages[lo]==language?(int)lo:-1;

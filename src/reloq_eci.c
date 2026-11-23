@@ -101,11 +101,12 @@ static void unlock_session(reloq_eci_atomic *p)
 enum { CONTROL_FIELDS = 62, MAX_FRAME_SAMPLES = 4096 };
 static const unsigned int eci_languages[]={0x10000,0x10001,0x20000,0x20001,
     0x30000,0x30001,0x40000,0x50000,0x60000,0x60001,0x70000,0x80000,
-    0x90000,0xa0000,0x120000};
+    0x90000,0xa0000,0x120000,0x130000};
+#define ECI_LANGUAGE_COUNT (sizeof eci_languages/sizeof *eci_languages)
 static unsigned dictionary_language_slot(int language)
 {
     unsigned i=0;
-    while(i<sizeof eci_languages/sizeof *eci_languages&&eci_languages[i]!=(unsigned)language)++i;
+    while(i<ECI_LANGUAGE_COUNT&&eci_languages[i]!=(unsigned)language)++i;
     return i;
 }
 _Static_assert(sizeof(short) == sizeof(int16_t), "ECI output needs 16-bit short");
@@ -122,7 +123,7 @@ struct queued_item {
     int is_index;
     int pitch;
     int is_pitch;
-    int unicode_input, character_mode, segmentation_guarded;
+    int unicode_input, character_mode, segmentation_guarded, source_in_context;
     struct queued_voice voice;
 };
 
@@ -193,7 +194,7 @@ struct reloq_eci_engine {
     int saved_voices[16][8];char voice_names[17][120];
     int real_voice_values[17][8];unsigned real_voice_flags[17];
     struct reloq_eci_dictionary *dictionaries,*active_dictionary;
-    struct reloq_eci_dictionary *language_dictionaries[15];
+    struct reloq_eci_dictionary *language_dictionaries[ECI_LANGUAGE_COUNT];
     int high_rate_profile;
     int error;
     int last_synthesis_error;
@@ -253,6 +254,7 @@ static int insert_voice_controls(unsigned char **text,size_t *length,
         memcpy(next+used,*text+from,at-from);
         if(next_guards)memcpy(next_guards+used,*guards+from,at-from);
         used+=at-from;from=at;
+        size_t before_control=used;
         for(unsigned k=0;k<8;++k)if(initial.values[k]!=controls[i].voice.values[k] ||
             (k==2 && initial.pitch_hz!=controls[i].voice.pitch_hz)) {
             /* An enabled WPM setting owns speed until explicitly cleared. */
@@ -271,6 +273,12 @@ static int insert_voice_controls(unsigned char **text,size_t *length,
             if(n<0||n>=96){free(next);free(next_guards);free(offsets);free(added);return -1;}
             used+=(size_t)n;
         }
+        /* A digit immediately following the trusted control would otherwise
+         * be consumed as part of its numeric value. End just that ambiguous
+         * annotation; leave all other text boundaries unchanged. The index
+         * adjustment below includes the inserted separator. */
+        if(used>before_control && at<*length && (*text)[at]>='0' && (*text)[at]<='9')
+            next[used++]=' ';
         initial=controls[i].voice;offsets[i]=at;added[i]=used-at;
     }
     memcpy(next+used,*text+from,*length-from);
@@ -573,7 +581,7 @@ static int synthesize_generic(struct reloq_eci_engine *e,
     int rendered=reset?RELOQ_DE_UTTERANCE_INVALID:reloq_language_rules_render(e->language,phrase,length,e->process_tags||admitted,
         frame_volume?(e->native_volume_active?e->native_volume:e->generic_volume):100,
         e->native_wpm,e->original_acoustic_clock==1||(e->original_acoustic_clock==2&&
-            (e->language==0x20000||e->language==0x120000)),&settings,english_indices,mark_count,english_pitch,pitch_count,e->text_session,
+            (e->language==0x20000||e->language==0x120000||e->language==0x130000)),&settings,english_indices,mark_count,english_pitch,pitch_count,e->text_session,
         send_pcm,send_generic_index,&bridge);
     reloq_wordseg_scope(wordseg);
     free(english_indices);free(english_pitch);
@@ -644,6 +652,21 @@ static int ends_german_word(const unsigned char *text, size_t length)
     }
 }
 
+extern const char *ECICALL es_engsynDictLookup(void *,int,const char *);
+/* Dictionary substitutions run after Unicode admission. Preserve exact
+ * main/abbreviation entries and the case-folded root entry for v/V. */
+static unsigned aragonese_dictionary_letters(void *worker,int language)
+{
+    if(language!=0x130000)return 0;
+    void *dictionary=reloq61_worker_dictionary_handle(worker);
+    if(!dictionary)return 0;
+    unsigned result=0;
+    if(es_engsynDictLookup(dictionary,1,"v"))result=3;
+    if(es_engsynDictLookup(dictionary,0,"v")||es_engsynDictLookup(dictionary,2,"v"))result|=1;
+    if(es_engsynDictLookup(dictionary,0,"V")||es_engsynDictLookup(dictionary,2,"V"))result|=2;
+    return result;
+}
+
 #include "reloq_eci_languages.inc"
 
 static struct reloq_session *make_session(int rate_code)
@@ -686,7 +709,7 @@ ECIHand ECICALL eciNewEx(int language)
     /* Language words carry an optional Unicode code-set byte. */
     int base=language&~0xff00;
     if ((language&0xff00)!=0 && (language&0xff00)!=0x800)return NULL;
-    if (!reloq61_language_supported(base)||dictionary_language_slot(base)>=15) return NULL;
+    if (!reloq61_language_supported(base)||dictionary_language_slot(base)>=ECI_LANGUAGE_COUNT) return NULL;
     struct reloq_eci_engine *e = calloc(1, sizeof *e);
     if (!e) return NULL;
     epoch_init(&e->busy);
@@ -850,7 +873,7 @@ int ECICALL eciAddTextUtf8(ECIHand handle,const void *text,size_t bytes,int mode
 {
     struct reloq_eci_engine *e=handle;
     if(!e||epoch_get(&e->busy))return 0;
-    if((!text&&bytes)||(mode<0||mode>3)||bytes==SIZE_MAX) {
+    if((!text&&bytes)||(mode<0||(mode&~7))||bytes==SIZE_MAX) {
         eci_error(e,RELOQ_ECI_INVALID);return 0;
     }
     unsigned char *copy=malloc(bytes+1);
@@ -859,7 +882,7 @@ int ECICALL eciAddTextUtf8(ECIHand handle,const void *text,size_t bytes,int mode
     copy[bytes]=0;
     if(append_item(e,(struct queued_item){.utf8=copy,.length=bytes,
        .voice=capture_voice(e),.unicode_input=1,.character_mode=mode&1,
-       .segmentation_guarded=!!(mode&2)})) {
+       .segmentation_guarded=!!(mode&2),.source_in_context=!!(mode&4)})) {
         free(copy);eci_error(e,RELOQ_ECI_MEMORY);return 0;
     }
     eci_error(e,RELOQ_ECI_OK);return 1;
@@ -876,6 +899,9 @@ int ECICALL eciInsertIndex(ECIHand handle, int index)
     eci_error(e,RELOQ_ECI_OK);
     return 1;
 }
+
+int ECICALL eciUnicodeIsEmoji(uint32_t codepoint)
+{return reloq_unicode_is_emoji(codepoint);}
 
 int ECICALL eciInsertPitch(ECIHand handle, int native_pitch)
 {
@@ -924,7 +950,7 @@ int ECICALL eciSynthesize(ECIHand handle)
     size_t text_bytes = 0;
     size_t original_text_bytes = 0, source_bytes = 0;
     int unicode_input=0;
-    unsigned char *modes=NULL,*guards=NULL;size_t *source_map=NULL;int have_guards=0;
+    unsigned char *modes=NULL,*guards=NULL;size_t *source_map=NULL;int have_guards=0,source_in_context=0;
     size_t mark_count = 0, next_mark = 0, pitch_count = 0;
     unsigned char *phrase = NULL;
     struct index_mark *marks = NULL;
@@ -963,6 +989,7 @@ int ECICALL eciSynthesize(ECIHand handle)
         text_bytes += e->queue[i].length;
         unicode_input|=e->queue[i].unicode_input;
         have_guards|=e->queue[i].segmentation_guarded;
+        if(e->queue[i].length)source_in_context|=e->queue[i].source_in_context;
     }
     if(have_voice) {
         apply_voice(e,&initial_voice);
@@ -1063,10 +1090,19 @@ int ECICALL eciSynthesize(ECIHand handle)
             marks,mark_count,pitches,pitch_count,before);
         goto done;
     }
+    if(unicode_input && text_bytes && modes) {
+        size_t at=0;uint32_t cp=0;
+        /* One scalar is a character request unless the caller supplied a
+         * protected dictionary replacement or wider utterance context. */
+        if(!source_in_context && (!guards || !guards[0]) &&
+           reloq_utf8_next(phrase,text_bytes,&at,&cp)==1 && at==text_bytes)
+            memset(modes,1,text_bytes);
+    }
     if((unicode_input||control_count)&&text_bytes) {
         unsigned char *normalized=NULL;size_t count=0;source_bytes=text_bytes;
-        int r=reloq_unicode_admit_language(phrase,text_bytes,modes,e->language,
-            e->process_tags,&normalized,&count,&source_map);
+        int r=reloq_unicode_admit_language_masked(phrase,text_bytes,modes,e->language,
+            e->process_tags,aragonese_dictionary_letters(e->rule_worker,e->language),
+            &normalized,&count,&source_map);
         if(r){result=r==-2?RELOQ_ECI_MEMORY:RELOQ_ECI_INVALID;
             e->failure_stage=RELOQ_ECI_STAGE_TEXT;goto done;}
         for(size_t i=0;i<mark_count;++i)marks[i].offset=source_map[marks[i].offset];
@@ -1435,6 +1471,7 @@ int ECICALL eciGetParam(ECIHand handle, int parameter)
     case RELOQ_ECI_ORIGINAL_ACOUSTIC_CLOCK: return e->original_acoustic_clock;
     case RELOQ_ECI_WORD_SEGMENTATION: return e->word_segmentation;
     case RELOQ_ECI_CAMEL_CASE: return e->camel_case;
+    case RELOQ_ECI_UTF8_INPUT_MODES: return 7;
     case RELOQ_ECI_EQ_LOW: return e->eq_low;
     case RELOQ_ECI_EQ_MID: return e->eq_mid;
     case RELOQ_ECI_EQ_HIGH: return e->eq_high;

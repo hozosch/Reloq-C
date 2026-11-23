@@ -25,7 +25,7 @@ else:
 PREFIXES = {0x10000: "ENU", 0x10001: "ENG", 0x20000: "ESP", 0x20001: "ESM",
             0x30000: "FRA", 0x30001: "FRC", 0x40000: "DEU", 0x50000: "ITA",
             0x60000: "CHS", 0x60001: "CHS", 0x70000: "PTB", 0x80000: "JPN",
-            0x90000: "FIN", 0xa0000: "KOR", 0x120000: "ELL"}
+            0x90000: "FIN", 0xa0000: "KOR", 0x120000: "ELL", 0x130000: "ARA"}
 SUFFIXES = ("main", "Root", "abbr")
 _LOWER = bytes(c + 32 if 65 <= c <= 90 or 0xc0 <= c <= 0xde and c != 0xd7 else c for c in range(256))
 NAMES = frozenset(prefix + suffix + ".dic" for prefix in PREFIXES.values() for suffix in SUFFIXES)

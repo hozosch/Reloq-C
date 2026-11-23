@@ -671,6 +671,16 @@ class EciTextTransport:
                                    self._final_pcm_min_bytes):
                 flush(self._pcm_batch_bytes)
 
+        def flush_prefix() -> None:
+            # A planner may pause after a verified early prefix while it
+            # completes the rest of the utterance. Give WavePlayer all of
+            # that already synthesized reserve instead of holding the last
+            # partial batch until the next large PCM block arrives.
+            if first_sent and pending:
+                flush()
+
+        on_pcm.flush_prefix = flush_prefix
+
         def on_index(index: int) -> None:
             # Index playback must follow every sample before its native word
             # boundary. Push the partial batch before recording its serial.

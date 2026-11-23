@@ -6921,9 +6921,10 @@ const void *const dede61_delta_rule_sym[] = {
     dede61_evv_authored_data + 11729,
     dede61_evv_authored_data + 10446,
     dede61_evv_authored_data + 0,
+    dede61_evv_authored_data + 11735, /* Gedankenstrich, U+2014 */
 };
 
-const int dede61_delta_rule_sym_count = 3106;
+const int dede61_delta_rule_sym_count = 3107;
 
 #if !RELOQ61_NATIVE_ENTRIES
 const delta_rule dede61_delta_rules[] = {

@@ -117,6 +117,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'ECI dictionary cache regression test failed' }
           python nvda/test_eci_dictionary_retention.py --library test-x64/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Multilingual dictionary startup regression test failed' }
+          python nvda/test_eci_mandarin_eloquence64.py --library test-x64/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Mandarin ECI codepage and explicit pause regression test failed' }
           python nvda/test_eci_release113.py --library test-x64/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Long text and HTTPS regression test failed' }
           python nvda/test_eci_release120.py --library test-x64/eci.dll
@@ -179,12 +181,13 @@ jobs:
           foreach ($arch in @('x64','x86')) {
             $core = if ($arch -eq 'x64') { Join-Path $install 'eci.dll' } else { Join-Path $install 'x86\eci.dll' }
             if ((Get-FileHash $core -Algorithm SHA256).Hash -ne (Get-FileHash "test-$arch/eci.dll" -Algorithm SHA256).Hash) {
-              throw "SAPI $arch core was not replaced by the new 1.4.1 build"
+              throw "SAPI $arch core was not replaced by the candidate build"
             }
           }
           Test-StartLinks 'Stimmeinstellungen' 'Anleitung'
           $registered = Get-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D3F8BA6E-1C62-4B0D-8A33-3840B77376AC}_is1'
-          if ($registered.DisplayName -ne 'ReLoq C SAPI5' -or $registered.DisplayVersion -ne '1.4.1') { throw 'SAPI application name or version metadata is incorrect' }
+          $expectedVersion = python -c "import sys; sys.path.insert(0,'sapi'); from version import VERSION; print(VERSION)"
+          if ($registered.DisplayName -ne 'ReLoq C SAPI5' -or $registered.DisplayVersion -ne $expectedVersion) { throw 'SAPI application name or version metadata is incorrect' }
           if ((Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'Dictionary edit lost during upgrade' }
           & ./sapi/test_japanese_sapi.ps1 -ReportPath dist/validation/japanese-results.json
           python -B sapi/test_dictionary_import_ui.py --directory $install

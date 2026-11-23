@@ -129,12 +129,14 @@ enum {
     RELOQ_ECI_EQ_MID = 0x1019,
     RELOQ_ECI_EQ_HIGH = 0x101a,
     /* 0: 1-ms controls; 1: original 5-ms clock; 2: choose per language.
-     * Automatic uses 5 ms for Castilian Spanish and Greek, 1 ms otherwise.
+     * Automatic uses 5 ms for Castilian Spanish, Greek and Aragonese, 1 ms otherwise.
      * Native VS and VWPM duration scales are unchanged in every mode. */
     RELOQ_ECI_ORIGINAL_ACOUSTIC_CLOCK = 0x101b,
     /* Optional shared text analysis controls; disabled by default. */
     RELOQ_ECI_WORD_SEGMENTATION = 0x101c,
     RELOQ_ECI_CAMEL_CASE = 0x101d,
+    /* Read-only UTF-8 input mode bits supported by eciAddTextUtf8. */
+    RELOQ_ECI_UTF8_INPUT_MODES = 0x101e,
     /* Five optional peaking filters, each with four consecutive parameters:
      * enabled 0/1, frequency 1..24000 Hz, gain 0..24 (-12..+12 dB),
      * and bandwidth 10..400 percent of an octave. */
@@ -153,7 +155,8 @@ enum {
     RELOQ_ECI_JAPANESE = 0x00080000,
     RELOQ_ECI_FINNISH = 0x00090000,
     RELOQ_ECI_KOREAN = 0x000a0000,
-    RELOQ_ECI_GREEK = 0x00120000
+    RELOQ_ECI_GREEK = 0x00120000,
+    RELOQ_ECI_ARAGONESE = 0x00130000
 };
 #define RELOQ_ECI_EQ_FILTER_COUNT 5
 #define RELOQ_ECI_EQ_FILTER_STRIDE 4
@@ -275,10 +278,13 @@ ECIAPI int ECICALL eciUpdateDictA(ECIHand handle,ECIDictHand dictionary,int volu
  * thread, never during a callback. 1 success, 0 failure. It only affects the
  * experimental generic text frontend; the exact voice remains unchanged. */
 /* Length-aware native Unicode input. Mode 1 names characters in the selected
- * language; mode 0 reads text. Successive fragments are analyzed together. */
+ * language; mode 0 reads text. Successive fragments are analyzed together.
+ * A single unprotected scalar is also treated as a character request. */
 /* Mode bit 0 requests character spelling; bit 1 protects the text from the
- * optional word/CamelCase segmenter (for host-side dictionary substitutions). */
+ * optional word/CamelCase segmenter (for host-side dictionary substitutions).
+ * Bit 2 indicates a larger utterance split at a host language boundary. */
 ECIAPI int ECICALL eciAddTextUtf8(ECIHand handle, const void *text, size_t bytes, int character_mode);
+ECIAPI int ECICALL eciUnicodeIsEmoji(uint32_t codepoint);
 
 ECIAPI int ECICALL eciLoadLexicon(ECIHand handle, const char *utf8_path);
 /* Optional native main/root/abbreviation volumes. NULL disables them.

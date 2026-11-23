@@ -4,6 +4,7 @@ ReLoq C is a speech synthesis project that preserves the familiar character of E
 
 The shared synthesis engine is written in C. NVDA, Android and Windows SAPI5 use the same core. The project is developed and tested with screen-reader users; language reliability, responsiveness and lower resource use remain active priorities.
 
+**2.0.0** adds Aragonese, improves number handling and supplies additional NVDA interface translations.
 **1.4.1** improves CamelCase and acronym handling and makes automatic NVDA dictionary updates non-modal.
 **1.4.0** improves optional word segmentation and NVDA dictionary import,
 fixes Italian words ending in an apostrophe, and adds Android x86-64 packages.
@@ -23,11 +24,11 @@ The [latest release](https://github.com/hozosch/Reloq-C/releases/latest) provide
 | Android | ARM64 or x86-64 `.apk` | Android 8 or later, matching device architecture |
 | Windows SAPI5 | `-setup.exe` | Installs x64 and x86 voices together on compatible Windows |
 
-Release **1.4.1** updates existing installations on all three platforms. If you are upgrading directly from the published 1.1 NVDA or Android package, consult the [1.1.1 transition notes](docs/releases/1.1.1.md) for the one-time identity change. See the [1.4.1 release notes](docs/releases/1.4.1.md) for this update. Source archives are for developers and are not installable packages.
+Release **2.0.0** updates existing installations on all three platforms. If you are upgrading directly from the published 1.1 NVDA or Android package, consult the [1.1.1 transition notes](docs/releases/1.1.1.md) for the one-time identity change. See the [2.0.0 release notes](docs/releases/2.0.0.md) for this update. Source archives are for developers and are not installable packages.
 
 ## Current features
 
-- **14 language variants**, including German, American and British English, Chinese, Japanese, Korean and Greek.
+- **15 language variants**, including German, American and British English, Chinese, Japanese, Korean, Greek and Aragonese.
 - **Eight voice presets:** Reed, Shelly, Bobby, Rocko, Glen, Sandy, Grandma and Grandpa, with adjustable head size, pitch, roughness and breathiness.
 - **Optional exact base pitch in hertz**, alongside the normal pitch controls.
 - **Seven sample rates from 8 to 48 kHz**, covering the classic sound and an extended frequency range.

@@ -41,7 +41,8 @@ final class Catalog {
         new Language(0x70000,"pt-BR","Brazilian Portuguese","Este é um teste de voz."),
         new Language(0x120000,"el-GR","Greek","Αυτή είναι μια δοκιμή ομιλίας."),
         // Append to preserve the stored selection indices from earlier APKs.
-        new Language(0x60001,"zh-TW","Taiwanese Mandarin","你好。這是語音測試。This is a test.")
+        new Language(0x60001,"zh-TW","Taiwanese Mandarin","你好。這是語音測試。This is a test."),
+        new Language(0x130000,"an-ES","Aragonese","Esta ye una preba de voz.")
     };
     static Language find(String lang, String country) {
         if (lang == null || lang.isEmpty()) return null;

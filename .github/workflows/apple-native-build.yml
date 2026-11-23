@@ -1,0 +1,37 @@
+name: Build Apple native ECI library
+on:
+  workflow_dispatch:
+  push:
+    branches: ['codex/release*']
+permissions:
+  contents: read
+concurrency:
+  group: apple-native-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  apple-native:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Build iOS, simulator and macOS libraries
+        run: |
+          make -j3 -f tools/apple/Makefile OUT="$RUNNER_TEMP/reloq-apple" xcframework > "$RUNNER_TEMP/apple-build.log" 2>&1 || {
+            tail -n 120 "$RUNNER_TEMP/apple-build.log"
+            exit 1
+          }
+      - name: Compile native macOS ECI smoke test
+        run: |
+          xcrun --sdk macosx clang -O2 -std=c11 -Wall -Wextra -Werror -Iinclude \
+            tests/test_apple_eci_smoke.c "$RUNNER_TEMP/reloq-apple/macos/libreloq.a" \
+            -liconv -lm -o "$RUNNER_TEMP/test-apple-eci"
+      - name: Run native macOS ECI smoke test
+        run: '"$RUNNER_TEMP/test-apple-eci"'
+      - uses: actions/upload-artifact@v7
+        with:
+          name: reloq-apple-xcframework
+          path: ${{ runner.temp }}/reloq-apple/ReLoq.xcframework
+          if-no-files-found: error
+          retention-days: 7

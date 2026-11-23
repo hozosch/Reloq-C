@@ -25,6 +25,8 @@
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
 #include "reloq61_rule_calls_eses61.h"
+#include "delta_lang.h"
+#include "reloq61_aragonese.h"
 
 /* Where each global the rules touch lands in the state,
    as a distance from the first cell. */
@@ -2393,7 +2395,7 @@ static int32_t evv_count_sylls(void *state, const int32_t *args, int nargs)
 }
 
 /* span_char_name, from f61_25.obj */
-extern int32_t reloq_elgr61_insert_name(void *,const delta_token *,const delta_token *,uint8_t,uint8_t,const uint8_t *,uint8_t);
+extern int32_t reloq61_character_insert_name(void *,const delta_token *,const delta_token *,uint8_t,uint8_t,const uint8_t *,uint8_t);
 int32_t reloq_eses61_span_char_name(void *state, int32_t p0, int32_t p1, int32_t p2)
 {
     const int32_t reloq_machine_ref=
@@ -2642,6 +2644,10 @@ L1553:;
     AT(int32_t, -60) = (delta_sym_ref[545]);
 L1601:;
     AT(int32_t, -80) = (delta_sym_ref[552]);
+    if(delta_lang_now()->id==RELOQ61_ARAGONESE) {
+        AT(int32_t, -84) = 4; /* siet, rather than inherited siete */
+        goto L14256;
+    }
     goto L13001;
     goto L1667;
 L1619:;
@@ -2653,6 +2659,10 @@ L1619:;
     AT(int32_t, -60) = (delta_sym_ref[545]);
 L1667:;
     AT(int32_t, -80) = (delta_sym_ref[553]);
+    if(delta_lang_now()->id==RELOQ61_ARAGONESE) {
+        AT(int32_t, -80) = delta_sym_ref[1505]; /* ueito */
+        AT(int32_t, -84) = 5;
+    }
     goto L14256;
     goto L1733;
 L1685:;
@@ -2664,6 +2674,11 @@ L1685:;
     AT(int32_t, -60) = (delta_sym_ref[545]);
 L1733:;
     AT(int32_t, -80) = (delta_sym_ref[554]);
+    if(delta_lang_now()->id==RELOQ61_ARAGONESE) {
+        AT(int32_t, -80) = delta_sym_ref[1506]; /* nueu */
+        AT(int32_t, -84) = 4;
+        goto L14256;
+    }
     goto L13001;
     goto L1799;
 L1751:;
@@ -2734,7 +2749,7 @@ L2137:;
     AT(int32_t, -68) = (delta_sym_ref[559]);
     AT(int32_t, -60) = (1);
     AT(int32_t, -64) = (2);
-    r0 = reloq_elgr61_insert_name(state,(const delta_token *)(frame+192),(const delta_token *)(frame+200), (uint8_t)((int32_t)AT(int32_t, -60)), (uint8_t)((int32_t)AT(int32_t, -64)), EVV_AT(const uint8_t *, (int32_t)AT(int32_t, -68)), (uint8_t)(0));
+    r0 = reloq61_character_insert_name(state,(const delta_token *)(frame+192),(const delta_token *)(frame+200), (uint8_t)((int32_t)AT(int32_t, -60)), (uint8_t)((int32_t)AT(int32_t, -64)), EVV_AT(const uint8_t *, (int32_t)AT(int32_t, -68)), (uint8_t)(0));
     AT(int32_t, -72) = (r0);
     if (AT(int32_t, -72) != 0) goto L2256;
     goto L16184;
@@ -3048,7 +3063,7 @@ L4313:;
     AT(int32_t, -68) = (delta_sym_ref[579]);
     AT(int32_t, -60) = (1);
     AT(int32_t, -64) = (2);
-    r0 = reloq_elgr61_insert_name(state,(const delta_token *)(frame+192),(const delta_token *)(frame+200), (uint8_t)((int32_t)AT(int32_t, -60)), (uint8_t)((int32_t)AT(int32_t, -64)), EVV_AT(const uint8_t *, (int32_t)AT(int32_t, -68)), (uint8_t)(0));
+    r0 = reloq61_character_insert_name(state,(const delta_token *)(frame+192),(const delta_token *)(frame+200), (uint8_t)((int32_t)AT(int32_t, -60)), (uint8_t)((int32_t)AT(int32_t, -64)), EVV_AT(const uint8_t *, (int32_t)AT(int32_t, -68)), (uint8_t)(0));
     AT(int32_t, -72) = (r0);
     if (AT(int32_t, -72) != 0) goto L4432;
     goto L16184;
@@ -3294,7 +3309,7 @@ L6092:;
     AT(int32_t, -68) = (delta_sym_ref[589]);
     AT(int32_t, -60) = (1);
     AT(int32_t, -64) = (5);
-    r0 = reloq_elgr61_insert_name(state,(const delta_token *)(frame+192),(const delta_token *)(frame+200), (uint8_t)((int32_t)AT(int32_t, -60)), (uint8_t)((int32_t)AT(int32_t, -64)), EVV_AT(const uint8_t *, (int32_t)AT(int32_t, -68)), (uint8_t)(0));
+    r0 = reloq61_character_insert_name(state,(const delta_token *)(frame+192),(const delta_token *)(frame+200), (uint8_t)((int32_t)AT(int32_t, -60)), (uint8_t)((int32_t)AT(int32_t, -64)), EVV_AT(const uint8_t *, (int32_t)AT(int32_t, -68)), (uint8_t)(0));
     AT(int32_t, -40) = (r0);
     AT(int32_t, -72) = ((int32_t)AT(int32_t, -40));
     AT(int32_t, -60) = ((int32_t)AT(int32_t, -76));
@@ -3394,7 +3409,7 @@ L6884:;
     AT(int32_t, -68) = (delta_sym_ref[592]);
     AT(int32_t, -60) = (1);
     AT(int32_t, -64) = (3);
-    r0 = reloq_elgr61_insert_name(state,(const delta_token *)(frame+192),(const delta_token *)(frame+200), (uint8_t)((int32_t)AT(int32_t, -60)), (uint8_t)((int32_t)AT(int32_t, -64)), EVV_AT(const uint8_t *, (int32_t)AT(int32_t, -68)), (uint8_t)(0));
+    r0 = reloq61_character_insert_name(state,(const delta_token *)(frame+192),(const delta_token *)(frame+200), (uint8_t)((int32_t)AT(int32_t, -60)), (uint8_t)((int32_t)AT(int32_t, -64)), EVV_AT(const uint8_t *, (int32_t)AT(int32_t, -68)), (uint8_t)(0));
     AT(int32_t, -72) = (r0);
     if (AT(int32_t, -72) != 0) goto L7003;
     goto L16184;
@@ -3457,7 +3472,7 @@ L7328:;
     AT(int32_t, -68) = (delta_sym_ref[596]);
     AT(int32_t, -64) = (1);
     AT(int32_t, -60) = (1);
-    r0 = reloq_elgr61_insert_name(state,(const delta_token *)(frame+192),(const delta_token *)(frame+200), (uint8_t)((int32_t)AT(int32_t, -60)), (uint8_t)((int32_t)AT(int32_t, -64)), EVV_AT(const uint8_t *, (int32_t)AT(int32_t, -68)), (uint8_t)(0));
+    r0 = reloq61_character_insert_name(state,(const delta_token *)(frame+192),(const delta_token *)(frame+200), (uint8_t)((int32_t)AT(int32_t, -60)), (uint8_t)((int32_t)AT(int32_t, -64)), EVV_AT(const uint8_t *, (int32_t)AT(int32_t, -68)), (uint8_t)(0));
     AT(int32_t, -72) = (r0);
     if (AT(int32_t, -72) != 0) goto L7447;
     goto L16184;
@@ -3486,7 +3501,7 @@ L7562:;
     AT(int32_t, -68) = (delta_sym_ref[597]);
     AT(int32_t, -60) = (1);
     AT(int32_t, -64) = (5);
-    r0 = reloq_elgr61_insert_name(state,(const delta_token *)(frame+192),(const delta_token *)(frame+200), (uint8_t)((int32_t)AT(int32_t, -60)), (uint8_t)((int32_t)AT(int32_t, -64)), EVV_AT(const uint8_t *, (int32_t)AT(int32_t, -68)), (uint8_t)(0));
+    r0 = reloq61_character_insert_name(state,(const delta_token *)(frame+192),(const delta_token *)(frame+200), (uint8_t)((int32_t)AT(int32_t, -60)), (uint8_t)((int32_t)AT(int32_t, -64)), EVV_AT(const uint8_t *, (int32_t)AT(int32_t, -68)), (uint8_t)(0));
     AT(int32_t, -72) = (r0);
     if (AT(int32_t, -72) != 0) goto L7681;
     goto L16184;
@@ -3732,7 +3747,7 @@ L9173:;
     AT(int32_t, -68) = (delta_sym_ref[592]);
     AT(int32_t, -60) = (1);
     AT(int32_t, -64) = (3);
-    r0 = reloq_elgr61_insert_name(state,(const delta_token *)(frame+192),(const delta_token *)(frame+200), (uint8_t)((int32_t)AT(int32_t, -60)), (uint8_t)((int32_t)AT(int32_t, -64)), EVV_AT(const uint8_t *, (int32_t)AT(int32_t, -68)), (uint8_t)(0));
+    r0 = reloq61_character_insert_name(state,(const delta_token *)(frame+192),(const delta_token *)(frame+200), (uint8_t)((int32_t)AT(int32_t, -60)), (uint8_t)((int32_t)AT(int32_t, -64)), EVV_AT(const uint8_t *, (int32_t)AT(int32_t, -68)), (uint8_t)(0));
     AT(int32_t, -72) = (r0);
     if (AT(int32_t, -72) != 0) goto L9292;
     goto L16184;
@@ -3999,7 +4014,7 @@ L10829:;
     AT(int32_t, -68) = (delta_sym_ref[635]);
     AT(int32_t, -60) = (1);
     AT(int32_t, -64) = (5);
-    r0 = reloq_elgr61_insert_name(state,(const delta_token *)(frame+192),(const delta_token *)(frame+200), (uint8_t)((int32_t)AT(int32_t, -60)), (uint8_t)((int32_t)AT(int32_t, -64)), EVV_AT(const uint8_t *, (int32_t)AT(int32_t, -68)), (uint8_t)(0));
+    r0 = reloq61_character_insert_name(state,(const delta_token *)(frame+192),(const delta_token *)(frame+200), (uint8_t)((int32_t)AT(int32_t, -60)), (uint8_t)((int32_t)AT(int32_t, -64)), EVV_AT(const uint8_t *, (int32_t)AT(int32_t, -68)), (uint8_t)(0));
     AT(int32_t, -36) = (r0);
     AT(int32_t, -72) = ((int32_t)AT(int32_t, -36));
     AT(int32_t, -60) = ((int32_t)AT(int32_t, -76));
@@ -4182,7 +4197,7 @@ L12027:;
     AT(int32_t, -60) = (1);
     AT(int32_t, -64) = (10);
 L12093:;
-    r0 = reloq_elgr61_insert_name(state,(const delta_token *)(frame+192),(const delta_token *)(frame+200), (uint8_t)((int32_t)AT(int32_t, -60)), (uint8_t)((int32_t)AT(int32_t, -64)), EVV_AT(const uint8_t *, (int32_t)AT(int32_t, -68)), (uint8_t)(0));
+    r0 = reloq61_character_insert_name(state,(const delta_token *)(frame+192),(const delta_token *)(frame+200), (uint8_t)((int32_t)AT(int32_t, -60)), (uint8_t)((int32_t)AT(int32_t, -64)), EVV_AT(const uint8_t *, (int32_t)AT(int32_t, -68)), (uint8_t)(0));
     AT(int32_t, -32) = (r0);
     AT(int32_t, -72) = ((int32_t)AT(int32_t, -32));
     AT(int32_t, -60) = ((int32_t)AT(int32_t, -76));
@@ -4551,7 +4566,7 @@ L14256:;
     AT(int32_t, -60) = (1);
     AT(int32_t, -68) = ((int32_t)AT(int32_t, -80));
 L14322:;
-    r0 = reloq_elgr61_insert_name(state,(const delta_token *)(frame+192),(const delta_token *)(frame+200), (uint8_t)((int32_t)AT(int32_t, -60)), (uint8_t)((int32_t)AT(int32_t, -64)), EVV_AT(const uint8_t *, (int32_t)AT(int32_t, -68)), (uint8_t)(0));
+    r0 = reloq61_character_insert_name(state,(const delta_token *)(frame+192),(const delta_token *)(frame+200), (uint8_t)((int32_t)AT(int32_t, -60)), (uint8_t)((int32_t)AT(int32_t, -64)), EVV_AT(const uint8_t *, (int32_t)AT(int32_t, -68)), (uint8_t)(0));
     AT(int32_t, -28) = (r0);
     AT(int32_t, -72) = ((int32_t)AT(int32_t, -28));
     AT(int32_t, -60) = ((int32_t)AT(int32_t, -76));
@@ -4734,7 +4749,7 @@ L15693:;
     if(delta_lang_now()->id==0x120000) {
         const delta_token *a=(const delta_token *)(frame+192),*b=(const delta_token *)(frame+200);
         lpta_rpta_loadp(state,a,b);
-        r0=reloq_elgr61_insert_name(state,a,b,1,0,NULL,0);
+        r0=reloq61_character_insert_name(state,a,b,1,0,NULL,0);
     } else
     r0 = reloq_call_eses61_span_1(state, (int32_t)(FIELD(0)), (int32_t)((int32_t)AT(int32_t, -60)), (int32_t)((int32_t)AT(int32_t, -64)));
     AT(int32_t, -72) = (r0);
@@ -4781,7 +4796,7 @@ L15965:;
 L16015:;
     AT(int32_t, -60) = (1);
     AT(int32_t, -64) = (2);
-    r0 = reloq_elgr61_insert_name(state,(const delta_token *)(frame+192),(const delta_token *)(frame+200), (uint8_t)((int32_t)AT(int32_t, -60)), (uint8_t)((int32_t)AT(int32_t, -64)), EVV_AT(const uint8_t *, (int32_t)AT(int32_t, -68)), (uint8_t)(0));
+    r0 = reloq61_character_insert_name(state,(const delta_token *)(frame+192),(const delta_token *)(frame+200), (uint8_t)((int32_t)AT(int32_t, -60)), (uint8_t)((int32_t)AT(int32_t, -64)), EVV_AT(const uint8_t *, (int32_t)AT(int32_t, -68)), (uint8_t)(0));
     AT(int32_t, -72) = (r0);
     if (AT(int32_t, -72) == 0) goto L16084;
     goto L18009;

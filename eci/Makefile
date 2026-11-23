@@ -16,7 +16,7 @@ ANDROID_CC ?= aarch64-linux-android26-clang
 ANDROID_AR ?= llvm-ar
 ANDROID_BUILD ?= build/android-arm64
 # NDK r30's complex.h expands the standard I macro to an imaginary literal.
-ANDROID_CFLAGS := $(CFLAGS) -fsigned-char -Wno-c2y-extensions
+ANDROID_CFLAGS := $(CFLAGS) -fsigned-char -Wno-c2y-extensions -Wno-c2x-extensions -Wno-gnu-imaginary-constant
 # Keep component-test archives inexpensive; optimize the shipped provider
 # across translation units, including its many small C rule primitives.
 PROVIDER_OPT ?= -O3
@@ -137,6 +137,15 @@ eci_converter_failure_probe.exe: ../tests/test_reloq_converter_failure.c $(WINDO
 
 test_reloq_hash_delete: ../tests/test_reloq_hash_delete.c $(RULES61)
 	$(CC) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -DEVV_ARENA=1 -I../vendor/openevv61/src/port $< $(RULES61) -pthread -lm -o $@
+
+test_low_arena_concurrent: ../tests/test_low_arena_concurrent.c ../vendor/openevv61/src/port/evv_arena.c
+	$(CC) $(CFLAGS) $(SECTIONS) -DEVV_ARENA=1 -I../vendor/openevv61/src/port $^ -pthread -Wl,--gc-sections -o $@
+
+test_win32_task_start: ../tests/test_win32_task_start.c ../tests/win32_task_mock/windows.h ../vendor/openevv61/src/port/port_win32.c
+	$(CC) $(CFLAGS) $(SECTIONS) -fsanitize=address -I../tests/win32_task_mock -I../vendor/openevv61/src/port ../vendor/openevv61/src/port/port_win32.c ../tests/test_win32_task_start.c -Wl,--gc-sections -o $@
+
+test_provider_licence_start: ../tests/test_provider_licence_start.c ../vendor/openevv61/src/eci/api/eci_dllobj.c
+	$(CC) $(CFLAGS) -Wno-attributes $(SECTIONS) -I../vendor/openevv61/src/port -I../vendor/openevv61/src/eci/synth -I../vendor/openevv61/src/eci/queue -I../vendor/openevv61/src/eci/util -I../vendor/openevv61/src/eci/lang -I../vendor/openevv61/src/eci/api -I../vendor/openevv61/src/delta $^ -pthread -Wl,--gc-sections -o $@
 
 test_reloq_native_rules: ../tests/test_reloq_native_rules.c $(OBJECTS) $(RULES61)
 	$(CC) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -I../vendor/openevv61/include $< $(OBJECTS) $(RULES61) -pthread -Wl,--gc-sections -lm -o $@

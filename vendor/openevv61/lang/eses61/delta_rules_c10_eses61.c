@@ -25,6 +25,8 @@
 /* Compact C workspaces, scalar-only helpers. */
 #include "reloq61_scalar_blocks.h"
 #include "reloq61_rule_calls_eses61.h"
+#include "delta_lang.h"
+#include "reloq61_aragonese.h"
 
 /* Where each global the rules touch lands in the state,
    as a distance from the first cell. */
@@ -4481,6 +4483,8 @@ int32_t reloq_eses61_apply_span_q_rules(void *state, int32_t p0, int32_t p1, int
     r0 = reloq61_typed_get_parm(DELTA_ENTRY_get_parm, state, (delta_loc *)(base + (-12)), EVV_AT(delta_loc *, (int32_t)PARAM(int32_t, 1)), (int16_t)(-6));
     r0 = reloq61_typed_get_parm(DELTA_ENTRY_get_parm, state, (delta_loc *)(base + (-20)), EVV_AT(delta_loc *, (int32_t)PARAM(int32_t, 2)), (int16_t)(-6));
     r0 = reloq61_typed_fence(DELTA_ENTRY_fence, state, (int8_t)(1), EVV_AT(const uint8_t *, delta_sym_ref[1137]));
+    if(delta_lang_now()->id==RELOQ61_ARAGONESE &&
+       reloq61_an_qu_glide(state,RELOQ61_WORKSPACE_REF(frame,reloq_workspace_ref,192)))goto L382;
     r0 = reloq61_typed_starttest(DELTA_ENTRY_starttest, state, (int16_t)(1));
     r0 = reloq61_typed_lpta_loadp(DELTA_ENTRY_lpta_loadp, state, (const delta_token *)(base + (-20)));
     r0 = reloq61_typed_setscan_r(DELTA_ENTRY_setscan_r, state, (uint8_t)(1));

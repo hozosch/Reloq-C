@@ -2987,6 +2987,42 @@ uint8_t eses61_evv_authored_data[] = {
     0,0,
     /* eti_s_f8d1e, 2 bytes at 6506 */
     0,0,
+    /* an_ueito, 5 bytes at 6508 */
+    5,2,3,26,4,
+    /* an_nueu, 4 bytes at 6513 */
+    21,5,2,5,
+    /* an_dotze, 5 bytes at 6517 */
+    13,4,26,31,2,
+    /* an_tretze, 6 bytes at 6522 */
+    26,24,2,26,31,2,
+    /* an_deciueito, 9 bytes at 6528 */
+    13,2,12,3,5,2,3,26,4,
+    /* an_decinueu, 8 bytes at 6537 */
+    13,2,12,3,21,5,2,5,
+    /* an_vinte, 5 bytes at 6545 */
+    27,3,21,26,2,
+    /* an_vinti, 5 bytes at 6550 */
+    27,3,21,26,3,
+    /* an_trenta, 6 bytes at 6555 */
+    26,24,2,21,26,1,
+    /* an_cuaranta, 8 bytes at 6561 */
+    12,5,1,24,1,21,26,1,
+    /* an_cincuanta, 9 bytes at 6569 */
+    12,3,21,12,5,1,21,26,1,
+    /* an_sisanta, 7 bytes at 6578 */
+    25,3,25,1,21,26,1,
+    /* an_setanta, 7 bytes at 6585 */
+    25,2,26,1,21,26,1,
+    /* an_uitanta, 7 bytes at 6592 */
+    5,3,26,1,21,26,1,
+    /* an_novanta, 7 bytes at 6599 */
+    21,4,27,1,21,26,1,
+    /* an_cincocient, 10 bytes at 6606 */
+    12,3,21,12,4,12,3,2,21,26,
+    /* an_deciseis, 8 bytes at 6616 */
+    13,2,12,3,25,108,3,25,
+    /* an_decisiet, 8 bytes at 6624 */
+    13,2,12,3,25,3,2,26,
 };
 
 const delta_store eses61_delta_authored_store[] = {

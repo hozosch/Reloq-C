@@ -74,7 +74,8 @@ int main(int argc,char **argv)
 {
     assert(argc==2);sapi_test_library=argv[1];struct sapi_settings s=settings();unsigned cases=0;
     struct {int language,rate;size_t samples;uint64_t hash;unsigned event_count;
-        ULONG event_offsets[128];uint64_t event_audio_offsets[128];} comparisons[98];
+        ULONG event_offsets[128];uint64_t event_audio_offsets[128];}
+        comparisons[(sizeof sapi_languages/sizeof *sapi_languages)*7];
     unsigned comparison_count=0,format_changes=0;
     size_t hz_samples[3]={0};uint64_t hz_hashes[3]={0};
     size_t long_marked=0,long_plain=0,long_events=0;uint64_t long_marked_hash=0,long_plain_hash=0,long_event_hash=0;
@@ -416,10 +417,10 @@ int main(int argc,char **argv)
     SPVTEXTFRAG spell=text(L"AB",5);spell.State.eAction=SPVA_SpellOut;struct site letters=site_new();
     assert(SUCCEEDED(sapi_backend_speak(b,&s,0,&out,&spell,&letters.iface)));assert(letters.count>0);free(letters.pcm);++cases;
     assert(sapi_test_dictionary_calls==0);++cases;
-    printf("{\"backend_cases\":%u,\"format_negotiation_cases\":%u,\"host_tests_convert_audio\":false,\"languages\":14,\"rates\":7,\"reference_samples\":%zu,\"reference_hash\":\"%016llx\",\"profile_names\":8,\"last_profile\":\"%ls\","
+    printf("{\"backend_cases\":%u,\"format_negotiation_cases\":%u,\"host_tests_convert_audio\":false,\"languages\":%zu,\"rates\":7,\"reference_samples\":%zu,\"reference_hash\":\"%016llx\",\"profile_names\":8,\"last_profile\":\"%ls\","
         "\"pitch_hz\":[{\"samples\":%zu,\"hash\":\"%016llx\"},{\"samples\":%zu,\"hash\":\"%016llx\"},{\"samples\":%zu,\"hash\":\"%016llx\"}],"
         "\"long_german\":{\"marked_samples\":%zu,\"marked_hash\":\"%016llx\",\"plain_samples\":%zu,\"plain_hash\":\"%016llx\",\"events\":%zu,\"event_hash\":\"%016llx\"},\"comparisons\":[",
-        cases,format_changes,base.count,(unsigned long long)hash(base.pcm,base.count),sapi_profiles[7],
+        cases,format_changes,sizeof sapi_languages/sizeof *sapi_languages,base.count,(unsigned long long)hash(base.pcm,base.count),sapi_profiles[7],
         hz_samples[0],(unsigned long long)hz_hashes[0],hz_samples[1],(unsigned long long)hz_hashes[1],
         hz_samples[2],(unsigned long long)hz_hashes[2],
         long_marked,(unsigned long long)long_marked_hash,long_plain,(unsigned long long)long_plain_hash,

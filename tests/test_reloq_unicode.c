@@ -20,6 +20,9 @@ int main(void)
     check("Hallo😀Welt",0,0,"Hallo grinsendes Gesicht Welt");
     check("aαb",0,0,"a Alpha b");check("a\xee\x80\x80" "b",0,0,"a b");
     check("aΩb",0,1,"a omega b");
+    assert(reloq_unicode_is_emoji(0x26bd) && reloq_unicode_is_emoji(0x1f642));
+    assert(reloq_unicode_is_emoji(0x2764) && reloq_unicode_is_emoji(0x1f1e9));
+    assert(!reloq_unicode_is_emoji(0x26ad) && !reloq_unicode_is_emoji(0x03b1));
     check("∰",1,0," Volumenintegral ");
     check("⌘",1,0," Sehenswürdigkeitszeichen ");
     check("⚭",1,0," Ehezeichen ");
@@ -45,14 +48,24 @@ int main(void)
     check("\xf0\x93\x80\x80",1,0," Ägyptische Hieroglyphen a001 ");
     check("\xf0\x93\x80\x80",1,1," egyptian hieroglyph a001 ");
     check("α",1,0," Alpha ");check("α",1,1," alpha ");
+    check("αβ",0,1," alpha  beta ");
+    check("ά",0,1," alpha ");check("α\xcc\x81",0,1," alpha ");
     check("μ",1,0," My ");check("μ",1,1," mu ");
+    {
+        char name[16]="unchanged";
+        assert(reloq_unicode_greek_name_english(0x03b1,name,sizeof name)==1 && !strcmp(name,"alpha"));
+        assert(reloq_unicode_greek_name_english(0x03a9,name,sizeof name)==1 && !strcmp(name,"omega"));
+        assert(reloq_unicode_greek_name_english('A',name,sizeof name)==0 && !strcmp(name,"omega"));
+        assert(reloq_unicode_greek_name_english(0x03b1,name,2)==-1 && !strcmp(name,"omega"));
+    }
     check("ÄÖÜß",0,1,"ÄÖÜß");check("ÄÖÜß",0,0,"ÄÖÜß");
     check("word—word",0,1,"word—word");
     check("word–word",0,1,"word–word");
     check("2–4",0,1,"2-4");check("2020 — 2024",0,1,"2020 - 2024");
     check("2 – -4",0,1,"2 - -4");check("2 – +4",0,1,"2 - +4");
     check("a_b",0,0,"a_b");
-    check("_",1,0," `[.1Un.0tR.2StrIX] ");
+    /* The native character table owns underscore's name and stress. */
+    check("_",1,0," `ts2 _ `ts0 ");
     check("café",0,0,"café");check("øł",0,0,"øł");
     check("Sa\xcc\x83o, ac\xcc\xa7" "a\xcc\x83o",0,2,"São, ação");
     check("Helsinki/Turku - ääni",0,2,"Helsinki/Turku - ääni");

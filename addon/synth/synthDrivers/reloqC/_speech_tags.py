@@ -1,8 +1,8 @@
-"""Carry ECI controls through NVDA's symbol processing as synth commands.
+"""Carry controls and selected literal text through NVDA as synth commands.
 
-Only controls are protected. Normal text still passes through NVDA's speech
-dictionaries, symbol pronunciation and Unicode normalization. In particular,
-never hide a complete sentence from NVDA to preserve one backtick.
+Normal text still passes through NVDA's speech dictionaries, symbol
+pronunciation and Unicode normalization. Protect only explicit controls,
+dictionary keys and isolated characters with no configured replacement.
 """
 import re
 
@@ -28,7 +28,7 @@ class SegmentationGuard(SynthCommand):
 
 
 class NativeDictionaryWord(SynthCommand):
-    """Pass a native dictionary key through NVDA's builtin splitter intact."""
+    """Pass a selected literal through NVDA's text processing intact."""
     def __init__(self, text):
         self.text = text
 

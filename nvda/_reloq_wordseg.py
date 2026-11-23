@@ -75,7 +75,12 @@ class WordSegmenter:
             kind, word = line.split(maxsplit=1)
             groups[kind].add(word)
         pieces, abbreviations, section = set(), set(), False
-        for line in (root / (language + "-pieces")).read_text(encoding="utf-8").splitlines():
+        pieces_path = root / (language + "-pieces")
+        # The packaged British and American tables are often identical. A
+        # distinct British table, when supplied, always takes precedence.
+        if language == "engb" and not pieces_path.exists():
+            pieces_path = root / "enus-pieces"
+        for line in pieces_path.read_text(encoding="utf-8").splitlines():
             if line.startswith("# Abbreviations said by their letters"):
                 section = True
             elif line.startswith("# Prefixes"):

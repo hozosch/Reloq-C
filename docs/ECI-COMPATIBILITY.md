@@ -24,7 +24,7 @@ gewählt. Beide Standardfunktionen sind in ReLoq vorhanden.
 | `eciCopyVoice` | Plätze 1..8 sind die unveränderlichen Presets, 9..16 bearbeitbare Kopien; nach 0 wird die aktive Stimme atomar übernommen. |
 | `eciGetVoiceName` / `eciSetVoiceName` | Namen in der gewählten Sprachkodierung bzw. UTF-16LE; maximal 29 Eingabecodeeinheiten, unabhängig von der internen UTF-8-Bytelänge. |
 | `eciSetParam(h,9,language)` | Wechsel der Sprache auf demselben Handle, einschließlich Prüfung und Austausch des Sprach-Workers. Ungültige Kennungen lassen die bisherige Auswahl bestehen. |
-| `eciAddText` | Windows-1252 für westliche Sprachen, Windows-1253 für Griechisch, CP932/936/949/950 für Japanisch/vereinfachtes Chinesisch/Koreanisch/traditionelles Chinesisch. Bit 0x800 im Sprachwort wählt UTF-16LE. `eciAddTextUtf8` bleibt eine zusätzliche Schnittstelle. |
+| `eciAddText` | Windows-1252 für westliche Sprachen, Windows-1253 für Griechisch, CP932/949/950 für Japanisch/Koreanisch/traditionelles Chinesisch und GB18030 (mit CP936-Rückfall) für vereinfachtes Chinesisch. Bit 0x800 im Sprachwort wählt UTF-16LE. `eciAddTextUtf8` bleibt eine zusätzliche Schnittstelle. |
 | `eciSetParam(h,1,1)` | Aktiviert die Annotationen, wie beim Standardparameter `eciInputType`. |
 | `eciNewDict`, `eciLoadDict`, `eciSetDict`, `eciGetDict`, `eciDeleteDict` | Eigene Wörterbuch-Handles mit einzelnen Main-/Root-/Abbreviation-Volumes. `eciSetDict` liefert wie das Original `eciDictNoError` (0) bei Erfolg, keinen booleschen Wert; rc3 korrigiert den zuvor falschen Erfolgswert 1. Beliebige Dateinamen; geladene Daten gehören dem Handle und überstehen das Entfernen der Quelldatei. Fehlgeschlagene Ladevorgänge behalten vorhandene Daten. Volumes werden mit dem vorhandenen nativen Parser verarbeitet. |
 
