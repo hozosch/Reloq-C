@@ -193,12 +193,16 @@ def main():
         tagged, _marks, _needs_validation = continuous_driver._project_part(
             persian, ('بله این حرف شما - درسته حتما',), follows=True)
         assert "`[.0do.0ros.1te]" in tagged, tagged
-        # The original sentence is now fully native, so also exercise a
-        # genuinely unknown inflection after the stale stop. This must take
-        # the validation path and recover the whole word without spelling it.
+        # The productive superlative now comes from the known native stem.
+        # Its final syllable takes the Persian superlative accent.
         tagged, _marks, _needs_validation = continuous_driver._project_part(
             persian, ('بله - دلرحمترین حتما',), follows=True)
-        assert '`[.2del.0rAhm.1tA.0rin]' in tagged, tagged
+        assert '`[.0del.0rAhm.0tA.1rin]' in tagged, tagged
+        # An extended, still-unknown inflection must continue to exercise
+        # fallback and clear the stale native stop before validation.
+        tagged, _marks, _needs_validation = continuous_driver._project_part(
+            persian, ('بله - دلرحمترینها حتما',), follows=True)
+        assert '`[.2del.0rAhm.0tA.1rin.0ha]' in tagged, tagged
         direct_dash = frontend.analyze_direct('سلام-دنیا')
         assert direct_dash and '-' not in direct_dash.parts[0].text
         named_dash = project((EciText('-', character_mode=True),), frontend, allow_fallback=True)
@@ -208,13 +212,13 @@ def main():
             recovered = project_resilient((word,), frontend,
                 validate=engine._engines[PERSIAN_PROBE.id]._voice._phonemes_for_probe)
             assert recovered.tagged == expected, (word, recovered.tagged)
-        # A new inflection is deliberately outside the direct admission table.
-        # The native display hides its coda H, but the word must not be spelled.
-        inflected = 'دلرحمترین'
+        # The extended plural remains outside the direct admission table, so
+        # it still exercises the reference fallback and validation path.
+        inflected = 'دلرحمترینها'
         assert frontend.analyze_direct(inflected) is None
         recovered = project_resilient((inflected,), frontend,
             validate=engine._engines[PERSIAN_PROBE.id]._voice._phonemes_for_probe)
-        assert recovered.tagged == '`[.2del.0rAhm.1tA.0rin]'
+        assert recovered.tagged == '`[.2del.0rAhm.0tA.1rin.0ha]'
         worker = frontend._fallback()
         reference_calls, original_translate = [], worker.translate
         def observe_translate(text, **kwargs):

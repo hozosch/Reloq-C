@@ -51,6 +51,10 @@ def main():
         for word in ('گلرها', 'گلرهایش', 'گلرهایشان', 'کشتیهای', 'نمی‌آراست'):
             assert current.analyze_direct(word) == old.analyze_direct(word), word
             assert current.project_fallback_word(word) == old.project_fallback_word(word), word
+        # The productive superlative takes its stress on the final syllable.
+        word = 'دلرحمترین'
+        assert old.analyze_direct(word) is None
+        assert current.analyze_direct(word).parts[0].text == '`[.0del.0rAhm.0tA.1rin]'
         if args.exhaustive:
             seen = set()
             for row in (*main_entries(), *frequency_entries()):
