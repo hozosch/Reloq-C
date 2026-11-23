@@ -24,14 +24,28 @@ jobs:
             sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 update -qq
             sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 install -y --no-install-recommends gcc-mingw-w64-x86-64-posix
           fi
-      - uses: actions/cache@v6
+      - uses: actions/cache/restore@v6
         id: rules
         with:
           path: vendor/openevv61/build
-          key: sapi-rules-ubuntu24-gcc13-v1-x64-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c') }}
-      - name: Restore unchanged rule timestamps
+          key: sapi-rules-ubuntu24-gcc13-v1-x64-4efa775a1f3d0cfc1ded1e26787d93e52affda43eca987f9a166245c78ca5995
+      - name: Verify baseline cache and rebuild changed Mandarin rules
         if: steps.rules.outputs.cache-hit == 'true'
-        run: find vendor/openevv61/build -type f -exec touch {} +
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin e84b1ada2238874f15a9e5ded1870415f5e5ff6d
+          python3 - <<'PY'
+          import subprocess
+          paths=['vendor/openevv61','include','src/reloq_voice_filter.c','src/reloq_orthography.c',
+                 'src/reloq_german_word_edges.c','src/reloq_english_word_edges.c']
+          changed=set(subprocess.check_output(['git','diff','--name-only',
+              'e84b1ada2238874f15a9e5ded1870415f5e5ff6d','HEAD','--',*paths],text=True).splitlines())
+          assert changed=={'vendor/openevv61/lang/zhcn61/foreign_bank_zhcn61.c',
+                           'vendor/openevv61/lang/zhcn61/foreign_pitch_zhcn61.h'},changed
+          PY
+          find vendor/openevv61/build -type f -exec touch {} +
+          touch vendor/openevv61/lang/zhcn61/foreign_bank_zhcn61.c vendor/openevv61/lang/zhcn61/foreign_pitch_zhcn61.h
       - name: Build and verify Windows ECI library
         run: make -C eci -j2 windows-x64 PROVIDER_LTO=-flto=2 WINDOWS_CC=x86_64-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=x86_64-w64-mingw32-objdump
       - uses: actions/upload-artifact@v7
@@ -119,6 +133,8 @@ jobs:
         run: |
           python -B nvda/test_eci_korean_pause_boundary.py --library candidate-fixed/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Korean pause regression failed' }
+          python -B nvda/test_eci_chinese_pause_melody.py --library candidate-fixed/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Mandarin pause contour regression failed' }
           python -B nvda/test_eci_mandarin_eloquence64.py --library candidate-fixed/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Mandarin ECI regression failed' }
           python -B nvda/test_eci_cjk_index_parity.py --library candidate-fixed/eci.dll
@@ -161,14 +177,14 @@ jobs:
           from pathlib import Path
           import hashlib,zipfile
           candidate=Path('candidate-fixed/eci.dll').read_bytes()
-          output=Path('Eloquence-v28-ReLoq-2.0-pause-test.nvda-addon')
+          output=Path('Eloquence-v28-ReLoq-2.0-pause-test2.nvda-addon')
           with zipfile.ZipFile('reference-v28.zip') as source, zipfile.ZipFile(output,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=9) as out:
               for item in source.infolist():
                   data=source.read(item.filename)
                   if item.filename=='synthDrivers/reloq/eci.dll': data=candidate
                   elif item.filename=='synthDrivers/reloq/reloq-version.txt': data=b'v2.0.0\r\n'
                   elif item.filename=='manifest.ini':
-                      data=data.replace(b'version = v28',b'version = v28+reloq2.0.0.pausetest1')
+                      data=data.replace(b'version = v28',b'version = v28+reloq2.0.0.pausetest2')
                   out.writestr(item,data)
           with zipfile.ZipFile(output) as z:
               assert z.testzip() is None and z.read('synthDrivers/reloq/eci.dll')==candidate
@@ -181,8 +197,8 @@ jobs:
           PY
       - uses: actions/upload-artifact@v7
         with:
-          name: Eloquence-v28-ReLoq-pause-test
-          path: Eloquence-v28-ReLoq-2.0-pause-test.nvda-addon
+          name: Eloquence-v28-ReLoq-pause-test2
+          path: Eloquence-v28-ReLoq-2.0-pause-test2.nvda-addon
           if-no-files-found: error
           retention-days: 7
       - uses: actions/upload-artifact@v7

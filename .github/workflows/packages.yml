@@ -102,6 +102,7 @@ jobs:
           python3 -B nvda/test_eci_dash_pause.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_release113.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_mandarin_eloquence64.py --library eci/libreloq_eci.so
+          python3 -B nvda/test_eci_chinese_pause_melody.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_korean_pause_boundary.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_release114.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_sentence_punctuation.py --library eci/libreloq_eci.so
