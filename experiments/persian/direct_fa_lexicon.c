@@ -51,6 +51,13 @@ _Static_assert(sizeof fa_frequency_compound_masks ==
                sizeof fa_frequency_entries / sizeof fa_frequency_entries[0],
                "Persian compound admissions must match the frequency table");
 #endif
+#include "direct_fa_nominal_suffixes.inc"
+_Static_assert(sizeof fa_nominal_main_masks == sizeof fa_direct_entries / sizeof fa_direct_entries[0],
+               "nominal suffix admissions must match the main word table");
+#ifndef RELOQ_FA_EXCLUDE_FREQUENCY_WORDS
+_Static_assert(sizeof fa_nominal_frequency_masks == sizeof fa_frequency_entries / sizeof fa_frequency_entries[0],
+               "nominal suffix admissions must match the frequency word table");
+#endif
 
 _Static_assert(sizeof fa_compound_main_masks == sizeof fa_direct_entries / sizeof fa_direct_entries[0],
                "Persian compound admissions must match the direct lexicon");
@@ -2345,6 +2352,45 @@ static int classified_suffix_word(const char *word,size_t bytes,char *output,siz
     return 0;
 }
 
+/* The earlier native word and frequency tables need the same productive
+ * suffixes as the later recovered-stem table. For unspaced endings, the
+ * generated admission bit proves the reference retains the known stem in
+ * four positions. Never override a previously covered complete word. */
+static int nominal_suffix_word(const char *word,size_t bytes,char *output,size_t capacity)
+{
+    static const struct {const char *written,*spoken;unsigned bit;} endings[]={
+        {"هایم","`[.1ha.0jAm]",5}, {"هایت","`[.1ha.0jAt]",6},
+        {"هایش","`[.1ha.0jAS]",7}, {"هایی","`[.1ha.0'i:']",2},
+        {"های","`[.1ha.0je]",1}, {"ها","`[.1ha]",0},
+        {"ترین","`[.0tA.1rin]",4}, {"تر","`[.1tAr]",3}
+    };
+    for(size_t i=0;i<sizeof endings/sizeof endings[0];++i) {
+        size_t stem=0;
+        if(!ends_with(word,bytes,endings[i].written,&stem))continue;
+        unsigned mask=0;
+        size_t index=direct_index(word,stem);
+        if(index<reloq_fa_direct_word_count())mask=fa_nominal_main_masks[index];
+#ifndef RELOQ_FA_EXCLUDE_FREQUENCY_WORDS
+        else {
+            index=direct_frequency_index(word,stem);
+            if(index<sizeof fa_frequency_entries/sizeof fa_frequency_entries[0])
+                mask=fa_nominal_frequency_masks[index];
+        }
+#endif
+        if(!(mask & (1u<<endings[i].bit)) || stress_class(word,stem)==2u)continue;
+        char base[2048];
+        ++fa_context_lookup_depth;
+        int status=direct_context_depth(word,stem,0,base,sizeof base,0);
+        --fa_context_lookup_depth;
+        if(status<0)return status;
+        if(status!=1 || !single_phone_tag(base))continue;
+        (void)shorten_written_final_e(word,stem,base);
+        stress_unaccent(base);
+        return append_phone_tags(base,endings[i].spoken,output,capacity);
+    }
+    return 0;
+}
+
 int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
                                  char *output,size_t capacity)
 {
@@ -2365,6 +2411,8 @@ int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
         return 1;
     }
     int suffix=classified_suffix_word(word,bytes,output,capacity);
+    if(suffix)return suffix;
+    suffix=nominal_suffix_word(word,bytes,output,capacity);
     if(suffix)return suffix;
     /* The reference-admitted -یان plural keeps the recovered stem phones.
      * Full native readings and full recovered words have already won above. */

@@ -1275,7 +1275,7 @@ struct rule_span {
 };
 struct quiet_cut { int64_t from,to,after; };
 struct rule_control { int64_t tick;size_t ordinal;int parameter,value; };
-struct rule_fa_phone {int32_t from,to,articulation_end;unsigned phone;};
+struct rule_fa_phone {int32_t from,to,articulation_end;unsigned phone,u_before_r;};
 static int fa_tuned_vowel(unsigned phone)
 {
     return phone==RELOQ_FA_TUNE_FRONT_A || phone==RELOQ_FA_TUNE_BACK_A ||
@@ -1293,6 +1293,8 @@ struct rule_plan {
     const size_t *control_sources;size_t pitch_source;
     struct rule_control *controls;size_t control_count,control_capacity;
     struct rule_fa_phone *fa_phones;size_t fa_phone_count,fa_phone_capacity,fa_phone_next;
+    unsigned char *fa_u_flags;size_t fa_u_count,fa_u_next;
+    int fa_unique_erh;
     size_t fa_h_level_phone;float fa_h_level;int fa_h_level_set;
     float fa_r_previous_resonance[3],fa_r_previous_voice,fa_r_previous_noise;
     float fa_r_previous_band3,fa_r_previous_band4;
@@ -1310,6 +1312,95 @@ struct rule_plan {
 };
 static int process_spans(struct rule_plan *,int final);
 static void release_spans(struct rule_plan *);
+
+/* Return the next phoneme in a trusted phonetic group. Stress digits and
+ * the editor's quoted vowel-length notation are metadata, not phones. */
+static unsigned fa_group_phone(const unsigned char *text,size_t end,size_t *at)
+{
+    while(*at<end) {
+        unsigned c=text[(*at)++];
+        if(c=='.' && *at<end && text[*at]>='0' && text[*at]<='2'){++*at;continue;}
+        if(c=='\'' || c==':')continue;
+        if(c=='~')return 0;
+        return c;
+    }
+    return 0;
+}
+
+/* The provider sometimes reports a final R only after most of its U has
+ * already been emitted. Annotate U contexts in fully phonetic input before
+ * synthesis, so that U can be adjusted without delaying the stream. If raw
+ * text or a language switch occurs, leave the established streaming path in
+ * charge. The flags follow U phones and never change linguistic analysis. */
+static void fa_plan_u_context(struct rule_plan *plan,const unsigned char *text,size_t length)
+{
+    if(!plan || !text || !length)return;
+    size_t count=0,before_h=0;int erh=0;
+    for(size_t at=0;at<length;) {
+        struct reloq_inline_tag tag=reloq_inline_tag_read(text+at,length-at,1);
+        if(tag.length) {
+            if(tag.kind==RELOQ_TAG_LANGUAGE)return;
+            if(tag.kind==RELOQ_TAG_SPR) {
+                for(size_t i=at+2;i+1<at+tag.length;++i)if(text[i]=='u')++count;
+                size_t end=at+tag.length-1,pos=at+2;unsigned previous=0,prior=0;
+                while(pos<end) {
+                    unsigned phone=fa_group_phone(text,end,&pos);
+                    if(!phone){prior=previous=0;continue;}
+                    if(phone=='h' && previous && !strchr("AaeiouOy",previous)) {
+                        ++before_h;
+                        if(previous=='r' && prior=='e')erh=1;
+                    }
+                    prior=previous;previous=phone;
+                }
+            }
+            at+=tag.length;continue;
+        }
+        if(!strchr(" \t\r\n.,!?;:()[]{}\"",text[at]))return;
+        ++at;
+    }
+    plan->fa_unique_erh=before_h==1 && erh;
+    if(!count)return;
+    unsigned char *flags=calloc(count,1);
+    if(!flags)return;
+    size_t used=0;
+    for(size_t at=0;at<length;) {
+        struct reloq_inline_tag tag=reloq_inline_tag_read(text+at,length-at,1);
+        if(!tag.length){++at;continue;}
+        if(tag.kind==RELOQ_TAG_SPR) {
+            size_t end=at+tag.length-1;
+            for(size_t i=at+2;i<end;++i)if(text[i]=='u') {
+                size_t next=i+1;unsigned first=fa_group_phone(text,end,&next);
+                if(first=='r') {
+                    unsigned following=fa_group_phone(text,end,&next);
+                    int same_word=1;
+                    if(!following) {
+                        /* Keep U-R before a vowel in the next word on its
+                         * established liaison path. Punctuation is a break. */
+                        size_t later=at+tag.length;
+                        while(later<length && strchr(" \t\r\n",text[later]))++later;
+                        while(later<length) {
+                            struct reloq_inline_tag t=reloq_inline_tag_read(text+later,length-later,1);
+                            if(!t.length)break;
+                            if(t.kind==RELOQ_TAG_SPR) {
+                                size_t pos=later+2;
+                                following=fa_group_phone(text,later+t.length-1,&pos);
+                                same_word=0;break;
+                            }
+                            later+=t.length;
+                            while(later<length && strchr(" \t\r\n",text[later]))++later;
+                        }
+                    }
+                    if(!following || (same_word && following=='i') ||
+                       !strchr("AaeiouOy",following))flags[used]=1;
+                }
+                ++used;
+            }
+        }
+        at+=tag.length;
+    }
+    plan->fa_u_flags=flags;plan->fa_u_count=used;
+}
+
 static void take_fa_phone(void *context,int32_t from,int32_t to,unsigned phone)
 {
     struct rule_plan *s=context;
@@ -1326,7 +1417,9 @@ static void take_fa_phone(void *context,int32_t from,int32_t to,unsigned phone)
         s->fa_phones=next;s->fa_phone_capacity=cap;
     }
     if(s->fa_phone_count)s->fa_phones[s->fa_phone_count-1].to=from;
-    s->fa_phones[s->fa_phone_count++]=(struct rule_fa_phone){from,to,to,phone};
+    unsigned before_r=phone==RELOQ_FA_TUNE_U && s->fa_u_next<s->fa_u_count
+        ? s->fa_u_flags[s->fa_u_next++]:0;
+    s->fa_phones[s->fa_phone_count++]=(struct rule_fa_phone){from,to,to,phone,before_r};
 }
 static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],float duration)
 {
@@ -1392,7 +1485,8 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
                 unsigned previous=s->fa_phones[s->fa_phone_next-1].phone;
                 int before_i=p->phone==RELOQ_FA_TUNE_R_BEFORE_I &&
                     (previous==RELOQ_FA_TUNE_O || previous==RELOQ_FA_TUNE_U ||
-                     previous==RELOQ_FA_TUNE_FRONT_A || previous==RELOQ_FA_TUNE_BACK_A);
+                     previous==RELOQ_FA_TUNE_E || previous==RELOQ_FA_TUNE_FRONT_A ||
+                     previous==RELOQ_FA_TUNE_BACK_A);
                 /* The mixed-language planner can project English heading's
                  * initial H as a transition directly to E, so a following
                  * vowel does not prove that an A-R is medial. Limit this
@@ -1403,8 +1497,21 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
                      (previous==RELOQ_FA_TUNE_U &&
                       !(s->fa_phone_next+1<s->fa_phone_count &&
                         fa_tuned_vowel(s->fa_phones[s->fa_phone_next+1].phone))));
-                if(before_i && controls[11]==RELOQ_FA_TUNING_MARKER+RELOQ_FA_TUNE_R_BEFORE_I)
-                    controls[11]=(float)(RELOQ_FA_TUNING_MARKER+RELOQ_FA_TUNE_R_VOICE_BEFORE_I);
+                int planned_u=previous==RELOQ_FA_TUNE_U &&
+                    s->fa_phones[s->fa_phone_next-1].u_before_r;
+                if(before_i && planned_u) {
+                    /* Keep the saved R-before-I filter weight in slot 12;
+                     * its separate voice notch continues from the U. */
+                    int32_t end=to==INT32_MAX?p->articulation_end:to;
+                    double centre=(double)tick+duration/2.0;
+                    double gain=fmin(0.998,fmax(0.0,(end/10000.0-centre)/8.0));
+                    if(controls[11]!=(float)(RELOQ_FA_TUNING_MARKER+RELOQ_FA_TUNE_R_BEFORE_I))
+                        controls[12]=0;
+                    controls[11]=(float)(RELOQ_FA_TUNING_MARKER+15.0+gain);
+                }
+                else if(before_i && controls[11]==RELOQ_FA_TUNING_MARKER+RELOQ_FA_TUNE_R_BEFORE_I)
+                    controls[11]=(float)(RELOQ_FA_TUNING_MARKER+
+                        (previous==RELOQ_FA_TUNE_U?RELOQ_FA_TUNE_R_VOICE_BEFORE_I:17));
                 else if(coda) {
                     int32_t end=to==INT32_MAX?p->articulation_end:to;
                     double centre=(double)tick+duration/2.0;
@@ -1415,11 +1522,28 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
                     if(previous==RELOQ_FA_TUNE_U)
                         gain=fmin(1.0,fmax(0.0,(end/10000.0-centre)/8.0));
                     if(gain>0) {
-                        controls[11]=(float)(RELOQ_FA_TUNING_MARKER+RELOQ_FA_TUNE_R_VOICE_CODA);
+                        controls[11]=(float)(RELOQ_FA_TUNING_MARKER+
+                            (planned_u?14:RELOQ_FA_TUNE_R_VOICE_CODA));
                         controls[12]=(float)gain;
                     }
                 }
             }
+        }
+    }
+    if(tuning==1 && s->fa_unique_erh && s->fa_phone_next &&
+       s->fa_phones[s->fa_phone_next-1].phone==RELOQ_FA_TUNE_E &&
+       (p->phone==RELOQ_FA_TUNE_R || p->phone==RELOQ_FA_TUNE_BEFORE_FINAL_H ||
+        p->phone==RELOQ_FA_TUNE_R_BEFORE_BACK_A) && native>=p->from && native<to) {
+        /* The provider may absorb H into the following vowel and report
+         * R-before-A instead. A unique E-R-H sequence in the input retains
+         * the consonant's identity without changing H or its noise source. */
+        int32_t end=to==INT32_MAX?p->articulation_end:to;
+        double centre=(double)tick+duration/2.0;
+        double gain=fmin(1.0,fmin(fmax(0.0,(centre-p->from/10000.0)/8.0),
+                                  fmax(0.0,(end/10000.0-centre)/8.0)));
+        if(gain>0) {
+            controls[11]=(float)(RELOQ_FA_TUNING_MARKER+14);
+            controls[12]=(float)gain;
         }
     }
     float r_noise_reduction=0,r_asp_reduction=0,r_voice_tilt=0,r_voice_reduction=0;
@@ -1478,6 +1602,17 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
          * Reduce that component only for a rounded vowel-R-I sequence. */
         if(rounded_r_before_i)r_asp_reduction=r_noise_reduction;
     }
+    if(tuning==1 && p->phone==RELOQ_FA_TUNE_U && p->u_before_r &&
+       native>=p->from && native<to && controls[35]<5) {
+        /* The U project boosts its upper formants. In U-R contexts fade a
+         * voice-only, broad upper-band correction into the vowel itself,
+         * keeping its low formants and its saved editor filters intact. */
+        double weight=fmin(1.0,fmax(0.0,(native-p->from)/120000.0));
+        weight=weight*weight*(3.0-2.0*weight);
+        weight*=fmin(1.0,fmax(0.0,(5.0-controls[36])/5.0));
+        if(controls[11]!=(float)(RELOQ_FA_TUNING_MARKER+RELOQ_FA_TUNE_U))controls[12]=0;
+        controls[11]=(float)(RELOQ_FA_TUNING_MARKER+16.0+fmin(0.998,weight));
+    }
     if(tuning && p->phone==RELOQ_FA_TUNE_U && s->fa_phone_next+1<s->fa_phone_count &&
        s->fa_phones[s->fa_phone_next+1].phone==RELOQ_FA_TUNE_R &&
        !(s->fa_phone_next+2<s->fa_phone_count &&
@@ -1487,10 +1622,7 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
         double weight=fmin(1.0,fmax(0.0,progress));
         weight=weight*weight*(3.0-2.0*weight);
         weight*=fmin(1.0,fmax(0.0,(5.0-controls[36])/5.0));
-        if(tuning==1) {
-            /* Tracks 11/12 are metadata. Keep the old U project weight in
-             * track 12 and encode this separate, smooth voice-only fade in
-             * the fractional part of a private marker. No noise is changed. */
+        if(tuning==1 && !p->u_before_r) {
             if(controls[11]!=(float)(RELOQ_FA_TUNING_MARKER+RELOQ_FA_TUNE_U))controls[12]=0;
             controls[11]=(float)(RELOQ_FA_TUNING_MARKER+13.0+fmin(0.998,weight));
         }
@@ -2295,6 +2427,8 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
             .next_limit=(size_t)reloq_session_sample_rate(session)/50},
         .index_sink=index_sink,.context=context};
     plan.playback=&playback;
+    if(language==0x90000 && reloq_fa_tuning_enabled()==1)
+        fa_plan_u_context(&plan,a,n);
     struct reloq61_result r;
     /* A refused PCM/span callback need not stop the frontend's remaining
      * input. Let native text rules observe the same owner cancellation so
@@ -2332,7 +2466,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     }
     result=RELOQ_DE_UTTERANCE_OK;goto done;
 memory:result=RELOQ_DE_UTTERANCE_MEMORY;
-done:free(a);free(map);free(marks);free(volumes);free(control_sources);free(plan.controls);free(plan.spans);free(plan.cuts);free(plan.indices);free(plan.fa_phones);return result;
+done:free(a);free(map);free(marks);free(volumes);free(control_sources);free(plan.controls);free(plan.spans);free(plan.cuts);free(plan.indices);free(plan.fa_phones);free(plan.fa_u_flags);return result;
 }
 
 int reloq_english_rules_render(const unsigned char *text,size_t length,int tags,int native_volume,

@@ -9,6 +9,9 @@
 #include <string.h>
 
 #define FA_U_FINAL_R_MARKER (RELOQ_FA_TUNING_MARKER+13.0f)
+#define FA_R_I_AFTER_U_MARKER (RELOQ_FA_TUNING_MARKER+15.0f)
+#define FA_U_BEFORE_R_MARKER (RELOQ_FA_TUNING_MARKER+16.0f)
+#define FA_R_I_UPPER_MARKER (RELOQ_FA_TUNING_MARKER+17.0f)
 
 static _Thread_local int fa_tuning_on=1;
 int reloq_fa_tuning_scope(int active)
@@ -106,6 +109,11 @@ static void tuning_prepare(struct reloq_fa_tuning_filter *f,const float c[62],in
      * smoothing weight occupies the fractional transition marker. */
     if(c[11]>=FA_U_FINAL_R_MARKER && c[11]<FA_U_FINAL_R_MARKER+1.0f)
         phone=RELOQ_FA_TUNE_U;
+    if(c[11]>=FA_U_BEFORE_R_MARKER && c[11]<FA_U_BEFORE_R_MARKER+1.0f)
+        phone=RELOQ_FA_TUNE_U;
+    if(c[11]>=FA_R_I_AFTER_U_MARKER && c[11]<FA_R_I_AFTER_U_MARKER+1.0f)
+        phone=RELOQ_FA_TUNE_R_BEFORE_I;
+    if(c[11]==FA_R_I_UPPER_MARKER)phone=RELOQ_FA_TUNE_R_BEFORE_I;
     if(marker==RELOQ_FA_TUNE_R_VOICE_BEFORE_I &&
        c[11]==(float)(RELOQ_FA_TUNING_MARKER+marker))phone=RELOQ_FA_TUNE_R_BEFORE_I;
     double weight=c[12];

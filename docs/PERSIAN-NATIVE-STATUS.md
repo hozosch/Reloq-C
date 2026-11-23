@@ -25,6 +25,9 @@ comparative suffix rules. A written half-space supplies the boundary; when
 the half-space is omitted, a compact offline-checked admission mask avoids
 splitting unrelated spellings. Both variants retain the stem's known vowels,
 and previously covered whole words still take precedence.
+The same boundary-checked endings now cover stems from the original native
+lexicon and the frequency table. This restores plural-ezafe forms such as
+`گلرهای` from their known stems, rather than guessing the whole word again.
 Pinglish retains the explicit a/aa distinction. In the complete native
 analyzer, runs of three or more identical vowels are treated like a doubled
 vowel; this permits informal elongated spellings while leaving strict English
@@ -116,6 +119,12 @@ before I after a rounded vowel; other languages and other R contexts keep their
 existing paths. Objective tests compare the isolated noise and voiced signals,
 but the audible result still needs the listeners' validation. These changes do
 not establish Persian as a finished platform voice.
+The U before a selected R and the upper R band have since received additional
+voice-only smoothing. A conservative phonetic lookahead lets the U correction
+start before the provider reports the following R; uncertain or mixed-text
+input keeps the existing streaming path. A separately verified E-R-H context
+also softens the R voice, preserving the noise source. These remain listening
+tests and do not establish that every pronunciation or transition is correct.
 
 The language is not yet a normal, independent ECI voice. The remaining work
 includes registering Persian and Pinglish dialects, completing the C sentence

@@ -22,7 +22,12 @@ from reuse_persian_host_cache import (ALLOWED, EXPECTED_KEY, RECENT_ALLOWED, REC
                                       DEV191_ALLOWED, DEV191_KEY, DEV200_ALLOWED, DEV200_KEY,
                                       DEV201_ALLOWED, DEV201_KEY, DEV34_ALLOWED, DEV34_KEY,
                                       DEV36_ALLOWED, DEV36_KEY, DEV37_ALLOWED, DEV37_KEY,
-                                      DEV43_ALLOWED, DEV43_KEY, eligible)
+                                      DEV43_ALLOWED, DEV43_KEY, DEV44_ALLOWED, DEV44_KEY, eligible)
+
+assert eligible(DEV44_KEY, DEV44_ALLOWED)
+assert not eligible(DEV44_KEY, ())
+assert not eligible(DEV44_KEY, DEV44_ALLOWED | {'src/reloq_core.c'})
+assert not eligible(DEV44_KEY, DEV44_ALLOWED - {'src/reloq_rules61.c'})
 
 assert eligible(DEV43_KEY, DEV43_ALLOWED)
 assert not eligible(DEV43_KEY, ())
@@ -55,7 +60,7 @@ workflow = (Path(__file__).resolve().parents[1] /
 host_restore = workflow.split('id: host', 1)[1].split('restore-keys: |', 1)[1]
 host_restore = host_restore.split('      - name:', 1)[0]
 host_keys = [line.strip() for line in host_restore.splitlines() if line.strip()]
-assert DEV43_KEY in host_keys and DEV37_KEY in host_keys and DEV36_KEY in host_keys and DEV34_KEY in host_keys and DEV201_KEY in host_keys and len(host_keys) <= 9, host_keys
+assert DEV44_KEY in host_keys and DEV43_KEY in host_keys and DEV37_KEY in host_keys and DEV36_KEY in host_keys and DEV34_KEY in host_keys and DEV201_KEY in host_keys and len(host_keys) <= 9, host_keys
 
 assert eligible(DEV200_KEY, DEV200_ALLOWED)
 assert not eligible(DEV200_KEY, ())
