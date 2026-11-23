@@ -1,4 +1,4 @@
-name: Compare Eloquence 64 host pause behavior at three speeds
+name: Compare and test Eloquence 64 pause compatibility
 'on':
   push:
     branches: ['codex/pause-host-parity-*']
@@ -6,9 +6,44 @@ name: Compare Eloquence 64 host pause behavior at three speeds
 permissions:
   contents: read
 jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Install Windows cross compiler
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v x86_64-w64-mingw32-gcc-posix >/dev/null; then
+            if [ -f /etc/apt/apt-mirrors.txt ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
+            fi
+            sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 update -qq
+            sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 install -y --no-install-recommends gcc-mingw-w64-x86-64-posix
+          fi
+      - uses: actions/cache@v6
+        id: rules
+        with:
+          path: vendor/openevv61/build
+          key: sapi-rules-ubuntu24-gcc13-v1-x64-${{ hashFiles('vendor/openevv61/**', 'include/**', 'src/reloq_voice_filter.c', 'src/reloq_orthography.c', 'src/reloq_german_word_edges.c', 'src/reloq_english_word_edges.c') }}
+      - name: Restore unchanged rule timestamps
+        if: steps.rules.outputs.cache-hit == 'true'
+        run: find vendor/openevv61/build -type f -exec touch {} +
+      - name: Build and verify Windows ECI library
+        run: make -C eci -j2 windows-x64 PROVIDER_LTO=-flto=2 WINDOWS_CC=x86_64-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=x86_64-w64-mingw32-objdump
+      - uses: actions/upload-artifact@v7
+        with:
+          name: pause-fixed-eci-win-x64
+          path: eci/eci.dll
+          if-no-files-found: error
+          retention-days: 7
   compare:
+    needs: build
     runs-on: windows-2022
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
         with:
@@ -17,6 +52,10 @@ jobs:
         with:
           python-version: '3.13'
           architecture: x86
+      - uses: actions/download-artifact@v8
+        with:
+          name: pause-fixed-eci-win-x64
+          path: candidate-fixed
       - name: Prepare exact released v28 reference and ReLoq C 2.0
         shell: bash
         run: |
@@ -36,6 +75,9 @@ jobs:
                       target=root/'driver'/pathlib.PurePosixPath(name)
                       target.parent.mkdir(parents=True,exist_ok=True)
                       if not name.endswith('/'): target.write_bytes(z.read(name))
+              previous=root/'previous';previous.mkdir()
+              assert z.read('synthDrivers/reloq/reloq-version.txt').strip()==b'v1.4.1'
+              (previous/'eci.dll').write_bytes(z.read('synthDrivers/reloq/eci.dll'))
           ini=ref/'ECI.INI'; content=ini.read_text(encoding='latin1')
           content=content.replace('C:\\dummy\\',str(ref.resolve())+'\\')
           assert 'C:\\dummy\\' not in content
@@ -52,6 +94,8 @@ jobs:
               return struct.unpack_from('<H',data,offset+4)[0]
           assert machine(ref/'ECI.DLL')==0x14c
           assert machine(candidate/'eci.dll')==0x8664
+          assert machine(previous/'eci.dll')==0x8664
+          assert machine(root/'candidate-fixed'/'eci.dll')==0x8664
           print('Prepared v28 x86 reference and signed-off ReLoq 2.0 x64 package.')
           PY
       - name: Measure the 32-bit host at the unchanged v28 inputs
@@ -64,6 +108,21 @@ jobs:
       - name: Measure the released 64-bit ReLoq core at identical inputs
         continue-on-error: true
         run: python tools/observe_eloquence64_pause_parity.py --library candidate/eci.dll --driver-root driver --engine reloq --output observations/reloq.json
+      - name: Measure the previous ReLoq bundled with v28
+        continue-on-error: true
+        run: python tools/observe_eloquence64_pause_parity.py --library previous/eci.dll --driver-root driver --engine reloq --output observations/previous.json
+      - name: Measure the corrected ReLoq build
+        continue-on-error: true
+        run: python tools/observe_eloquence64_pause_parity.py --library candidate-fixed/eci.dll --driver-root driver --engine reloq --output observations/fixed.json
+      - name: Check corrected ECI text, pause and index behavior
+        shell: pwsh
+        run: |
+          python -B nvda/test_eci_korean_pause_boundary.py --library candidate-fixed/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Korean pause regression failed' }
+          python -B nvda/test_eci_mandarin_eloquence64.py --library candidate-fixed/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Mandarin ECI regression failed' }
+          python -B nvda/test_eci_cjk_index_parity.py --library candidate-fixed/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'CJK index regression failed' }
       - name: Compare results and report coverage
         shell: bash
         run: |
@@ -72,23 +131,60 @@ jobs:
           base=pathlib.Path('observations')
           left=json.loads((base/'original.json').read_text())
           right=json.loads((base/'reloq.json').read_text())
+          previous=json.loads((base/'previous.json').read_text())
+          fixed=json.loads((base/'fixed.json').read_text())
           assert left['pointer_bits']==32 and right['pointer_bits']==64
-          print('Errors:',json.dumps({'original':left['errors'],'reloq':right['errors']}))
+          print('Errors:',json.dumps({'original':left['errors'],'reloq':right['errors'],'previous':previous['errors'],'fixed':fixed['errors']}))
           def key(r):
-              return (r['language'],r['kind'],r.get('sample'),r.get('mode'),r.get('text'),r.get('pause'),r['speed'])
+              return (r['language'],r['kind'],r.get('sample'),r.get('mode'),r.get('text'),r.get('pause'),r['speed'],r.get('suffix'),r.get('space'))
           a={key(r):r for r in left['cases']}; b={key(r):r for r in right['cases']}
+          c={key(r):r for r in fixed['cases']};d={key(r):r for r in previous['cases']}
           common=sorted(a.keys() & b.keys(),key=str)
-          assert common and all(a[k]['input_hex']==b[k]['input_hex'] for k in common)
+          assert common and all(a[k]['input_hex']==b[k]['input_hex']==c[k]['input_hex'] for k in common if k in c)
           print('Comparable inputs:',len(common),'of',len(a),'original and',len(b),'ReLoq cases')
           for k in common:
-              x,y=a[k],b[k]
+              x,y=a[k],b[k]; z=c.get(k);old=d.get(k)
               print(json.dumps({'key':k, 'original_ms':round(x['samples']/11.025),
                   'reloq_ms':round(y['samples']/11.025),
+                  'fixed_ms':round(z['samples']/11.025) if z else None,
+                  'previous_ms':round(old['samples']/11.025) if old else None,
                   'original_quiet':x['quiet_spans_ms'], 'reloq_quiet':y['quiet_spans_ms'],
+                  'fixed_quiet':z['quiet_spans_ms'] if z else None,
                   'original_trailing':x['trailing_quiet_ms'],'reloq_trailing':y['trailing_quiet_ms']}))
-          if left['errors'] or right['errors'] or set(a)!=set(b):
+          if left['errors'] or right['errors'] or fixed['errors'] or set(a)!=set(b) or set(a)!=set(c):
               raise SystemExit('Some comparison cases were unavailable; see report.')
           PY
+      - name: Package an unmodified Eloquence 64 v28 driver with the corrected ReLoq library
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib,zipfile
+          candidate=Path('candidate-fixed/eci.dll').read_bytes()
+          output=Path('Eloquence-v28-ReLoq-2.0-pause-test.nvda-addon')
+          with zipfile.ZipFile('reference-v28.zip') as source, zipfile.ZipFile(output,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=9) as out:
+              for item in source.infolist():
+                  data=source.read(item.filename)
+                  if item.filename=='synthDrivers/reloq/eci.dll': data=candidate
+                  elif item.filename=='synthDrivers/reloq/reloq-version.txt': data=b'v2.0.0\r\n'
+                  elif item.filename=='manifest.ini':
+                      data=data.replace(b'version = v28',b'version = v28+reloq2.0.0.pausetest1')
+                  out.writestr(item,data)
+          with zipfile.ZipFile(output) as z:
+              assert z.testzip() is None and z.read('synthDrivers/reloq/eci.dll')==candidate
+              with zipfile.ZipFile('reference-v28.zip') as source:
+                  changed={'synthDrivers/reloq/eci.dll','synthDrivers/reloq/reloq-version.txt','manifest.ini'}
+                  assert z.namelist()==source.namelist()
+                  for name in source.namelist():
+                      if name not in changed: assert z.read(name)==source.read(name),name
+          print('Prepared test add-on SHA-256:',hashlib.sha256(output.read_bytes()).hexdigest())
+          PY
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Eloquence-v28-ReLoq-pause-test
+          path: Eloquence-v28-ReLoq-2.0-pause-test.nvda-addon
+          if-no-files-found: error
+          retention-days: 7
       - uses: actions/upload-artifact@v7
         if: always()
         with:

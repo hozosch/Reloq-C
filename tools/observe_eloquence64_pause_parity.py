@@ -142,6 +142,18 @@ def child(library, driver_root, case_number, implementation):
                         result = render([message],speed)
                         records.append({'language':case_name,'kind':'explicit','text':before,
                             'pause':pause,'speed':speed,'input_hex':[message.hex()],**result})
+            if language == 0xa0000:
+                for before in ('안녕', '테스트'):
+                    for suffix in ('', '. 세계'):
+                        for space in ('', ' '):
+                            for pause in (0,1,50,250):
+                                first = f'`pp0 `da0 `vv80 {before}{space}'.encode('cp949')
+                                second = f'`p{pause}{suffix}'.encode('cp949')
+                                parts = [first, second]
+                                result = render(parts,speed)
+                                records.append({'language':case_name,'kind':'explicit',
+                                    'text':before,'suffix':suffix,'space':space,'pause':pause,
+                                    'speed':speed,'input_hex':[p.hex() for p in parts],**result})
         return records
     finally:
         directory.close()
