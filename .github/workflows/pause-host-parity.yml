@@ -1,4 +1,4 @@
-name: Compare Eloquence 64 host pause behavior
+name: Compare Eloquence 64 host pause behavior at three speeds
 'on':
   push:
     branches: ['codex/pause-host-parity-*']
@@ -75,7 +75,7 @@ jobs:
           assert left['pointer_bits']==32 and right['pointer_bits']==64
           print('Errors:',json.dumps({'original':left['errors'],'reloq':right['errors']}))
           def key(r):
-              return (r['language'],r['kind'],r.get('sample'),r.get('mode'),r.get('text'),r.get('pause'))
+              return (r['language'],r['kind'],r.get('sample'),r.get('mode'),r.get('text'),r.get('pause'),r['speed'])
           a={key(r):r for r in left['cases']}; b={key(r):r for r in right['cases']}
           common=sorted(a.keys() & b.keys(),key=str)
           assert common and all(a[k]['input_hex']==b[k]['input_hex'] for k in common)
