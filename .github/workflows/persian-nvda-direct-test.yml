@@ -205,6 +205,10 @@ jobs:
             sleep 5
           done
           if [ -z "$available" ]; then echo 'Timed out waiting for the Windows baseline' >&2; exit 1; fi
+          # GitHub can list a newly uploaded artifact before its download is
+          # available. Give the artifact store time to finish propagation;
+          # otherwise the following action can fail with a transient 404.
+          sleep 15
           echo "run_id=$selected" >> "$GITHUB_OUTPUT"
           echo "early_run_id=$early_selected" >> "$GITHUB_OUTPUT"
       - uses: actions/download-artifact@v8
