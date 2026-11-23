@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import ctypes
 from pathlib import Path
+import sys
 
 from ._persian.nvda_driver_probe import PERSIAN_PROBE, PINGLISH_PROBE, make_language_engine
 
@@ -13,6 +14,33 @@ def _paths(library: Path):
     # written words follow the core's orthographic inference instead of
     # invoking a separate synthesizer as a pronunciation provider.
     return (library, None, None, None)
+
+
+SOUND_VARIANT_FILE = 'persian_sound_variant.txt'
+
+
+def select_sound_variant(library: Path, folder: Path | None = None):
+    """Apply the Persian listening variant named by this package, if any.
+
+    A test package can carry a one-line file containing 0 (previous sound) or
+    1 (candidate sound) next to this module. Without the file, or with an
+    older library, the library's default is left alone. Returns the selected
+    variant or None.
+    """
+    folder = Path(__file__).resolve().parent if folder is None else folder
+    try:
+        value = (folder / SOUND_VARIANT_FILE).read_text(encoding='ascii').strip()
+    except (OSError, UnicodeError):
+        return None
+    if value not in ('0', '1'):
+        return None
+    try:
+        loader = ctypes.WinDLL if sys.platform == 'win32' else ctypes.CDLL
+        select = loader(str(library.resolve())).eciPersianSoundVariant
+    except (OSError, AttributeError):
+        return None
+    select.argtypes, select.restype = (ctypes.c_int,), ctypes.c_int
+    return int(value) if select(int(value)) >= 0 else None
 
 
 def add_profiles(languages, library: Path):
@@ -46,6 +74,7 @@ def add_profiles(languages, library: Path):
             require(text_dll, public, legacy)
     except (OSError, AttributeError):
         return languages
+    select_sound_variant(library)
     return {**languages, PERSIAN_PROBE.id: PERSIAN_PROBE, PINGLISH_PROBE.id: PINGLISH_PROBE}
 
 

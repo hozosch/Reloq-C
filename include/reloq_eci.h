@@ -457,6 +457,10 @@ ECIAPI int ECICALL eciPersianWordPhonesUtf8(const char *word,size_t bytes,int pi
  * Word and affricate ordinals are request-local; clear both lists after use.
  * These low-level functions do not register a Persian voice or handle text. */
 ECIAPI int ECICALL eciPersianAcousticScope(int active);
+/* Select the process-wide Persian listening variant: 0 is the previous
+ * sound and the default, 1 the current candidate. Returns the previous value,
+ * or -1 for an unknown variant. Change it only while nothing is speaking. */
+ECIAPI int ECICALL eciPersianSoundVariant(int variant);
 /* Temporarily bypass the saved Persian sound tuning for a comparison on the
  * current synthesis thread. Returns the previous state; restore it on exit. */
 ECIAPI int ECICALL eciPersianTuningScope(int active);

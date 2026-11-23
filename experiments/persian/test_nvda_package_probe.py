@@ -44,6 +44,8 @@ def main():
     assert PREFIX + '_persian/espeak_worker.py' not in entries
     assert PREFIX + 'fa-espeak-worker.exe' not in entries
     assert PREFIX + 'fa-direct.dll' not in entries
+    assert PREFIX + 'persian_sound_variant.txt' not in entries
+    assert add_persian(base, sound_variant=1)[PREFIX + 'persian_sound_variant.txt'] == b'1\n'
     with tempfile.TemporaryDirectory(prefix='reloq-fa-package-') as temp:
         folder = Path(temp)
         package = folder / 'probe_driver'

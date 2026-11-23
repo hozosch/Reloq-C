@@ -63,6 +63,23 @@ static int persian_probe_marked_stop(void *state, int32_t position, unsigned mar
     return *(const unsigned char *)delta_record_field(&vstmtbl[2],0,fields)==3 &&
            *(const unsigned char *)delta_record_field(&vstmtbl[2],12,fields)==marker;
 }
+/* Listening variant: a uvular directly before another consonant, as in
+   maghrur, is a plain stop without the added post-release frication. Before
+   a vowel, a pause or the end of the utterance it keeps its release. */
+static int persian_probe_soft_coda_q(void *state, int32_t position)
+{
+    const char *setting=getenv("RELOQ_FA_SOFT_Q");
+    if (!setting || setting[0]!='1' || setting[1]) return 0;
+    delta_state *d=state;
+    if (!d || !position) return 0;
+    int32_t *right=vmover(d,EVV_AT(int32_t *,position),2);
+    int32_t next=right ? vgetsc(d,0,0,EVV_REF(right),2) : 0;
+    if (!next || (*EVV_AT(int32_t *,next)&2)) return 0;
+    void *fields=TFLDS(EVV_AT(void *,next));
+    unsigned name=*(const unsigned char *)delta_record_field(&vstmtbl[2],0,fields);
+    unsigned cls=*(const unsigned char *)delta_record_field(&vstmtbl[2],1,fields);
+    return name && name!=36 && cls!=1;
+}
 static int16_t persian_probe_lower(int16_t value, int offset, int minimum)
 {
     if (value <= 0) return value; /* -1/-2 are native inheritance markers. */
@@ -984,7 +1001,7 @@ Q_PATCH = r'''
             STATE(int16_t,s440)=persian_probe_lower(STATE(int16_t,s440),burst,0);
             STATE(int16_t,s441)=persian_probe_lower(STATE(int16_t,s441),burst,0);
             STATE(int16_t,s442)=persian_probe_lower(STATE(int16_t,s442),burst,0);
-            if (variant >= 3) {
+            if (variant >= 3 && !persian_probe_soft_coda_q(state,STATE(int32_t,w61))) {
                 /* Short post-release frication. The German /x/ rule uses
                    similar mid-band levels (70 and 55); this is not a
                    concatenated /k+x/ and not a validated [q]. f11 is the
@@ -3344,6 +3361,10 @@ static int32_t persian_uncolored_vowel_string(void *state,uint8_t st,uint8_t cou
         path.write_text(text, encoding='utf8')
 
 
+# Second-formant shift of the front /ae/ in the "clear vowels" variant (Hz).
+CLEAR_FRONT_A_F2 = 200
+
+
 def prepare_us_articulation(work: Path) -> None:
     """Adapt Persian vowel resonances and ordinary US-like consonants."""
     vowel_file = work / 'delta_rules_c08_fifi.c'
@@ -3389,8 +3410,18 @@ def prepare_us_articulation(work: Path) -> None:
                 }
         }
         if (!r0) persian_smaller_vowel(state,'A');
+        {
+            /* Listening variant: Persian /ae/ is a front vowel. Move only
+               its second resonance forward; F1, the upper resonances,
+               bandwidths, timing and inheritance markers are unchanged. */
+            const char *clear=getenv("RELOQ_FA_CLEAR_VOWELS");
+            if (!r0 && clear && clear[0]=='1' && !clear[1]) {
+                if (STATE(int16_t,s450)>0) STATE(int16_t,s450)+=__FRONT_A_F2__;
+                if (STATE(int16_t,s451)>0) STATE(int16_t,s451)+=__FRONT_A_F2__;
+            }
+        }
     }
-''', 1)
+'''.replace('__FRONT_A_F2__', str(CLEAR_FRONT_A_F2)), 1)
     text = text[:begin] + section + text[end:]
     # Apply this only to the accepted long back-A rule. B1/B2 are bandwidths,
     # not formant frequencies: a
@@ -3518,8 +3549,11 @@ static void persian_open_vowel(void *state,int phone)
     else if (phone=='o') {
         if (STATE(int16_t,s448)>0) STATE(int16_t,s448)=440;
         if (STATE(int16_t,s449)>0) STATE(int16_t,s449)=440;
-        if (STATE(int16_t,s450)>0) STATE(int16_t,s450)=900;
-        if (STATE(int16_t,s451)>0) STATE(int16_t,s451)=900;
+        const char *clear=getenv("RELOQ_FA_CLEAR_VOWELS");
+        /* Listening variant: a slightly less retracted Persian /o/. */
+        int o_f2=clear && clear[0]=='1' && !clear[1] ? 1000 : 900;
+        if (STATE(int16_t,s450)>0) STATE(int16_t,s450)=(int16_t)o_f2;
+        if (STATE(int16_t,s451)>0) STATE(int16_t,s451)=(int16_t)o_f2;
         if (STATE(int16_t,s452)>0) STATE(int16_t,s452)=2400;
         if (STATE(int16_t,s453)>0) STATE(int16_t,s453)=2400;
         if (STATE(int16_t,s454)>0) STATE(int16_t,s454)=3500;

@@ -2,7 +2,7 @@ name: Persian Windows acoustic probe
 on:
   workflow_dispatch:
   push:
-    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116, codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117, codex/persian-us-contour-20261117, codex/persian-adjectives-20261117, codex/persian-ra-pinglish-20261119, codex/persian-core-20261119, codex/persian-phones-20261119, codex/persian-native-20261120, codex/persian-issue49-solh-20261120, codex/persian-native-transitions-20261120, codex/persian-native-fast-pilot-20261120, codex/persian-sentence-core-20261120, codex/persian-sentence-linear-20261120, codex/persian-context-native-20261120, codex/persian-transition-streaming-20261120, codex/persian-native-sv-probe-20261120, codex/persian-finnish-nasal-swedish-20261120, codex/persian-native-u-20261121, codex/persian-unified-dev33-20261122, codex/persian-unified-dev35-20261122, codex/persian-unified-dev42-20261123, codex/persian-core-dev47-20261123, codex/persian-stop-r-dev48-20261123, codex/persian-stop-r-dev49-20261123]
+    branches: [codex/persian-nvda-prep-20261115, codex/persian-clarity-20261116, codex/persian-issue49-followup-20261117, codex/persian-vowels-20261117, codex/persian-us-contour-20261117, codex/persian-adjectives-20261117, codex/persian-ra-pinglish-20261119, codex/persian-core-20261119, codex/persian-phones-20261119, codex/persian-native-20261120, codex/persian-issue49-solh-20261120, codex/persian-native-transitions-20261120, codex/persian-native-fast-pilot-20261120, codex/persian-sentence-core-20261120, codex/persian-sentence-linear-20261120, codex/persian-context-native-20261120, codex/persian-transition-streaming-20261120, codex/persian-native-sv-probe-20261120, codex/persian-finnish-nasal-swedish-20261120, codex/persian-native-u-20261121, codex/persian-unified-dev33-20261122, codex/persian-unified-dev35-20261122, codex/persian-unified-dev42-20261123, codex/persian-core-dev47-20261123, codex/persian-stop-r-dev48-20261123, codex/persian-stop-r-dev49-20261123, claude/persian-sound-variant]
     paths:
       - experiments/persian/build_native_probe.py
       - experiments/persian/build_windows_probe.py
@@ -443,6 +443,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian provider reuse isolation failed' }
           python -B experiments/persian/test_persian_r_after_i_contexts.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian medial r after i failed' }
+          python -B experiments/persian/test_persian_sound_variant.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Persian sound variant switch failed' }
           python -B experiments/persian/test_bakhtiari_football.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian Bakhtiari or football acoustics failed' }
           python -B experiments/persian/test_initial_vowel_timing.py --library eci/eci.dll

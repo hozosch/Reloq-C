@@ -182,6 +182,31 @@ Numbers from 1000 to 1999 are read without a leading «یک».
 direct text library. It is not yet part of a workflow. These readings were
 checked by reading and by synthesis, not by a native listener.
 
+## Switchable sound variant for listening tests
+
+`eciPersianSoundVariant(1)` selects a candidate Persian sound for the whole
+process; `0`, the default, is the previous sound and produces identical audio.
+Nothing selects the candidate automatically. It is offered for comparison by
+Persian listeners and has only been checked by measurement so far.
+
+The candidate changes four things. The front vowel of `بد` has its second
+resonance about 200 Hz higher (roughly 1390 to 1590 Hz for Reed), because the
+previous value is closer to a central vowel than to Persian /æ/. The /o/ of
+`دو` moves from about 900 to 1000 Hz. An R between a voiced sound and a vowel
+is a single voiced tap: the donor R closed twice to near silence and carried
+strong aspiration that began inside the preceding vowel. The voice now dips
+once by about 11 dB and both noise sources stay low. R after a voiceless
+sound, before a consonant and at the end of a word is unchanged, and so is an
+R followed by H. Finally, a uvular directly before another consonant, as in
+`مغرور`, is a stop without the added post-release frication.
+
+The NVDA test package applies a variant when it contains a one-line file
+`persian_sound_variant.txt` next to the driver. The package workflow builds
+the usual add-on without that file and, for the listening branch, a second
+add-on with `1`; only the first is run through the NVDA test.
+`experiments/persian/test_persian_sound_variant.py` checks the switch, that
+switching back restores the previous audio exactly, and the tap's voice dip.
+
 ## First-audio latency
 
 The direct Persian acoustic path already uses the same native span delivery

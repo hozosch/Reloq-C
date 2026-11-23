@@ -14,6 +14,24 @@
 #endif
 
 static _Thread_local int fa_acoustics;
+/* Process-wide listening variant: 0 keeps the previous Persian sound and
+ * is the default, so existing hosts and reference tests are unaffected. 1
+ * selects the clearer vowels, the softer uvular before a consonant and the
+ * voiced tap between vowels. A plain int is enough: it is written only by a
+ * host while no speech is being produced. */
+static int fa_sound_variant;
+
+FA_EXPORT int reloq_fa_set_sound_variant(int variant)
+{
+    if(variant!=0 && variant!=1)return -1;
+    int previous=fa_sound_variant;
+    fa_sound_variant=variant;
+    return previous;
+}
+
+int reloq_fa_sound_variant(void)
+{return fa_sound_variant;}
+
 /* Word ordinals with a reference-pause onset, private to the calling
  * synthesis thread. The Finnish word record uses a signed 16-bit ordinal. */
 static _Thread_local unsigned char fa_onsets[4096];
@@ -112,6 +130,8 @@ const char *reloq_fa_scoped_get(const char *name)
         {"RELOQ_FA_PROBE_NO_AUTO_GLOTTAL","1"},
     };
     if(!fa_acoustics || !name)return 0;
+    if(!strcmp(name,"RELOQ_FA_CLEAR_VOWELS") || !strcmp(name,"RELOQ_FA_SOFT_Q"))
+        return fa_sound_variant?"1":0;
     for(unsigned i=0;i<sizeof selected/sizeof selected[0];++i)
         if(!strcmp(name,selected[i].key))return selected[i].value;
     return 0;

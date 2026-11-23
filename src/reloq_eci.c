@@ -1106,6 +1106,9 @@ int ECICALL eciPersianWordPhonesUtf8(const char *word,size_t bytes,int pinglish,
 int ECICALL eciPersianAcousticScope(int active)
 {return reloq_fa_acoustic_scope(active);}
 
+int ECICALL eciPersianSoundVariant(int variant)
+{return reloq_fa_set_sound_variant(variant);}
+
 int ECICALL eciPersianTuningScope(int active)
 {return reloq_fa_tuning_scope(active);}
 

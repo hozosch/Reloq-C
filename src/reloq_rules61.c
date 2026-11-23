@@ -16,6 +16,7 @@
 #include "reloq_eci.h"
 #include "reloq_persian_frame_internal.h"
 #include "reloq_persian_tuning.h"
+#include "reloq_persian_acoustics.h"
 #include <limits.h>
 #include <math.h>
 #include <stdint.h>
@@ -1296,6 +1297,7 @@ struct rule_plan {
     unsigned char *fa_u_flags;size_t fa_u_count,fa_u_next;
     int fa_unique_erh;
     size_t fa_h_level_phone;float fa_h_level;int fa_h_level_set;
+    size_t fa_tap_phone;float fa_tap_reference,fa_tap_previous_voice;int fa_tap_released;
     float fa_r_previous_resonance[3],fa_r_previous_voice,fa_r_previous_noise;
     float fa_r_previous_band3,fa_r_previous_band4;
     unsigned fa_r_previous_valid,fa_r_release_active;
@@ -1421,7 +1423,7 @@ static void take_fa_phone(void *context,int32_t from,int32_t to,unsigned phone)
         ? s->fa_u_flags[s->fa_u_next++]:0;
     s->fa_phones[s->fa_phone_count++]=(struct rule_fa_phone){from,to,to,phone,before_r};
 }
-static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],float duration)
+static void tune_fa_frame_base(struct rule_plan *s,int64_t tick,float controls[62],float duration)
 {
     if(!s->fa_phone_count || tick<0)return;
     int tuning=reloq_fa_tuning_enabled();
@@ -1739,6 +1741,55 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
      * zero, which would also change the noise generator's voicing mask. */
     if(tuning && controls[2]>0 && r_voice_reduction>0)
         controls[2]=fmaxf(1.0f,controls[2]-r_voice_reduction);
+}
+/* Listening variant: a single voiced tap for R between a voiced sound and
+ * a vowel. The donor R closes twice, almost completely, and carries strong
+ * aspiration that starts well inside the preceding vowel. Keep its timing
+ * and resonances, but let the voice dip only once and only moderately, and
+ * hold the two noise sources low from the approach to the release. R after
+ * a voiceless sound, before a consonant and at the end of a word keeps the
+ * existing sound. Runs after every other Persian frame adjustment. */
+static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],float duration)
+{
+    tune_fa_frame_base(s,tick,controls,duration);
+    if(!s->fa_phone_count || tick<0)return;
+    float voice=controls[2];
+    if(reloq_fa_tuning_enabled()==1 && reloq_fa_sound_variant()==1) {
+        const struct rule_fa_phone *p=s->fa_phones+s->fa_phone_next;
+        int64_t native=tick*10000;
+        int has_next=s->fa_phone_next+1<s->fa_phone_count;
+        unsigned following=has_next?s->fa_phones[s->fa_phone_next+1].phone:RELOQ_FA_TUNE_OTHER;
+        int inside=native>=p->from && (!has_next || native<p->to);
+        int tap=inside && (p->phone==RELOQ_FA_TUNE_R_BEFORE_I ||
+                           p->phone==RELOQ_FA_TUNE_R_BEFORE_BACK_A ||
+                           (p->phone==RELOQ_FA_TUNE_R && fa_tuned_vowel(following)));
+        if(tap) {
+            if(s->fa_tap_phone!=s->fa_phone_next+1) {
+                s->fa_tap_phone=s->fa_phone_next+1;s->fa_tap_released=0;
+                s->fa_tap_reference=s->fa_tap_previous_voice>=40?s->fa_tap_previous_voice:0;
+            }
+            /* A frame without any voice is not part of the tap: the
+             * provider can report R + H + vowel as one R before a vowel, and
+             * that H must stay voiceless. */
+            if(s->fa_tap_reference>0 && !(controls[2]>0))s->fa_tap_reference=0;
+            if(s->fa_tap_reference>0 && isfinite(controls[2])) {
+                float closed=s->fa_tap_reference-11,open=s->fa_tap_reference-3;
+                if(!s->fa_tap_released && controls[2]>closed+1 &&
+                   native-p->from>80000)s->fa_tap_released=1;
+                float floor_level=s->fa_tap_released?open:closed;
+                if(controls[2]<floor_level)controls[2]=floor_level;
+                if(controls[36]>25)controls[36]=25;
+                if(controls[37]>25)controls[37]=25;
+            }
+        } else if(inside && has_next && voice>=40 &&
+                  (following==RELOQ_FA_TUNE_R_BEFORE_I ||
+                   following==RELOQ_FA_TUNE_R_BEFORE_BACK_A)) {
+            /* The approach to that tap inside the preceding voiced sound. */
+            if(controls[36]>25)controls[36]=25;
+            if(controls[37]>25)controls[37]=25;
+        }
+    }
+    s->fa_tap_previous_voice=voice;
 }
 static struct rule_span *new_span(struct rule_plan *s)
 {
