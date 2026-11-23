@@ -96,6 +96,20 @@ static char *voice_block(char *table, uint8_t family, uint8_t dialect)
          + dialect * SV_DIALECT_BYTES;
 }
 
+/* strtok keeps one process-wide cursor in some C libraries. Independent
+ * copies of the engine can initialize at the same time, so keep the cursor
+ * on the caller's stack instead. Voice parameters are separated by spaces. */
+static char *next_voice_parameter(char **cursor)
+{
+    char *word=*cursor;
+    if(!word)return NULL;
+    word+=strspn(word," ");
+    if(!*word){*cursor=NULL;return NULL;}
+    char *end=strchr(word,' ');
+    if(end){*end=0;*cursor=end+1;}else *cursor=NULL;
+    return word;
+}
+
 /* One section of the settings: a language, then its voices. A section that
    does not read as a language is left alone, and so is a voice the file
    says nothing about. */
@@ -122,7 +136,7 @@ static void loadStandardVoice(char *table, char *section,
 
     for (voice = 1; voice <= VOICES; voice++) {
         char    key[SECTION_ROOM];
-        char   *entry, *record, *value, *tok;
+        char   *entry, *record, *value, *tok, *cursor;
         int32_t i;
 
         sprintf(key, "Voice%u", (unsigned)voice);
@@ -137,12 +151,16 @@ static void loadStandardVoice(char *table, char *section,
                + (voice - 1) * VOICE_BYTES;
         record = entry + SV_FIRST;
 
-        tok = strtok(line, " ");
+        cursor = line;
+        tok = next_voice_parameter(&cursor);
+        if (!tok) continue;
         sscanf(tok, "%d", (int32_t *)(record + VOICE_PARAMS));
         for (i = 1; i < PARAMS; i++) {
-            tok = strtok(NULL, " ");
+            tok = next_voice_parameter(&cursor);
+            if (!tok) break;
             sscanf(tok, "%d", (int32_t *)(record + VOICE_PARAMS + i * 4));
         }
+        if (i != PARAMS) continue;
 
         setRealWorldParamsFromECIParams(record, ALL_PARAMS);
 
@@ -186,7 +204,7 @@ static void loadStandardConcatenativeVoice(char *table, char *section,
     for (voice = 1; voice <= VOICES; voice++)
         for (rate = 0; rate < RATES; rate++) {
             char    key[SECTION_ROOM];
-            char   *entry, *record, *value, *tok;
+            char   *entry, *record, *value, *tok, *cursor;
             int32_t i;
 
             sprintf(key, "Voice%uDataset%u.%u.%u", (unsigned)voice,
@@ -209,12 +227,16 @@ static void loadStandardConcatenativeVoice(char *table, char *section,
             strcpy(line, value);
             cpp_delete(value);
 
-            tok = strtok(line, " ");
+            cursor = line;
+            tok = next_voice_parameter(&cursor);
+            if (!tok) continue;
             sscanf(tok, "%d", (int32_t *)(record + VOICE_PARAMS));
             for (i = 1; i < PARAMS; i++) {
-                tok = strtok(NULL, " ");
+                tok = next_voice_parameter(&cursor);
+                if (!tok) break;
                 sscanf(tok, "%d", (int32_t *)(record + VOICE_PARAMS + i * 4));
             }
+            if (i != PARAMS) continue;
 
             setRealWorldParamsFromECIParams(record, ALL_PARAMS);
 

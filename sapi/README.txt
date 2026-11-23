@@ -9,9 +9,9 @@ on compatible 64-bit Windows, and x86 voices on 32-bit Windows. Each installed
 architecture registers 15 languages. Restart existing speech applications.
 Choose SAPI5 and a “ReLoq C” voice.
 
-Aragonese is an initial test voice; number and character names are not yet
-fully localized. SAPI has no assigned Aragonese Windows language identifier,
-so the test voice uses the identifier for Spanish (Spain) in SAPI metadata.
+Aragonese uses its own pronunciation, number and character-name rules. SAPI
+has no assigned Aragonese Windows language identifier, so this voice uses the
+identifier for Spanish (Spain) in SAPI metadata.
 Applications that filter voices by language may therefore group it with Spanish.
 
 The installation is under %ProgramFiles%\ReLoq C\SAPI5. The x86 components

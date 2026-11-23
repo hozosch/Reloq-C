@@ -1,0 +1,503 @@
+# Translations reuse ReLoq C platform UI wording and standard locale names.
+# Current messages are translated; native-speaker review is still needed.
+msgid ""
+msgstr "Project-Id-Version: Eloquence C 1.4.1\nLanguage: zh_CN\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n"
+
+msgid "&Add file…"
+msgstr "添加(&A)…"
+
+msgid "&Breathiness"
+msgstr "气声(&B)"
+
+msgid "&Head size"
+msgstr "头部大小(&H)"
+
+msgid "&Mellow mode (16 kHz and above)"
+msgstr "&柔和模式（16 kHz 及以上）"
+
+msgid "&Own dictionaries (NVDA and Eloquence):"
+msgstr "自定义词典（NVDA 和 Eloquence）(&O)："
+
+msgid "&Remove"
+msgstr "移除(&R)"
+
+msgid "&Sample rate"
+msgstr "采样率(&R):"
+
+msgid "&Update dictionaries now"
+msgstr "更新词典(&U)"
+
+msgid "100% is one octave. Frequencies at or above half the sample rate are inactive."
+msgstr "100% 为一个八度。达到或超过采样率一半的频率不会生效。"
+
+msgid "11.025 kHz"
+msgstr "11.025 kHz"
+
+msgid "16 kHz"
+msgstr "16 kHz"
+
+msgid "22.05 kHz"
+msgstr "22.05 kHz"
+
+msgid "32 kHz"
+msgstr "32 kHz"
+
+msgid "44.1 kHz"
+msgstr "44.1 kHz"
+
+msgid "48 kHz"
+msgstr "48 kHz"
+
+msgid "8 kHz"
+msgstr "8 kHz"
+
+msgid "Abbreviations"
+msgstr "缩写"
+
+msgid "Add-on updates"
+msgstr "插件更新"
+
+msgid "Advanced equalizer filters"
+msgstr "高级均衡器滤波器"
+
+msgid "Advanced filters…"
+msgstr "高级滤波器…"
+
+msgid "All voices"
+msgstr "所有语音"
+
+msgid "Alternative IBM TTS Dictionaries"
+msgstr "替代 IBM TTS 词典"
+
+msgid "Always"
+msgstr "始终"
+
+msgid "American English"
+msgstr "英语（美国）"
+
+msgid "Apply to which voices?"
+msgstr "应用于哪些语音？"
+
+msgid "Aragonese"
+msgstr "阿拉贡语"
+
+msgid "Automatically check for add-on updates"
+msgstr "自动检查插件更新"
+
+msgid "Balanced"
+msgstr "均衡"
+
+msgid "Bandwidth (% of an octave, 10–400):"
+msgstr "带宽（占一个八度的百分比，10–400）："
+
+msgid "Base pitch in hertz (1–24000):"
+msgstr "基本音高（赫兹，1–24000）："
+
+msgid "Bass (250 Hz, -12 to +12 dB):"
+msgstr "低音（250 Hz，-12 至 +12 dB）："
+
+msgid "Brazilian Portuguese"
+msgstr "葡萄牙语（巴西）"
+
+msgid "Bright"
+msgstr "明亮"
+
+msgid "British English"
+msgstr "英语（英国）"
+
+msgid "Castilian Spanish"
+msgstr "西班牙语（西班牙）"
+
+msgid "Changing NVDA's normal pitch slider switches back to the ECI scale."
+msgstr "更改 NVDA 的普通音高滑块会切回 ECI 音高刻度。"
+
+msgid "Changing NVDA's normal rate or rate boost switches back to the normal rate scale."
+msgstr "更改 NVDA 的普通语速或语速增强会切回普通语速刻度。"
+
+msgid "Check for add-on updates"
+msgstr "检查更新(C)"
+
+msgid "Checking for updates…"
+msgstr "正在检查更新…"
+
+msgid "Choose a format…"
+msgstr "选择格式…"
+
+msgid "Choose a pronunciation dictionary"
+msgstr "选择发音词典"
+
+msgid "Could not detect the format. Choose the dictionary format:"
+msgstr "无法检测格式。请选择词典格式："
+
+msgid "Custom"
+msgstr "自定义"
+
+#, python-format
+msgid "Dictionaries updated. Community revision: %s"
+msgstr "词典已更新。社区版本：%s"
+
+msgid "Dictionary &source:"
+msgstr "词典来源(&S)："
+
+msgid "Dictionary files (*.dic)|*.dic|All files (*.*)|*.*"
+msgstr "词典文件 (*.dic)|*.dic|所有文件 (*.*)|*.*"
+
+#, python-format
+msgid "Dictionary files in total: %s"
+msgstr "词典文件总数: %s"
+
+msgid "Dictionary format"
+msgstr "词典格式"
+
+msgid "Dictionary format:"
+msgstr "词典格式"
+
+#, python-format
+msgid "Dictionary import failed: %s"
+msgstr "导入词典失败：%s"
+
+msgid "Dictionary language"
+msgstr "词典语言"
+
+#, python-format
+msgid "Dictionary loaded for the first time. Entries: %s"
+msgstr "首次加载词典。条目数：%s"
+
+msgid "Dictionary type"
+msgstr "词典类型(T):"
+
+msgid "Dictionary type:"
+msgstr "词典类型(T):"
+
+#, python-format
+msgid "Dictionary update complete. New entries: %s"
+msgstr "词典更新完成。新增条目：%s"
+
+msgid "Dictionary update complete. The number of new entries could not be determined."
+msgstr "词典更新完成，但无法确定新增条目数。"
+
+#, python-format
+msgid "Dictionary update failed: %s"
+msgstr "词典更新失败：%s"
+
+msgid "Download and install update"
+msgstr "下载并安装更新"
+
+msgid "Downloading update…"
+msgstr "正在下载更新…"
+
+msgid "Edit NVDA dictionary…"
+msgstr "编辑 NVDA 词典…"
+
+msgid "Eloquence"
+msgstr "Eloquence"
+
+msgid "Eloquence C"
+msgstr "Eloquence C"
+
+#, python-format
+msgid "Eloquence C version %s is available. Download and install it?"
+msgstr "Eloquence C 版本 %s 已发布。是否下载并安装？"
+
+msgid "Eloquence C: Persian and Pinglish test"
+msgstr "Eloquence C：波斯语和 Pinglish 测试"
+
+msgid "Eloquence C: fifteen language variants"
+msgstr "Eloquence C：十五种语言变体"
+
+msgid "Eloquence files are saved with OK or Apply. NVDA imports and edits take effect immediately."
+msgstr "Eloquence 文件通过“确定”或“应用”保存。NVDA 词典的导入和编辑立即生效。"
+
+msgid "Eloquence pronunciation dictionary"
+msgstr "Eloquence 词典"
+
+msgid "Enable &equalizer"
+msgstr "&启用均衡器"
+
+msgid "Enable equalizer"
+msgstr "启用均衡器"
+
+msgid "Enable filter"
+msgstr "启用滤波器"
+
+msgid "Equalizer"
+msgstr "均衡器"
+
+msgid "Equalizer &preset:"
+msgstr "&均衡器预设:"
+
+msgid "Equalizer bass"
+msgstr "均衡器低音"
+
+msgid "Equalizer filter bandwidth"
+msgstr "均衡器滤波器带宽"
+
+msgid "Equalizer filter enabled"
+msgstr "均衡器滤波器已启用"
+
+msgid "Equalizer filter frequency"
+msgstr "均衡器滤波器频率"
+
+msgid "Equalizer filter gain"
+msgstr "均衡器滤波器增益"
+
+msgid "Equalizer midrange"
+msgstr "均衡器中音"
+
+msgid "Equalizer preset"
+msgstr "均衡器预设"
+
+msgid "Equalizer treble"
+msgstr "均衡器高音"
+
+msgid "Exact base pitch"
+msgstr "精确基本音高"
+
+msgid "Exact speech rate"
+msgstr "精确语速"
+
+#, python-format
+msgid "Filter %s"
+msgstr "滤波器 %s"
+
+msgid "Filter:"
+msgstr "滤波器"
+
+msgid "Finnish"
+msgstr "芬兰语"
+
+msgid "French"
+msgstr "法语"
+
+msgid "French Canadian"
+msgstr "法语（加拿大）"
+
+msgid "Frequency in hertz (1–24000):"
+msgstr "频率（赫兹，1–24000）："
+
+msgid "Gain in dB (-12 to +12):"
+msgstr "增益（dB，-12 至 +12）："
+
+msgid "German"
+msgstr "德语"
+
+msgid "Greek"
+msgstr "希腊语"
+
+msgid "Hertz pitch off; using the ECI pitch scale."
+msgstr "已关闭赫兹音高；正在使用 ECI 音高刻度。"
+
+msgid "IBM TTS Dictionaries"
+msgstr "IBM TTS 词典"
+
+msgid "Imported NVDA dictionary"
+msgstr "已导入的 NVDA 词典"
+
+#, python-format
+msgid "Imported NVDA dictionary entries: %s"
+msgstr "已导入的 NVDA 词典条目：%s"
+
+#, python-format
+msgid "Installed version: %s"
+msgstr "已安装版本：%s"
+
+msgid "Italian"
+msgstr "意大利语"
+
+msgid "Japanese"
+msgstr "日语"
+
+msgid "Korean"
+msgstr "韩语"
+
+msgid "Language of the dictionary:"
+msgstr "词典语言："
+
+msgid "Latin American Spanish"
+msgstr "西班牙语（拉丁美洲）"
+
+msgid "Main words"
+msgstr "主要词语"
+
+msgid "Mandarin Chinese"
+msgstr "普通话"
+
+msgid "Midrange (1200 Hz, -12 to +12 dB):"
+msgstr "中音（1200 Hz，-12 至 +12 dB）："
+
+msgid "Move &down"
+msgstr "下移(&D)"
+
+msgid "Move &up"
+msgstr "上移(&U)"
+
+msgid "NVDA"
+msgstr "NVDA"
+
+msgid "NVDA cannot save dictionaries in this mode."
+msgstr "NVDA 无法在此模式下保存词典。"
+
+#, python-format
+msgid "NVDA dictionary edit failed: %s"
+msgstr "编辑 NVDA 词典失败：%s"
+
+#, python-format
+msgid "NVDA dictionary removal failed: %s"
+msgstr "移除 NVDA 词典失败：%s"
+
+msgid "NVDA dictionary voice"
+msgstr "NVDA 词典语音"
+
+msgid "NVDA speech dictionaries"
+msgstr "NVDA 语音词典"
+
+msgid "NVDA speech dictionary"
+msgstr "NVDA 语音词典"
+
+msgid "Native C synthesizer with fifteen language variants at 8 to 48 kHz, including Aragonese, Japanese, Korean, Chinese and Greek."
+msgstr "原生 C 语音合成器，在 8 至 48 kHz 下提供十五种语言变体，包括阿拉贡语、日语、韩语、中文和希腊语。"
+
+msgid "Never"
+msgstr "从不"
+
+#, python-format
+msgid "New dictionary files: %s"
+msgstr "新增词典文件: %s"
+
+msgid "No newer published add-on package is available."
+msgstr "没有已发布的更新版插件包。"
+
+msgid "Only at text end"
+msgstr "仅在话语结尾"
+
+msgid "Open dictionary &folder"
+msgstr "打开文件夹(&F)"
+
+msgid "Own dictionaries updated."
+msgstr "自定义词典已更新。"
+
+msgid "Own entries override community entries. Original files are kept unchanged."
+msgstr "自定义条目优先于社区条目。原始文件保持不变。"
+
+msgid "Per-language acoustic timing"
+msgstr "按语言设置的音频时序"
+
+msgid "Persian"
+msgstr "波斯语"
+
+msgid "Persian (Pinglish)"
+msgstr "波斯语 (Pinglish)"
+
+msgid "Phrase &prediction"
+msgstr "&短语预测"
+
+msgid "Pitch in hertz"
+msgstr "音高（赫兹）"
+
+msgid "Process &ECI tags"
+msgstr "处理 ECI 标签(&E)"
+
+msgid "Pronunciation dictionaries"
+msgstr "发音词典"
+
+msgid "Rate in words per minute"
+msgstr "语速（每分钟字词数）"
+
+msgid "Remove this imported copy? The original dictionary is kept."
+msgstr "移除此导入副本？原始词典将予保留。"
+
+msgid "Rou&ghness"
+msgstr "粗糙度(&G)"
+
+msgid "Select Eloquence C as the synthesizer first."
+msgstr "请先选择 Eloquence C 作为语音合成器。"
+
+msgid "Shorten pa&uses"
+msgstr "缩短停顿(&U):"
+
+msgid "Smooth"
+msgstr "柔和"
+
+msgid "Speech rate in words per minute (1–6000):"
+msgstr "语速（每分钟字词数，1–6000）："
+
+msgid "Split &camel-case words (all languages)"
+msgstr "&拆分驼峰式单词（所有语言）"
+
+msgid "Split camel case"
+msgstr "拆分驼峰命名"
+
+msgid "Split unfamiliar &English words"
+msgstr "&拆分未知英语单词"
+
+msgid "Split unfamiliar English words"
+msgstr "拆分未知英语单词"
+
+msgid "Test build with Persian and Pinglish."
+msgstr "包含波斯语和 Pinglish 的测试版本。"
+
+msgid "The number of new dictionary files could not be determined."
+msgstr "无法确定新增词典文件数。"
+
+msgid "The selected pronunciation dictionaries could not be loaded. Speech will resume when they are available. Check the dictionary settings, or select another synthesizer."
+msgstr "无法加载选定的发音词典。词典可用后将恢复语音。请检查词典设置，或选择其他语音合成器。"
+
+#, python-format
+msgid "This NVDA dictionary was already imported. Entries: %s"
+msgstr "此 NVDA 词典已导入。条目：%s"
+
+msgid "Treble (3000 Hz, -12 to +12 dB):"
+msgstr "高音（3000 Hz，-12 至 +12 dB）："
+
+#, python-format
+msgid "Update failed: %s"
+msgstr "更新失败：%s"
+
+msgid "Update handed to NVDA."
+msgstr "更新已交给 NVDA。"
+
+msgid "Update installation cancelled."
+msgstr "已取消安装更新。"
+
+msgid "Updating pronunciation dictionaries…"
+msgstr "正在下载词典…"
+
+msgid "Use &abbreviation dictionary"
+msgstr "使用缩写词典(&A)"
+
+msgid "Use &community pronunciation dictionaries"
+msgstr "使用社区词典(&D)"
+
+msgid "Use &original Eloquence acoustic timing (5 ms)"
+msgstr "&原始声音时序（5毫秒）"
+
+msgid "Use base pitch in &hertz"
+msgstr "使用赫兹作为基本音高(&H)"
+
+msgid "Use original &question intonation"
+msgstr "&使用原始疑问语调"
+
+msgid "Use pitch in hertz"
+msgstr "以赫兹设置音高"
+
+msgid "Use rate in words per minute"
+msgstr "使用每分钟字词数设置语速"
+
+msgid "Use speech rate in &words per minute"
+msgstr "使用每分钟字词数设置语速(&W)"
+
+#, python-format
+msgid "Version %s is available."
+msgstr "版本 %s 已可用。"
+
+msgid "WPM rate off; using the normal rate scale."
+msgstr "已关闭每分钟字词数语速；正在使用普通语速刻度。"
+
+msgid "Wait for the dictionary update to finish."
+msgstr "请等待词典更新完成。"
+
+msgid "Warm"
+msgstr "温暖"
+
+msgid "Word roots"
+msgstr "词根"

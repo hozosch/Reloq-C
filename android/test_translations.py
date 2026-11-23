@@ -23,6 +23,8 @@ def main():
     args = parser.parse_args()
     base = resources(RES / "values/strings.xml")
     expected = set(base) - {"app_name"}
+    zh_cn = resources(RES / "values-zh-rCN/strings.xml")
+    assert "设置" in (zh_cn["equalizer_advanced"].text or ""), "Chinese equalizer button must include 设置"
     paths = sorted(RES.glob("values-*/strings.xml"))
     locales = {p.parent.name[7:] for p in paths}
     required = {"de", "pt-rBR", "es", "fr", "it", "fi", "el", "zh-rCN", "zh-rTW", "ja", "ko"}

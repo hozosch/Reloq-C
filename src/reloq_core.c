@@ -2016,10 +2016,12 @@ static int voiced_frame_render_owned(
     if(shaped && params->af_level) {
         int classic=0;
         if(state->noise_transfer.trial_profile && noise->sample_rate>=16000) {
-            /* The gentler rc7 S roll-off applies to Castilian and Greek S/T;
-             * other languages get the wider rc6 extension again. */
-            state->noise_transfer.sibilant_extension=noise->sample_rate>=22050&&
-                params->limit_frication_extension!=0&&params->s_frication!=0;
+            /* Preserve the existing Castilian/Greek roll-off. At 32 kHz
+             * and above, other S-like frames use a lighter roll-off: keep
+             * high-rate detail while softening the strongest upper hiss. */
+            state->noise_transfer.sibilant_extension=
+                noise->sample_rate>=22050&&params->limit_frication_extension!=0&&params->s_frication!=0?1:
+                noise->sample_rate>=32000&&params->s_frication!=0?2:0;
             /* Above 22 kHz reduce S/TS-like AF as a whole, without
              * changing the accepted shape of its extended spectrum. */
             state->noise_transfer.frication_trim_db=noise->sample_rate>=32000?

@@ -14,10 +14,10 @@ jobs:
       matrix:
         arch: [x64, x86]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dictionary-snapshot
           run-id: 42861433404
@@ -33,7 +33,7 @@ jobs:
           fi
           sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -qq
           sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y --no-install-recommends gcc-mingw-w64-$package-posix
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         id: rules
         with:
           path: vendor/openevv61/build
@@ -47,7 +47,7 @@ jobs:
           if [ '${{ matrix.arch }}' = x64 ]; then prefix=x86_64; else prefix=i686; fi
           make -C eci -j2 windows-${{ matrix.arch }} PROVIDER_LTO=-flto=2 WINDOWS_CC=$prefix-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=$prefix-w64-mingw32-objdump
           python3 sapi/build.py --arch '${{ matrix.arch }}' --cc $prefix-w64-mingw32-gcc-posix --objdump $prefix-w64-mingw32-objdump
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: issue-dev4-native-${{ matrix.arch }}
           path: dist/reloq-c-sapi5-${{ matrix.arch }}-1.3.0-dev4-payload.zip
@@ -59,20 +59,20 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: issue-dev4-native-x64
           path: dist
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dictionary-snapshot
           run-id: 42861433404
           github-token: ${{ github.token }}
           path: data/community
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: nvda-capital-dev3
           run-id: 42876317252
@@ -105,7 +105,7 @@ jobs:
           for language in en de; do
             PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-1.3.0-dev4.nvda-addon"))' "$language"
           done
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: issue-dev4-addon-candidate
           path: dist/reloq-c-synth-x64-1.3.0-dev4.nvda-addon
@@ -117,10 +117,10 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: issue-dev4-addon-candidate
           path: candidate
@@ -140,7 +140,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'NVDA Remote serialization and simulated sound paths failed' }
           python -B addon/test_synth_native.py --library $dll --addon $addon
           if ($LASTEXITCODE -ne 0) { throw 'Packaged NVDA/native integration failed' }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: nvda-issues-dev4
           path: candidate/reloq-c-synth-x64-1.3.0-dev4.nvda-addon
@@ -152,15 +152,15 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: issue-dev4-native-*
           path: dist
           merge-multiple: true
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: sapi-dialog-installer-dev3
           run-id: 42876315282
@@ -199,7 +199,7 @@ jobs:
           $p = Start-Process (Join-Path $install 'unins000.exe') -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw 'Uninstall failed' }
           if (!(Test-Path $dictionary) -or (Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'User dictionary lost during uninstall' }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sapi-issues-dev4
           path: |

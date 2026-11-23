@@ -126,7 +126,7 @@ class Engine:
         self.closed = True
 
 
-def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=None):
+def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=None, persian_package=False):
     # ctypes keeps a loaded Windows module mapped until process exit, even
     # after all ECI handles/threads are closed. The native fixture must not
     # turn that expected file lock into a failed behavioural test.
@@ -168,9 +168,14 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
             assert not any("openevv" in name.lower() for name in names if name not in licenses)
             assert "locale/de/LC_MESSAGES/nvda.mo" in names
             assert "locale/de/manifest.ini" in names
-            assert b"fifteen language variants" in archive.read("manifest.ini")
-            assert "Japanisch" in archive.read("locale/de/manifest.ini").decode("utf-8")
-            assert "Griechisch" in archive.read("locale/de/manifest.ini").decode("utf-8")
+            if persian_package:
+                assert b"Persian and Pinglish test" in archive.read("manifest.ini")
+                assert "Persisch- und Pinglish-Test" in archive.read("locale/de/manifest.ini").decode("utf-8")
+                assert "synthDrivers/reloqC/_persian/nvda_driver_probe.py" in names
+            else:
+                assert b"fifteen language variants" in archive.read("manifest.ini")
+                assert "Japanisch" in archive.read("locale/de/manifest.ini").decode("utf-8")
+                assert "Griechisch" in archive.read("locale/de/manifest.ini").decode("utf-8")
             assert "globalPlugins/reloqCDictionaries/__init__.py" in names
             assert not any("__pycache__" in name or name.endswith(".pyc")
                            for name in names)
@@ -307,25 +312,21 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert driver._get_language() == "de_DE"
                 assert driver.voice == "1"
                 assert list(driver.availableVoices) == list(map(str, range(1, 9)))
-                german_ui = ui_language.replace("-", "_").split("_", 1)[0] == "de"
                 assert driver.description == "Eloquence C"
                 assert driver.availableLanguages["de_DE"].displayName == "German"
                 assert isinstance(driver.availableLanguages["de_DE"], sys.modules["synthDriverHandler"].LanguageInfo)
                 assert [v.displayName for v in driver.availableVoices.values()] == [
                     "Reed", "Shelly", "Bobby", "Rocko", "Glen", "Sandy", "Grandma", "Grandpa"]
-                assert driver.availablePausemodes["1"].displayName == ("Nur am Textende" if german_ui else "Only at text end")
-                assert driver.availableSamplerates["1"].displayName == ("11,025 kHz" if german_ui else "11.025 kHz")
+                assert driver.availablePausemodes["1"].displayName == translation.gettext("Only at text end")
+                assert driver.availableSamplerates["1"].displayName == translation.gettext("11.025 kHz")
                 head_setting = next(item for item in driver.supportedSettings if item.id == "headSize")
-                assert head_setting.displayNameWithAccelerator == ("Kopf&größe" if german_ui else "&Head size")
+                assert head_setting.displayNameWithAccelerator == translation.gettext("&Head size")
                 question_setting = next(item for item in driver.supportedSettings if item.id == "originalQuestions")
-                assert question_setting.displayNameWithAccelerator == (
-                    "Ursprüngliche &Frageintonation verwenden" if german_ui else "Use original &question intonation")
+                assert question_setting.displayNameWithAccelerator == translation.gettext("Use original &question intonation")
                 mellow_setting = next(item for item in driver.supportedSettings if item.id == "mellowMode")
-                assert mellow_setting.displayNameWithAccelerator == (
-                    "&Weicher Modus (ab 16 kHz)" if german_ui else "&Mellow mode (16 kHz and above)")
+                assert mellow_setting.displayNameWithAccelerator == translation.gettext("&Mellow mode (16 kHz and above)")
                 clock_setting = next(item for item in driver.supportedSettings if item.id == "originalAcousticClock")
-                assert clock_setting.displayNameWithAccelerator == (
-                    "&Originalen Eloquence-Lauttakt verwenden (5 ms)" if german_ui else "Use &original Eloquence acoustic timing (5 ms)")
+                assert clock_setting.displayNameWithAccelerator == translation.gettext("Use &original Eloquence acoustic timing (5 ms)")
                 assert clock_setting.availableInSettingsRing and clock_setting.useConfig
                 driver.voice = "deu_experimental"
                 assert driver.voice == "1", "old voice IDs must migrate"
@@ -730,7 +731,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                     " normal"]) == [driver_module.EciText("CD", True), driver_module.EciPitch(70),
                                    driver_module.EciText(" "), driver_module.EciText("LM", True), driver_module.EciPitch(50), driver_module.EciText(" normal")]
                 assert driver_module._parts([PitchCommand(offset=30), "A"], base_pitch=0) == [
-                    driver_module.EciPitch(30), driver_module.EciText("A")]
+                    driver_module.EciPitch(30), driver_module.EciText("A", True)]
                 driver.speak([PitchCommand(multiplier=1.4), CharacterModeCommand(True),
                               "A", CharacterModeCommand(False),
                               PitchCommand(), "b", IndexCommand(4)])
@@ -765,6 +766,14 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 entered, release = threading.Event(), threading.Event()
                 assert driver_module._parts(["Hallo `vb80 Welt."], voice_tags=True) == [
                     driver_module.EciText("Hallo `vb80 Welt.")]
+                protected = driver_module.protect_sequence(['سلام `vb80 دنیا `p250'])
+                tagged = driver_module._parts(protected, voice_tags=True)
+                controls = [item for item in tagged if isinstance(item, driver_module.EciText)
+                            and item.tag_control]
+                assert [item.tag_control for item in controls] == ['`vb80', '`p250']
+                literal = driver_module._parts(protected, voice_tags=False)
+                assert all(not item.tag_control for item in literal
+                           if isinstance(item, driver_module.EciText))
                 assert driver_module._parts([CharacterModeCommand(True), "\uf6ecЖΩ`"],
                     voice_tags=True) == [driver_module.EciText("\uf6ecЖΩ`", True)]
                 assert driver_module._parts(["Hallo `vb80 Welt."])[0].text == "Hallo `vb80 Welt."

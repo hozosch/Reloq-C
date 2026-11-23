@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -67,25 +67,25 @@ jobs:
               output.write(f'run_id={run_id}\n')
           print(f'Platform run {run_id} and real NVDA settings run {probe_id} verified; runtime inputs unchanged')
           PY
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dictionary-snapshot
           path: data/community
           run-id: ${{ steps.source.outputs.run_id }}
           github-token: ${{ github.token }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: sapi-*
           path: artifacts/sapi
           run-id: ${{ steps.source.outputs.run_id }}
           github-token: ${{ github.token }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: android-apk
           path: artifacts/android
           run-id: ${{ steps.source.outputs.run_id }}
           github-token: ${{ github.token }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: nvda-addon
           path: artifacts/nvda
@@ -115,7 +115,7 @@ jobs:
           manifest['nvda_settings_validation_run_id'] = request['nvda_settings_run_id']
           path.write_text(json.dumps(manifest, indent=2) + '\n')
           PY
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: release-packages
           path: release-packages/

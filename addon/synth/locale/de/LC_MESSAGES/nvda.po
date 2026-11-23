@@ -197,6 +197,57 @@ msgstr "Immer"
 msgid "German"
 msgstr "Deutsch"
 
+msgid "Eloquence"
+msgstr "Eloquence"
+
+msgid "NVDA"
+msgstr "NVDA"
+
+msgid "Per-language acoustic timing"
+msgstr "Lauttakt pro Sprache"
+
+msgid "Pitch in hertz"
+msgstr "Tonhöhe in Hertz"
+
+msgid "Use pitch in hertz"
+msgstr "Tonhöhe in Hertz verwenden"
+
+msgid "American English"
+msgstr "Amerikanisches Englisch"
+
+msgid "British English"
+msgstr "Britisches Englisch"
+
+msgid "Brazilian Portuguese"
+msgstr "Brasilianisches Portugiesisch"
+
+msgid "Castilian Spanish"
+msgstr "Kastilisches Spanisch"
+
+msgid "Latin American Spanish"
+msgstr "Lateinamerikanisches Spanisch"
+
+msgid "French"
+msgstr "Französisch"
+
+msgid "French Canadian"
+msgstr "Kanadisches Französisch"
+
+msgid "Mandarin Chinese"
+msgstr "Mandarin-Chinesisch"
+
+msgid "Persian"
+msgstr "Persisch"
+
+msgid "Persian (Pinglish)"
+msgstr "Persisch (Pinglish)"
+
+msgid "Eloquence C: Persian and Pinglish test"
+msgstr "Eloquence C: Persisch- und Pinglish-Test"
+
+msgid "Test build with Persian and Pinglish."
+msgstr "Testversion mit Persisch und Pinglish."
+
 #. Translators: Voice preset labels, independent of the spoken language.
 #: nvda/_reloq_languages.py:77
 msgid "Male 1"

@@ -1,0 +1,71 @@
+name: Check GitHub Actions compatibility
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/actions-compatibility.yml
+      - .github/dependabot.yml
+  pull_request:
+    paths:
+      - .github/workflows/**
+      - .github/dependabot.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  actions:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - name: Prepare a cache and artifact
+        run: |
+          python --version
+          java -version
+          sdkmanager --version
+          mkdir -p "$RUNNER_TEMP/actions-smoke"
+          printf 'actions compatibility\n' > "$RUNNER_TEMP/actions-smoke/probe.txt"
+      - name: Save the cache
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ runner.temp }}/actions-smoke
+          key: actions-compat-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Remove the original cache
+        run: rm -rf "$RUNNER_TEMP/actions-smoke"
+      - name: Restore the cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ runner.temp }}/actions-smoke
+          key: actions-compat-${{ github.run_id }}-${{ github.run_attempt }}
+          fail-on-cache-miss: true
+      - name: Verify the cache
+        run: test "$(cat "$RUNNER_TEMP/actions-smoke/probe.txt")" = 'actions compatibility'
+      - name: Upload the file directly
+        id: direct
+        uses: actions/upload-artifact@v7
+        with:
+          path: ${{ runner.temp }}/actions-smoke/probe.txt
+          archive: false
+          if-no-files-found: error
+          retention-days: 1
+      - name: Download the direct artifact
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ steps.direct.outputs.artifact-id }}
+          path: direct-download
+          github-token: ${{ github.token }}
+      - name: Verify the direct artifact
+        run: cmp "$RUNNER_TEMP/actions-smoke/probe.txt" direct-download/probe.txt

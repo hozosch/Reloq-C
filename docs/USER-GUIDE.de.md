@@ -1,5 +1,9 @@
 # Eloquence C – Bedienungsanleitung
 
+## Version 2.0.0
+
+Aragonesisch ist jetzt als Sprache verfügbar. Großgeschriebene Wörter vor Zahlen, Währungsbeträge mit großem B und Ziffern nach Stimmänderungen werden zuverlässiger verarbeitet. Die Oberfläche und die Eloquence-Kategorie sind in weiteren Sprachen verfügbar.
+
 ## Version 1.4.1
 
 Camel-Case-Wörter und Mehrzahlformen von Akronymen werden zuverlässiger behandelt; Aussprachewörterbücher behalten Vorrang. Bei automatischen Wörterbuchaktualisierungen sagt NVDA das Ergebnis an, statt einen Dialog zu öffnen. Manuell gestartete Aktualisierungen zeigen weiterhin einen Dialog.
@@ -64,7 +68,7 @@ Die ZIP-Datei des Repository-Quellcodes ist kein installierbares Add-on. Weitere
 
 ## Sprachen und Stimmen
 
-Es gibt 14 Sprachauswahlen. Die beiden chinesischen Schriftvarianten teilen sich eine Auswahl.
+Es gibt 15 Sprachauswahlen. Die beiden chinesischen Schriftvarianten teilen sich eine Auswahl. Aragonesisch verwendet eigene Regeln für Aussprache, Zahlen und Buchstabennamen.
 
 | Sprache | Wörterbuch-Präfix |
 | --- | --- |
@@ -82,6 +86,7 @@ Es gibt 14 Sprachauswahlen. Die beiden chinesischen Schriftvarianten teilen sich
 | Koreanisch | KOR |
 | Brasilianisches Portugiesisch | PTB |
 | Griechisch | ELL |
+| Aragonesisch | ARA |
 
 Die Stimmprofile heißen **Reed, Shelly, Bobby, Rocko, Glen, Sandy, Grandma und Grandpa**. Die Sprachwahl legt die Aussprache fest, die Stimmwahl ein Klangprofil. NVDA kann bei entsprechend ausgezeichneten Texten automatisch zwischen unterstützten Sprachen wechseln, wenn diese NVDA-Option aktiviert ist.
 

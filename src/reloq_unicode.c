@@ -232,6 +232,7 @@ static const char *name(uint32_t c,char tmp[NAME_CAPACITY],int en)
     }
     return NULL;
 }
+
 static const char *language_name(uint32_t cp,int locale,char tmp[NAME_CAPACITY])
 {
     if(locale==255)return name(cp,tmp,1);
@@ -290,13 +291,6 @@ static int one(struct buffer *b,uint32_t c,int mode,int en,int tags)
         while(lo<hi){size_t m=lo+(hi-lo)/2;if(unicode_compat[m].cp<c)lo=m+1;else hi=m;}
         if(lo<COUNT(unicode_compat)&&unicode_compat[lo].cp==c) {
             const char *fold=STR(unicode_compat[lo].fold);return add(b,fold,strlen(fold));
-        }
-        /* Greek is the deliberate exception: letter names are meaningful in
-         * ordinary prose as well as in explicit character navigation. */
-        lo=0;hi=COUNT(unicode_greek);
-        while(lo<hi){size_t m=lo+(hi-lo)/2;if(unicode_greek[m]<c)lo=m+1;else hi=m;}
-        if(lo<COUNT(unicode_greek)&&unicode_greek[lo]==c) {
-            char temp[NAME_CAPACITY];const char *s=name(c,temp,en);if(s)return say(b,s);
         }
         /* Other symbol names belong to explicit character navigation. */
         return add(b," ",1);
@@ -359,6 +353,14 @@ static const char *greek_label(uint32_t cp,int locale)
     return lo<COUNT(unicode_greek_labels)&&!strcmp(unicode_greek_labels[lo].english,alias)?
         unicode_greek_labels[lo].local[locale+1]:NULL;
 }
+int reloq_unicode_greek_name_english(uint32_t cp,char *output,size_t capacity)
+{
+    const char *name=greek_label(cp,255);
+    if(!name)return 0;
+    size_t length=strlen(name);
+    if(!output || capacity<=length)return -1;
+    memcpy(output,name,length+1);return 1;
+}
 static const char *language_label(const char *key,int locale)
 {
     if(locale!=255 && (unsigned)locale>=9)return NULL;
@@ -420,6 +422,18 @@ static const char *emoji_label(const unsigned char *text,size_t length,
         }
     }
     return label;
+}
+int reloq_unicode_is_default_emoji(uint32_t cp)
+{
+    if(!cp || cp>0x10ffffu || (cp>=0xd800u && cp<=0xdfffu))return 0;
+    return emoji_presentation(cp) || (cp>=0x1f1e6 && cp<=0x1f1ff);
+}
+int reloq_unicode_is_emoji(uint32_t cp)
+{
+    if(!cp || cp>0x10ffffu || (cp>=0xd800u && cp<=0xdfffu))return 0;
+    if(reloq_unicode_is_default_emoji(cp))return 1;
+    unsigned char text[4];size_t length=encode(text,cp),matched=0;
+    return emoji_label(text,length,NULL,0,cp,1,0,0,1,&matched)!=NULL && matched==length;
 }
 static int language_unknown(struct buffer *b,uint32_t c,int locale)
 {
@@ -508,9 +522,9 @@ static int unicode_admit(const unsigned char *text,size_t length,
             }
         }
         {
-            /* Foreign Greek letters have one alphabet-name route in both
-             * sentence and character reading. This includes the CP1252
-             * micro sign, whose Unicode alphabet alias is Greek mu. */
+            /* Foreign Greek letters use their alphabet names in continuous
+             * text as well as in explicit spelling. Native Greek remains
+             * untouched and is still read by its own language rules. */
             const char *greek=(c==0xb5||c>=0x370)&&(!language||!language_owns(c,language))?
                 greek_label(c,language?locale:255):NULL;
             if(greek) {
@@ -520,7 +534,8 @@ static int unicode_admit(const unsigned char *text,size_t length,
                 old=b.n;
                 if((native_run||source_spelling)&&add(&b," `ts0 ",6)){rc=-2;goto fail;}
                 native_run=0;
-                if(say(&b,greek)||(source_spelling&&add(&b,source_spelling==1?" `ts1 ":" `ts2 ",6))){rc=-2;goto fail;}
+                if(say(&b,greek) ||
+                   (source_spelling&&add(&b,source_spelling==1?" `ts1 ":" `ts2 ",6))){rc=-2;goto fail;}
                 offsets[begin]=old;
                 for(size_t j=begin+1;j<end;++j)offsets[j]=b.n;
                 offsets[end]=b.n;i=end;continue;
@@ -544,6 +559,31 @@ static int unicode_admit(const unsigned char *text,size_t length,
                 size_t p=end,z;uint32_t next;
                 if(!decode(text+p,length-p,&z,&next)&&next==0xfe0f)p+=z;
                 if(p<length&&!decode(text+p,length-p,&z,&next)&&next==0x20e3){end=p+z;c=' ';}
+            }
+            const char *symbol=NULL;
+            if(!mode&&(language==0x60000||language==0x60001)) {
+                int traditional=language==0x60001;
+                switch(c) {
+                case '<': case 0xff1c:
+                    symbol=traditional?u8"小於":u8"小于";break;
+                case '>': case 0xff1e:
+                    symbol=traditional?u8"大於":u8"大于";break;
+                case '\\': case 0xff3c:
+                    symbol=traditional?u8"反斜線":u8"反斜杠";break;
+                case '/': case 0xff0f:
+                    symbol=traditional?u8"斜線":u8"斜杠";break;
+                case '_': case 0xff3f:
+                    symbol=traditional?u8"底線":u8"下划线";break;
+                case '|': case 0xff5c:
+                    symbol=traditional?u8"豎線":u8"竖线";break;
+                case '~': case 0xff5e:
+                    symbol=traditional?u8"波浪號":u8"波浪号";break;
+                }
+            }
+            if(symbol) {
+                old=b.n;
+                if(say(&b,symbol)){rc=-2;goto fail;}
+                offsets[begin]=old;offsets[end]=b.n;i=end;continue;
             }
             int native=c>32&&!(c>=0x7f&&c<=0x9f)&&(cp1252(c)||language_owns(c,language));
             struct reloq_character_extension extension={0};int terminal=0;
@@ -577,6 +617,12 @@ static int unicode_admit(const unsigned char *text,size_t length,
                     if(s?say(&b,s):language_unknown(&b,c,locale)){rc=-2;goto fail;}}
             } else {
                 int failed=0;
+                /* The original CJK symbol table calls @ a mail/address
+                   mark. Use the standard Chinese reading in prose. */
+                if(c=='@'&&(language==0x60000||language==0x60001)) {
+                    failed=add(&b,"at",2);
+                    if(!failed){offsets[begin]=old;offsets[end]=b.n;i=end;continue;}
+                }
                 if((c<32&&c!=9&&c!=10&&c!=13)||(c>=0x7f&&c<=0x9f)||
                    c==0x1680||(c>=0x2000&&c<=0x200a)||c==0x2028||c==0x2029||
                    c==0x202f||c==0x205f||c==0x3000)c=' ';
@@ -590,8 +636,6 @@ static int unicode_admit(const unsigned char *text,size_t length,
                     size_t lo=0,hi=COUNT(unicode_compat);
                     while(lo<hi){size_t m=lo+(hi-lo)/2;if(unicode_compat[m].cp<c)lo=m+1;else hi=m;}
                     if(lo<COUNT(unicode_compat)&&unicode_compat[lo].cp==c)failed=add(&b,STR(unicode_compat[lo].fold),strlen(STR(unicode_compat[lo].fold)));
-                    else if(c>=0x370&&c<=0x3ff){char key[5]={0};encode((unsigned char *)key,c);
-                        const char *s=language_label(key,locale);failed=s?say(&b,s):add(&b," ",1);}
                     else failed=add(&b," ",1);
                 }
                 if(failed){rc=-2;goto fail;}

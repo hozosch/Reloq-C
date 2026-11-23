@@ -7,11 +7,11 @@
  * Whatever comes back has had a reference added before it is handed over.
  *
  * The licence lives in a static built the first time somebody asks. Its
- * guard is one bit of a word rather than a flag of its own, which is how
- * the compiler that built this arranged a function-local static.
+ * initialization must finish before another thread uses that static.
  */
 
 #include <stdint.h>
+#include <stdatomic.h>
 #include "eci_synththread.h"
 #include "evv_abi.h"
 
@@ -40,9 +40,25 @@ extern THIS RequestLicense *rl_ctor(RequestLicense *r);
 extern THIS int32_t rl_licenseGranted(RequestLicense *r);
 extern THIS void *ew_ctor(void *e);
 
-/* The licence, and the one bit that says it has been built. */
+/* The licence is shared by all provider instances. Publish it only after its
+ * constructor has finished; a second simultaneous voice must not observe a
+ * partially initialized licence or spuriously fail to create its engine. */
 static RequestLicense licence;
-static uint32_t       licence_guard;
+static atomic_int     licence_state;
+
+static void ensureLicence(void)
+{
+    if (atomic_load_explicit(&licence_state,memory_order_acquire) == 2)
+        return;
+    int expected = 0;
+    if (atomic_compare_exchange_strong_explicit(&licence_state,&expected,1,
+            memory_order_acquire,memory_order_acquire)) {
+        rl_ctor(&licence);
+        atomic_store_explicit(&licence_state,2,memory_order_release);
+    } else {
+        while (atomic_load_explicit(&licence_state,memory_order_acquire) != 2) { }
+    }
+}
 
 /* Nothing to do. Whatever this once set up is set up by the time anything
    calls it, and the original left the body empty too. */
@@ -52,10 +68,7 @@ void initDllLink(void)
 
 int getObject(int32_t kind, void **out)
 {
-    if ((licence_guard & 1) == 0) {
-        licence_guard |= 1;
-        rl_ctor(&licence);
-    }
+    ensureLicence();
 
     *out = 0;
 

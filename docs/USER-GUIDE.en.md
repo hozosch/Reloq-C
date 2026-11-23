@@ -1,5 +1,9 @@
 # Eloquence C – user guide
 
+## Version 2.0.0
+
+Aragonese is now available. Uppercase words before numbers, currency amounts with uppercase B, and digits after voice changes are handled more reliably. The interface and Eloquence category are available in additional languages.
+
 ## Version 1.4.1
 
 CamelCase words and plural acronyms are handled more reliably, while pronunciation dictionaries retain precedence. For automatic dictionary updates NVDA announces the result without opening a dialog. Manually requested updates still show a dialog.
@@ -64,7 +68,7 @@ The repository source ZIP is not an installable add-on. See the [NVDA user guide
 
 ## Languages and voices
 
-There are 14 language choices. Both Chinese writing systems share one choice.
+There are 15 language choices. Both Chinese writing systems share one choice. Aragonese uses its own pronunciation, number and character-name rules.
 
 | Language | Dictionary prefix |
 | --- | --- |
@@ -82,6 +86,7 @@ There are 14 language choices. Both Chinese writing systems share one choice.
 | Korean | KOR |
 | Brazilian Portuguese | PTB |
 | Greek | ELL |
+| Aragonese | ARA |
 
 The voice presets are **Reed, Shelly, Bobby, Rocko, Glen, Sandy, Grandma and Grandpa**. Language selects pronunciation; voice selects a sound profile. NVDA can automatically switch between supported languages in appropriately marked text when its automatic language switching option is enabled.
 

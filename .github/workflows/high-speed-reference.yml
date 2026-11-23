@@ -10,15 +10,15 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
           architecture: x86
       - name: Download the verified 1.3.0 native x86 build
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: update130-native-x86
           path: candidate
@@ -51,7 +51,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Original comparison failed' }
           python tools/observe_high_speed_reference.py --library candidate/eci.dll --engine reloq --output observations/reloq
           if ($LASTEXITCODE -ne 0) { throw 'ReLoq comparison failed' }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: high-speed-comparison
           path: observations/

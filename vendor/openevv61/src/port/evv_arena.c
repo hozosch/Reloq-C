@@ -47,9 +47,12 @@
 #include <windows.h>
 
 static SRWLOCK arena_lock = SRWLOCK_INIT;
+static SRWLOCK low_lock = SRWLOCK_INIT;
 
 static void arena_take(void) { AcquireSRWLockExclusive(&arena_lock); }
 static void arena_drop(void) { ReleaseSRWLockExclusive(&arena_lock); }
+static void low_take(void) { AcquireSRWLockExclusive(&low_lock); }
+static void low_drop(void) { ReleaseSRWLockExclusive(&low_lock); }
 
 #else
 
@@ -58,9 +61,12 @@ static void arena_drop(void) { ReleaseSRWLockExclusive(&arena_lock); }
 #include <unistd.h>
 
 static pthread_mutex_t arena_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t low_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static void arena_take(void) { pthread_mutex_lock(&arena_lock); }
 static void arena_drop(void) { pthread_mutex_unlock(&arena_lock); }
+static void low_take(void) { pthread_mutex_lock(&low_lock); }
+static void low_drop(void) { pthread_mutex_unlock(&low_lock); }
 
 #endif
 
@@ -679,6 +685,9 @@ typedef struct low_head {
     int              used;
 } low_head;
 
+/* Phoneme reports and named indexes can be produced concurrently by
+ * different voices. Both opening the region and its free list require the
+ * low_lock; it is separate from the main Delta arena lock. */
 static unsigned char *low_base;
 static low_head      *low_free;
 
@@ -715,8 +724,13 @@ void *evv_low_alloc(size_t n)
     size_t    want;
     low_head *b;
 
-    if (n == 0 || !low_open())
+    if (n == 0)
         return 0;
+    low_take();
+    if (!low_open()) {
+        low_drop();
+        return 0;
+    }
 
     want = (n + 7u) & ~(size_t)7u;
     for (b = low_free; b != 0; b = b->next) {
@@ -733,8 +747,11 @@ void *evv_low_alloc(size_t n)
             b->size = want;
         }
         b->used = 1;
-        return (void *)(b + 1);
+        void *result = (void *)(b + 1);
+        low_drop();
+        return result;
     }
+    low_drop();
     return 0;
 }
 
@@ -756,6 +773,7 @@ void evv_low_free(void *p)
 
     if (p == 0)
         return;
+    low_take();
     if ((unsigned char *)p < low_base
         || (unsigned char *)p >= low_base + LOW_BYTES) {
         fprintf(stderr, "evv: %p was given back to the low region and did not"
@@ -764,6 +782,7 @@ void evv_low_free(void *p)
     }
     b = (low_head *)p - 1;
     b->used = 0;
+    low_drop();
 }
 
 int32_t evv_ref_checked(const void *p)
@@ -941,11 +960,28 @@ static pthread_once_t fs_once = PTHREAD_ONCE_INIT;
 static pthread_key_t  fs_key;
 static int            fs_keyed;
 
+#if defined(__APPLE__)
+/* On Darwin (macOS, iOS) the key's value is the frame stack itself, not a
+   flag. Darwin puts a thread's __thread storage back before the keys made
+   after it are told the thread is ending -- a destructor there reads fs_base
+   as a fresh zero -- so evv_frame_done gave nothing back and a program that
+   stopped from a fresh thread each time still went quiet on the sixty-third.
+   The value is all a destructor has to go on there. The landing places went
+   with that storage and are not given back, as before; they are malloc's,
+   not the region's. glibc keeps the storage until its destructors are done,
+   and Windows' fiber-local callback is the same, so evv_frame_done does the
+   whole of it on both. */
+static void fs_gone(void *frames)
+{
+    evv_arena_free(frames);
+}
+#else
 static void fs_gone(void *unused)
 {
     (void)unused;
     evv_frame_done();
 }
+#endif
 
 static void fs_open(void)
 {
@@ -956,8 +992,24 @@ static void fs_watch(void)
 {
     pthread_once(&fs_once, fs_open);
     if (fs_keyed)
+#if defined(__APPLE__)
+        pthread_setspecific(fs_key, fs_base);
+#else
         pthread_setspecific(fs_key, (void *)1);
+#endif
 }
+
+#if defined(__APPLE__)
+/* Frames given back while the thread lives on -- an engine thread's, from
+   its trampoline -- must not be given back again when it ends, and on Darwin
+   the key's value would still name them. Only a thread that has called
+   fs_watch gets here, so fs_keyed is settled for it. */
+static void fs_unwatch(void)
+{
+    if (fs_keyed)
+        pthread_setspecific(fs_key, 0);
+}
+#endif
 
 __attribute__((destructor)) static void fs_close(void)
 {
@@ -992,6 +1044,9 @@ void evv_frame_done(void)
         fs_base = 0;
         fs_top = 0;
         fs_end = 0;
+#if defined(__APPLE__)
+        fs_unwatch();
+#endif
     }
     evv_land_done();
 }

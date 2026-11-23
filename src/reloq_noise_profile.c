@@ -31,6 +31,7 @@ void reloq_noise_profile_prepare(struct reloq_noise_profile *s,float rate,
     long av,long af,long ab,float f[8],float b[8],long a[8],long *count)
 {
     if(!s || rate<16000 || !count)return;
+    const long original_count=*count;
     int kind=a[4]&&!a[2]?ALVEOLAR:a[2]||a[3]?
         (a[2]&&!a[3]?VELAR:POSTALVEOLAR):ab?BROAD:VELAR;
     /* During the reference release keep the preceding source filter and
@@ -89,6 +90,14 @@ void reloq_noise_profile_prepare(struct reloq_noise_profile *s,float rate,
                     f[j+5]=s->upper_frequency[j];b[j+5]=s->upper_width[j];
                 }
             }
+            /* Small voice models can have only four active reference bands.
+             * A fifth band may still carry a level but a zero bandwidth; it
+             * was never active at the reference rate. Expanding the bank
+             * must not turn that undamped, inherited pole into a sustained
+             * whistle. Preserve the normal bands and all added broad bands. */
+            if(original_count>=1 && original_count<*count)
+                for(long j=original_count;j<*count;++j)
+                    if(a[j]>0 && b[j]<=0) a[j]=0;
         }
     } else {
         if(kind==BROAD){center=4000;gain=.30;}

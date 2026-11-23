@@ -14,8 +14,9 @@ int reloq_rate_transfer_prepare_classic_bandwidth(struct reloq_rate_transfer *s,
     if(norm<1e-20 || ref_norm<1e-20)return 0;
     double extension=extension_scale*(rate>=48000?1:rate>=44100?.8:
         rate>=32000?.5:rate>=22050?.25:0);
-    if(s->sibilant_extension)extension*=rate>=48000?.35:rate>=44100?.4:
+    if(s->sibilant_extension==1)extension*=rate>=48000?.35:rate>=44100?.4:
         rate>=32000?.5:.6;
+    else if(s->sibilant_extension==2)extension*=.75;
     float key[144]={-11026,rate,(float)profile->kind,(float)extension,
         (float)s->sibilant_extension,s->frication_trim_db};unsigned at=6;
     const struct reloq_core_frication_bank *banks[]={reference,current};
@@ -71,13 +72,14 @@ int reloq_rate_transfer_prepare_classic_bandwidth(struct reloq_rate_transfer *s,
             if(clock)roll=clock->retracted[k];
             else {double ratio=hz/8500,quadratic=ratio*ratio;
                 roll=1/(1+quadratic*quadratic);}
+            if(s->sibilant_extension==2)roll=.55+.45*roll;
         }
         extra[k]=extension*upper*upper_scale*ours[k]*roll;
         added+=w*extra[k];
     }
     double budget=extension_scale*lower_ref*(rate>=48000?.20:rate>=44100?.18:
         rate>=32000?.14:rate>=22050?.08:0);
-    double scale=s->sibilant_extension&&added>budget?budget/added:1;
+    double scale=s->sibilant_extension==1&&added>budget?budget/added:1;
     for(unsigned k=0;k<=FFT_SIZE/2;++k) {
         double w=k&&k<FFT_SIZE/2?1:.5;
         target[k]=native_power[k]+scale*extra[k];

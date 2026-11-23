@@ -21,6 +21,7 @@ final class Preferences {
         s.abbreviations=p.getBoolean("abbreviations",true);s.prediction=p.getBoolean("prediction",false);
         s.originalQuestions=p.getBoolean("originalQuestions",false);
         s.mellowMode=p.getBoolean("mellowMode",false);
+        s.volumeGain=p.getBoolean("volumeGain",false);
         s.wordSegmentation=p.getBoolean("wordSegmentation",false);
         s.camelCase=p.getBoolean("camelCase",false);
         s.acousticClockMask=clockMask(p);
@@ -51,6 +52,7 @@ final class Preferences {
             .putBoolean("abbreviations",s.abbreviations).putBoolean("prediction",s.prediction)
             .putBoolean("originalQuestions",s.originalQuestions)
             .putBoolean("mellowMode",s.mellowMode)
+            .putBoolean("volumeGain",s.volumeGain)
             .putBoolean("wordSegmentation",s.wordSegmentation).putBoolean("camelCase",s.camelCase)
             .putInt("acousticClockMask",s.acousticClockMask&((1<<Catalog.LANGUAGES.length)-1))
             .putBoolean("eqEnabled",s.eqEnabled).putInt("eqPreset",s.eqPreset)

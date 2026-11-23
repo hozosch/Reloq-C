@@ -8,7 +8,7 @@ NVDA settings and language-command routing do not contain German special cases.
 from __future__ import annotations
 
 from collections import OrderedDict
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 import threading
 from typing import Callable
@@ -23,9 +23,39 @@ def N_(message: str) -> str:
     return message
 
 if __package__:
-    from ._reloq_eci_direct import DirectEciEngine, EciText, EciCapitalWord, EciLanguage, EciPitch, EciPitchHz, EciProsody, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, ORIGINAL_ACOUSTIC_CLOCK
+    from ._reloq_eci_direct import DirectEciEngine, EciText, EciCapitalWord, EciLanguage, EciPitch, EciPitchHz, EciProsody, persistent_tag_control, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, ORIGINAL_ACOUSTIC_CLOCK
 else:
-    from _reloq_eci_direct import DirectEciEngine, EciText, EciCapitalWord, EciLanguage, EciPitch, EciPitchHz, EciProsody, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, ORIGINAL_ACOUSTIC_CLOCK
+    from _reloq_eci_direct import DirectEciEngine, EciText, EciCapitalWord, EciLanguage, EciPitch, EciPitchHz, EciProsody, persistent_tag_control, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, ORIGINAL_ACOUSTIC_CLOCK
+
+
+def speech_has_context(parts):
+    """Count source text before language or sentence boundaries split it."""
+    count = 0
+    for part in parts:
+        if isinstance(part, EciText):
+            if part.source_in_context:
+                return True
+            if part.is_control or part.internal_punctuation:
+                continue
+            count += len(part.text)
+        elif isinstance(part, EciCapitalWord):
+            count += len(part.original)
+        elif isinstance(part, str):
+            count += len(part)
+        if count > 1:
+            return True
+    return False
+
+
+def carry_speech_context(parts):
+    """Retain the original utterance context through later text splits."""
+    parts = tuple(parts)
+    if not speech_has_context(parts):
+        return parts
+    return tuple(EciText(part, source_in_context=True) if isinstance(part, str) else
+                 replace(part, source_in_context=True) if isinstance(part, EciText) and
+                 not part.is_control and not part.internal_punctuation and not part.character_mode else part
+                 for part in parts)
 
 
 @dataclass(frozen=True)
@@ -85,24 +115,24 @@ GERMAN = Language(
 # Anatomy presets are shared. Pronunciation and acoustic rules belong to
 # the selected language; choosing a preset never switches language modules.
 US_ENGLISH = Language(
-    ENGLISH_DIALECT, "American English", "en_US", "utf-8",
+    ENGLISH_DIALECT, N_("American English"), "en_US", "utf-8",
     tuple(Voice(v.id, v.name, v.parameters) for v in GERMAN.voices),
 )
 BRAZILIAN_PORTUGUESE = Language(
-    0x70000, "Brazilian Portuguese", "pt_BR", "utf-8",
+    0x70000, N_("Brazilian Portuguese"), "pt_BR", "utf-8",
     tuple(Voice(v.id, v.name, v.parameters) for v in GERMAN.voices),
 )
 FINNISH = Language(
     0x90000, N_("Finnish"), "fi_FI", "utf-8",
     tuple(Voice(v.id, v.name, v.parameters) for v in GERMAN.voices),
 )
-BRITISH_ENGLISH = Language(0x10001, "British English", "en_GB", "utf-8", US_ENGLISH.voices)
-SPANISH_SPAIN = Language(0x20000, "Castilian Spanish", "es_ES", "utf-8", US_ENGLISH.voices)
-SPANISH_MEXICO = Language(0x20001, "Latin American Spanish", "es_MX", "utf-8", US_ENGLISH.voices)
-FRENCH_FRANCE = Language(0x30000, "French", "fr_FR", "utf-8", US_ENGLISH.voices)
-FRENCH_CANADA = Language(0x30001, "French Canadian", "fr_CA", "utf-8", US_ENGLISH.voices)
+BRITISH_ENGLISH = Language(0x10001, N_("British English"), "en_GB", "utf-8", US_ENGLISH.voices)
+SPANISH_SPAIN = Language(0x20000, N_("Castilian Spanish"), "es_ES", "utf-8", US_ENGLISH.voices)
+SPANISH_MEXICO = Language(0x20001, N_("Latin American Spanish"), "es_MX", "utf-8", US_ENGLISH.voices)
+FRENCH_FRANCE = Language(0x30000, N_("French"), "fr_FR", "utf-8", US_ENGLISH.voices)
+FRENCH_CANADA = Language(0x30001, N_("French Canadian"), "fr_CA", "utf-8", US_ENGLISH.voices)
 ITALIAN = Language(0x50000, N_("Italian"), "it_IT", "utf-8", US_ENGLISH.voices)
-CHINESE_CHINA = Language(0x60000, "Mandarin Chinese", "zh_CN", "utf-8", US_ENGLISH.voices)
+CHINESE_CHINA = Language(0x60000, N_("Mandarin Chinese"), "zh_CN", "utf-8", US_ENGLISH.voices)
 # Both scripts use this native module. Accept saved Taiwan IDs without
 # presenting a second language choice or opening a second worker.
 LANGUAGE_ALIASES = {0x60001: 0x60000}
@@ -195,6 +225,9 @@ class LanguageEngine:
                 return dict(profile.voice(key[1]).parameters).get(GENDER, value)
         return value
 
+    def _acoustic_clock_for(self, language):
+        return int(bool(self._acoustic_clocks & ACOUSTIC_CLOCK_BITS.get(language, 0)))
+
     def _activate(self, key):
         self._assert_owner()
         profile = self._languages[key[0]]
@@ -215,7 +248,7 @@ class LanguageEngine:
             wanted.update((parameter, self._parameter_for(key, parameter, value))
                           for parameter, value in self._parameters.items())
             if self._acoustic_clocks is not None:
-                wanted[ORIGINAL_ACOUSTIC_CLOCK] = int(bool(self._acoustic_clocks & ACOUSTIC_CLOCK_BITS.get(language, 0)))
+                wanted[ORIGINAL_ACOUSTIC_CLOCK] = self._acoustic_clock_for(language)
             current = self._engine_parameters[language]
             for parameter, value in wanted.items():
                 if current.get(parameter) != value:
@@ -269,7 +302,7 @@ class LanguageEngine:
             raise ValueError("invalid acoustic clock choices")
         self._acoustic_clocks = choices
         for language, engine in self._engines.items():
-            value = int(bool(choices & ACOUSTIC_CLOCK_BITS.get(language, 0)))
+            value = self._acoustic_clock_for(language)
             if self._engine_parameters[language].get(ORIGINAL_ACOUSTIC_CLOCK) != value:
                 engine.set_parameter(ORIGINAL_ACOUSTIC_CLOCK, value)
                 self._engine_parameters[language][ORIGINAL_ACOUSTIC_CLOCK] = value
@@ -282,13 +315,15 @@ class LanguageEngine:
             self._engine_parameters[language][parameter] = adapted
         self._parameters[parameter] = value
 
-    def speak(self, parts, on_pcm, on_index):
+    def speak(self, parts, on_pcm, on_index, *, reset_cancellation=True):
         self._assert_owner()
+        in_context = speech_has_context(parts)
         # Validate all selections before any speech escapes this job.
         for part in parts:
             if isinstance(part, EciLanguage):
                 self._key(part.language, part.voice)
-        self._cancelled.clear()
+        if reset_cancellation:
+            self._cancelled.clear()
         key = self._home
         pending = []
         prosody = {}
@@ -301,7 +336,16 @@ class LanguageEngine:
             engine = self._activate(key)
             if self._cancelled.is_set():
                 return False
-            result = engine.speak(tuple(pending), on_pcm, on_index)
+            chunk = tuple(pending)
+            text_length = sum(len(part if isinstance(part, str) else part.text)
+                              for part in chunk if isinstance(part, str) or
+                              isinstance(part, EciText) and not part.is_control)
+            if in_context and text_length == 1:
+                chunk = tuple(EciText(part, source_in_context=True) if isinstance(part, str) and part else
+                              replace(part, source_in_context=True) if isinstance(part, EciText) and
+                              part.text and not part.is_control and not part.character_mode else part
+                              for part in chunk)
+            result = engine.speak(chunk, on_pcm, on_index)
             pending.clear()
             return result and not self._cancelled.is_set()
 
@@ -353,7 +397,14 @@ class LanguageEngine:
                         # filter. Keep its effective speed across real NVDA
                         # language switches without altering saved settings.
                         prosody.pop("speed", None)
-                        prosody["speed"] = EciText(part.speed_control + " ")
+                        prosody["speed"] = EciText(part.speed_control + " ",
+                                                   speed_control=part.speed_control)
+                    elif isinstance(part, EciText):
+                        replay = persistent_tag_control(part)
+                        if replay is not None:
+                            slot, control = replay
+                            prosody.pop(slot, None)
+                            prosody[slot] = control
                     pending.append(part)
             return flush()
         finally:

@@ -11,9 +11,11 @@
     <string name="browser_update">Download aperto. Usa il browser e la normale procedura di installazione di Android. Mantieni Play Protect attivo.</string>
     <string name="engine_help">Sintesi vocale offline. Scegli una lingua e una voce da provare, oppure seleziona ReLoq C nelle impostazioni di sintesi vocale di Android.</string>
     <string name="language">Lingua</string>
+    <string name="auto_fallback">Lingua base per il rilevamento automatico (numeri, simboli, scritture sconosciute)</string>
     <string name="profile">Voce</string>
     <string name="sample_rate">Frequenza di campionamento</string>
     <string name="pause_mode">Accorcia le pause</string>
+    <string name="number_mode">Lettura dei numeri</string>
     <string name="sample_text">Testo da leggere</string>
     <string name="speak">Leggi il testo di prova</string>
     <string name="stop">Interrompi</string>
@@ -26,10 +28,16 @@
         <item>Alla fine</item>
         <item>Sempre</item>
     </string-array>
+    <string-array name="number_modes">
+        <item>Valore</item>
+        <item>Cifre</item>
+        <item>Automatico</item>
+    </string-array>
     <string name="voice_settings">Lingua e voce</string>
     <string name="android_voice">Controlla lingua e voce tramite Android</string>
     <string name="android_rate">Controlla velocità tramite Android</string>
     <string name="android_pitch">Controlla tono tramite Android</string>
+    <string name="android_controls">Controlla velocità e tono tramite Android</string>
     <string name="speed">Velocità manuale, parole al minuto</string>
     <string name="pitch">Tono manuale</string>
     <string name="rate_boost">Aumento della velocità</string>
@@ -41,8 +49,13 @@
     <string name="roughness">Raucedine</string>
     <string name="breathiness">Soffio nella voce</string>
     <string name="reset_profile">Ripristina il profilo vocale selezionato</string>
+    <string name="reset_done">Ripristinato</string>
+    <string name="reset_not_needed">Nessun ripristino necessario</string>
+    <string name="reset_equalizer">Ripristina equalizzatore</string>
     <string name="output_settings">Uscita vocale</string>
     <string name="eci_tags">Interpreta i tag ECI</string>
+    <string name="volume_gain">Incremento del volume</string>
+    <string name="equalizer_settings">Impostazioni equalizzatore</string>
     <string name="dictionaries">Dizionari di pronuncia</string>
     <string name="community_dictionaries">Usa i dizionari della comunità</string>
     <string name="update_dictionaries">Aggiorna i dizionari della comunità dal master attuale</string>
@@ -107,7 +120,7 @@
     <string name="equalizer_mid">Medi (dB)</string>
     <string name="equalizer_high">Alti (dB)</string>
     <string-array name="equalizer_presets"><item>Bilanciato</item><item>Caldo</item><item>Brillante</item><item>Morbido</item><item>Personalizzato</item></string-array>
-    <string name="equalizer_advanced">Filtri avanzati…</string>
+    <string name="equalizer_advanced">Filtri avanzati</string>
     <string name="filter_title">Filtri avanzati equalizzatore</string>
     <string name="filter_select">Filtro</string>
     <string name="filter_name">Filtro</string>
@@ -116,6 +129,8 @@
     <string name="filter_gain">Guadagno (dB)</string>
     <string name="filter_width" formatted="false">Larghezza (% ottava)</string>
     <string name="filter_nyquist" formatted="false">Il 100% equivale a un’ottava. Le frequenze dalla metà del campionamento non sono attive.</string>
+    <string name="battery_check_normal">Verifica autorizzazioni: normale</string>
+    <string name="battery_check_missing">Verifica autorizzazioni: ottimizzazione batteria mancante. Tocca per richiedere.</string>
     <string name="automatic_updates">Cerca automaticamente aggiornamenti</string>
     <string name="notification_settings">Impostazioni notifiche</string>
     <string name="notification_explanation">Consenti le notifiche per ricevere informazioni sulle nuove versioni di ReLoq C. Puoi cercare anche manualmente.</string>

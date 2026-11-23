@@ -3,6 +3,13 @@
 #include <stddef.h>
 #include <stdint.h>
 uint32_t reloq_unicode_compose(uint32_t base,uint32_t combining_mark);
+/* Short English Greek alphabet name, or 0 when the scalar is not in the
+ * shared Greek-letter inventory. Output is unchanged on failure. */
+int reloq_unicode_greek_name_english(uint32_t codepoint, char *output, size_t capacity);
+/* Whether a scalar can participate in a Unicode/CLDR emoji presentation. */
+int reloq_unicode_is_emoji(uint32_t codepoint);
+/* A scalar rendered as emoji without requiring an emoji variation selector. */
+int reloq_unicode_is_default_emoji(uint32_t codepoint);
 /* Complete-utterance admission. Modes are one byte per input byte (0 text,
  * 1 character). Map has length+1 source boundary entries. Output reserves
  * two trailing bytes for the ECI implicit terminal mark and NUL. Language

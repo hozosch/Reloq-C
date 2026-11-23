@@ -12,9 +12,11 @@
     <string name="app_name">ReLoq C</string>
     <string name="engine_help">Offline speech synthesis. Choose a language and voice to test, or select ReLoq C in Android text-to-speech settings.</string>
     <string name="language">Language</string>
+    <string name="auto_fallback">Base language for automatic detection (numbers, symbols, unknown scripts)</string>
     <string name="profile">Voice</string>
     <string name="sample_rate">Sample rate</string>
     <string name="pause_mode">Shorten pauses</string>
+    <string name="number_mode">Number reading</string>
     <string name="sample_text">Text to read</string>
     <string name="speak">Read test text</string>
     <string name="stop">Stop</string>
@@ -27,10 +29,16 @@
         <item>At the end</item>
         <item>Always</item>
     </string-array>
+    <string-array name="number_modes">
+        <item>Value</item>
+        <item>Digits</item>
+        <item>Automatic</item>
+    </string-array>
     <string name="voice_settings">Language and voice</string>
     <string name="android_voice">Control language and voice through Android</string>
     <string name="android_rate">Control speed through Android</string>
     <string name="android_pitch">Control pitch through Android</string>
+    <string name="android_controls">Control speed and pitch through Android</string>
     <string name="speed">Manual speed, words per minute</string>
     <string name="pitch">Manual pitch</string>
     <string name="rate_boost">Rate boost</string>
@@ -42,8 +50,13 @@
     <string name="roughness">Roughness</string>
     <string name="breathiness">Breathiness</string>
     <string name="reset_profile">Reset selected voice profile</string>
+    <string name="reset_done">Reset</string>
+    <string name="reset_not_needed">No reset needed</string>
+    <string name="reset_equalizer">Reset equalizer</string>
     <string name="output_settings">Speech output</string>
     <string name="eci_tags">Process ECI tags</string>
+    <string name="volume_gain">Volume gain</string>
+    <string name="equalizer_settings">Equalizer settings</string>
     <string name="dictionaries">Pronunciation dictionaries</string>
     <string name="community_dictionaries">Use community dictionaries</string>
     <string name="update_dictionaries">Update community dictionaries from current master</string>
@@ -108,7 +121,7 @@
     <string name="equalizer_mid">Midrange (dB)</string>
     <string name="equalizer_high">Treble (dB)</string>
     <string-array name="equalizer_presets"><item>Balanced</item><item>Warm</item><item>Bright</item><item>Smooth</item><item>Custom</item></string-array>
-    <string name="equalizer_advanced">Advanced filters…</string>
+    <string name="equalizer_advanced">Advanced filters</string>
     <string name="filter_title">Advanced equalizer filters</string>
     <string name="filter_select">Filter</string>
     <string name="filter_name">Filter</string>
@@ -117,6 +130,8 @@
     <string name="filter_gain">Gain (dB)</string>
     <string name="filter_width" formatted="false">Bandwidth (% of octave)</string>
     <string name="filter_nyquist" formatted="false">100% is one octave. Frequencies at or above half the sample rate are inactive.</string>
+    <string name="battery_check_normal">Permission check: normal</string>
+    <string name="battery_check_missing">Permission check: missing battery optimization. Tap to request.</string>
     <string name="automatic_updates">Automatically check for app updates</string>
     <string name="notification_settings">Notification settings</string>
     <string name="notification_explanation">Allow notifications to be informed about new ReLoq C versions. You can still check manually without notifications.</string>

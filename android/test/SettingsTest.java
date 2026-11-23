@@ -77,10 +77,12 @@ public final class SettingsTest {
             require(s.controls(100,200)[7]>55);
         }
         VoiceSettings options=new VoiceSettings(0);options.abbreviations=false;options.prediction=true;options.originalQuestions=true;options.mellowMode=true;options.wordSegmentation=true;options.camelCase=true;options.setOriginalClock(0x10000,true);
+        options.volumeGain=true;
         Map<String,Object> stored=new HashMap<>();Preferences.save(memory(stored),0,options);
         VoiceSettings restored=Preferences.read(memory(stored),0);
         require(restored.wordSegmentation&&restored.camelCase&&restored.controls(100,100)[40]==1&&restored.controls(100,100)[41]==1);
         require(!restored.abbreviations&&restored.prediction&&restored.originalQuestions&&restored.mellowMode&&restored.originalClock(0x10000)&&restored.controls(100,100)[11]==1&&restored.controls(100,100)[12]==1&&restored.controls(100,100)[13]==1&&restored.controls(100,100)[14]==1&&restored.controls(100,100,0x10000)[39]==1);
+        require(restored.volumeGain);
         VoiceSettings defaults=Preferences.read(memory(new HashMap<>()),0);
         require(defaults.originalClock(0x20000)&&defaults.originalClock(0x120000)&&defaults.originalClock(0x130000)&&!defaults.originalClock(0x20001)&&!defaults.originalClock(0x10000));
         require(defaults.controls(100,100,0x20000)[39]==1&&defaults.controls(100,100,0x120000)[39]==1&&defaults.controls(100,100,0x10000)[39]==0);

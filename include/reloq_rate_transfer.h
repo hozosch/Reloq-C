@@ -42,7 +42,7 @@ struct reloq_rate_transfer {
     double body_coefficient[3][5],body_target[3][5],body_step[3][5],body_delay[3][2];
     unsigned body_ready,body_remaining;
     /* Limit the optional Castilian S/T extension independently of other AF. */
-    unsigned sibilant_extension;
+    unsigned sibilant_extension; /* 0: full, 1: retracted, 2: gentler high-rate sibilants */
     /* Small whole-band AF level adjustment, leaving its spectrum intact. */
     float frication_trim_db;
     double classic_reference[2][5];

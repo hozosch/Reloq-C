@@ -123,7 +123,7 @@ struct queued_item {
     int is_index;
     int pitch;
     int is_pitch;
-    int unicode_input, character_mode, segmentation_guarded;
+    int unicode_input, character_mode, segmentation_guarded, source_in_context;
     struct queued_voice voice;
 };
 
@@ -254,6 +254,7 @@ static int insert_voice_controls(unsigned char **text,size_t *length,
         memcpy(next+used,*text+from,at-from);
         if(next_guards)memcpy(next_guards+used,*guards+from,at-from);
         used+=at-from;from=at;
+        size_t before_control=used;
         for(unsigned k=0;k<8;++k)if(initial.values[k]!=controls[i].voice.values[k] ||
             (k==2 && initial.pitch_hz!=controls[i].voice.pitch_hz)) {
             /* An enabled WPM setting owns speed until explicitly cleared. */
@@ -272,6 +273,12 @@ static int insert_voice_controls(unsigned char **text,size_t *length,
             if(n<0||n>=96){free(next);free(next_guards);free(offsets);free(added);return -1;}
             used+=(size_t)n;
         }
+        /* A digit immediately following the trusted control would otherwise
+         * be consumed as part of its numeric value. End just that ambiguous
+         * annotation; leave all other text boundaries unchanged. The index
+         * adjustment below includes the inserted separator. */
+        if(used>before_control && at<*length && (*text)[at]>='0' && (*text)[at]<='9')
+            next[used++]=' ';
         initial=controls[i].voice;offsets[i]=at;added[i]=used-at;
     }
     memcpy(next+used,*text+from,*length-from);
@@ -866,7 +873,7 @@ int ECICALL eciAddTextUtf8(ECIHand handle,const void *text,size_t bytes,int mode
 {
     struct reloq_eci_engine *e=handle;
     if(!e||epoch_get(&e->busy))return 0;
-    if((!text&&bytes)||(mode<0||mode>3)||bytes==SIZE_MAX) {
+    if((!text&&bytes)||(mode<0||(mode&~7))||bytes==SIZE_MAX) {
         eci_error(e,RELOQ_ECI_INVALID);return 0;
     }
     unsigned char *copy=malloc(bytes+1);
@@ -875,7 +882,7 @@ int ECICALL eciAddTextUtf8(ECIHand handle,const void *text,size_t bytes,int mode
     copy[bytes]=0;
     if(append_item(e,(struct queued_item){.utf8=copy,.length=bytes,
        .voice=capture_voice(e),.unicode_input=1,.character_mode=mode&1,
-       .segmentation_guarded=!!(mode&2)})) {
+       .segmentation_guarded=!!(mode&2),.source_in_context=!!(mode&4)})) {
         free(copy);eci_error(e,RELOQ_ECI_MEMORY);return 0;
     }
     eci_error(e,RELOQ_ECI_OK);return 1;
@@ -892,6 +899,9 @@ int ECICALL eciInsertIndex(ECIHand handle, int index)
     eci_error(e,RELOQ_ECI_OK);
     return 1;
 }
+
+int ECICALL eciUnicodeIsEmoji(uint32_t codepoint)
+{return reloq_unicode_is_emoji(codepoint);}
 
 int ECICALL eciInsertPitch(ECIHand handle, int native_pitch)
 {
@@ -940,7 +950,7 @@ int ECICALL eciSynthesize(ECIHand handle)
     size_t text_bytes = 0;
     size_t original_text_bytes = 0, source_bytes = 0;
     int unicode_input=0;
-    unsigned char *modes=NULL,*guards=NULL;size_t *source_map=NULL;int have_guards=0;
+    unsigned char *modes=NULL,*guards=NULL;size_t *source_map=NULL;int have_guards=0,source_in_context=0;
     size_t mark_count = 0, next_mark = 0, pitch_count = 0;
     unsigned char *phrase = NULL;
     struct index_mark *marks = NULL;
@@ -979,6 +989,7 @@ int ECICALL eciSynthesize(ECIHand handle)
         text_bytes += e->queue[i].length;
         unicode_input|=e->queue[i].unicode_input;
         have_guards|=e->queue[i].segmentation_guarded;
+        if(e->queue[i].length)source_in_context|=e->queue[i].source_in_context;
     }
     if(have_voice) {
         apply_voice(e,&initial_voice);
@@ -1078,6 +1089,14 @@ int ECICALL eciSynthesize(ECIHand handle)
         result=synthesize_languages(e,phrase,text_bytes,modes,guards,unicode_input,
             marks,mark_count,pitches,pitch_count,before);
         goto done;
+    }
+    if(unicode_input && text_bytes && modes) {
+        size_t at=0;uint32_t cp=0;
+        /* One scalar is a character request unless the caller supplied a
+         * protected dictionary replacement or wider utterance context. */
+        if(!source_in_context && (!guards || !guards[0]) &&
+           reloq_utf8_next(phrase,text_bytes,&at,&cp)==1 && at==text_bytes)
+            memset(modes,1,text_bytes);
     }
     if((unicode_input||control_count)&&text_bytes) {
         unsigned char *normalized=NULL;size_t count=0;source_bytes=text_bytes;
@@ -1452,6 +1471,7 @@ int ECICALL eciGetParam(ECIHand handle, int parameter)
     case RELOQ_ECI_ORIGINAL_ACOUSTIC_CLOCK: return e->original_acoustic_clock;
     case RELOQ_ECI_WORD_SEGMENTATION: return e->word_segmentation;
     case RELOQ_ECI_CAMEL_CASE: return e->camel_case;
+    case RELOQ_ECI_UTF8_INPUT_MODES: return 7;
     case RELOQ_ECI_EQ_LOW: return e->eq_low;
     case RELOQ_ECI_EQ_MID: return e->eq_mid;
     case RELOQ_ECI_EQ_HIGH: return e->eq_high;

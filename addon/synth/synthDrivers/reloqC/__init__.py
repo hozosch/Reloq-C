@@ -60,6 +60,28 @@ class _SpeechPreparationMarker(SynthCommand):
     """Identify our private sequence even if a later filter copies it."""
 
 
+def _is_isolated_unicode(sequence):
+    """A single Unicode character, apart from speech control commands.
+
+    An index or a language change is not text, but a protected text command
+    or another fragment means the scalar is part of a larger utterance.
+    """
+    found = False
+    for item in sequence:
+        if isinstance(item, SegmentationGuard) and item.enabled:
+            return False
+        if isinstance(item, str):
+            if not item:
+                continue
+            if found or len(item) != 1:
+                return False
+            found = True
+        elif (isinstance(getattr(item, 'text', None), str) and item.text or
+              isinstance(getattr(item, 'original', None), str) and item.original):
+            return False
+    return found
+
+
 def _native_speed(percent, boost=False):
     """Match the reference NVDA driver's ECI 40..150 normal range.
 
@@ -109,6 +131,7 @@ def _parts(speech_sequence, *, base_pitch=50, base_pitch_hz=0, base_rate=50, bas
     segmentation_guarded = False
     last_text_alnum = False
     home_language = language.id
+    isolated_unicode = _is_isolated_unicode(speech_sequence)
 
     def flush():
         if pieces:
@@ -126,6 +149,7 @@ def _parts(speech_sequence, *, base_pitch=50, base_pitch_hz=0, base_rate=50, bas
     for item in speech_sequence:
         if isinstance(item, str):
             said = item
+            item_spelling = spelling or isolated_unicode
             # Character mode is a sequence of letter tokens. Preserve their
             # boundaries in the one native utterance so an inline pitch mark
             # cannot accidentally change a later letter of the same word.
@@ -135,10 +159,10 @@ def _parts(speech_sequence, *, base_pitch=50, base_pitch_hz=0, base_rate=50, bas
                 # space name in languages such as Finnish and Korean.
                 pieces.append((" ", False))
             if said:
-                needs_letter_boundary = spelling or (raised and
+                needs_letter_boundary = item_spelling or (raised and
                     len(said) == 1 and said.isalpha())
                 last_text_alnum = said[-1].isalnum()
-            pieces.append((said, spelling))
+            pieces.append((said, item_spelling))
         elif isinstance(item, IndexCommand):
             flush()
             parts.append(EciIndex(item.index))
@@ -181,11 +205,11 @@ def _parts(speech_sequence, *, base_pitch=50, base_pitch_hz=0, base_rate=50, bas
                 elif re.fullmatch(r"`v[1-9]", item.text):
                     preset_speeds = (50, 50, 50, 50, 70, 70, 50, 50, 50)
                     speed = f"`vs{preset_speeds[int(item.text[-1]) - 1]}"
-            if speed is None:
+            if not voice_tags or spelling:
                 pieces.append((item.text, spelling))
             else:
                 flush()
-                parts.append(EciText(item.text, False, speed))
+                parts.append(EciText(item.text, False, speed, tag_control=item.text))
         elif isinstance(item, CharacterModeCommand):
             next_spelling = bool(item.state)
             if next_spelling != spelling and last_text_alnum:
@@ -393,6 +417,7 @@ class SynthDriver(BaseSynthDriver):
             return sequence
         needs_processing = (self._voiceTags or self._wordSegmentation or self._camelCase or
                             self._imported_dictionaries.records or
+                            self._has_spelled_unicode(sequence) or _is_isolated_unicode(sequence) or
                             any(isinstance(item, str) and _BUILTIN_BOUNDARY.search(item) for item in sequence))
         if not needs_processing:
             return sequence
@@ -407,7 +432,78 @@ class SynthDriver(BaseSynthDriver):
         if not isinstance(speechSequence, list) or not any(item is marker for item in speechSequence):
             return
         prepared = [item for item in speechSequence if item is not marker]
+        prepared = self._preserve_spelled_unicode(prepared, symbolLevel)
         speechSequence[:] = self._protect_tags(prepared, symbolLevel=symbolLevel)
+
+    @staticmethod
+    def _has_spelled_unicode(sequence):
+        # This command identifies NVDA character navigation and spelling even
+        # when the synthesizer's spelling functionality is disabled.
+        spelling = False
+        for item in sequence:
+            if type(item).__name__ == 'SuppressUnicodeNormalizationCommand':
+                spelling = bool(item.state)
+            elif spelling and isinstance(item, str) and len(item) == 1 and ord(item) > 127:
+                return True
+        return False
+
+    def _preserve_spelled_unicode(self, sequence, symbol_level):
+        isolated = _is_isolated_unicode(sequence)
+        if not isolated and not self._has_spelled_unicode(sequence):
+            return sequence
+        # Explicit speech dictionaries remain authoritative. For a plain
+        # isolated character, use the synth's stored name even if NVDA's
+        # symbol processor would otherwise replace or suppress the literal.
+        # For an explicit spelling sequence, retain NVDA's own replacement.
+        try:
+            import characterProcessing
+            import globalVars
+            import speechDictHandler
+            level = symbol_level
+            if level is None or level == characterProcessing.SymbolLevel.UNCHANGED:
+                level = characterProcessing.SymbolLevel(config.conf['speech']['symbolLevel'])
+            with self._submit_lock:
+                home, voice = self._selectedLanguage, self._voice
+            selected = home
+            locale = self._languages[home].locale
+        except (ImportError, AttributeError, KeyError, TypeError, ValueError):
+            return sequence
+        result, spelling, character_mode = [], False, False
+        for item in sequence:
+            if type(item).__name__ == 'SuppressUnicodeNormalizationCommand':
+                spelling = bool(item.state)
+            elif isinstance(item, CharacterModeCommand):
+                character_mode = bool(item.state)
+            elif isinstance(item, LangChangeCommand):
+                locale = item.lang or self._languages[home].locale
+                selected = language_for(item.lang, home, self._languages) or selected
+            elif (spelling or isolated) and isinstance(item, str) and len(item) == 1 and (isolated or ord(item) > 127):
+                try:
+                    dictionaries_enabled = getattr(globalVars, 'speechDictionaryProcessing', True)
+                    if dictionaries_enabled and self._imported_dictionaries.matches(item, selected, voice):
+                        processed = None
+                    else:
+                        processed = speechDictHandler.processText(item) if dictionaries_enabled else item
+                        if processed == item and not isolated:
+                            processed = characterProcessing.processSpeechSymbols(locale, processed, level).strip()
+                        elif processed != item:
+                            # A dictionary is allowed to replace a character
+                            # with an empty string as well as with a word.
+                            processed = None
+                except (AttributeError, KeyError, LookupError, TypeError, ValueError):
+                    processed = None
+                if processed == item or processed == '':
+                    # NVDA's symbol processor still runs in character mode and
+                    # can remove a raw character at the selected symbol level.
+                    # A synth command protects it until the native name lookup.
+                    if not character_mode:
+                        result.append(CharacterModeCommand(True))
+                    result.append(NativeDictionaryWord(item))
+                    if not character_mode:
+                        result.append(CharacterModeCommand(False))
+                    continue
+            result.append(item)
+        return result
 
     @staticmethod
     def _native_following_boundary(text, start, end, words, starts, locale, symbol_level, normalize):
