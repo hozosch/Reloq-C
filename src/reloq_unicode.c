@@ -507,6 +507,20 @@ static int unicode_admit(const unsigned char *text,size_t length,
             if(!((i-back)&1)) {
                 struct reloq_inline_tag t=reloq_inline_tag_read(text+i,length-i,0);
                 if(t.kind==RELOQ_TAG_SPELL)source_spelling=t.value;
+                /* The Korean romanizer otherwise joins a pause annotation to
+                 * the preceding Hangul word. ECI callers may queue the pause
+                 * in a separate AddText without a separating space; keep its
+                 * meaning identical to an explicitly separated command. */
+                if(language==0xa0000&&i&&t.kind==RELOQ_TAG_PAUSE) {
+                    size_t previous=i-1,z;uint32_t before;
+                    while(previous&&(text[previous]&0xc0)==0x80)--previous;
+                    if(!decode(text+previous,i-previous,&z,&before)&&z==i-previous&&
+                       ((before>=0x1100&&before<=0x11ff)||
+                        (before>=0x3130&&before<=0x318f)||
+                        (before>=0xac00&&before<=0xd7a3))&&add(&b," ",1)) {
+                        rc=-2;goto fail;
+                    }
+                }
                 /* The Mandarin English bank needs a word boundary before a
                  * positive pause at the end of a sentence. Some ECI clients
                  * supply the command in a separate AddText call without a

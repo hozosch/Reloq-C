@@ -245,6 +245,8 @@ test: test_reloq_eci test_reloq_german_context test_reloq_german_cancel test_rel
 	python3 -B ../nvda/test_eci_western_pauses_native.py
 	python3 -B ../nvda/test_eci_finnish_letters_native.py
 	python3 -B ../nvda/test_eci_asian_greek_native.py
+	python3 -B ../nvda/test_eci_chinese_pause_melody.py --library libreloq_eci.so
+	python3 -B ../nvda/test_eci_korean_pause_boundary.py --library libreloq_eci.so
 
 check-windows-toolchain:
 	@command -v $(WINDOWS_CC) >/dev/null 2>&1 || { echo "missing Windows compiler: $(WINDOWS_CC)" >&2; exit 1; }

@@ -136,6 +136,8 @@ static int bank_host_pitch(delta_state *d,int32_t machine,struct reloq61_english
  struct bank_pitch_grid grid={0};int result=94;
  int32_t saved_phrase[2];memcpy(saved_phrase,(char*)d+DG_BASE+648,4);memcpy(saved_phrase+1,(char*)d+DG_BASE+656,4);
  int phrase_start=right_point(d,saved_phrase[0],4)==right_point(d,p->host_left,4);
+ int32_t phrase=owner_record(d,p->host_left,5);
+ int phrase_nonfinal=phrase&&right_point(d,record_end(phrase),4)!=right_point(d,p->host_right,4);
  int32_t saved_words[2];memcpy(saved_words,(char*)d+DG_BASE+160,4);
  memcpy(saved_words+1,(char*)d+DG_BASE+168,4);
  int16_t saved_foreign;memcpy(&saved_foreign,(char*)d+DG_BASE+4060,2);
@@ -167,7 +169,7 @@ static int bank_host_pitch(delta_state *d,int32_t machine,struct reloq61_english
    memcpy((char*)d+DG_BASE+3148,&neutral,2);memcpy((char*)d+DG_BASE+3536,&unset,4);
    if(reloq_zhcn61_init_mcvoice_vars(d,machine,EVV_REF((char*)d+DG_BASE+4020)))goto done;
    if(phrase_start){int32_t first=pitch_grid_point(&grid,p->syllables[0].from);memcpy((char*)d+DG_BASE+648,&first,4);}
-   if(!p->trim_pause){int32_t last=pitch_grid_point(&grid,p->syllables[p->syllable_count-1].to);memcpy((char*)d+DG_BASE+656,&last,4);}
+   if(!phrase_nonfinal){int32_t last=pitch_grid_point(&grid,p->syllables[p->syllable_count-1].to);memcpy((char*)d+DG_BASE+656,&last,4);}
    size_t last=s;while(last+1<p->syllable_count&&p->syllables[last+1].word==current_word)++last;
    int32_t sl=pitch_grid_point(&grid,sy->from),sr=pitch_grid_point(&grid,p->syllables[last].to);
    memcpy((char*)d+DG_BASE+176,&sl,4);memcpy((char*)d+DG_BASE+184,&sr,4);
