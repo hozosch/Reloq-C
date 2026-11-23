@@ -58,6 +58,12 @@ phone events, preserving geminated affricates and glottal boundaries. The
 extended renderer still rejects English language events and English-only names
 inside longer text, as well as phonetic groups with ambiguous implicit
 syllables, before sending output; the established driver retains those cases.
+The separate incremental native backend maps source indices inside an English
+event to positions within its original English text instead of collapsing them
+to the beginning of that word. The event itself stays intact for English
+analysis. Standalone tests include English mixed with Persian digits and
+compare audio with and without those indices. This fixes one input mapping,
+not the missing shared English acoustic bank or the accepted US contour.
 An isolated character is named even without spelling mode. If no Persian name
 is available, the same native transaction uses the US-English Unicode name.
 For ordinary runs, the renderer uses the shared Unicode policy to omit

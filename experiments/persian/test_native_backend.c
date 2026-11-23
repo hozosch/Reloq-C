@@ -74,6 +74,33 @@ static struct output speak_native(const char *text,int variant,const size_t *off
     eciDelete(e);return out;
 }
 
+/* Foreign text must remain a complete English token, even when the caller
+ * places source indices inside it. The prepared plan carries those positions
+ * through to the regular ECI word analysis instead of collapsing them all to
+ * the start of the foreign event. */
+static void exercise_english_source_indices(const char *text,const char *word)
+{
+    const char *start=strstr(text,word);assert(start && strlen(word)>=4);
+    size_t at=(size_t)(start-text),bytes=strlen(text),error=0;
+    size_t offsets[]={0,at,at+1,at+2,at+3,at+strlen(word),bytes};
+    struct reloq_fa_prepared prepared={0};
+    assert(!reloq_fa_prepare_native(text,bytes,0,offsets,7,&error,&prepared));
+    const char *english=strstr(prepared.backend.text,word);assert(english);
+    size_t projected=(size_t)(english-prepared.backend.text);
+    assert(prepared.positions[1]<=projected);
+    for(size_t i=2;i<5;++i)assert(prepared.positions[i]==projected+i-1);
+    for(size_t i=1;i<7;++i)assert(prepared.positions[i]>=prepared.positions[i-1]);
+    reloq_fa_prepared_clear(&prepared);
+    const int rates[]={0,3,6};
+    for(size_t r=0;r<sizeof rates/sizeof *rates;++r)for(int gender=0;gender<2;++gender) {
+        struct output plain=speak_native(text,0,NULL,0,rates[r],gender);
+        struct output marked=speak_native(text,0,offsets,7,rates[r],gender);
+        assert(plain.samples==marked.samples && plain.hash==marked.hash);
+        for(size_t i=1;i<marked.nmarks;++i)
+            assert(marked.mark_sample[i]>=marked.mark_sample[i-1]);
+    }
+}
+
 static void exercise(const char *source,int variant,int compare)
 {
     size_t bytes=strlen(source),end=bytes,source_marks[4]={0,bytes};size_t mark_count=2;
@@ -143,6 +170,8 @@ int main(void)
     exercise("سوال",0,0);
     /* A real English run is routed using the normal ECI language command. */
     exercise("سلام NVDA دنیا؟",0,0);
+    exercise_english_source_indices("سلام NVDA دنیا؟","NVDA");
+    exercise_english_source_indices("سلام ۱۲۳ Windows دنیا.","Windows");
     for(int rate=0;rate<7;++rate)for(int gender=0;gender<2;++gender) {
         const char *text="برای راه‌اندازی رایانه باید این گزینه انتخاب شود.";
         size_t offsets[]={0,strlen(text)};

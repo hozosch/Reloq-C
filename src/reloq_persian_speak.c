@@ -168,12 +168,31 @@ int reloq_fa_prepare_native_runs(const char *text,size_t bytes,int variant,
     if(!status && donor_text)
         status=reloq_fa_backend_prepare_donor(text,bytes,events,count,&donor,&event_error);
     free(filtered);
-    eciPersianRelease(events);
-    if(status){reloq_fa_backend_clear(&plan);reloq_fa_backend_clear(&donor);free(positions);return status;}
+    if(status){eciPersianRelease(events);reloq_fa_backend_clear(&plan);reloq_fa_backend_clear(&donor);free(positions);return status;}
     for(size_t i=0;i<index_count;++i) {
-        if(positions[i]>count){reloq_fa_backend_clear(&plan);reloq_fa_backend_clear(&donor);free(positions);return -1;}
-        positions[i]=plan.offsets[positions[i]];
+        size_t event=positions[i];
+        if(event>count){eciPersianRelease(events);reloq_fa_backend_clear(&plan);reloq_fa_backend_clear(&donor);free(positions);return -1;}
+        positions[i]=plan.offsets[event];
+        /* A foreign word is intentionally one linguistic event so English
+         * analyzes the whole word. Its interior source indices must still
+         * retain their byte position inside the emitted English text. Do not
+         * split the event itself: doing so could change pronunciation. */
+        if(event<count && events[event].kind==RELOQ_FA_PLAN_ENGLISH_TEXT) {
+            size_t from=events[event].value,length=events[event].flags;
+            size_t at=source_offsets[i];
+            if(at>from && at-from<length) {
+                size_t begin=plan.offsets[event],end=plan.offsets[event+1];
+                if(begin<end && plan.text[begin]==' ')++begin;
+                if(end-begin<6 || length>end-begin-6 ||
+                   memcmp(plan.text+begin,"`l1.0 ",6)) {
+                    eciPersianRelease(events);reloq_fa_backend_clear(&plan);
+                    reloq_fa_backend_clear(&donor);free(positions);return -1;
+                }
+                positions[i]=begin+6+(at-from);
+            }
+        }
     }
+    eciPersianRelease(events);
     if(donor_text){*donor_text=donor.text;donor.text=NULL;}
     reloq_fa_backend_clear(&donor);
     *result=(struct reloq_fa_prepared){plan,positions,index_count};
