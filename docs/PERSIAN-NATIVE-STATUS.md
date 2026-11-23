@@ -138,6 +138,14 @@ periodic-source upper-band cut for R before I, and fades that cut through the
 first 25 ms of the I. The separate noise source and the I's steady state are
 unchanged. The captured reference and the two NVDA routes are tested across
 voices and sample rates; the perceived result still requires listener review.
+The NVDA mixed planner also uses a shared C transition helper for a verified
+English stop followed by a Persian initial R. If the target context contains
+a stale voiced lead before the independently measured first syllable, it
+removes that lead and limits a few inherited voiced frames at the start of R.
+The English stop, all real R frames and the aspiration and frication controls
+are retained. Source indexes and the existing streaming route are checked for
+the reported grouped-number example and for negative controls. This is still
+an NVDA mixed-planner path, not completed mixed-language C integration.
 
 The language is not yet a normal, independent ECI voice. The remaining work
 includes registering Persian and Pinglish dialects, completing the C sentence

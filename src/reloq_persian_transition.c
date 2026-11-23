@@ -269,6 +269,75 @@ int reloq_persian_plan_unvoiced_onsets(struct reloq_fa_frame *frames,size_t coun
     return 0;
 }
 
+/* An English context can leave part of its vowel at the beginning of the
+ * next Persian segment even after a final stop burst. Only remove a lead
+ * ending at the independently measured Persian syllable start, and require
+ * the expected low-voice R onset immediately after it. Every R frame and
+ * its aspiration and noise are retained. A few inherited voiced frames
+ * inside the syllable's onset are lowered to the actual R onset level. */
+int reloq_persian_plan_stop_r_onsets(struct reloq_fa_frame *frames,size_t count,
+    const size_t *ends,size_t segments,const size_t *starts,
+    size_t *counts,double *removed,size_t *new_count)
+{
+    if(!frames || !ends || !starts || !counts || !removed || !new_count ||
+       !count || count>120000 || segments<2 || segments>32 || starts[0])return -1;
+    size_t previous=0;
+    for(size_t i=0;i<segments;++i) {
+        if(ends[i]<=previous || ends[i]>count ||
+           (starts[i] && (starts[i]<=previous || starts[i]>=ends[i])))return -1;
+        previous=ends[i];
+    }
+    if(previous!=count)return -1;
+    size_t cut_first[32]={0},cut_last[32]={0},low_onset[32]={0};
+    double widths[32]={0};
+    for(size_t edge=1;edge<segments;++edge) {
+        if(!starts[edge])continue;
+        size_t boundary=ends[edge-1],onset=starts[edge],end=ends[edge];
+        const float *left=frames[boundary-1].controls;
+        if(!isfinite(left[2]) || left[2]>0)continue;
+        double duration=0;int valid=1;
+        for(size_t i=boundary;i<onset;++i) {
+            const float *c=frames[i].controls;
+            if(!isfinite(c[0]) || c[0]<=0 || c[0]>20 || !isfinite(c[2]) ||
+               !isfinite(c[7]) || !isfinite(c[8]))return -1;
+            if(c[2]<30 || c[8]>0){valid=0;break;}
+            duration+=c[0];
+        }
+        if(!valid || duration<3 || duration>100)continue;
+        double elapsed=0;size_t low_r=SIZE_MAX;int voiced_r=0;
+        for(size_t i=onset;i<end && elapsed<=60;++i) {
+            const float *c=frames[i].controls;
+            if(!isfinite(c[0]) || c[0]<=0 || c[0]>20 || !isfinite(c[2]) ||
+               !isfinite(c[7]) || !isfinite(c[8]))return -1;
+            if(low_r==SIZE_MAX && elapsed<=8 && c[2]<=15 && c[7]>=12 && c[8]==0)low_r=i;
+            if(low_r!=SIZE_MAX && c[2]>=20 && c[7]>=20 && c[8]==0){voiced_r=1;break;}
+            elapsed+=c[0];
+        }
+        if(low_r!=SIZE_MAX && voiced_r) {
+            cut_first[edge]=boundary;cut_last[edge]=onset;low_onset[edge]=low_r;widths[edge]=duration;
+        }
+    }
+    for(size_t edge=1;edge<segments;++edge)if(cut_last[edge]) {
+        float limit=fmaxf(1.0f,frames[low_onset[edge]].controls[2]);
+        for(size_t i=cut_last[edge];i<low_onset[edge];++i)
+            if(frames[i].controls[2]>limit)frames[i].controls[2]=limit;
+    }
+    size_t write=0,read=0;
+    for(size_t edge=1;edge<segments;++edge)if(cut_last[edge]) {
+        size_t n=cut_first[edge]-read;
+        if(n && write!=read)memmove(frames+write,frames+read,n*sizeof *frames);
+        write+=n;read=cut_last[edge];
+    }
+    size_t tail=count-read;
+    if(tail && write!=read)memmove(frames+write,frames+read,tail*sizeof *frames);
+    write+=tail;previous=0;
+    for(size_t i=0;i<segments;++i) {
+        counts[i]=ends[i]-previous-(cut_last[i]-cut_first[i]);
+        removed[i]=widths[i];previous=ends[i];
+    }
+    *new_count=write;return 0;
+}
+
 int reloq_persian_match_stop_nasal(struct reloq_fa_frame *frames,size_t count,
     size_t boundary,size_t end,const struct reloq_fa_frame *reference,
     size_t reference_count,size_t reference_boundary)

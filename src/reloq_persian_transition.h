@@ -79,4 +79,11 @@ int reloq_persian_plan_unvoiced_onsets(struct reloq_fa_frame *frames,size_t coun
     const struct reloq_fa_frame *reference,size_t reference_count,
     const size_t *reference_edges,size_t *counts,double *removed,size_t *new_count);
 
+/* Remove a verified inherited voiced lead between an English stop and an
+ * initial Persian R. starts contains verified first-syllable frame offsets,
+ * or zero to leave an edge alone. The actual stop and R are retained. */
+int reloq_persian_plan_stop_r_onsets(struct reloq_fa_frame *frames,size_t count,
+    const size_t *ends,size_t segments,const size_t *starts,
+    size_t *counts,double *removed,size_t *new_count);
+
 #endif

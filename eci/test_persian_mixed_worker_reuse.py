@@ -59,8 +59,8 @@ class Voice:
         assert self.dll.eciSetParam(self.handle, 0x100b, 0) >= 0
         assert self.dll.eciPersianPrepareUsPilot(self.handle) == 0
 
-    def configure(self, rate, gender, clock):
-        for key, value in ((5, rate), (0x1010, gender), (0x1007, 65), (0x101b, clock)):
+    def configure(self, rate, gender, clock, speed=65):
+        for key, value in ((5, rate), (0x1010, gender), (0x1007, speed), (0x101b, clock)):
             assert self.dll.eciSetParam(self.handle, key, value) >= 0
 
     def dictionary(self, directory):
@@ -108,6 +108,10 @@ def main():
                         if 'تعجب' not in text:
                             assert a[0] == 0 and a[1], (text, a[0], a[3])
                         checks += 1
+        for speed in (40, 82, 120, 65):
+            for voice in (previous, current):
+                voice.configure(3, 0, 0, speed)
+            assert previous.render(cases[0]) == current.render(cases[0]), speed
         for voice in (previous, current):
             voice.configure(3, 0, 0)
             aborted = voice.render('سلام NVDA دنیا hello دیگر', cancel_at=5000)

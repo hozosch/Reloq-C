@@ -596,6 +596,12 @@ ECIAPI int ECICALL eciPersianPlanUnvoicedOnsets(struct reloq_fa_frame *frames,si
     const size_t *ends,size_t segments,const unsigned char *onsets,
     const struct reloq_fa_frame *reference,size_t reference_count,
     const size_t *reference_edges,size_t *counts,double *removed,size_t *new_count);
+/* Compact a verified inherited vowel between an English stop and an
+ * initial Persian R. starts are validated target syllable frame offsets;
+ * zero leaves an edge unchanged. The stop and R frames are preserved. */
+ECIAPI int ECICALL eciPersianPlanStopROnsets(struct reloq_fa_frame *frames,size_t count,
+    const size_t *ends,size_t segments,const size_t *starts,
+    size_t *counts,double *removed,size_t *new_count);
 ECIAPI int ECICALL eciPersianDenseCurve(const struct reloq_fa_frame *rows,size_t count,
     unsigned column,float *out,size_t length);
 ECIAPI int ECICALL eciPersianFitPitch(struct reloq_fa_frame *rows,size_t count,

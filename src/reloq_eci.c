@@ -2534,6 +2534,10 @@ int ECICALL eciPersianPlanUnvoicedOnsets(struct reloq_fa_frame *frames,size_t co
     const size_t *reference_edges,size_t *counts,double *removed,size_t *new_count)
 {return reloq_persian_plan_unvoiced_onsets(frames,count,ends,segments,onsets,reference,
     reference_count,reference_edges,counts,removed,new_count);}
+int ECICALL eciPersianPlanStopROnsets(struct reloq_fa_frame *frames,size_t count,
+    const size_t *ends,size_t segments,const size_t *starts,
+    size_t *counts,double *removed,size_t *new_count)
+{return reloq_persian_plan_stop_r_onsets(frames,count,ends,segments,starts,counts,removed,new_count);}
 int ECICALL eciPersianDenseCurve(const struct reloq_fa_frame *rows,size_t count,
     unsigned column,float *out,size_t length)
 {return reloq_fa_dense_curve(rows,count,column,out,length);}

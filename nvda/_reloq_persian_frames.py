@@ -239,6 +239,13 @@ class FrameCapture:
                 ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_double),
                 ctypes.POINTER(ctypes.c_size_t))
             self.plan_unvoiced_onsets.restype = ctypes.c_int
+        self.plan_stop_r_onsets = getattr(dll, 'eciPersianPlanStopROnsets', None)
+        if self.plan_stop_r_onsets is not None:
+            self.plan_stop_r_onsets.argtypes = (ctypes.POINTER(NativeFrame), ctypes.c_size_t,
+                ctypes.POINTER(ctypes.c_size_t), ctypes.c_size_t, ctypes.POINTER(ctypes.c_size_t),
+                ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_double),
+                ctypes.POINTER(ctypes.c_size_t))
+            self.plan_stop_r_onsets.restype = ctypes.c_int
 
     def capture(self, voice, parts, *, maximum=60000, audio=True, phone_segments=False,
                 snapshot_at=None, on_snapshot=None):

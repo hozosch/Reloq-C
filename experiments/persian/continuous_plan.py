@@ -895,6 +895,7 @@ class SentencePlan:
     _native_match_h_to_us_z: object = None
     _native_smooth_final_r_join: object = None
     _native_plan_unvoiced_onsets: object = None
+    _native_plan_stop_r_onsets: object = None
     _verified_us_onsets: dict[int, str] | None = None
 
     def timeline(self):
@@ -1354,6 +1355,7 @@ def context_plan(parts, fa, en, rate, *, maximum=60000, source_events=(), guarde
                         _native_match_h_to_us_z=getattr(capture_api, 'match_h_to_us_z', None),
                         _native_smooth_final_r_join=getattr(capture_api, 'smooth_final_r_join', None),
                         _native_plan_unvoiced_onsets=getattr(capture_api, 'plan_unvoiced_onsets', None),
+                        _native_plan_stop_r_onsets=getattr(capture_api, 'plan_stop_r_onsets', None),
                         _verified_us_onsets=verified_onsets)
 
 
@@ -1811,6 +1813,62 @@ def direct_unvoiced_onsets(plan, parts, en, rate):
         plan.counts, plan._timeline = tuple(counts), None
     return cuts
 
+
+def direct_stop_r_onsets(plan, parts, en, rate):
+    """Remove a verified inherited vowel after an English stop, before R."""
+    native = plan._native_plan_stop_r_onsets
+    target = plan.contexts.get('fa')
+    if native is None or target is None or rate <= 0:
+        return ()
+    boundaries = _edges_by_count(plan.counts)
+    starts = (ctypes.c_size_t * len(parts))()
+    checked = {}
+    for edge in range(1, len(parts)):
+        left, right = parts[edge-1], parts[edge]
+        if (left.language != 'en-us' or right.language != 'fa' or
+                _bracket_boundary(parts, edge) or
+                not re.match(r'^\s*(?:`00\s*)?`\[\.[012]r', right.text) or
+                left.text.rstrip().endswith(('.', ',', ';', ':', '!', '?', '،', '؛', '؟'))):
+            continue
+        if left.text not in checked:
+            try:
+                tags = tuple(_TAG.finditer(en._phonemes_for_probe(left.text)))
+                checked[left.text] = bool(tags and re.search(r'[ptkbdg]$', tags[-1].group(1)))
+            except (ValueError, RuntimeError, OSError, UnicodeError):
+                checked[left.text] = False
+        if not checked[left.text]:
+            continue
+        sample_start, sample_end = plan.edges['fa'][edge:edge+2]
+        if sample_start >= sample_end:
+            continue
+        syllables = [(a, b) for a, b in target.syllables if a >= 0 and a < b and
+                     a * rate >= sample_start * 10000000 and
+                     (a+b) * rate < sample_end * 20000000]
+        if not syllables:
+            continue
+        # Use the verified first-syllable clock, never a guessed duration or
+        # the English word's source index, to keep the complete Persian R.
+        first_syllable = min(a for a, _ in syllables)
+        base = bisect_left(target.ticks, round(sample_start * 1000 / rate))
+        onset = bisect_left(target.ticks, round(first_syllable / 10000))
+        local = onset - base
+        if 0 < local < plan.counts[edge]:
+            starts[edge] = boundaries[edge-1] + local
+    if not any(starts):
+        return ()
+    counts = (ctypes.c_size_t * len(parts))()
+    removed = (ctypes.c_double * len(parts))()
+    size = ctypes.c_size_t()
+    frames = plan.frames
+    if native(frames, len(frames), (ctypes.c_size_t * len(parts))(*boundaries),
+              len(parts), starts, counts, removed, ctypes.byref(size)):
+        raise RuntimeError('invalid native English stop to Persian R plan')
+    cuts = tuple((edge, removed[edge]) for edge in range(1, len(parts)) if removed[edge])
+    if cuts:
+        plan.frames = (NativeFrame * size.value).from_buffer(frames)
+        plan.counts, plan._timeline = tuple(counts), None
+    return cuts
+
 @dataclass(frozen=True)
 class GermanAch:
     times: tuple[float, ...]
@@ -2086,6 +2144,7 @@ def selected_sentence(plan, parts, en, german, rate, *, check=None):
     if check: check()
     match_us_unvoiced_onsets(plan, parts, en, rate)
     direct_unvoiced_onsets(plan, parts, en, rate)
+    direct_stop_r_onsets(plan, parts, en, rate)
     bridge_stop_onsets(plan, parts, en, rate)
     if check: check()
     bridged = bridge_sonorants(plan, parts, rate)
