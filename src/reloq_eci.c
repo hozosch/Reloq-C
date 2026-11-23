@@ -169,6 +169,9 @@ struct reloq_eci_engine {
     /* An optional, private US contour worker for the experimental native
      * Persian renderer. Ordinary language handles never allocate one. */
     struct reloq_eci_engine *persian_us_pilot;
+    /* The incremental Persian bridge owns its English analysis worker as
+     * well. It is separate from the concurrently usable contour pilot. */
+    void *persian_english_worker;
     void *rule_worker;
     char *dictionary_path;
     struct reloq_german_lexicon_file lexicon;
@@ -389,6 +392,7 @@ static void clear_eci_dictionaries(struct reloq_eci_engine *);
 static int switch_eci_language(struct reloq_eci_engine *,int);
 static int reset_eci_defaults(struct reloq_eci_engine *);
 static unsigned char *decode_eci_text(struct reloq_eci_engine *,const void *,size_t *,int *);
+static int reloq_fa_prepare_english_worker(struct reloq_eci_engine *);
 
 struct pcm_bridge {
     struct reloq_eci_engine *engine;
@@ -787,6 +791,7 @@ ECIHand ECICALL eciDelete(ECIHand handle)
     /* As with this handle, the owner has joined rendering and Stop before
      * deletion. No callback or separately owned handle escapes here. */
     if(e->persian_us_pilot)(void)eciDelete(e->persian_us_pilot);
+    reloq61_worker_free(e->persian_english_worker);
     clear_queue(e);
     reloq_german_lexicon_file_clear(&e->lexicon);
     reloq_session_destroy(e->session);
@@ -2811,6 +2816,24 @@ static int reloq_fa_start_donor(reloq_fa_donor_thread *thread,struct reloq_fa_pa
 static void reloq_fa_join_donor(reloq_fa_donor_thread thread)
 {(void)pthread_join(thread,NULL);}
 #endif
+
+/* Prepare the native English worker on the owner thread and retain no text
+ * or audio. Its own provider reset rules handle each subsequent request. */
+static int reloq_fa_prepare_english_worker(struct reloq_eci_engine *e)
+{
+    if(e->persian_english_worker)return 0;
+    void *worker=reloq61_worker_new(RELOQ_ECI_ENGLISH);
+    if(!worker)return -1;
+    char phonemes[512];struct reloq61_result result;
+    struct reloq61_request request={.language=RELOQ_ECI_ENGLISH,
+        .annotations=1,.phonemes_only=1,.voice={0,50,65,30,0,0,50,92},
+        .text="",.phonemes=phonemes,.phonemes_capacity=sizeof phonemes};
+    void *previous=reloq61_worker_scope(worker);
+    int status=reloq61_generate(&request,&result);
+    reloq61_worker_scope(previous);
+    if(status){reloq61_worker_free(worker);return -1;}
+    e->persian_english_worker=worker;return 0;
+}
 
 /* The native sentence API may own its silent US pilot. Synchronize the
  * effective voice and shared settings before each request, but keep the

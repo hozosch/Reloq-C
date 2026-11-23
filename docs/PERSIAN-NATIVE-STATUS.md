@@ -81,6 +81,14 @@ to the beginning of that word. The event itself stays intact for English
 analysis. Standalone tests include English mixed with Persian digits and
 compare audio with and without those indices. This fixes one input mapping,
 not the missing shared English acoustic bank or the accepted US contour.
+For default dictionaries, the same experimental incremental backend now owns
+its English worker and reuses it between requests. It does not
+share that mutable worker with the parallel US contour pilot. Directory and
+explicit ECI dictionaries retain their existing separate path. Comparisons
+cover repeated mixed text, clocks and voice settings, cancellation and
+dictionary replacement; other languages retain their existing workers. This
+prepares the English analyzer in C but does not move NVDA's mixed sentence
+planning, register Persian as an ECI voice, or provide the selected contour.
 An isolated character is named even without spelling mode. If no Persian name
 is available, the same native transaction uses the US-English Unicode name.
 For ordinary runs, the renderer uses the shared Unicode policy to omit

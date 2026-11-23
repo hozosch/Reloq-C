@@ -29,6 +29,9 @@ FA_EXPORT int reloq_fa_acoustic_scope(int active)
     return previous;
 }
 
+int reloq_fa_acoustic_active(void)
+{return fa_acoustics;}
+
 FA_EXPORT int reloq_fa_native_onsets(const uint32_t *words,size_t count)
 {
     if(!fa_acoustics || (count && !words) || count>32767)return -1;

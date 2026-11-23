@@ -109,7 +109,8 @@ static int synthesize_languages(struct reloq_eci_engine *e,
     }
     int language=e->language,configured_language=e->language,result=RELOQ_ECI_OK;
     void *configured_worker=e->rule_worker;
-    void *workers[ECI_LANGUAGE_COUNT]={0};int languages[ECI_LANGUAGE_COUNT]={0};size_t worker_count=0;
+    void *workers[ECI_LANGUAGE_COUNT]={0};int languages[ECI_LANGUAGE_COUNT]={0};
+    unsigned char borrowed[ECI_LANGUAGE_COUNT]={0};size_t worker_count=0;
     runs[0]=(struct language_run){0,length,language};count=1;
     for(size_t at=0;at<length;) {
         struct reloq_inline_tag t=source_tag(text,length,modes,at);
@@ -158,8 +159,14 @@ static int synthesize_languages(struct reloq_eci_engine *e,
             size_t i=0;while(i<worker_count&&languages[i]!=e->language)++i;
             if(i==worker_count) {
                 if(worker_count==ECI_LANGUAGE_COUNT){result=RELOQ_ECI_MEMORY;break;}
-                languages[i]=e->language;workers[i]=reloq61_worker_new(e->language);++worker_count;
-                if(workers[i]&&reloq61_worker_dictionary(workers[i],e->dictionary_path)) {
+                languages[i]=e->language;
+                if(configured_language==RELOQ_ECI_FINNISH && e->language==RELOQ_ECI_ENGLISH &&
+                   reloq_fa_acoustic_active() && !e->dictionary_path && !e->active_dictionary) {
+                    if(reloq_fa_prepare_english_worker(e)){result=RELOQ_ECI_MEMORY;break;}
+                    workers[i]=e->persian_english_worker;borrowed[i]=1;
+                } else workers[i]=reloq61_worker_new(e->language);
+                ++worker_count;
+                if(workers[i]&&!borrowed[i]&&reloq61_worker_dictionary(workers[i],e->dictionary_path)) {
                     result=RELOQ_ECI_INVALID;break;
                 }
             }
@@ -221,6 +228,6 @@ static int synthesize_languages(struct reloq_eci_engine *e,
     }
 done:
     e->language=configured_language;e->rule_worker=configured_worker;
-    for(size_t i=0;i<worker_count;++i)reloq61_worker_free(workers[i]);
+    for(size_t i=0;i<worker_count;++i)if(!borrowed[i])reloq61_worker_free(workers[i]);
     free(runs);free(local_marks);free(local_pitch);return result;
 }
