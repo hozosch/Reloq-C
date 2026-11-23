@@ -39,6 +39,12 @@ def main():
         persian = prepared._engines[driver.PERSIAN_PROBE.id]
         assert not persian._frontend._reference_available
         assert prepared._active is prepared._engines[driver.US_ENGLISH.id]
+        prepare = getattr(persian._voice._dll, 'eciPersianPrepareUsPilot', None)
+        if prepare is not None:
+            with patch.object(persian._voice._dll, 'eciPersianPrepareUsPilot', wraps=prepare) as preload:
+                prepared.select_voice(driver.US_ENGLISH.id, '1')
+            assert preload.call_count >= 1, 'English selection did not prepare the owned Persian US pilot'
+            assert prepared._active is prepared._engines[driver.US_ENGLISH.id]
         if (os.cpu_count() or 1) > 1:
             assert prepared._persian_contour_worker._engine is not None
             if os.environ.get('RELOQ_FA_STREAM_PREFIX', '1') == '1':
