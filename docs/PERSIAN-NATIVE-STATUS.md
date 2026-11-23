@@ -125,6 +125,11 @@ start before the provider reports the following R; uncertain or mixed-text
 input keeps the existing streaming path. A separately verified E-R-H context
 also softens the R voice, preserving the noise source. These remain listening
 tests and do not establish that every pronunciation or transition is correct.
+The following test revision retains the accepted final U-R, strengthens the
+periodic-source upper-band cut for R before I, and fades that cut through the
+first 25 ms of the I. The separate noise source and the I's steady state are
+unchanged. The captured reference and the two NVDA routes are tested across
+voices and sample rates; the perceived result still requires listener review.
 
 The language is not yet a normal, independent ECI voice. The remaining work
 includes registering Persian and Pinglish dialects, completing the C sentence

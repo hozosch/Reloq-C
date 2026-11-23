@@ -31,6 +31,12 @@ enum reloq_fa_tuned_phone {
  * capture/replay interface, including its mixed-language and streaming paths. */
 #define RELOQ_FA_TUNING_MARKER 16400
 
+/* Fractional values in these two slots encode the independently faded
+ * periodic-source correction for a medial R and its following I onset.
+ * Slot 12 retains the original saved R filter weight. */
+#define RELOQ_FA_R_I_VOICE_MARKER (RELOQ_FA_TUNING_MARKER+18.0f)
+#define RELOQ_FA_I_AFTER_R_VOICE_MARKER (RELOQ_FA_TUNING_MARKER+19.0f)
+
 struct reloq_fa_tuning_band {
     double b0,b1,b2,a1,a2,x1,x2,y1,y2;
     double frequency,width,gain;

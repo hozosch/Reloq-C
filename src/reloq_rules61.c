@@ -1499,19 +1499,16 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
                         fa_tuned_vowel(s->fa_phones[s->fa_phone_next+1].phone))));
                 int planned_u=previous==RELOQ_FA_TUNE_U &&
                     s->fa_phones[s->fa_phone_next-1].u_before_r;
-                if(before_i && planned_u) {
-                    /* Keep the saved R-before-I filter weight in slot 12;
-                     * its separate voice notch continues from the U. */
-                    int32_t end=to==INT32_MAX?p->articulation_end:to;
+                if(before_i) {
+                    /* Keep the saved R-before-I filter weight in slot 12.
+                     * The separate voiced-source cut now continues into I
+                     * instead of fading out immediately before its onset. */
                     double centre=(double)tick+duration/2.0;
-                    double gain=fmin(0.998,fmax(0.0,(end/10000.0-centre)/8.0));
+                    double gain=planned_u?1.0:fmin(1.0,fmax(0.0,(centre-p->from/10000.0)/8.0));
                     if(controls[11]!=(float)(RELOQ_FA_TUNING_MARKER+RELOQ_FA_TUNE_R_BEFORE_I))
                         controls[12]=0;
-                    controls[11]=(float)(RELOQ_FA_TUNING_MARKER+15.0+gain);
+                    controls[11]=(float)(RELOQ_FA_R_I_VOICE_MARKER+fmin(0.998,gain));
                 }
-                else if(before_i && controls[11]==RELOQ_FA_TUNING_MARKER+RELOQ_FA_TUNE_R_BEFORE_I)
-                    controls[11]=(float)(RELOQ_FA_TUNING_MARKER+
-                        (previous==RELOQ_FA_TUNE_U?RELOQ_FA_TUNE_R_VOICE_BEFORE_I:17));
                 else if(coda) {
                     int32_t end=to==INT32_MAX?p->articulation_end:to;
                     double centre=(double)tick+duration/2.0;
@@ -1527,6 +1524,24 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
                         controls[12]=(float)gain;
                     }
                 }
+            }
+        }
+    }
+    if(tuning==1 && p->phone==RELOQ_FA_TUNE_OTHER && s->fa_phone_next>=2 &&
+       s->fa_phones[s->fa_phone_next-1].phone==RELOQ_FA_TUNE_R_BEFORE_I &&
+       native>=p->from && native<to) {
+        unsigned previous=s->fa_phones[s->fa_phone_next-2].phone;
+        if(previous==RELOQ_FA_TUNE_O || previous==RELOQ_FA_TUNE_U ||
+           previous==RELOQ_FA_TUNE_E || previous==RELOQ_FA_TUNE_FRONT_A ||
+           previous==RELOQ_FA_TUNE_BACK_A) {
+            /* R_BEFORE_I is reported only when the next provider phone is I.
+             * Release the voiced-only cut over its first 25 ms; the I's
+             * steady vowel, acoustic targets and all noise sources stay. */
+            double progress=fmin(1.0,fmax(0.0,(native-p->from)/250000.0));
+            double gain=1.0-progress*progress*(3.0-2.0*progress);
+            if(gain>0) {
+                controls[11]=(float)(RELOQ_FA_I_AFTER_R_VOICE_MARKER+fmin(0.998,gain));
+                controls[12]=0;
             }
         }
     }

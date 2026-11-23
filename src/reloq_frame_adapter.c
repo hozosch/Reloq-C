@@ -45,7 +45,7 @@ int reloq_frame_adapter_map(
     next.diplophonia = controls[6];
     /* These markers travel in previously unused tracks, including through
      * native frame capture and replay. Never modify the noise controls. */
-    float notch_weight=0.0f;int upper_band=0;
+    float notch_weight=0.0f;int upper_band=0,r_i_transition=0;
     if ((controls[11] == RELOQ_FA_TUNING_MARKER+RELOQ_FA_TUNE_R_VOICE_BEFORE_I ||
          controls[11] == RELOQ_FA_TUNING_MARKER+RELOQ_FA_TUNE_R_VOICE_CODA ||
          controls[11] == FA_R_AFTER_U_MARKER || controls[11] == FA_R_I_UPPER_MARKER) &&
@@ -58,6 +58,10 @@ int reloq_frame_adapter_map(
         notch_weight=controls[11]-FA_R_I_AFTER_U_MARKER;upper_band=1;
     } else if (controls[11]>=FA_U_BEFORE_R_MARKER && controls[11]<FA_U_BEFORE_R_MARKER+1.0f) {
         notch_weight=controls[11]-FA_U_BEFORE_R_MARKER;upper_band=1;
+    } else if (controls[11]>=RELOQ_FA_R_I_VOICE_MARKER && controls[11]<RELOQ_FA_R_I_VOICE_MARKER+1.0f) {
+        notch_weight=controls[11]-RELOQ_FA_R_I_VOICE_MARKER;upper_band=1;r_i_transition=1;
+    } else if (controls[11]>=RELOQ_FA_I_AFTER_R_VOICE_MARKER && controls[11]<RELOQ_FA_I_AFTER_R_VOICE_MARKER+1.0f) {
+        notch_weight=controls[11]-RELOQ_FA_I_AFTER_R_VOICE_MARKER;upper_band=1;r_i_transition=1;
     }
     if (notch_weight>0 && controls[15] > 30) {
         next.periodic_notch_hz=controls[15];
@@ -69,7 +73,7 @@ int reloq_frame_adapter_map(
         if(upper_band && controls[17]>controls[15]+150.0f) {
             next.periodic_notch_hz=(controls[15]+controls[17])*.5f;
             next.periodic_notch_width=fmaxf(900.0f,2.0f*(controls[17]-controls[15]));
-            next.periodic_notch_db=-12.0f*notch_weight;
+            next.periodic_notch_db=(r_i_transition?-16.0f:-12.0f)*notch_weight;
         }
     }
     noise->bypass_level = controls[43];

@@ -114,6 +114,8 @@ static void tuning_prepare(struct reloq_fa_tuning_filter *f,const float c[62],in
     if(c[11]>=FA_R_I_AFTER_U_MARKER && c[11]<FA_R_I_AFTER_U_MARKER+1.0f)
         phone=RELOQ_FA_TUNE_R_BEFORE_I;
     if(c[11]==FA_R_I_UPPER_MARKER)phone=RELOQ_FA_TUNE_R_BEFORE_I;
+    if(c[11]>=RELOQ_FA_R_I_VOICE_MARKER && c[11]<RELOQ_FA_R_I_VOICE_MARKER+1.0f)
+        phone=RELOQ_FA_TUNE_R_BEFORE_I;
     if(marker==RELOQ_FA_TUNE_R_VOICE_BEFORE_I &&
        c[11]==(float)(RELOQ_FA_TUNING_MARKER+marker))phone=RELOQ_FA_TUNE_R_BEFORE_I;
     double weight=c[12];
