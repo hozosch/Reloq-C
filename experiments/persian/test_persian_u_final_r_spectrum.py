@@ -23,6 +23,13 @@ def voice_band_power(path, gender, clock):
             engine.set_parameter(key, value)
         recorded = capture(engine, scope, '`[.0zo.1hur]')
         start, end = (x / 10000 for x in (recorded.syllables[3][0], recorded.syllables[4][0]))
+        noise_frames = recorded.frames()
+        # Separately suppress the periodic source and compare the noise-only
+        # waveform itself. The ordinary voice retains both sources.
+        for frame in noise_frames:
+            frame.controls[2] = 0
+        noise_pcm = bytearray()
+        assert FrameReplay(engine._dll).replay(engine, noise_frames, (), noise_pcm.extend, lambda _: None)
         frames = recorded.frames()
         # Only this diagnostic removes the two noise sources. It measures the
         # periodic component without altering what the voice normally emits.
@@ -52,7 +59,7 @@ def voice_band_power(path, gender, clock):
                 im += sample * y
                 x, y = x * cosine - y * sine, x * sine + y * cosine
             power += re * re + im * im
-        return power
+        return power, bytes(noise_pcm)
     finally:
         engine.close()
 
@@ -64,11 +71,12 @@ def main():
     args = parser.parse_args()
     for gender in (0, 1):
         for clock in (0, 1):
-            old = voice_band_power(args.previous, gender, clock)
-            new = voice_band_power(args.candidate, gender, clock)
+            old, old_noise = voice_band_power(args.previous, gender, clock)
+            new, new_noise = voice_band_power(args.candidate, gender, clock)
             assert old > 0 and new / old < 0.9, (
                 gender, clock, old, new, new / old if old else None)
-    print('Passed four isolated voiced final-R body comparisons with both acoustic clocks.')
+            assert new_noise == old_noise, (gender, clock, 'noise waveform changed')
+    print('Passed four isolated voiced final-R body and noise-waveform comparisons with both acoustic clocks.')
 
 
 if __name__ == '__main__':
