@@ -59,6 +59,12 @@ The Android app targets **ARM64 and x86-64 devices running Android 8 or later**.
 
 The [Android instructions](android/README.md) explain installation, building and validation limits. Android's live settings and speech engine have been confirmed in practical use. Automated host tests complement device testing; they do not establish audible performance on every device.
 
+## iPhone, iPad and Mac
+
+[ReLoq Apple](https://github.com/Quinton1110/ReLoq-Apple) is a separately maintained app that provides ReLoq C voices for VoiceOver and Spoken Content. It has its own downloads and version: as of 23 November 2026, ReLoq Apple 0.1.5 uses the ReLoq C 1.4.1 engine with Apple fixes, not the 2.0 engine. It requires iOS/iPadOS 18 or later, or macOS 15 or later on an Apple-silicon Mac.
+
+See the installation instructions in [English](docs/APPLE.en.md) or [German](docs/APPLE.de.md), including iPhone sideloading, Mac installation and voice selection.
+
 ## Feedback and contributions
 
 Please report pronunciation errors, incomplete speech, freezes and everyday usability problems through [Issues](https://github.com/hozosch/Reloq-C/issues). Include a short example, language, voice preset, version, sample rate, and the expected and actual behaviour. Mention whether pronunciation dictionaries are enabled.
