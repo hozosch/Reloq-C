@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import wave
 
 # Languages common to the v28 32-bit host and ReLoq C.
 CASES = (
@@ -73,7 +74,7 @@ def configure(dll):
     return callback
 
 
-def child(library, driver_root, case_number, implementation):
+def child(library, driver_root, case_number, implementation, output_path):
     case_name, language, texts = CASES[case_number]
     sys.path.insert(0, str(driver_root.resolve()))
     from synthDrivers import _eloquence_text as text_builder
@@ -90,7 +91,7 @@ def child(library, driver_root, case_number, implementation):
     dll = C.WinDLL(str(library))
     cbtype = configure(dll)
 
-    def render(parts, speed):
+    def render(parts, speed, capture=None, pause_mode=0):
         h = dll.eciNewEx(language)
         if not h:
             h = dll.eciNewEx(0x10000)
@@ -114,12 +115,20 @@ def child(library, driver_root, case_number, implementation):
             if dll.eciCopyVoice(h,1,0)<0: raise RuntimeError('voice preset refused')
             if implementation == 'reloq' and dll.eciSetParam(h,0x101b,1)<0:
                 raise RuntimeError('Eloquence_64 original 5 ms clock refused')
+            if pause_mode and (implementation != 'reloq' or dll.eciSetParam(h,0x100c,pause_mode)<0):
+                raise RuntimeError('native pause policy refused')
             if dll.eciSetVoiceParam(h,0,6,speed)<0: raise RuntimeError('speed refused')
             for part in parts:
                 if not dll.eciAddText(h,part): raise RuntimeError('eciAddText refused')
             if not dll.eciInsertIndex(h,0xffff): raise RuntimeError('final index refused')
             if not dll.eciSynthesize(h) or not dll.eciSynchronize(h): raise RuntimeError('synthesis failed')
             if not audio: raise RuntimeError('no PCM')
+            if capture:
+                folder=output_path.parent/'melody'/output_path.stem
+                folder.mkdir(parents=True,exist_ok=True)
+                with wave.open(str(folder/capture),'wb') as target:
+                    target.setnchannels(1);target.setsampwidth(2);target.setframerate(11025)
+                    target.writeframes(audio.tobytes())
             return {'samples':len(audio), 'audio_sha256':hashlib.sha256(audio.tobytes()).hexdigest(),
                     'indices':indices, **quiet_metrics(audio)}
         finally:
@@ -135,10 +144,20 @@ def child(library, driver_root, case_number, implementation):
                     text_bytes = text_builder.build(text,language,options)
                     tail = text_builder.trailing_pause(text_bytes,options)
                     parts = [text_bytes] + ([tail] if tail else [])
-                    result = render(parts,speed)
+                    capture = None
+                    if (os.environ.get('RELOQ_MEL_CAPTURE') == '1' and language == 0x60000
+                            and speed in (50,95) and mode in (0,2)):
+                        capture = f'case{sample_index}-speed{speed}-driver{mode}.wav'
+                    result = render(parts,speed,capture)
                     records.append({'language':case_name,'kind':'driver','sample':sample_index,
                         'text':text,'mode':mode,'speed':speed,'input_hex':[p.hex() for p in parts],**result})
             if language == 0x60000:
+                if implementation == 'reloq' and os.environ.get('RELOQ_MEL_CAPTURE') == '1' and speed in (50,95):
+                    for sample_index,text in enumerate(texts):
+                        options=text_builder.BuildOptions(volume=80,rate=round((speed-40)*100/110),
+                            pause_mode=1,backquote_tags=False,abbreviation_dict=False,phrase_prediction=False)
+                        body=text_builder.build(text,language,options)
+                        render([body],speed,f'case{sample_index}-speed{speed}-native2.wav',pause_mode=2)
                 for before in ('你好','Hello'):
                     for pause in (0,1,50,250):
                         message = f'`pp0 `da0 `vv80 {before} `p{pause}, 世界。'.encode('gb18030')
@@ -171,7 +190,7 @@ def main():
     p.add_argument('--child',type=int)
     args=p.parse_args()
     if args.child is not None:
-        print('RESULT='+json.dumps(child(args.library,args.driver_root,args.child,args.engine),ensure_ascii=True),flush=True)
+        print('RESULT='+json.dumps(child(args.library,args.driver_root,args.child,args.engine,args.output.resolve()),ensure_ascii=True),flush=True)
         return
     args.output.parent.mkdir(parents=True,exist_ok=True)
     out = {'engine':args.engine,'pointer_bits':C.sizeof(C.c_void_p)*8,
