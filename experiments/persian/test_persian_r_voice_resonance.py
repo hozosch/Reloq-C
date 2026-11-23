@@ -71,30 +71,32 @@ def main():
                 old_power, new_power = band_power(old_parts[1], old_interval), band_power(new_parts[1], new_interval)
                 assert old_power > 0 and new_power < old_power * .96, (
                     tag, gender, clock, old_power, new_power)
-    owners = [make_language_engine(path.resolve(), path.resolve(), None,
-                                   Path('/unavailable'), Path('/unavailable'))
-              for path in (args.previous, args.library)]
-    try:
-        for owner in owners:
-            owner.set_parameter(SAMPLE_RATE, 3)
-            owner.set_parameter(NATIVE_SPEED, 65)
-        for text, expected_change in (('ظهور ناگهانی', True), ('فوری', True),
-                                      ('خوری', True), ('یاوری', True),
-                                      ('پنجشنبه 5 آذر heading level 4', True),
-                                      ('سلام', False), ('بیرانوند', False),
-                                      ('پزشکیان', False)):
-            output = []
+    for native_sentences in (False, True):
+        owners = [make_language_engine(path.resolve(), path.resolve(), None,
+                                       Path('/unavailable'), Path('/unavailable'),
+                                       native_sentences=native_sentences)
+                  for path in (args.previous, args.library)]
+        try:
             for owner in owners:
-                pcm, marks = bytearray(), []
-                assert owner.speak((EciIndex(11), text, EciIndex(12)), pcm.extend,
-                                   lambda value: marks.append((value, len(pcm))))
-                output.append((bytes(pcm), marks))
-            assert len(output[0][0]) == len(output[1][0]) and output[0][1] == output[1][1], text
-            assert (output[0][0] != output[1][0]) == expected_change, text
-    finally:
-        for owner in owners:
-            owner.close()
-    print('Passed five voiced-R contexts, bit-identical isolated noise, and actual mixed-language playback.')
+                owner.set_parameter(SAMPLE_RATE, 3)
+                owner.set_parameter(NATIVE_SPEED, 65)
+            for text, expected_change in (('ظهور ناگهانی', True), ('فوری', True),
+                                          ('خوری', True), ('یاوری', True),
+                                          ('پنجشنبه 5 آذر heading level 4', True),
+                                          ('سلام', False), ('بیرانوند', False),
+                                          ('پزشکیان', False)):
+                output = []
+                for owner in owners:
+                    pcm, marks = bytearray(), []
+                    assert owner.speak((EciIndex(11), text, EciIndex(12)), pcm.extend,
+                                       lambda value: marks.append((value, len(pcm))))
+                    output.append((bytes(pcm), marks))
+                assert len(output[0][0]) == len(output[1][0]) and output[0][1] == output[1][1], text
+                assert (output[0][0] != output[1][0]) == expected_change, (text, native_sentences)
+        finally:
+            for owner in owners:
+                owner.close()
+    print('Passed five voiced-R contexts, isolated noise, and both NVDA sentence routes.')
 
 
 if __name__ == '__main__':
