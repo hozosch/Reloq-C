@@ -153,6 +153,9 @@ public final class NumberReadingTest {
             .equals("QQ号1 2 3，4 5 6"),"source comma remains a pause boundary");
         require(NumberReading.prepare("712345678，后续",NumberReading.AUTO,0x60000)
             .equals("7 1，2 3 4 5，6 7 8，后续"),"bare ID keeps source punctuation");
+        for(Catalog.Language language:Catalog.LANGUAGES)
+            require(NumberReading.prepare("\u2022",NumberReading.AUTO,language.id).equals("\u2022"),
+                "isolated bullet remains available for character navigation in "+language.name);
         require(NumberReading.prepare("a\u2022",NumberReading.AUTO,0x10001).equals("a"),
             "trailing decorative bullet is silent");
         require(NumberReading.prepare("a\u2022b",NumberReading.AUTO,0x10001).equals("a b"),

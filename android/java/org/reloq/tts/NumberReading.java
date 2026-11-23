@@ -181,6 +181,8 @@ final class NumberReading {
     }
 
     private static String removeDecorativeBullets(String text) {
+        // A character-navigation request must still speak an isolated bullet.
+        if(text.trim().equals("\u2022"))return text;
         StringBuilder out=new StringBuilder(text.length());
         for(int at=0;at<text.length();++at) {
             char c=text.charAt(at);
