@@ -113,9 +113,12 @@ def add_persian(entries, *, version='1.5.0-dev142', sound_variant=None):
     manifest = entries['manifest.ini'].decode('utf8')
     if manifest.count('version = "1.4.1"') != 1:
         raise ValueError('the normal version changed; choose an explicit test version')
-    # Keep the existing updater's recognized dev-version grammar.
-    if not re.fullmatch(r'(?:1\.5\.0|2\.0\.0)-dev[0-9]+', version):
-        raise ValueError('the Persian test version must use the 1.5.0-devN or 2.0.0-devN form')
+    # Keep the existing updater's recognized dev-version grammar. The updater
+    # offers a published release with the same base version to a development
+    # build, so a test build made after release 2.0.0 must be 2.0.1-devN: a
+    # 2.0.0-devN build is asked to "update" to the release without Persian.
+    if not re.fullmatch(r'(?:1\.5\.0|2\.0\.[01])-dev[0-9]+', version):
+        raise ValueError('the Persian test version must use the 1.5.0-devN, 2.0.0-devN or 2.0.1-devN form')
     manifest = manifest.replace('version = "1.4.1"', f'version = "{version}"', 1)
     manifest = manifest.replace('summary = "Eloquence C: fifteen language variants"',
                                 'summary = "Eloquence C: Persian and Pinglish test"', 1)
@@ -151,7 +154,7 @@ def main():
     parser.add_argument('--sound-variant', type=int, choices=(0, 1),
                         help='bundle a Persian listening variant: 0 previous sound, 1 candidate')
     args = parser.parse_args()
-    named_version = re.search(r'((?:1\.5\.0|2\.0\.0)-dev[0-9]+)\.nvda-addon$', args.output.name)
+    named_version = re.search(r'((?:1\.5\.0|2\.0\.[01])-dev[0-9]+)\.nvda-addon$', args.output.name)
     if named_version and named_version.group(1) != args.version:
         parser.error('the output filename and add-on version must agree')
     entries = add_persian(make_entries(args.dll), version=args.version,
