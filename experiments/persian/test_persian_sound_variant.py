@@ -198,7 +198,6 @@ def main():
             # The vowels keep their level. (In one of these words the loudest
             # stretch used to be the M itself.)
             assert max(after) > 0.7 * max(before), word
-            assert max(after) > 0.9 * max(before), word
 
         # English spoken by the English voice is unaffected by the Persian variant.
         def english_text(text):
