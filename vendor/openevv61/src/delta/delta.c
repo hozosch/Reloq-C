@@ -2464,8 +2464,18 @@ void vassign(delta_state *d, const delta_operand *dst, const delta_operand *src)
 
 /* Push the named field of the statement the scan is sitting on. Returns
    nonzero when there was nothing there to push. */
+_Thread_local const struct delta_field_view *delta_field_view;
+
+static int field_viewed(uint8_t st, uint8_t fld, int16_t kind)
+{
+    return delta_field_view && delta_field_view->statement == st
+        && delta_field_view->field == fld
+        && (kind == DK_SHORT || kind == DK_SHORT2);
+}
+
 int npush_fld(delta_state *d, uint8_t st, uint8_t fld)
 {
+    int16_t seen;
     delta_vars *v = EVV_AT(delta_vars *, d->vars);
     const delta_stmt *e = &vstmtbl[st];
     delta_operand out;
@@ -2500,6 +2510,10 @@ int npush_fld(delta_state *d, uint8_t st, uint8_t fld)
     }
 
     out.ptr = delta_record_field(e, fld, TFLDS(EVV_AT(void *, p)));
+    if (field_viewed(st, fld, out.kind)) {
+        seen = delta_field_view->read(*(const int16_t *)out.ptr);
+        out.ptr = &seen;
+    }
     vnspush(d, &out);
     return 0;
 }
@@ -5543,6 +5557,7 @@ int mark_v(delta_state *d, uint8_t f, uint8_t fld, delta_loc *loc,
            uint8_t mode)
 {
     delta_operand v;
+    int16_t stored;
 
     if (vrange_2pt(d, &d->lpta, &d->rpta, (int8_t)f, mode)) {
         reset_field(loc);
@@ -5552,6 +5567,10 @@ int mark_v(delta_state *d, uint8_t f, uint8_t fld, delta_loc *loc,
     vinitloc_new(d, &v, loc);
 
     if (v.kind == vstmtbl[f].fields[fld].kind) {
+        if (field_viewed(f, fld, v.kind)) {
+            stored = delta_field_view->write(*(const int16_t *)v.ptr);
+            v.ptr = &stored;
+        }
         vmark(d, f, fld, d->lpta.node, d->rpta.node, v.ptr);
 
         if (v.kind == DK_SYNC || (v.kind > -5 && v.kind < 0))

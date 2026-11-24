@@ -782,6 +782,18 @@ int32_t deltaErrorThrown(delta_state *d);
 int  emptyDeltaStack(delta_state *d);
 void *popDeltaStackFrame(delta_state *d, uint8_t *to);
 void vnspush(delta_state *d, const delta_operand *v);
+
+/* A view of one short field. Rules carried over from another language may
+   count a field, word stress for one, on that language's scale. While a view
+   is set on the calling thread, rules read the field through `read` and write
+   it through `write`; the record keeps the provider's own values. Unset by
+   default, and then nothing changes. */
+struct delta_field_view {
+    uint8_t statement, field;
+    int16_t (*read)(int16_t stored);
+    int16_t (*write)(int16_t seen);
+};
+extern _Thread_local const struct delta_field_view *delta_field_view;
 void vadd(delta_state *d, const delta_operand *a, const delta_operand *b);
 int32_t vgen_frame(delta_state *d);
 int32_t vgen_time(delta_state *d);

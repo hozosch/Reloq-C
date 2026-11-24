@@ -195,6 +195,33 @@ melody see the English values were tried and rejected:
 The setup rules evidently do more than write those variables. The next step
 looks at what the ported tone rules read, one value at a time, instead.
 
+## Third step: word stress on the English scale
+
+The flat accents had one cause. The two providers count word stress
+differently:
+
+| level | English | Persian provider |
+|---|---|---|
+| stressed word | 3 | 1 |
+| word with the sentence accent | 5 | 2 |
+| emphasis | 6, 7 | 3, 4 |
+
+The US rules compare against the English numbers, so every Persian word
+looked nearly unstressed to them. The levels live in four variables
+(`s236`, `s237`, `s242`, `s243`) and in the word records. While the US rules
+run, the variables hold the English numbers and the word-stress field is
+read and written through a view (`delta_field_view` in the rule machine,
+unset by default). The records keep the Persian numbers, so durations do not
+change.
+
+The translator also left field writes (`mark_s`, `mark_v`) untranslated; they
+are translated now.
+
+Result over the 30 sentences: median 0.18 st, 90 % within 0.84 st, 2.0 % of
+the frames more than 2 st apart (before: 0.53 st, 1.69 st, 6.8 %). The
+default output is bit-identical. What remains is in questions and directly
+after commas.
+
 ## Stages
 
 1. Translate the 28 rules mechanically (rule prefix, variables, symbols),

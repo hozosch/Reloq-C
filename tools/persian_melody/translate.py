@@ -94,7 +94,12 @@ COPY_DEF = re.compile(r'^\s*(' + LOCATION + r') = \(\(int32_t\)(' + LOCATION + r
 ANY_DEF = re.compile(r'^\s*(' + LOCATION + r') = ')
 LABEL = re.compile(r'^(L\d+):;$')
 GOTO = re.compile(r'goto (L\d+);')
-CALL = re.compile(r'reloq61_typed_(testFldeq|npush_fld)\(DELTA_ENTRY_\w+, state, (.*)\);')
+CALL = re.compile(r'reloq61_typed_(testFldeq|npush_fld|mark_s|mark_v)\(DELTA_ENTRY_\w+, state, (.*)\);')
+# Recognised arguments per call. `mark_s` writes a literal value (statement,
+# field, value, flag); `mark_v` writes a value from a location, which is not a
+# recognised argument (statement, field, flag).
+ARGUMENTS = {'testFldeq': 3, 'npush_fld': 2, 'mark_s': 4, 'mark_v': 3}
+WITH_VALUE = ('testFldeq', 'mark_s')
 ARGUMENT = re.compile(r'\(uint8_t\)\((?:(-?\d+)|\(int32_t\)(' + LOCATION + r'))\)')
 
 
@@ -199,7 +204,7 @@ def records(text, table, report):
         if not call or flow.state_in[index] is None:
             continue
         arguments = ARGUMENT.findall(call.group(2))
-        needed = 3 if call.group(1) == 'testFldeq' else 2
+        needed = ARGUMENTS[call.group(1)]
         if len(arguments) != needed:
             report['unparsed'] += 1
             continue
@@ -212,7 +217,7 @@ def records(text, table, report):
         request(index, 1, field_sources, {f: table.field(statement, f) for f in fields})
         if any(table.field(statement, f) is None for f in fields):
             report['english-only field'] += 1
-        if needed == 3:
+        if call.group(1) in WITH_VALUE:
             values, value_sources = operand(index, arguments[2])
             if values is None or len(fields) != 1:
                 if any((statement, f) in table.values and
