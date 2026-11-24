@@ -77,7 +77,7 @@ def main():
 
         # The switch: default, return values, rejection of unknown variants.
         assert dll.eciPersianSoundVariant(0) == 0, 'the previous sound must be the default'
-        assert dll.eciPersianSoundVariant(5) == -1
+        assert dll.eciPersianSoundVariant(6) == -1
         assert dll.eciPersianSoundVariant(-1) == -1
         assert dll.eciPersianSoundVariant(0) == 0
 
@@ -118,7 +118,7 @@ def main():
         # Variant 4: previous vowels, an R that dips once and smoothly, and a
         # quieter M and N whose colour leaves the next vowel sooner.
         nasal_words = ('نان', 'میم', 'سیمین')
-        loud = {word: speak(word) for word in nasal_words}
+        loud = loud_nasal = {word: speak(word) for word in nasal_words}
         assert dll.eciPersianSoundVariant(4) == 0
         smooth = {word: speak(word) for word in words}
         quiet = {word: speak(word) for word in nasal_words}
@@ -139,6 +139,31 @@ def main():
             if word[0] in 'نم':
                 assert sum(after[:10]) < 0.75 * sum(before[:10]), (word, before[:10], after[:10])
             assert sum(after) < 0.97 * sum(before), word
+
+        # Variant 5: previous vowels; an R that still closes twice but keeps
+        # its voice and loses its sharp noise; M and N with the same
+        # loudness and timing as before.
+        assert dll.eciPersianSoundVariant(5) == 0
+        rolled = {word: speak(word) for word in words}
+        plain_nasal = {word: speak(word) for word in nasal_words}
+        assert dll.eciPersianSoundVariant(0) == 5
+        for word in ('بد', 'دو', 'دیر', 'سیب'):
+            assert rolled[word] == previous[word], word
+        assert len(rolled['دوری']) == len(previous['دوری'])
+        value = levels(rolled['دوری'])
+        peak = max(value)
+        loud = [i for i, v in enumerate(value) if v > 0.4 * peak]
+        inner = value[loud[0]:loud[-1] + 1]
+        # Two separate dips inside the word, neither down to silence.
+        dips = [i for i in range(1, len(inner) - 1)
+                if inner[i] < inner[i - 1] and inner[i] <= inner[i + 1] and inner[i] < 0.4 * peak]
+        assert len(dips) >= 2 and min(inner) > 0.03 * peak, (dips, min(inner) / peak)
+        assert deepest_inner_dip(rolled['دوری']) > old_dip
+        for word in nasal_words:
+            assert len(plain_nasal[word]) == len(loud_nasal[word]), word
+            before, after = levels(loud_nasal[word]), levels(plain_nasal[word])
+            assert 0.9 * sum(before) < sum(after) <= 1.02 * sum(before), word
+            assert plain_nasal[word] != loud_nasal[word], word
             assert max(after) > 0.9 * max(before), word
 
         # English spoken by the English voice is unaffected by the Persian variant.

@@ -549,23 +549,21 @@ jobs:
         shell: bash
         run: |
           # Identical to the tested package except for the bundled markers.
-          # 155: new R, M and N, and the sentence melody made by the core in
-          #      one pass. 156: the same sounds with the previous melody route.
-          # 157: the previous sounds with the melody made by the core.
+          # 158: rolled R without the sharp noise, darker M and N, and the
+          #      sentence melody made by the core in one pass.
+          # 159: the previous sounds with the melody made by the core.
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
           dll=$(find candidate -name eci.dll -print -quit)
-          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version 2.0.1-dev155 --sound-variant 4 --core-melody --output dist/reloq-c-persian-pinglish-2.0.1-dev155.nvda-addon
-          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version 2.0.1-dev156 --sound-variant 4 --output dist/reloq-c-persian-pinglish-2.0.1-dev156.nvda-addon
-          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version 2.0.1-dev157 --core-melody --output dist/reloq-c-persian-pinglish-2.0.1-dev157.nvda-addon
+          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version 2.0.1-dev158 --sound-variant 5 --core-melody --output dist/reloq-c-persian-pinglish-2.0.1-dev158.nvda-addon
+          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version 2.0.1-dev159 --core-melody --output dist/reloq-c-persian-pinglish-2.0.1-dev159.nvda-addon
       - name: Upload the candidate Persian NVDA add-ons
         if: github.ref_name == 'claude/persian-native-melody'
         uses: actions/upload-artifact@v7
         with:
-          name: persian-nvda-2.0.1-core-melody-dev155-156-157
+          name: persian-nvda-2.0.1-core-melody-dev158-159
           path: |
-            dist/reloq-c-persian-pinglish-2.0.1-dev155.nvda-addon
-            dist/reloq-c-persian-pinglish-2.0.1-dev156.nvda-addon
-            dist/reloq-c-persian-pinglish-2.0.1-dev157.nvda-addon
+            dist/reloq-c-persian-pinglish-2.0.1-dev158.nvda-addon
+            dist/reloq-c-persian-pinglish-2.0.1-dev159.nvda-addon
           compression-level: 0
           if-no-files-found: error
           retention-days: 14

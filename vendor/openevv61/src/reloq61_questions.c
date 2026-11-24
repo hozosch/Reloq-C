@@ -17,6 +17,18 @@ static int is_question(void *state,int32_t phrase)
     return kind==3 || kind==4 || kind==7 || kind==8;
 }
 
+/* The grammatical class of a phrase as the phrase record names it:
+ * 0 statement, 1 comma, 2 semicolon, 3 and 4 yes/no question, 5 and 6
+ * exclamation, 7 alternative question, 8 WH question; -1 without a record. */
+int reloq61_phrase_kind(void *state,int32_t phrase)
+{
+    if(!phrase)return -1;
+    delta_state *d=state;
+    int32_t token=vgetsc(d,0,0,phrase,5);
+    if(!token || (*EVV_AT(unsigned char *,token)&2))return -1;
+    return *(unsigned char *)delta_record_field(&vstmtbl[5], 1, TFLDS(EVV_AT(void *,token)));
+}
+
 int reloq61_english_is_question(void *state,int32_t phrase)
 {return is_question(state,phrase);}
 

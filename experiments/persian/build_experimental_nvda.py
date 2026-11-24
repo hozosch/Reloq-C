@@ -33,7 +33,7 @@ def add_persian(entries, *, version='1.5.0-dev142', sound_variant=None, core_mel
     entries = dict(entries)
     if sound_variant is not None:
         # Read by nvda/_reloq_persian_bridge.py when the driver starts.
-        if sound_variant not in (0, 1, 2, 3, 4):
+        if sound_variant not in (0, 1, 2, 3, 4, 5):
             raise ValueError('unknown Persian sound variant')
         entries[PREFIX + 'persian_sound_variant.txt'] = f'{sound_variant}\n'.encode('ascii')
     if core_melody:
@@ -154,8 +154,8 @@ def main():
     parser.add_argument('--dll', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--version', default='1.5.0-dev142')
-    parser.add_argument('--sound-variant', type=int, choices=(0, 1, 2, 3, 4),
-                        help='bundle a Persian listening variant: 0 previous sound, 1 to 4 candidates')
+    parser.add_argument('--sound-variant', type=int, choices=(0, 1, 2, 3, 4, 5),
+                        help='bundle a Persian listening variant: 0 previous sound, 1 to 5 candidates')
     parser.add_argument('--core-melody', action='store_true',
                         help='use the US sentence melody that is fixed in the core')
     args = parser.parse_args()

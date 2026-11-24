@@ -1297,7 +1297,7 @@ struct rule_plan {
     unsigned char *fa_u_flags;size_t fa_u_count,fa_u_next;
     int fa_unique_erh;
     size_t fa_h_level_phone;float fa_h_level;int fa_h_level_set;
-    size_t fa_tap_phone;float fa_tap_reference,fa_tap_previous_voice;int fa_tap_released;
+    size_t fa_tap_phone;float fa_tap_reference,fa_tap_previous_voice,fa_roll_level;int fa_tap_released;
     float fa_r_previous_resonance[3],fa_r_previous_voice,fa_r_previous_noise;
     float fa_r_previous_band3,fa_r_previous_band4;
     unsigned fa_r_previous_valid,fa_r_release_active;
@@ -1750,6 +1750,24 @@ static void tune_fa_frame_base(struct rule_plan *s,int64_t tick,float controls[6
  * a voiceless sound, before a consonant and at the end of a word keeps the
  * existing sound. Runs after every other Persian frame adjustment. */
 #define FA_TAP_DEPTH 6.0f
+#define FA_ROLL_CLOSED 16.0f
+#define FA_ROLL_OPEN 4.0f
+#define FA_ROLL_STEP 4.0f
+#define FA_R_NOISE_QUIETER 15.0f
+#define FA_R_RESONANCE_WIDTH 220.0f
+#define FA_NASAL_TILT 6.0f
+/* Frication (AF and its shares for the second to fourth resonance),
+ * aspiration, and the widths of the third and fourth resonance. */
+static void fa_soften_r_noise(float controls[62])
+{
+    static const int noise[]={8,36,37,38};
+    for(unsigned i=0;i<sizeof noise/sizeof noise[0];++i)
+        if(isfinite(controls[noise[i]]) && controls[noise[i]]>0)
+            controls[noise[i]]=fmaxf(0.0f,controls[noise[i]]-FA_R_NOISE_QUIETER);
+    if(controls[7]>25)controls[7]=25;
+    if(controls[16]<FA_R_RESONANCE_WIDTH)controls[16]=FA_R_RESONANCE_WIDTH;
+    if(controls[18]<FA_R_RESONANCE_WIDTH)controls[18]=FA_R_RESONANCE_WIDTH;
+}
 #define FA_TAP_MS 40.0f
 #define FA_NASAL_QUIETER 6.0f
 static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],float duration)
@@ -1770,13 +1788,33 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
             if(s->fa_tap_phone!=s->fa_phone_next+1) {
                 s->fa_tap_phone=s->fa_phone_next+1;s->fa_tap_released=0;
                 s->fa_tap_reference=s->fa_tap_previous_voice>=40?s->fa_tap_previous_voice:0;
+                s->fa_roll_level=s->fa_tap_reference;
             }
             /* A frame without any voice is not part of the tap: the
              * provider can report R + H + vowel as one R before a vowel, and
              * that H must stay voiceless. */
             if(s->fa_tap_reference>0 && !(controls[2]>0))s->fa_tap_reference=0;
             if(s->fa_tap_reference>0 && isfinite(controls[2])) {
-                if(reloq_fa_sound_variant()>=4) {
+                if(reloq_fa_sound_variant()>=5) {
+                    /* A rolled R that does not click and is not sharp. The
+                     * donor R closes twice to silence, opens only weakly in
+                     * between, and carries frication of up to 56 dB shaped
+                     * by a narrow third and fourth resonance at 2.7 and
+                     * 3.3 kHz, starting inside the preceding vowel. Keep
+                     * the two beats, but let the voice stay on through them,
+                     * open clearly in between, move in steps of a few dB,
+                     * and take the frication and the sharpness of those two
+                     * resonances down. */
+                    float target=controls[2]<20?s->fa_tap_reference-FA_ROLL_CLOSED:
+                        controls[2]<s->fa_tap_reference-FA_ROLL_OPEN?
+                        s->fa_tap_reference-FA_ROLL_OPEN:controls[2];
+                    float move=target-s->fa_roll_level;
+                    if(move>FA_ROLL_STEP)move=FA_ROLL_STEP;
+                    if(move<-FA_ROLL_STEP)move=-FA_ROLL_STEP;
+                    s->fa_roll_level+=move;
+                    controls[2]=roundf(s->fa_roll_level);
+                    fa_soften_r_noise(controls);
+                } else if(reloq_fa_sound_variant()>=4) {
                     /* One smooth dip. The donor R closes twice within its
                      * first 40 ms and then already carries the next vowel.
                      * Wherever it is closed, the voice follows one arc that
@@ -1794,18 +1832,33 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
                     float floor_level=s->fa_tap_released?open:closed;
                     if(controls[2]<floor_level)controls[2]=floor_level;
                 }
-                if(controls[36]>25)controls[36]=25;
-                if(controls[37]>25)controls[37]=25;
+                if(reloq_fa_sound_variant()<5) {
+                    if(controls[36]>25)controls[36]=25;
+                    if(controls[37]>25)controls[37]=25;
+                }
             }
         } else if(inside && has_next && voice>=40 &&
                   (following==RELOQ_FA_TUNE_R_BEFORE_I ||
                    following==RELOQ_FA_TUNE_R_BEFORE_BACK_A)) {
             /* The approach to that tap inside the preceding voiced sound. */
+            if(reloq_fa_sound_variant()>=5)fa_soften_r_noise(controls);
+            else {
             if(controls[36]>25)controls[36]=25;
             if(controls[37]>25)controls[37]=25;
+            }
         }
     }
-    if(reloq_fa_tuning_enabled()==1 && reloq_fa_sound_variant()>=4 && controls[2]>0 &&
+    if(reloq_fa_tuning_enabled()==1 && reloq_fa_sound_variant()>=5 && controls[2]>0 &&
+       isfinite(controls[27]) && isfinite(controls[29]) && controls[29]>controls[27]+5) {
+        /* M and N. Measured against the US English N of the same engine,
+         * the Persian murmur is as strong below 700 Hz but 6 dB stronger
+         * everywhere above. Tilt the voice source down by that much while
+         * the nasal zero stands apart from the nasal pole; loudness, timing
+         * and the nasal resonances themselves stay. */
+        float apart=fminf(1.0f,(controls[29]-controls[27])/150.0f);
+        if(isfinite(controls[4]))controls[4]=roundf(controls[4]+FA_NASAL_TILT*apart);
+    } else
+    if(reloq_fa_tuning_enabled()==1 && reloq_fa_sound_variant()==4 && controls[2]>0 &&
        isfinite(controls[27]) && isfinite(controls[29]) && controls[29]>controls[27]+5) {
         /* M and N. The nasal zero stands apart from the nasal pole during
          * the murmur and closes in on it over some 50 ms into the

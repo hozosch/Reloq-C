@@ -33,7 +33,7 @@ NUCLEUS_RULE = 'find_nucleus'
 NUCLEUS_VARIABLES = ('w24', 'w26', 'w27')
 ROOT_RULES = tuple(ROOTS) + (NUCLEUS_RULE,)
 FILES = set(ROOTS.values())
-SHARED = ('struct persian_us_saved { struct delta_field_overlay *overlay; int16_t level[4],language; };\n'
+SHARED = ('struct persian_us_saved { struct delta_field_overlay *overlay; int16_t level[4],language,word[2]; };\n'
           'int persian_us_melody_selected(void);\n'
           'void persian_us_enter(void *state,struct persian_us_saved *saved);\n'
           'void persian_us_leave(void *state,const struct persian_us_saved *saved);\n'
@@ -134,6 +134,7 @@ def generate():
             report['shared helpers called'] += 1
             return 'reloq_call_fifi_' + match.group(1) + '('
         text = re.sub(r'reloq_call_enus61_(\w+)\(', call, text)
+        text = text.replace('reloq61_english_question_tones(', 'persian_us_phrase_tones(')
         head = re.match(r'int32_t reloq_enus61_' + name + r'\(([^)]*)\)', text)
         if not head:
             raise RuntimeError('unexpected rule heading: ' + name)
@@ -191,6 +192,22 @@ int persian_us_melody_selected(void)
     const char *mode=getenv("{KEY}");
     return mode && mode[0]=='1' && !mode[1];
 }}
+int reloq61_phrase_kind(void *state,int32_t phrase);
+/* The tones of a phrase are named when the phrase is recognised, long before
+ * the melody, by rules that are not carried over. For a phrase that ends in
+ * a comma the Persian provider (Finnish rules) names a rise that stays high;
+ * US English names a high accent that falls back to low. Questions are then
+ * settled by the product's own policy as in the US provider. */
+static void persian_us_phrase_tones(void *state,int32_t phrase,int16_t high,
+    int16_t low,int16_t *nucleus,int16_t *phrase_tone,int16_t *boundary_tone)
+{{
+    if (reloq61_phrase_kind(state,phrase)==1) {{
+        *nucleus=high;
+        *phrase_tone=low;
+        *boundary_tone=low;
+    }}
+    reloq61_english_question_tones(state,phrase,high,low,nucleus,phrase_tone,boundary_tone);
+}}
 /* Word stress as the US rules count it. */
 static int16_t persian_us_stress(int16_t stored)
 {{
@@ -216,6 +233,10 @@ void persian_us_enter(void *state,struct persian_us_saved *saved)
     delta_field_overlay=&persian_us_overlay;
     /* The rules ask which language is speaking; here it is US English. */
     saved->language=STATE(int16_t, s473);STATE(int16_t, s473)=STATE(int16_t, s474);
+    /* The stress of the word in hand, copied from its record before the
+     * melody is asked for. */
+    saved->word[0]=STATE(int16_t, s6);STATE(int16_t, s6)=persian_us_stress(saved->word[0]);
+    saved->word[1]=STATE(int16_t, s7);STATE(int16_t, s7)=persian_us_stress(saved->word[1]);
     saved->level[0]=STATE(int16_t, s236);STATE(int16_t, s236)=5;
     saved->level[1]=STATE(int16_t, s237);STATE(int16_t, s237)=3;
     saved->level[2]=STATE(int16_t, s242);STATE(int16_t, s242)=6;
@@ -228,6 +249,7 @@ void persian_us_leave(void *state,const struct persian_us_saved *saved)
     STATE(int16_t, s242)=saved->level[2];
     STATE(int16_t, s243)=saved->level[3];
     STATE(int16_t, s473)=saved->language;
+    STATE(int16_t, s6)=saved->word[0];STATE(int16_t, s7)=saved->word[1];
     delta_field_overlay=saved->overlay;
 }}
 /* The variables that point at the accented word: keep the Persian rules'

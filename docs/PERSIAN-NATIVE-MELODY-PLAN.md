@@ -281,6 +281,22 @@ every test sentence has the same length in both routes.
 Without the marker file nothing changes; the previous route still has that
 failure.
 
+## Sixth step: phrases that end in a comma
+
+The tones of a phrase are named when the phrase is recognised, by rules that
+are not carried over. For a comma the Finnish rules name a rise that stays
+high; US English names a high accent that falls back to low. The US melody
+now sets the US tones for comma phrases itself (`persian_us_phrase_tones`),
+next to the product's question policy.
+
+30 sentences: median 0.18 st, 90 % within 0.70 st, 0.5 % of the frames more
+than 2 st apart (before: 1.8 %), every sentence the same length.
+
+Still open: a word whose syllables are all unstressed. The donor text marks
+it as weak and English then counts its stress as -1; the Persian provider
+counts 1. This shifts the start of a phrase that begins with such a word by
+about 5 Hz (seen after `!` and in three short questions).
+
 ## Stages
 
 1. Translate the 28 rules mechanically (rule prefix, variables, symbols),
