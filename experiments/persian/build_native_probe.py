@@ -4154,6 +4154,17 @@ static void persian_r_release_to_back_a(void *state)
     duration_file.write_text(text, encoding='utf8')
 
 
+def prepare_us_melody(work: Path) -> None:
+    """Add the US-English sentence melody as an unselected alternative."""
+    tools = Path(__file__).resolve().parents[2] / 'tools' / 'persian_melody'
+    sys.path.insert(0, str(tools))
+    try:
+        import port
+    finally:
+        sys.path.remove(str(tools))
+    port.install(work / 'delta_rules_c04_fifi.c')
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--work-dir', type=Path)
@@ -4197,6 +4208,7 @@ def main() -> None:
         modified.append(dest)
     prepare_uncolored_r_vowels(work)
     prepare_us_articulation(work)
+    prepare_us_melody(work)
     if args.dry_run:
         print('Prepared isolated source files:', work)
         return

@@ -1,0 +1,169 @@
+"""Generate the US-English melody rules for the Persian provider.
+
+Everything the English `generate_intonation` reaches is translated into the
+Persian provider's numbering and emitted as a self-contained set of static
+`persian_us_*` rules. The set includes rules that are identical in both
+providers, so that only one call has to choose between the two melodies: the
+call of `generate_intonation` itself. Nothing selects the US rules unless the
+scoped key RELOQ_FA_US_MELODY is "1".
+"""
+from __future__ import annotations
+
+import collections
+from pathlib import Path
+import re
+
+from translate import LANG, Records, load_rules, shared_symbols, translate
+
+ROOT_RULE = 'generate_intonation'
+KEY = 'RELOQ_FA_US_MELODY'
+WIDTH = 8
+
+
+def authored(language, prefix):
+    """The provider's authored constants and the offset of each symbol."""
+    root = LANG / language
+    data = (root / f'delta_authored_{prefix}.c').read_text(encoding='utf8')
+    data = data.split(f'uint8_t {prefix}_evv_authored_data[] = {{', 1)[1].split('};', 1)[0]
+    data = re.sub(r'/\*.*?\*/', '', data, flags=re.S)
+    raw = bytes(int(v, 0) for v in re.findall(r'(?<![A-Za-z_])(?:0[xX][0-9a-fA-F]+|[0-9]+)', data))
+    table = (root / f'delta_rules_{prefix}.c').read_text(encoding='utf8')
+    table = table.split(f'{prefix}_delta_rule_sym[] = {{', 1)[1].split('};', 1)[0]
+    offsets = [int(v) for v in re.findall(prefix + r'_evv_authored_data \+ (\d+)', table)]
+    return raw, offsets
+
+
+def constant(raw, offsets, index):
+    following = [o for o in offsets if o > offsets[index]]
+    return raw[offsets[index]:min(following) if following else len(raw)]
+
+
+def reachable(rules, root):
+    seen, todo = set(), [root]
+    while todo:
+        name = todo.pop()
+        if name in seen or name not in rules:
+            continue            # a machine-level helper both providers have
+        seen.add(name)
+        todo.extend(re.findall(r'reloq_call_enus61_(\w+)\(', rules[name]))
+    return sorted(seen)
+
+
+def generate():
+    """Return (C source, report) for the US melody rules."""
+    english, persian = load_rules('enus61', 'enus61'), load_rules('fifi', 'fifi')
+    table, symbols = Records(), shared_symbols(english, persian)
+    names = reachable(english, ROOT_RULE)
+    english_raw, english_offsets = authored('enus61', 'enus61')
+    persian_raw, persian_offsets = authored('fifi', 'fifi')
+    by_bytes = {}
+    for index in range(len(persian_offsets)):
+        by_bytes.setdefault(constant(persian_raw, persian_offsets, index), index)
+    embedded, report = [], collections.Counter()
+    helpers = (LANG / 'fifi/reloq61_rule_calls_fifi.h').read_text(encoding='utf8')
+
+    def symbol(match):
+        index = int(match.group(1))
+        data = constant(english_raw, english_offsets, index)
+        if data in by_bytes:
+            report['constants matched by content'] += 1
+            return 'delta_sym_ref[%d]' % by_bytes[data]
+        if len(data) > WIDTH:
+            raise RuntimeError('English constant %d is longer than expected' % index)
+        if data not in embedded:
+            embedded.append(data)
+        report['constants embedded'] += 1
+        return 'persian_us_symbol(%d)' % embedded.index(data)
+
+    bodies, prototypes = [], []
+    for name in names:
+        text = translate(english[name], table, symbols, report)
+        text = re.sub(r'delta_sym_ref\[EN(\d+)\]', symbol, text)
+        # The rules ask whether the current language is English by comparing
+        # it with the English language number. In this provider the current
+        # language is the provider's own; its number sits in s483.
+        text = re.sub(r'\bs474\b', 's483', text)
+        def call(match):
+            if match.group(1) in names:
+                return 'persian_us_' + match.group(1) + '('
+            if 'reloq_call_fifi_' + match.group(1) + '(' not in helpers:
+                raise RuntimeError('the Persian provider lacks the helper ' + match.group(1))
+            report['shared helpers called'] += 1
+            return 'reloq_call_fifi_' + match.group(1) + '('
+        text = re.sub(r'reloq_call_enus61_(\w+)\(', call, text)
+        head = re.match(r'int32_t reloq_enus61_' + name + r'\(([^)]*)\)', text)
+        if not head:
+            raise RuntimeError('unexpected rule heading: ' + name)
+        signature = f'static int32_t persian_us_{name}({head.group(1)})'
+        text = signature + text[head.end():]
+        if 'enus61' in text:
+            raise RuntimeError('untranslated English reference in ' + name)
+        prototypes.append(signature + ';')
+        bodies.append(f'/* {name}, translated from the US-English provider */\n' + text)
+        report['rules'] += 1
+        report['lines'] += text.count('\n')
+    rows = ',\n'.join('    {' + ','.join(str(b) for b in data.ljust(WIDTH, b'\0')) + '}'
+                      for data in embedded) or '    {0}'
+    helper = f'''
+/* ---- US-English sentence melody for the Persian voice --------------------
+ * Generated by tools/persian_melody/port.py from the US-English provider.
+ * Do not edit: change the generator. Selected only by the scoped key
+ * {KEY}; the provider's own melody remains the default. */
+#include <stdatomic.h>
+int reloq61_english_is_question(void *state,int32_t phrase);
+int reloq61_english_question_time(void *state,int32_t phrase,int16_t,int16_t,int32_t,int32_t *);
+static const unsigned char persian_us_constants[][{WIDTH}]={{
+{rows}
+}};
+static _Atomic int32_t persian_us_constants_ref;
+static int32_t persian_us_symbol(unsigned index)
+{{
+    int32_t result=atomic_load_explicit(&persian_us_constants_ref,memory_order_acquire);
+    if (!result) {{
+        void *copy=evv_arena_alloc(sizeof persian_us_constants);
+        if (!copy) return 0;
+        memcpy(copy,persian_us_constants,sizeof persian_us_constants);
+        int32_t made=EVV_REF(copy),expected=0;
+        if (atomic_compare_exchange_strong_explicit(&persian_us_constants_ref,&expected,made,
+                                                    memory_order_release,memory_order_acquire))
+            result=made;
+        else {{ evv_arena_free(copy); result=expected; }}
+    }}
+    return result+(int32_t)(index*{WIDTH});
+}}
+static int persian_us_melody_selected(void)
+{{
+    const char *mode=getenv("{KEY}");
+    return mode && mode[0]=='1' && !mode[1];
+}}
+'''
+    source = helper + '\n'.join(prototypes) + '\n\n' + '\n\n'.join(bodies) + '\n'
+    return source, report
+
+
+def install(path: Path):
+    """Append the US melody to the prepared rule file and choose it at the call."""
+    text = path.read_text(encoding='utf8')
+    call = '    r0 = reloq_call_fifi_generate_intonation(state, (int32_t)(FIELD(0)));\n'
+    if text.count(call) != 1:
+        raise RuntimeError('Cannot locate the Persian melody call')
+    source, report = generate()
+    marker = '\n/* generate_durations'
+    first_rule = re.search(r'^/\* \w+, from \w+\.obj \*/\n', text, re.M)
+    if not first_rule:
+        raise RuntimeError('Cannot locate the first rule of the prepared file')
+    text = text.replace(call,
+        '    r0 = persian_us_melody_selected()\n'
+        '        ? persian_us_generate_intonation(state, (int32_t)(FIELD(0)))\n'
+        '        : reloq_call_fifi_generate_intonation(state, (int32_t)(FIELD(0)));\n', 1)
+    start = first_rule.start()
+    if '#include <stdlib.h>' not in text[:start]:
+        source = '#include <stdlib.h>\n' + source
+    path.write_text(text[:start] + source + '\n' + text[start:], encoding='utf8')
+    return report
+
+
+if __name__ == '__main__':
+    generated, summary = generate()
+    print(dict(summary))
+    print(len(generated.split('\n')), 'lines generated')

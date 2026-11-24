@@ -23,6 +23,19 @@ static _Thread_local int fa_acoustics;
  * being produced. */
 static int fa_sound_variant;
 
+/* Process-wide choice of the sentence melody: 0 keeps the provider's own
+ * melody (which hosts replace by the fitted US contour), 1 lets the provider
+ * produce the US-English melody itself. Experimental and off by default. */
+static int fa_native_melody;
+
+FA_EXPORT int reloq_fa_set_native_melody(int enabled)
+{
+    if(enabled!=0 && enabled!=1)return -1;
+    int previous=fa_native_melody;
+    fa_native_melody=enabled;
+    return previous;
+}
+
 FA_EXPORT int reloq_fa_set_sound_variant(int variant)
 {
     if(variant<0 || variant>3)return -1;
@@ -132,6 +145,7 @@ const char *reloq_fa_scoped_get(const char *name)
         {"RELOQ_FA_PROBE_NO_AUTO_GLOTTAL","1"},
     };
     if(!fa_acoustics || !name)return 0;
+    if(!strcmp(name,"RELOQ_FA_US_MELODY"))return fa_native_melody?"1":0;
     if(!strcmp(name,"RELOQ_FA_SOFT_Q"))return fa_sound_variant?"1":0;
     if(!strcmp(name,"RELOQ_FA_CLEAR_VOWELS"))
         return fa_sound_variant==1?"1":fa_sound_variant==3?"2":0;

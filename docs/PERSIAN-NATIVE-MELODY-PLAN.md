@@ -98,6 +98,42 @@ between the providers and are part of the US contour:
 These, with what they call, have to be ported as English variants selected
 under the same scoped key. The realistic total is 40 to 60 rules.
 
+## First result: the melody generator runs inside the Persian provider
+
+`tools/persian_melody/port.py` translates everything the English
+`generate_intonation` reaches (66 rules, about 12,500 lines) and the build
+adds it to the prepared Persian rule file. One call chooses between the two
+melodies. `eciPersianNativeMelody(1)` selects the US rules for the process;
+the default is unchanged and produces identical audio.
+
+Measured with `compare_contours.py` against the accepted contour, 30 sentences:
+
+| | provider's own melody | US rules in the provider |
+|---|---|---|
+| all frames, median | 0.82 st | 0.53 st |
+| all frames, 90 % within | 2.12 st | 1.75 st |
+| largest | 7.69 st | 4.35 st |
+| last 300 ms, median | 1.05 st | 0.33 st |
+| frames more than 2 st apart | 12.6 % | 7.2 % |
+
+Sentence ends, questions and exclamations are now close. What remains is
+where accents fall inside the sentence: differences of about 3 semitones on
+single syllables in most sentences. That is decided before the melody
+generator runs, by rules that are not ported yet:
+
+- `process_annotation` and what it calls differ in 13 rules, among them
+  `handle_SPR`, `emphasis_anno`, `word_accent_anno` and `phr_final_anno`.
+  They turn the stress digits and the weak-word annotation of the phonetic
+  input into word accents. The English versions also insert English phones,
+  so they cannot be taken over whole.
+- `phrase_level_rules` reaches 11 differing rules. Some assign accents
+  (`apply_half_stress`, `reduce_accent_for_selected_words`); others are
+  English sound rules (`word_final_flap`, `do_word_initial_creak`) that must
+  not run on Persian phones.
+
+The next step is to port the accent-assigning parts of those two groups and
+leave the phone-changing parts on the Persian side.
+
 ## What still has to be solved
 
 1. **Record fields.** The phone and word records order their fields

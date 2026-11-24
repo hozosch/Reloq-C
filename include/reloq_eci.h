@@ -462,6 +462,10 @@ ECIAPI int ECICALL eciPersianAcousticScope(int active);
  * vowels: 1 full shift, 2 previous vowels, 3 half shift. Returns the previous value,
  * or -1 for an unknown variant. Change it only while nothing is speaking. */
 ECIAPI int ECICALL eciPersianSoundVariant(int variant);
+/* Experimental: let the Persian provider produce the US-English sentence
+ * melody itself (1) instead of its own melody (0, the default). Process-wide;
+ * returns the previous value, or -1. Change it only while nothing speaks. */
+ECIAPI int ECICALL eciPersianNativeMelody(int enabled);
 /* Temporarily bypass the saved Persian sound tuning for a comparison on the
  * current synthesis thread. Returns the previous state; restore it on exit. */
 ECIAPI int ECICALL eciPersianTuningScope(int active);

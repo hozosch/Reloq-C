@@ -176,7 +176,7 @@ def records(text, table, report):
 
     def operand(index, argument):
         literal, location = argument
-        if literal is not None:
+        if literal != '':
             return {int(literal)}, None
         sources = flow.definitions(index, location)
         if sources is None:

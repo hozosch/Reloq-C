@@ -1109,6 +1109,9 @@ int ECICALL eciPersianAcousticScope(int active)
 int ECICALL eciPersianSoundVariant(int variant)
 {return reloq_fa_set_sound_variant(variant);}
 
+int ECICALL eciPersianNativeMelody(int enabled)
+{return reloq_fa_set_native_melody(enabled);}
+
 int ECICALL eciPersianTuningScope(int active)
 {return reloq_fa_tuning_scope(active);}
 

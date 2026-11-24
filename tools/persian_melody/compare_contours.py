@@ -33,7 +33,7 @@ SENTENCES = (
 )
 
 
-def load(library):
+def load(library, us_rules=False):
     dll = (c.WinDLL if sys.platform == 'win32' else c.CDLL)(str(Path(library).resolve()))
     H, I, S = c.c_void_p, c.c_int, c.c_size_t
     callback_type = (c.WINFUNCTYPE if sys.platform == 'win32' else c.CFUNCTYPE)(I, H, I, I, H)
@@ -65,6 +65,12 @@ def load(library):
         assert dll.eciSetParam(handle, 5, 1) >= 0
     persian, english = handles
 
+    melody = getattr(dll, 'eciPersianNativeMelody', None)
+    if us_rules and melody is None:
+        raise SystemExit('this library has no US melody rules in the Persian provider')
+    if melody is not None:
+        melody.argtypes, melody.restype = (I,), I
+
     def render(kind, text):
         data, error = text.encode('utf8'), S()
         sinks[persian].clear()
@@ -72,8 +78,14 @@ def load(library):
             status = dll.eciPersianSpeakUsNativeUtf8(persian, english, data, len(data), 0,
                                                      None, None, 0, 120000, c.byref(error))
         else:
-            status = dll.eciPersianSpeakNativeUtf8(persian, data, len(data), 0, None, None, 0,
-                                                   c.byref(error))
+            if us_rules:
+                melody(1)
+            try:
+                status = dll.eciPersianSpeakNativeUtf8(persian, data, len(data), 0, None, None,
+                                                       0, c.byref(error))
+            finally:
+                if us_rules:
+                    melody(0)
         sinks[english].clear()
         return (list(sinks[persian]) if status == 0 else None)
 
@@ -104,15 +116,16 @@ def track(samples):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--library', type=Path, required=True)
-    parser.add_argument('--candidate', default='native', choices=('native',),
-                        help='melody to compare with the accepted US contour')
+    parser.add_argument('--candidate', default='native', choices=('native', 'us-rules'),
+                        help="melody to compare with the accepted US contour: the provider's "
+                             'own, or the US rules inside the provider')
     parser.add_argument('--list', action='store_true', help='print every sentence')
     args = parser.parse_args()
-    render, _keep = load(args.library)
+    render, _keep = load(args.library, us_rules=args.candidate == 'us-rules')
     semitone = lambda a, b: 12 * abs(__import__('math').log2(a / b))
     every, finals, rows = [], [], []
     for text in SENTENCES:
-        accepted, candidate = render('accepted', text), render(args.candidate, text)
+        accepted, candidate = render('accepted', text), render('candidate', text)
         if accepted is None or candidate is None:
             rows.append((text, None))
             continue
