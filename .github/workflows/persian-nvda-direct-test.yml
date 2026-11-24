@@ -549,21 +549,17 @@ jobs:
         shell: bash
         run: |
           # Identical to the tested package except for the bundled markers.
-          # 158: rolled R without the sharp noise, darker M and N, and the
-          #      sentence melody made by the core in one pass.
-          # 159: the previous sounds with the melody made by the core.
+          # 160: rolled R without the sharp noise, M and N with a more open
+          #      murmur, and the sentence melody made by the core in one pass.
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
           dll=$(find candidate -name eci.dll -print -quit)
-          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version 2.0.1-dev158 --sound-variant 5 --core-melody --output dist/reloq-c-persian-pinglish-2.0.1-dev158.nvda-addon
-          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version 2.0.1-dev159 --core-melody --output dist/reloq-c-persian-pinglish-2.0.1-dev159.nvda-addon
-      - name: Upload the candidate Persian NVDA add-ons
+          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version 2.0.1-dev160 --sound-variant 6 --core-melody --output dist/reloq-c-persian-pinglish-2.0.1-dev160.nvda-addon
+      - name: Upload the candidate Persian NVDA add-on
         if: github.ref_name == 'claude/persian-native-melody'
         uses: actions/upload-artifact@v7
         with:
-          name: persian-nvda-2.0.1-core-melody-dev158-159
-          path: |
-            dist/reloq-c-persian-pinglish-2.0.1-dev158.nvda-addon
-            dist/reloq-c-persian-pinglish-2.0.1-dev159.nvda-addon
+          name: persian-nvda-2.0.1-core-melody-dev160
+          path: dist/reloq-c-persian-pinglish-2.0.1-dev160.nvda-addon
           compression-level: 0
           if-no-files-found: error
           retention-days: 14

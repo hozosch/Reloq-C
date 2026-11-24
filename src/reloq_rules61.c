@@ -1756,6 +1756,9 @@ static void tune_fa_frame_base(struct rule_plan *s,int64_t tick,float controls[6
 #define FA_R_NOISE_QUIETER 15.0f
 #define FA_R_RESONANCE_WIDTH 220.0f
 #define FA_NASAL_TILT 6.0f
+#define FA_NASAL_F1 380.0f
+#define FA_NASAL_WIDER 100.0f
+#define FA_NASAL_LEVEL 3.0f
 /* Frication (AF and its shares for the second to fourth resonance),
  * aspiration, and the widths of the third and fourth resonance. */
 static void fa_soften_r_noise(float controls[62])
@@ -1848,7 +1851,27 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
             }
         }
     }
-    if(reloq_fa_tuning_enabled()==1 && reloq_fa_sound_variant()>=5 && controls[2]>0 &&
+    if(reloq_fa_tuning_enabled()==1 && reloq_fa_sound_variant()>=6 && controls[2]>0 &&
+       isfinite(controls[27]) && isfinite(controls[29]) && controls[29]>controls[27]+5 &&
+       isfinite(controls[9]) && isfinite(controls[10]) && isfinite(controls[28]) &&
+       isfinite(controls[30])) {
+        /* M and N that do not sound like a blocked nose. The murmur is
+         * almost only its lowest resonance: everything above 700 Hz lies
+         * some 33 dB below it, where a nasal usually keeps its upper
+         * resonances at about 20 dB below. That is the sound of a voiced
+         * closure, not of an open nose. While the nasal zero stands apart
+         * from the nasal pole: open the first resonance (higher and wider),
+         * widen the nasal pair, and give back the level this takes. Timing
+         * and the upper resonances themselves stay. */
+        float apart=fminf(1.0f,(controls[29]-controls[27])/150.0f);
+        if(controls[9]<FA_NASAL_F1)
+            controls[9]=roundf(controls[9]+(FA_NASAL_F1-controls[9])*apart);
+        controls[10]=roundf(controls[10]+FA_NASAL_WIDER*apart);
+        controls[28]=roundf(controls[28]+FA_NASAL_WIDER*apart);
+        controls[30]=roundf(controls[30]+FA_NASAL_WIDER*apart);
+        controls[2]=roundf(controls[2]+FA_NASAL_LEVEL*apart);
+    } else
+    if(reloq_fa_tuning_enabled()==1 && reloq_fa_sound_variant()==5 && controls[2]>0 &&
        isfinite(controls[27]) && isfinite(controls[29]) && controls[29]>controls[27]+5) {
         /* M and N. Measured against the US English N of the same engine,
          * the Persian murmur is as strong below 700 Hz but 6 dB stronger

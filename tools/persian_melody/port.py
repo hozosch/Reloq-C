@@ -204,7 +204,8 @@ static void persian_us_phrase_tones(void *state,int32_t phrase,int16_t high,
     if (reloq61_phrase_kind(state,phrase)==1) {{
         *nucleus=high;
         *phrase_tone=low;
-        *boundary_tone=low;
+        /* The boundary tone is left as named: both providers name a low one
+         * after a comma and a high one after three dots. */
     }}
     reloq61_english_question_tones(state,phrase,high,low,nucleus,phrase_tone,boundary_tone);
 }}

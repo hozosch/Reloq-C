@@ -289,6 +289,10 @@ high; US English names a high accent that falls back to low. The US melody
 now sets the US tones for comma phrases itself (`persian_us_phrase_tones`),
 next to the product's question policy.
 
+Only the accent and the phrase tone are set. The boundary tone stays as
+named: both providers name a low one after a comma and a high one after
+three dots, so `...` keeps its own, suspended ending.
+
 30 sentences: median 0.18 st, 90 % within 0.70 st, 0.5 % of the frames more
 than 2 st apart (before: 1.8 %), every sentence the same length.
 
