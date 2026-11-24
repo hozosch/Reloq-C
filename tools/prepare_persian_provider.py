@@ -29,7 +29,7 @@ def main():
         subprocess.run([sys.executable, str(ROOT / 'experiments/persian/build_native_probe.py'),
                         '--dry-run', '--work-dir', str(prepared)], check=True)
         sources = list(prepared.glob('*.c'))
-        if len(sources) != 22:
+        if len(sources) != 23:
             raise RuntimeError(f'unexpected Persian provider source count: {len(sources)}')
         for source in sources:
             value = source.read_text(encoding='utf8')

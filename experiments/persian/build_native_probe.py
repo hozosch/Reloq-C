@@ -4162,7 +4162,10 @@ def prepare_us_melody(work: Path) -> None:
         import port
     finally:
         sys.path.remove(str(tools))
-    port.install(work / 'delta_rules_c04_fifi.c')
+    for filename in set(port.ROOTS.values()):
+        if not (work / filename).exists():
+            shutil.copyfile(PROVIDER / 'lang' / 'fifi' / filename, work / filename)
+    port.install(work)
 
 
 def main() -> None:

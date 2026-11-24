@@ -168,6 +168,33 @@ needs 5.6 ms for a short and 22.6 ms for a long sentence in the same C path.
    choose the `fin_*` rule from a language variable. Under a new scoped key
    they would choose the ported rule instead; the default stays unchanged.
 
+## Second step: the accent rules are ported too
+
+`adjust_accents` and the five rules below it decide how high each accented
+word may rise. They live in a different rule file, so the Persian provider
+now prepares `delta_rules_c05_fifi.c` as well (23 prepared files). With them
+the 30 sentences measure: median 0.53 st, 90 % within 1.69 st, largest
+4.35 st, 6.8 % of the frames more than 2 st apart. The end of the sentence
+is unchanged (median 0.33 st). The default output is bit-identical.
+
+The remaining distance is in the accents before the last one: they stay
+lower and flatter than in the accepted contour.
+
+### Rejected: running the English setup rules
+
+`init_word_vars` and `init_syll_vars` set per-word and per-syllable variables
+and differ strongly between the providers. Three ways of letting the US
+melody see the English values were tried and rejected:
+
+1. Replacing the Persian rules: durations change, nothing stays comparable.
+2. Running the English rules on a private copy of the variables they write,
+   carried from word to word: crash in `valid_f0_posn`, reached from
+   `eng_phr_initial_F0`.
+3. The same, starting each time from the Persian values: empty output.
+
+The setup rules evidently do more than write those variables. The next step
+looks at what the ported tone rules read, one value at a time, instead.
+
 ## Stages
 
 1. Translate the 28 rules mechanically (rule prefix, variables, symbols),
