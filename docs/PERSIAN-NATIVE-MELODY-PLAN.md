@@ -301,6 +301,17 @@ it as weak and English then counts its stress as -1; the Persian provider
 counts 1. This shifts the start of a phrase that begins with such a word by
 about 5 Hz (seen after `!` and in three short questions).
 
+## A language switch inside Pinglish text
+
+The core reads some Latin words in Pinglish text as English ("my"). In the
+single call such a word is its own clause: sentence ending, 400 ms pause,
+then the rest. `eciPersianHasLanguageSwitchUtf8` tells the driver that text
+contains such a word; the driver then leaves it to the planner, which now
+also asks the core which words are English (before, only words with `ph` or
+`th` were switched and "my" was spelled out there). The planner carries one
+melody across the switch, as it does for English words in Persian script.
+Moving that shared melody into the core is still open.
+
 ## Stages
 
 1. Translate the 28 rules mechanically (rule prefix, variables, symbols),

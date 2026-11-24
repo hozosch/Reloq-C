@@ -85,6 +85,34 @@ def main():
                                             EciIndex(9)])
             assert result is True and indexes == [7, 8, 9], indexes
 
+            # A word the core reads as English inside Pinglish text keeps one
+            # melody across the switch: it goes to the planner as a language
+            # switch, and no pause of a sentence end separates the two words.
+            pinglish = nvda_driver_probe.make_language_engine(
+                library, library, None, None, None,
+                language=nvda_driver_probe.PINGLISH_PROBE.id)
+            try:
+                planned.clear()
+                chunks = []
+                assert pinglish.speak(['my office'], chunks.append, lambda _mark: None) is True
+                assert planned, 'a language switch inside a sentence belongs to the planner'
+                pcm = b''.join(chunks)
+                values = [abs(int.from_bytes(pcm[i:i + 2], 'little', signed=True))
+                          for i in range(0, len(pcm) - 1, 2)]
+                quiet = longest = 0
+                for start in range(550, len(values) - 3300, 110):
+                    if sum(values[start:start + 110]) < 110 * 40:
+                        quiet += 1
+                        longest = max(longest, quiet)
+                    else:
+                        quiet = 0
+                assert longest < 25, f'{longest * 10} ms of silence inside "my office"'
+                planned.clear()
+                assert pinglish.speak(['in office khub ast.'], lambda _pcm: None, lambda _mark: None) is True
+                assert not planned
+            finally:
+                pinglish.close()
+
             result, count, _ = speak([ISSUE_49])
             assert result is True, 'the paragraph from issue 49 must be read to its end'
             assert count > 30 * 11025, count

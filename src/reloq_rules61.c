@@ -1759,6 +1759,9 @@ static void tune_fa_frame_base(struct rule_plan *s,int64_t tick,float controls[6
 #define FA_NASAL_F1 380.0f
 #define FA_NASAL_WIDER 100.0f
 #define FA_NASAL_LEVEL 3.0f
+#define FA_NASAL_QUIETER_7 5.0f
+#define FA_NASAL_N_F2_UP 200.0f
+#define FA_NASAL_B2 100.0f
 /* Frication (AF and its shares for the second to fourth resonance),
  * aspiration, and the widths of the third and fourth resonance. */
 static void fa_soften_r_noise(float controls[62])
@@ -1851,7 +1854,27 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
             }
         }
     }
-    if(reloq_fa_tuning_enabled()==1 && reloq_fa_sound_variant()>=6 && controls[2]>0 &&
+    if(reloq_fa_tuning_enabled()==1 && reloq_fa_sound_variant()>=7 && controls[2]>0 &&
+       isfinite(controls[27]) && isfinite(controls[29]) && controls[29]>controls[27]+5 &&
+       isfinite(controls[13]) && isfinite(controls[14])) {
+        /* M and N after eSpeak's Persian voice, measured on the same words.
+         * There the murmur is 8 to 10 dB below the neighbouring vowel and
+         * has one clear upper resonance that tells the two apart: near
+         * 1.1 kHz for M (8 dB below the lowest band) and near 1.7 kHz for N
+         * (20 dB below, with almost nothing between 700 and 1500 Hz). Here
+         * the murmur was 3 to 5 dB below the vowel and every upper band lay
+         * about 33 dB down, with N's second resonance at 1.5 kHz and wide.
+         * While the nasal zero stands apart from the nasal pole: lower the
+         * voice, make the second resonance narrow, and for N move it up.
+         * The lowest resonance, the nasal pair and the timing stay. */
+        float apart=fminf(1.0f,(controls[29]-controls[27])/150.0f);
+        controls[2]=fmaxf(1.0f,roundf(controls[2]-FA_NASAL_QUIETER_7*apart));
+        if(controls[13]>=1400.0f && controls[13]<=1650.0f)
+            controls[13]=roundf(controls[13]+FA_NASAL_N_F2_UP*apart);
+        if(controls[14]>FA_NASAL_B2)
+            controls[14]=roundf(controls[14]+(FA_NASAL_B2-controls[14])*apart);
+    } else
+    if(reloq_fa_tuning_enabled()==1 && reloq_fa_sound_variant()==6 && controls[2]>0 &&
        isfinite(controls[27]) && isfinite(controls[29]) && controls[29]>controls[27]+5 &&
        isfinite(controls[9]) && isfinite(controls[10]) && isfinite(controls[28]) &&
        isfinite(controls[30])) {

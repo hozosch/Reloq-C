@@ -77,7 +77,7 @@ def main():
 
         # The switch: default, return values, rejection of unknown variants.
         assert dll.eciPersianSoundVariant(0) == 0, 'the previous sound must be the default'
-        assert dll.eciPersianSoundVariant(7) == -1
+        assert dll.eciPersianSoundVariant(8) == -1
         assert dll.eciPersianSoundVariant(-1) == -1
         assert dll.eciPersianSoundVariant(0) == 0
 
@@ -180,6 +180,24 @@ def main():
             before, after = levels(loud_nasal[word]), levels(open_nasal[word])
             assert 0.85 * sum(before) < sum(after) < 1.15 * sum(before), word
             assert open_nasal[word] != loud_nasal[word] and open_nasal[word] != plain_nasal[word], word
+
+        # Variant 7: the R of variant 5; M and N after eSpeak's Persian voice:
+        # a quieter murmur with a narrower second resonance, same timing.
+        assert dll.eciPersianSoundVariant(7) == 0
+        reference_r = {word: speak(word) for word in words}
+        reference_nasal = {word: speak(word) for word in nasal_words}
+        assert dll.eciPersianSoundVariant(0) == 7
+        for word in words:
+            if 'م' not in word and 'ن' not in word:
+                assert reference_r[word] == rolled[word], word
+        for word in nasal_words:
+            assert len(reference_nasal[word]) == len(loud_nasal[word]), word
+            before, after = levels(loud_nasal[word]), levels(reference_nasal[word])
+            if word[0] in 'نم':
+                assert sum(after[:8]) < 0.8 * sum(before[:8]), word
+            # The vowels keep their level. (In one of these words the loudest
+            # stretch used to be the M itself.)
+            assert max(after) > 0.7 * max(before), word
             assert max(after) > 0.9 * max(before), word
 
         # English spoken by the English voice is unaffected by the Persian variant.
