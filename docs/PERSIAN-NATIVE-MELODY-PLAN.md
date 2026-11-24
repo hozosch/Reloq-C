@@ -67,6 +67,37 @@ that the Persian provider lacks, are 28 rules and about 7,800 lines:
 `nucl_acc_t1pos`, `postnucl_high_tone`, the continuation-phrase rules and
 `is_minor_phrase_break`. They call four shared rules that already exist here.
 
+## Translator and its check
+
+`tools/persian_melody/translate.py` rewrites an English rule into the Persian
+provider's numbering: variables, authored constants, and the field and value
+numbers of the records. Numbers are followed from the assignment of a local
+to the call that uses it, across jumps, so a field number set in one block
+and used in another is still rewritten.
+
+The check translates the English text of every rule both providers share and
+compares it with the Persian provider's own text. Of 244 shared rules of
+equal length, 199 come out identical: 25,743 lines equal, 224 different. No
+record call was left unresolved and no literal had two conflicting uses. The
+remaining differences are the expected ones: the line that compares the
+current language with the provider's own language, and calls that name the
+`eng_` or `fin_` rule.
+
+## The scope is larger than the 28 tone rules
+
+Besides the language-specific tone rules, several shared melody rules differ
+between the providers and are part of the US contour:
+
+`adjust_accents` (996 lines here, 1,164 in English), `set_f0_range_ptrs`
+(268 and 329), `phr_final_anno` (133 and 383), `post_comma_phrase`,
+`assign_phr_final_anno_features`, `find_lang_potential_phrase`,
+`first_postnucl_accent`, `postnucl_f0`, `nucleus_vals`,
+`init_phrase_inton_vars`, `init_word_inton_vars`, `apply_comma_phr_rules`,
+`phrase_level_rules`, `assign_user_stress` and `mark_word_stress`.
+
+These, with what they call, have to be ported as English variants selected
+under the same scoped key. The realistic total is 40 to 60 rules.
+
 ## What still has to be solved
 
 1. **Record fields.** The phone and word records order their fields
