@@ -23,7 +23,7 @@ def select_sound_variant(library: Path, folder: Path | None = None):
     """Apply the Persian listening variant named by this package, if any.
 
     A test package can carry a one-line file containing 0 (previous sound) or
-    1 (candidate sound) next to this module. Without the file, or with an
+    a candidate number from 1 to 3 next to this module. Without the file, or with an
     older library, the library's default is left alone. Returns the selected
     variant or None.
     """
@@ -32,7 +32,7 @@ def select_sound_variant(library: Path, folder: Path | None = None):
         value = (folder / SOUND_VARIANT_FILE).read_text(encoding='ascii').strip()
     except (OSError, UnicodeError):
         return None
-    if value not in ('0', '1'):
+    if value not in ('0', '1', '2', '3'):
         return None
     try:
         loader = ctypes.WinDLL if sys.platform == 'win32' else ctypes.CDLL

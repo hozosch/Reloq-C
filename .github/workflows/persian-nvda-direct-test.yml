@@ -529,12 +529,18 @@ jobs:
           export PATH="/c/mingw64/bin:/c/msys64/usr/bin:$PATH"
           dll=$(find candidate -name eci.dll -print -quit)
           python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version 2.0.1-dev151 --sound-variant 1 --output dist/reloq-c-persian-pinglish-2.0.1-dev151.nvda-addon
+          # 152: new R and uvular with the previous vowels. 153: half vowel shift.
+          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version 2.0.1-dev152 --sound-variant 2 --output dist/reloq-c-persian-pinglish-2.0.1-dev152.nvda-addon
+          python -B experiments/persian/build_experimental_nvda.py --dll "$dll" --version 2.0.1-dev153 --sound-variant 3 --output dist/reloq-c-persian-pinglish-2.0.1-dev153.nvda-addon
       - name: Upload the candidate-sound Persian NVDA add-on
         if: github.ref_name == 'claude/persian-sound-variant'
         uses: actions/upload-artifact@v7
         with:
-          name: persian-nvda-2.0.1-dev151-new-sound
-          path: dist/reloq-c-persian-pinglish-2.0.1-dev151.nvda-addon
+          name: persian-nvda-2.0.1-sound-variants-dev151-152-153
+          path: |
+            dist/reloq-c-persian-pinglish-2.0.1-dev151.nvda-addon
+            dist/reloq-c-persian-pinglish-2.0.1-dev152.nvda-addon
+            dist/reloq-c-persian-pinglish-2.0.1-dev153.nvda-addon
           compression-level: 0
           if-no-files-found: error
           retention-days: 14

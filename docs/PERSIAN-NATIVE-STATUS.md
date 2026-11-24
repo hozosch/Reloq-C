@@ -187,8 +187,13 @@ checked by reading and by synthesis, not by a native listener.
 
 ## Switchable sound variant for listening tests
 
-`eciPersianSoundVariant(1)` selects a candidate Persian sound for the whole
+`eciPersianSoundVariant(n)` selects a candidate Persian sound for the whole
 process; `0`, the default, is the previous sound and produces identical audio.
+Variants 1 to 3 share the new R and uvular described below. Variant 1 also
+shifts both vowels fully, variant 2 keeps the previous vowels, and variant 3
+shifts them half as far (about 1490 Hz for /æ/ and 950 Hz for /o/). A first
+listener found the full shift possibly too far forward, so all three are
+built for comparison.
 Nothing selects the candidate automatically. It is offered for comparison by
 Persian listeners and has only been checked by measurement so far.
 
@@ -205,8 +210,8 @@ R followed by H. Finally, a uvular directly before another consonant, as in
 
 The NVDA test package applies a variant when it contains a one-line file
 `persian_sound_variant.txt` next to the driver. The NVDA direct-test workflow
-builds the usual add-on without that file and, for the listening branch, a second
-add-on with `1`; only the first is run through the NVDA test.
+builds the usual add-on without that file and, for the listening branch, one add-on
+per candidate; only the first is run through the NVDA test.
 `experiments/persian/test_persian_sound_variant.py` checks the switch, that
 switching back restores the previous audio exactly, and the tap's voice dip.
 

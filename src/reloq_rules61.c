@@ -1754,7 +1754,7 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
     tune_fa_frame_base(s,tick,controls,duration);
     if(!s->fa_phone_count || tick<0)return;
     float voice=controls[2];
-    if(reloq_fa_tuning_enabled()==1 && reloq_fa_sound_variant()==1) {
+    if(reloq_fa_tuning_enabled()==1 && reloq_fa_sound_variant()>0) {
         const struct rule_fa_phone *p=s->fa_phones+s->fa_phone_next;
         int64_t native=tick*10000;
         int has_next=s->fa_phone_next+1<s->fa_phone_count;

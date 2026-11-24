@@ -15,15 +15,17 @@
 
 static _Thread_local int fa_acoustics;
 /* Process-wide listening variant: 0 keeps the previous Persian sound and
- * is the default, so existing hosts and reference tests are unaffected. 1
- * selects the clearer vowels, the softer uvular before a consonant and the
- * voiced tap between vowels. A plain int is enough: it is written only by a
- * host while no speech is being produced. */
+ * is the default, so existing hosts and reference tests are unaffected.
+ * Variants 1 to 3 all use the softer uvular before a consonant and the
+ * voiced tap between vowels; they differ in the vowels: 1 moves /ae/ and /o/
+ * fully forward, 2 leaves both vowels as before, 3 moves them half as far.
+ * A plain int is enough: it is written only by a host while no speech is
+ * being produced. */
 static int fa_sound_variant;
 
 FA_EXPORT int reloq_fa_set_sound_variant(int variant)
 {
-    if(variant!=0 && variant!=1)return -1;
+    if(variant<0 || variant>3)return -1;
     int previous=fa_sound_variant;
     fa_sound_variant=variant;
     return previous;
@@ -130,8 +132,9 @@ const char *reloq_fa_scoped_get(const char *name)
         {"RELOQ_FA_PROBE_NO_AUTO_GLOTTAL","1"},
     };
     if(!fa_acoustics || !name)return 0;
-    if(!strcmp(name,"RELOQ_FA_CLEAR_VOWELS") || !strcmp(name,"RELOQ_FA_SOFT_Q"))
-        return fa_sound_variant?"1":0;
+    if(!strcmp(name,"RELOQ_FA_SOFT_Q"))return fa_sound_variant?"1":0;
+    if(!strcmp(name,"RELOQ_FA_CLEAR_VOWELS"))
+        return fa_sound_variant==1?"1":fa_sound_variant==3?"2":0;
     for(unsigned i=0;i<sizeof selected/sizeof selected[0];++i)
         if(!strcmp(name,selected[i].key))return selected[i].value;
     return 0;

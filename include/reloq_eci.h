@@ -458,7 +458,8 @@ ECIAPI int ECICALL eciPersianWordPhonesUtf8(const char *word,size_t bytes,int pi
  * These low-level functions do not register a Persian voice or handle text. */
 ECIAPI int ECICALL eciPersianAcousticScope(int active);
 /* Select the process-wide Persian listening variant: 0 is the previous
- * sound and the default, 1 the current candidate. Returns the previous value,
+ * sound and the default. 1 to 3 share the new R and uvular and differ in the
+ * vowels: 1 full shift, 2 previous vowels, 3 half shift. Returns the previous value,
  * or -1 for an unknown variant. Change it only while nothing is speaking. */
 ECIAPI int ECICALL eciPersianSoundVariant(int variant);
 /* Temporarily bypass the saved Persian sound tuning for a comparison on the

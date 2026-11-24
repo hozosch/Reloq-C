@@ -1,9 +1,10 @@
 """Check the switchable Persian listening variant.
 
-Variant 0 is the previous sound and the library default. Variant 1 moves the
-front /ae/ and /o/ forward, replaces the doubly closed, aspirated R between
-vowels by a single voiced tap and omits the added frication of a uvular
-directly before a consonant. The test checks the switch itself and that each
+Variant 0 is the previous sound and the library default. Variants 1 to 3
+replace the doubly closed, aspirated R between vowels by a single voiced tap
+and omit the added frication of a uvular directly before a consonant. They
+differ in the vowels: 1 moves the front /ae/ and /o/ forward, 2 leaves both
+as before and 3 moves them half as far. The test checks the switch itself and that each
 change is audible in the signal; it does not judge how the result sounds.
 """
 from __future__ import annotations
@@ -76,7 +77,7 @@ def main():
 
         # The switch: default, return values, rejection of unknown variants.
         assert dll.eciPersianSoundVariant(0) == 0, 'the previous sound must be the default'
-        assert dll.eciPersianSoundVariant(2) == -1
+        assert dll.eciPersianSoundVariant(4) == -1
         assert dll.eciPersianSoundVariant(-1) == -1
         assert dll.eciPersianSoundVariant(0) == 0
 
@@ -98,6 +99,21 @@ def main():
         # The R between vowels no longer closes to near silence.
         old_dip, new_dip = deepest_inner_dip(previous['دوری']), deepest_inner_dip(candidate['دوری'])
         assert old_dip < 0.08 < new_dip < 0.6, (old_dip, new_dip)
+
+        # Variant 2 keeps the previous vowels with the new tap and uvular;
+        # variant 3 lies between the previous and the fully shifted vowels.
+        assert dll.eciPersianSoundVariant(2) == 0
+        unshifted = {word: speak(word) for word in words}
+        assert dll.eciPersianSoundVariant(3) == 2
+        half = {word: speak(word) for word in words}
+        assert dll.eciPersianSoundVariant(0) == 3
+        for word in ('بد', 'دو', 'دیر', 'سیب'):
+            assert unshifted[word] == previous[word], word
+        for word in ('دوری', 'مغرور'):
+            assert unshifted[word] != previous[word], word
+        for word in ('بد', 'دو'):
+            assert half[word] != previous[word] and half[word] != candidate[word], word
+        assert half['دوری'] == unshifted['دوری'] == candidate['دوری']
 
         # English spoken by the English voice is unaffected by the Persian variant.
         def english_text(text):

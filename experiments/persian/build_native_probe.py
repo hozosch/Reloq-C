@@ -3415,9 +3415,11 @@ def prepare_us_articulation(work: Path) -> None:
                its second resonance forward; F1, the upper resonances,
                bandwidths, timing and inheritance markers are unchanged. */
             const char *clear=getenv("RELOQ_FA_CLEAR_VOWELS");
-            if (!r0 && clear && clear[0]=='1' && !clear[1]) {
-                if (STATE(int16_t,s450)>0) STATE(int16_t,s450)+=__FRONT_A_F2__;
-                if (STATE(int16_t,s451)>0) STATE(int16_t,s451)+=__FRONT_A_F2__;
+            if (!r0 && clear && (clear[0]=='1' || clear[0]=='2') && !clear[1]) {
+                /* "2" is the half step for comparison by listeners. */
+                int shift=clear[0]=='1' ? __FRONT_A_F2__ : __FRONT_A_F2__/2;
+                if (STATE(int16_t,s450)>0) STATE(int16_t,s450)+=shift;
+                if (STATE(int16_t,s451)>0) STATE(int16_t,s451)+=shift;
             }
         }
     }
@@ -3551,7 +3553,7 @@ static void persian_open_vowel(void *state,int phone)
         if (STATE(int16_t,s449)>0) STATE(int16_t,s449)=440;
         const char *clear=getenv("RELOQ_FA_CLEAR_VOWELS");
         /* Listening variant: a slightly less retracted Persian /o/. */
-        int o_f2=clear && clear[0]=='1' && !clear[1] ? 1000 : 900;
+        int o_f2=!clear || clear[1] ? 900 : clear[0]=='1' ? 1000 : clear[0]=='2' ? 950 : 900;
         if (STATE(int16_t,s450)>0) STATE(int16_t,s450)=(int16_t)o_f2;
         if (STATE(int16_t,s451)>0) STATE(int16_t,s451)=(int16_t)o_f2;
         if (STATE(int16_t,s452)>0) STATE(int16_t,s452)=2400;
