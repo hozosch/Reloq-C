@@ -2422,9 +2422,10 @@ static const struct fa_direct_entry fa_reviewed_entries[]={
     {"شست‌وشو", "`[.0Sos.0to.1Su]"}, {"شست‌وشوی", "`[.0Sos.0to.1Su.0je]"},
     {"شست‌و‌شو", "`[.0Sos.0to.1Su]"}, {"شست‌و‌شوی", "`[.0Sos.0to.1Su.0je]"},
     {"فوق‌العاده", "`[.0fo.0Ro.0la.1de]"}, {"فوقالعاده", "`[.0fo.0Ro.0la.1de]"},
-    {"بین‌المللی", "`[.0bej.0nol.0me.0lA.1li]"},
+    {"خارق‌العاده", "`[.0Ga.0re.0Ro.0la.1de]"},
+    {"بسم‌الله", "`[.0bes.0mel.1lahw]"},
     {"دارالفنون", "`[.0da.0rol.0fo.1nun]"},
-    {"علی‌رغم", "`[.0A.0la.1rARm]"}, {"علیرغم", "`[.0A.0la.1rARm]"},
+    {"علی‌رغم", "`[.0A.0la.1rARm]"},
     {"الحمدلله", "`[.0Al.0hAm.0do.0lel.1lahw]"},
     {"ان‌شاءالله", "`[.0en.0Sa.0wAl.1lahw]"}, {"انشاءالله", "`[.0en.0Sa.0wAl.1lahw]"},
     {"ان‌شاالله", "`[.0en.0Sa.0wAl.1lahw]"}, {"انشاالله", "`[.0en.0Sa.0wAl.1lahw]"},
@@ -2555,6 +2556,11 @@ static int linked_va_compound(const char *word,size_t bytes,char *output,size_t 
     if(split==SIZE_MAX || split<4 || bytes-split<3+2+4)return 0;
     const char *tail=word+split+3;size_t tail_bytes=bytes-split-3;
     if(memcmp(tail,va,2))return 0;
+    /* Productive suffixes that begin with a consonantal و, as in
+     * دیوانه‌وار and دانش‌ور, are not a conjunction plus a word. */
+    static const char *const suffixes[]={"وار","واره","واری","ور","وری","وش","وند","وندی"};
+    for(size_t i=0;i<sizeof suffixes/sizeof suffixes[0];++i)
+        if(stress_word_is(tail,tail_bytes,suffixes[i]))return 0;
     const char *rest=tail+2;size_t rest_bytes=tail_bytes-2;
     if(rest_bytes>3 && !memcmp(rest,"\xe2\x80\x8c",3)) {rest+=3;rest_bytes-=3;}
     else if(reloq_fa_direct_word_classes(tail,tail_bytes))return 0;
@@ -2692,18 +2698,9 @@ static int guessed_linked_word(const char *word,size_t bytes,char *output,size_t
     return 0;
 }
 
-int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
-                                 char *output,size_t capacity)
+static int context_word_tables(const char *word,size_t bytes,int follows_word,
+                               char *output,size_t capacity)
 {
-    if(!fa_context_lookup_depth && word && bytes && bytes!=SIZE_MAX && output && capacity &&
-       !memchr(word,0,bytes)) {
-        /* Hand-checked readings and linked compounds precede the tables. */
-        int linked=reviewed_word(word,bytes,output,capacity);
-        if(!linked)linked=linked_va_compound(word,bytes,output,capacity);
-        if(!linked)linked=linked_article_compound(word,bytes,output,capacity);
-        if(linked)return linked;
-        output[0]=0;
-    }
     unsigned outer=fa_context_lookup_depth++;
     int status=direct_context_depth(word,bytes,follows_word,output,capacity,0);
     --fa_context_lookup_depth;
@@ -2741,4 +2738,39 @@ int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
         }
     }
     return 0;
+}
+
+/* True if a reading pronounces a written article as a word of its own
+ * ("al" or "a-l..."), instead of linking it to the preceding word. */
+static int separate_article_reading(const char *tag)
+{
+    return strstr(tag,"0Al.") || strstr(tag,"0A.0l") || strstr(tag,"0A.1l");
+}
+
+int reloq_fa_direct_context_word(const char *word,size_t bytes,int follows_word,
+                                 char *output,size_t capacity)
+{
+    int outer=!fa_context_lookup_depth && word && bytes && bytes!=SIZE_MAX && output &&
+              capacity && !memchr(word,0,bytes);
+    if(outer) {
+        /* Hand-checked readings and the linking /o/ precede the tables. */
+        int linked=reviewed_word(word,bytes,output,capacity);
+        if(!linked)linked=linked_va_compound(word,bytes,output,capacity);
+        if(linked)return linked;
+        output[0]=0;
+    }
+    int status=context_word_tables(word,bytes,follows_word,output,capacity);
+    /* An existing reading that already links the article is kept. The rule
+     * only replaces a missing reading or one that says a separate "al". */
+    if(outer && (status==0 || (status==1 && separate_article_reading(output)))) {
+        char linked_tag[2048];
+        int linked=linked_article_compound(word,bytes,linked_tag,sizeof linked_tag);
+        if(linked<0)return linked;
+        if(linked==1) {
+            size_t n=strlen(linked_tag);
+            if(n>=capacity)return -2;
+            memcpy(output,linked_tag,n+1);return 1;
+        }
+    }
+    return status;
 }
