@@ -499,6 +499,16 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Actual NVDA sound laboratory test failed' }
           python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon "$addon" --extra-addon "$lab" --plugin experiments/persian/test_phoneme_editor_real_plugin.py --work phoneme-editor-nvda-results
           if ($LASTEXITCODE -ne 0) { throw 'Actual NVDA phoneme editor keyboard test failed' }
+      - name: Show the NVDA test result after a failure
+        if: failure()
+        shell: bash
+        run: |
+          # The runner log can lose the test's own message; the result files keep it.
+          for file in persian-nvda-results/*.json persian-settings-results/*.json soundlab-nvda-results/*.json phoneme-editor*/*.json; do
+            [ -f "$file" ] || continue
+            echo "== $file"
+            python -B -c 'import json,sys; d=json.load(open(sys.argv[1],encoding="utf8")); print("ok:",d.get("ok")); print(str(d.get("error",""))[-6000:])' "$file" || head -c 6000 "$file"
+          done
       - name: Confirm the full acoustic test
         shell: bash
         env:
