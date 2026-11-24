@@ -1,0 +1,30 @@
+name: Persian eSpeak nasal reference
+on:
+  push:
+    branches: [claude/persian-native-melody]
+    paths: [.github/workflows/persian-espeak-nasal-reference.yml, experiments/persian/measure_bands.py]
+permissions:
+  contents: read
+jobs:
+  espeak:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Install eSpeak NG
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends espeak-ng libespeak-ng1 python3-numpy
+          espeak-ng --version
+      - name: Measure M and N
+        run: |
+          mkdir out
+          i=0
+          for text in 'نان' 'میم' 'نون' 'سیمین' 'منانی' 'نقد' 'فوری'; do
+            i=$((i+1))
+            printf '%s: ' "$text"; espeak-ng -v fa -x -q "$text"
+            espeak-ng -v fa -w "out/w$i.wav" "$text"
+          done
+          python3 experiments/persian/measure_bands.py out/w*.wav

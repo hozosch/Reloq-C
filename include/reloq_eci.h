@@ -466,6 +466,13 @@ ECIAPI int ECICALL eciPersianSoundVariant(int variant);
  * melody itself (1) instead of its own melody (0, the default). Process-wide;
  * returns the previous value, or -1. Change it only while nothing speaks. */
 ECIAPI int ECICALL eciPersianNativeMelody(int enabled);
+/* Whether text that eciPersianSpeakNativeUtf8 would take contains a word it
+ * hands to another language. Such a word is spoken as its own clause, with
+ * a sentence ending and a pause; a caller that can carry one melody across
+ * the switch should use its own route for that text. Returns 1 if there is
+ * such a word, 0 if not, and a negative value or 1 for text the native call
+ * would not take either. */
+ECIAPI int ECICALL eciPersianHasLanguageSwitchUtf8(const char *text,size_t bytes,int mode);
 /* Temporarily bypass the saved Persian sound tuning for a comparison on the
  * current synthesis thread. Returns the previous state; restore it on exit. */
 ECIAPI int ECICALL eciPersianTuningScope(int active);

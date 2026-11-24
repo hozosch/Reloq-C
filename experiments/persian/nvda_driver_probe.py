@@ -161,8 +161,13 @@ def _persian_part_runs(parts, home):
     return result
 
 
-def _pinglish_part_runs(parts, home):
-    """Find English exceptions across text chunks without moving commands."""
+def _pinglish_part_runs(parts, home, english_word=None):
+    """Find English exceptions across text chunks without moving commands.
+
+    `english_word`, if given, also asks the core whether it reads a word as
+    English, so that the word gets a language switch with one melody across
+    it instead of a clause of its own.
+    """
     result, entries, logical = {}, [], home
 
     def flush():
@@ -170,7 +175,8 @@ def _pinglish_part_runs(parts, home):
             return
         text = ''.join(value for _, value in entries)
         words = tuple(latin_spans(text))
-        spans = [(start, end) for start, end in words if english_exception(text[start:end])]
+        spans = [(start, end) for start, end in words if english_exception(text[start:end]) or
+                 english_word is not None and english_word(text[start:end])]
         offset = 0
         for index, value in entries:
             end = offset + len(value)
@@ -338,6 +344,17 @@ def try_native_persian_sentence(owner, parts, on_pcm, on_index, *, fa_ids, singl
     if not isinstance(engine, ScopedDirectPersianEngine) or getattr(engine._frontend, '_reference_available', False):
         return None
     target = engine._voice
+    if single_pass:
+        # A word the core hands to English is spoken as its own clause, with
+        # a sentence ending and a pause. The planner carries one melody
+        # across the switch, so such text stays there for now.
+        switches = getattr(target._dll, 'eciPersianHasLanguageSwitchUtf8', None)
+        if switches is None:
+            return None
+        switches.argtypes = (ctypes.c_char_p, ctypes.c_size_t, ctypes.c_int)
+        switches.restype = ctypes.c_int
+        if switches(bytes(text), len(text), int(key[0] == PINGLISH_PROBE.id)) != 0:
+            return None
     speak = getattr(target._dll, 'eciPersianSpeakNativeUtf8' if single_pass
                     else 'eciPersianSpeakUsNativeUtf8', None)
     if speak is None:
@@ -435,6 +452,30 @@ class PersianProbeLanguageEngine(LanguageEngine):
             pass
         finally:
             self._activate(home)
+
+    def _core_english_word(self):
+        """Return a test for words the core reads as English in Pinglish text."""
+        test = getattr(self, '_core_english_test', None)
+        if test is not None:
+            return test
+        known = {}
+        def test(word):
+            if word not in known:
+                if len(known) > 4096:
+                    known.clear()
+                # Looked up when first needed: the Pinglish voice exists by then.
+                engine = self._engines.get(PINGLISH_PROBE.id)
+                query = getattr(getattr(getattr(engine, '_voice', None), '_dll', None),
+                                'eciPersianHasLanguageSwitchUtf8', None)
+                if query is None:
+                    return False
+                query.argtypes = (ctypes.c_char_p, ctypes.c_size_t, ctypes.c_int)
+                query.restype = ctypes.c_int
+                data = word.encode('utf-8')
+                known[word] = query(data, len(data), 1) == 1
+            return known[word]
+        self._core_english_test = test
+        return test
 
     def _acoustic_clock_for(self, language):
         shared = getattr(self, '_persian_request_clock', None)
@@ -792,7 +833,8 @@ class PersianProbeLanguageEngine(LanguageEngine):
                 actual = key
 
         persian_runs = _persian_part_runs(parts, logical)
-        pinglish_runs = _pinglish_part_runs(parts, logical)
+        pinglish_runs = _pinglish_part_runs(parts, logical, self._core_english_word()
+                                            if CORE_MELODY else None)
         for position, part in enumerate(parts):
             if isinstance(part, EciLanguage):
                 logical = self._key(part.language, part.voice)

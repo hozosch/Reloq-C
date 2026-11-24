@@ -1112,6 +1112,20 @@ int ECICALL eciPersianSoundVariant(int variant)
 int ECICALL eciPersianNativeMelody(int enabled)
 {return reloq_fa_set_native_melody(enabled);}
 
+int ECICALL eciPersianHasLanguageSwitchUtf8(const char *text,size_t bytes,int mode)
+{
+    struct reloq_fa_prepared prepared={0};size_t error=0;
+    int status=reloq_fa_prepare_native(text,bytes,mode,NULL,0,&error,&prepared);
+    if(!status) {
+        /* A word for another language is emitted behind a language tag. */
+        const char *plan=prepared.backend.text;size_t length=prepared.backend.length;
+        for(size_t i=0;i+1<length && !status;++i)
+            if(plan[i]=='`' && plan[i+1]=='l')status=1;
+    }
+    reloq_fa_prepared_clear(&prepared);
+    return status;
+}
+
 int ECICALL eciPersianTuningScope(int active)
 {return reloq_fa_tuning_scope(active);}
 
