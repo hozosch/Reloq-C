@@ -15,7 +15,10 @@ import re
 
 from translate import LANG, Records, load_rules, shared_symbols, translate
 
-ROOT_RULE = 'generate_intonation'
+# Rules called from the speech module that are replaced as a whole. The
+# per-word and per-syllable setup rules (`init_word_vars`, `init_syll_vars`)
+# are deliberately not here: taken over whole they also change durations.
+ROOT_RULES = ('generate_intonation',)
 KEY = 'RELOQ_FA_US_MELODY'
 WIDTH = 8
 
@@ -38,8 +41,8 @@ def constant(raw, offsets, index):
     return raw[offsets[index]:min(following) if following else len(raw)]
 
 
-def reachable(rules, root):
-    seen, todo = set(), [root]
+def reachable(rules, roots):
+    seen, todo = set(), list(roots)
     while todo:
         name = todo.pop()
         if name in seen or name not in rules:
@@ -53,7 +56,7 @@ def generate():
     """Return (C source, report) for the US melody rules."""
     english, persian = load_rules('enus61', 'enus61'), load_rules('fifi', 'fifi')
     table, symbols = Records(), shared_symbols(english, persian)
-    names = reachable(english, ROOT_RULE)
+    names = reachable(english, ROOT_RULES)
     english_raw, english_offsets = authored('enus61', 'enus61')
     persian_raw, persian_offsets = authored('fifi', 'fifi')
     by_bytes = {}
@@ -144,18 +147,18 @@ static int persian_us_melody_selected(void)
 def install(path: Path):
     """Append the US melody to the prepared rule file and choose it at the call."""
     text = path.read_text(encoding='utf8')
-    call = '    r0 = reloq_call_fifi_generate_intonation(state, (int32_t)(FIELD(0)));\n'
-    if text.count(call) != 1:
-        raise RuntimeError('Cannot locate the Persian melody call')
     source, report = generate()
-    marker = '\n/* generate_durations'
+    for rule in ROOT_RULES:
+        call = f'    r0 = reloq_call_fifi_{rule}(state, (int32_t)(FIELD(0)));\n'
+        if text.count(call) != 1:
+            raise RuntimeError('Cannot locate the Persian call of ' + rule)
+        text = text.replace(call,
+            '    r0 = persian_us_melody_selected()\n'
+            f'        ? persian_us_{rule}(state, (int32_t)(FIELD(0)))\n'
+            f'        : reloq_call_fifi_{rule}(state, (int32_t)(FIELD(0)));\n', 1)
     first_rule = re.search(r'^/\* \w+, from \w+\.obj \*/\n', text, re.M)
     if not first_rule:
         raise RuntimeError('Cannot locate the first rule of the prepared file')
-    text = text.replace(call,
-        '    r0 = persian_us_melody_selected()\n'
-        '        ? persian_us_generate_intonation(state, (int32_t)(FIELD(0)))\n'
-        '        : reloq_call_fifi_generate_intonation(state, (int32_t)(FIELD(0)));\n', 1)
     start = first_rule.start()
     if '#include <stdlib.h>' not in text[:start]:
         source = '#include <stdlib.h>\n' + source

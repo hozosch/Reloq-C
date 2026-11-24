@@ -131,8 +131,18 @@ generator runs, by rules that are not ported yet:
   English sound rules (`word_final_flap`, `do_word_initial_creak`) that must
   not run on Persian phones.
 
-The next step is to port the accent-assigning parts of those two groups and
-leave the phone-changing parts on the Persian side.
+A third group runs in the speech module just before the melody:
+`init_word_vars` and `init_syll_vars`. They differ strongly between the
+providers. Taking both over whole was tried and rejected: no sentence stayed
+comparable, because they also feed the duration rules. Only the variables
+the melody reads may come from the English versions.
+
+The next step is to port the accent-assigning parts of these groups and
+leave durations and phones on the Persian side.
+
+With the US rules selected, the provider streams as it does for other
+languages: first audio after about 1 ms, where the fitted two-pass contour
+needs 5.6 ms for a short and 22.6 ms for a long sentence in the same C path.
 
 ## What still has to be solved
 

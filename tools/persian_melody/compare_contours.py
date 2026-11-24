@@ -143,6 +143,8 @@ def main():
             print('%-58s %s' % (text, 'not comparable' if value is None else
                                 'median %.2f st, largest %.2f st' % value))
     compared = sum(value is not None for _, value in rows)
+    if not every:
+        raise SystemExit('no sentence was comparable: the candidate changes durations or fails')
     every.sort()
     finals.sort()
     quantile = lambda values, q: values[min(len(values) - 1, int(q * len(values)))]
