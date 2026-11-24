@@ -53,6 +53,23 @@ Die Versionshinweise beschreiben jeweils die Änderungen seit der unmittelbar vo
 
 Der aktuelle Paketstand ist 1.2.2. Änderungen und bekannte Grenzen stehen in [den Versionshinweisen](releases/1.2.2.md). Die C-Kernversion wird beim Laden im NVDA-Protokoll ausgegeben; damit lässt sich prüfen, welche DLL tatsächlich aktiv ist.
 
+## Linux: Speech-Dispatcher-Modul und Linda-Add-on
+
+Zusätzlich zum nativen Kern werden die Entwicklungsdateien von Speech Dispatcher 0.11 oder neuer benötigt (`libspeechd-dev` unter Debian und Ubuntu, `speech-dispatcher-devel` unter Fedora).
+
+```sh
+make -C eci -j4 libreloq_eci.so sd_reloq
+python3 speechd/test_speechd.py eci/sd_reloq speechd/reloq.conf --library eci/libreloq_eci.so
+python3 addon/build_synth.py --platform linux
+python3 addon/test_synth.py --linux
+python3 linux/package.py
+python3 linux/test_package.py
+```
+
+`eci/sd_reloq` ist das Speech-Dispatcher-Modul `reloq` mit demselben C-Kern. Die Protokollprüfung spricht das Modulprotokoll direkt, ohne laufenden Server, und vergleicht das PCM mit der direkten Synthese über `libreloq_eci.so`. `build_synth.py --platform linux` erzeugt `dist/reloq-c-synth-linux-x64-<Version>.nvda-addon` für Linda; es enthält statt `eci.dll` die Bibliothek `libreloq_eci.so` und sonst denselben Treiber. `linux/package.py` erzeugt das reproduzierbare Archiv `dist/reloq-c-linux-x64-<Version>.tar.gz` mit `install.sh`; `linux/test_package.py` installiert, verwendet und entfernt es in einem temporären Benutzerverzeichnis.
+
+Lokal gebaute Binärdateien setzen die C-Bibliothek des Build-Systems voraus. Der Paket-Workflow baut die Linux-Pakete deshalb in einem Ubuntu-22.04-Container (glibc 2.35) und prüft diese Grenze. Die Linux-Pakete werden dort gebaut und geprüft, sind aber noch nicht Teil der veröffentlichten Release-Pakete. Installation und Bedienung beschreibt [linux/README.md](../linux/README.md).
+
 ## Android ARM64
 
 Die [Android-Anleitung](../android/README.md) beschreibt den APK-Build mit demselben C-Kern, JDK 17, SDK 35 und NDK r30. `python3 android/build.py` erzeugt das signierte ARM64-Paket unter `dist/`, wenn die dort beschriebenen SDK-, NDK- und Java-Pfade gesetzt sind. Android verwendet getrennte Build-Verzeichnisse. Für JNI-Transport, Warteschlange und ARM64-Rücksprünge gibt es eigene Prüfungen. Die neue App-Kennung führt zu einer separaten Installation; Einstellungen und Wörterbuchfreigaben sind erneut einzurichten.

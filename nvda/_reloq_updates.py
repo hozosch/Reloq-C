@@ -4,13 +4,29 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import sys
 import threading
 from urllib.parse import unquote, urlsplit
 from urllib.request import Request, urlopen
 
 RELEASES = "https://api.github.com/repos/hozosch/Reloq-C/releases?per_page=30"
 LIMIT = 128 * 1024 * 1024
-PACKAGE = re.compile(r"reloq-c-synth-x64-(\d+\.\d+\.\d+)\.nvda-addon\Z")
+
+
+def package_pattern(platform):
+    """Release asset names for one package platform: x64 (Windows) or linux-x64 (Linda)."""
+    if platform not in ("x64", "linux-x64"):
+        raise ValueError("unknown package platform")
+    return re.compile(rf"reloq-c-synth-{platform}-(\d+\.\d+\.\d+)\.nvda-addon\Z")
+
+
+def installed_platform():
+    """The Linux package is the one that carries libreloq_eci.so beside this module."""
+    library = Path(__file__).with_name("libreloq_eci.so")
+    return "linux-x64" if sys.platform.startswith("linux") and library.is_file() else "x64"
+
+
+PACKAGE = package_pattern(installed_platform())
 BUILD_MARKER = re.compile(r"(?m)^<!-- ReLoq-C build:([1-9]\d{0,11}) -->$")
 MAX_BUILD_EPOCH = 253402300799
 

@@ -12,6 +12,7 @@ import ctypes
 import json
 import math
 from pathlib import Path
+import sys
 import threading
 import re
 
@@ -47,7 +48,11 @@ from ._reloq_languages import (GERMAN, LANGUAGES, LANGUAGE_ALIASES, LANGUAGE_DIS
 from ._speech_tags import EciTagCommand, SegmentationGuard, NativeDictionaryWord, CapitalWordCommand, protect_sequence, register_remote_commands
 
 
-DLL = Path(__file__).with_name("eci.dll")
+# The Windows package carries eci.dll; the Linux package for Linda carries the
+# same engine as libreloq_eci.so. Each package contains only its own library.
+LINUX_LIBRARY = Path(__file__).with_name("libreloq_eci.so")
+DLL = (LINUX_LIBRARY if sys.platform.startswith("linux") and LINUX_LIBRARY.is_file()
+       else Path(__file__).with_name("eci.dll"))
 # The last preset uses the user's independent saved values.
 EQ_PRESETS = ((0, 0, 0), (4, 0, -1), (-1, 0, 4), (0, -1, -4))
 EQ_FILTER_FREQUENCIES = (125, 500, 1200, 3000, 6000)
@@ -305,14 +310,17 @@ class SynthDriver(BaseSynthDriver):
         if ctypes.sizeof(ctypes.c_void_p) != 8 or not DLL.is_file():
             return False
         try:
-            ctypes.WinDLL(str(DLL))
+            if DLL == LINUX_LIBRARY:
+                ctypes.CDLL(str(DLL))
+            else:
+                ctypes.WinDLL(str(DLL))
         except (AttributeError, OSError):
             return False
         return True
 
     def __init__(self):
         if not self.check():
-            raise RuntimeError("The x64 ECI DLL cannot load in this NVDA process")
+            raise RuntimeError(f"The x64 ECI library {DLL.name} cannot load in this process")
         register_remote_commands()
         self._terminating = False
         self._submit_lock = threading.RLock()

@@ -2,6 +2,8 @@
 import weakref
 import os
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import threading
 
@@ -17,6 +19,22 @@ import wx
 addonHandler.initTranslation()
 config.conf.spec["reloqCUpdates"] = {"automatic": "boolean(default=True)",
                                     "lastOffered": "string(default='')"}
+
+
+def _open_folder(path):
+    """Open a folder in the desktop's file manager on Windows or under Linda."""
+    if sys.platform == "win32":
+        os.startfile(path)
+        return
+    try:
+        # Linda's counterpart of os.startfile: the desktop's default application.
+        from linuxPlatform.windowsOnly import startfile
+    except ImportError:
+        subprocess.Popen(["xdg-open", path], stdin=subprocess.DEVNULL,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                         start_new_session=True)
+    else:
+        startfile(path)
 
 
 def dictionary_update_message(details):
@@ -610,7 +628,7 @@ class EloquenceSettingsPanel(SettingsPanel):
 
     def on_folder(self, event):
         if self.current_synth():
-            os.startfile(str(self.synth.dictionary_manager().bundled))
+            _open_folder(str(self.synth.dictionary_manager().bundled))
 
     def begin(self, show_result=False):
         self.pending = True
