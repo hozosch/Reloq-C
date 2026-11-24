@@ -783,17 +783,30 @@ int  emptyDeltaStack(delta_state *d);
 void *popDeltaStackFrame(delta_state *d, uint8_t *to);
 void vnspush(delta_state *d, const delta_operand *v);
 
-/* A view of one short field. Rules carried over from another language may
-   count a field, word stress for one, on that language's scale. While a view
-   is set on the calling thread, rules read the field through `read` and write
-   it through `write`; the record keeps the provider's own values. Unset by
-   default, and then nothing changes. */
-struct delta_field_view {
-    uint8_t statement, field;
-    int16_t (*read)(int16_t stored);
-    int16_t (*write)(int16_t seen);
+/* A second reading of some record fields, for rules carried over from another
+   language. Two rule sets may have to decide the same fields differently on
+   the same records: the provider's own rules for its durations, the carried
+   rules for the melody. While an overlay is set on the calling thread:
+
+   - in DELTA_OVERLAY_VIEW, rules read the covered record types through the
+     overlay and their writes are kept in it; the records are not touched;
+   - in DELTA_OVERLAY_KEEP, writes reach the records as usual, but the value
+     a field had before is kept in the overlay first, so the view does not
+     see what the provider's own rules decide.
+
+   One short field may also be counted on another scale; `scale` converts a
+   stored value to the scale the view uses. Unset by default, and then
+   nothing changes. */
+enum { DELTA_OVERLAY_VIEW = 1, DELTA_OVERLAY_KEEP = 2, DELTA_OVERLAY_SLOTS = 512 };
+struct delta_field_overlay {
+    uint8_t mode;
+    uint8_t statements[2];
+    uint8_t scaled_statement, scaled_field;
+    int16_t (*scale)(int16_t stored);
+    unsigned count;
+    struct { const void *where; uint8_t size, bytes[2]; } slot[DELTA_OVERLAY_SLOTS];
 };
-extern _Thread_local const struct delta_field_view *delta_field_view;
+extern _Thread_local struct delta_field_overlay *delta_field_overlay;
 void vadd(delta_state *d, const delta_operand *a, const delta_operand *b);
 int32_t vgen_frame(delta_state *d);
 int32_t vgen_time(delta_state *d);

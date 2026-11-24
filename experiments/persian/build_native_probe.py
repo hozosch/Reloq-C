@@ -4162,7 +4162,7 @@ def prepare_us_melody(work: Path) -> None:
         import port
     finally:
         sys.path.remove(str(tools))
-    for filename in set(port.ROOTS.values()):
+    for filename in port.FILES:
         if not (work / filename).exists():
             shutil.copyfile(PROVIDER / 'lang' / 'fifi' / filename, work / filename)
     port.install(work)

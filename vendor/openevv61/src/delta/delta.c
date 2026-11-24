@@ -2464,18 +2464,99 @@ void vassign(delta_state *d, const delta_operand *dst, const delta_operand *src)
 
 /* Push the named field of the statement the scan is sitting on. Returns
    nonzero when there was nothing there to push. */
-_Thread_local const struct delta_field_view *delta_field_view;
+_Thread_local struct delta_field_overlay *delta_field_overlay;
 
-static int field_viewed(uint8_t st, uint8_t fld, int16_t kind)
+static unsigned overlay_size(uint8_t st, int16_t kind)
 {
-    return delta_field_view && delta_field_view->statement == st
-        && delta_field_view->field == fld
-        && (kind == DK_SHORT || kind == DK_SHORT2);
+    const struct delta_field_overlay *o = delta_field_overlay;
+
+    if (!o || (o->statements[0] != st && o->statements[1] != st))
+        return 0;
+    return kind == DK_UBYTE ? 1 : kind == DK_SHORT || kind == DK_SHORT2 ? 2 : 0;
+}
+
+static uint8_t *overlay_find(const void *where)
+{
+    struct delta_field_overlay *o = delta_field_overlay;
+
+    for (unsigned i = 0; i < o->count; ++i)
+        if (o->slot[i].where == where)
+            return o->slot[i].bytes;
+    return 0;
+}
+
+static uint8_t *overlay_add(const void *where, unsigned size)
+{
+    struct delta_field_overlay *o = delta_field_overlay;
+
+    if (o->count == DELTA_OVERLAY_SLOTS)
+        return 0;
+    o->slot[o->count].where = where;
+    o->slot[o->count].size = (uint8_t)size;
+    return o->slot[o->count++].bytes;
+}
+
+/* What the stored value of a field is in the view's terms. */
+static void overlay_stored(uint8_t st, uint8_t fld, unsigned size,
+                           const void *where, uint8_t *out)
+{
+    const struct delta_field_overlay *o = delta_field_overlay;
+
+    memcpy(out, where, size);
+    if (size == 2 && o->scale && o->scaled_statement == st
+        && o->scaled_field == fld) {
+        int16_t value;
+
+        memcpy(&value, where, 2);
+        value = o->scale(value);
+        memcpy(out, &value, 2);
+    }
+}
+
+/* Where a rule reads the field from: the record, or the overlay. */
+static const void *overlay_read(uint8_t st, uint8_t fld, int16_t kind,
+                                const void *where, uint8_t scratch[2])
+{
+    unsigned size = overlay_size(st, kind);
+    const uint8_t *kept;
+
+    if (!size || delta_field_overlay->mode != DELTA_OVERLAY_VIEW)
+        return where;
+    kept = overlay_find(where);
+    if (kept)
+        return kept;
+    overlay_stored(st, fld, size, where, scratch);
+    return scratch;
+}
+
+/* Nonzero when the write was kept in the overlay and the record stays. */
+static int overlay_write(uint8_t st, uint8_t fld, int16_t kind,
+                         const void *where, const void *value)
+{
+    unsigned size = overlay_size(st, kind);
+    uint8_t *kept;
+
+    if (!size)
+        return 0;
+    kept = overlay_find(where);
+    if (delta_field_overlay->mode == DELTA_OVERLAY_VIEW) {
+        if (!kept)
+            kept = overlay_add(where, size);
+        if (kept)
+            memcpy(kept, value, size);
+        return 1;
+    }
+    if (delta_field_overlay->mode == DELTA_OVERLAY_KEEP && !kept) {
+        kept = overlay_add(where, size);
+        if (kept)
+            overlay_stored(st, fld, size, where, kept);
+    }
+    return 0;
 }
 
 int npush_fld(delta_state *d, uint8_t st, uint8_t fld)
 {
-    int16_t seen;
+    uint8_t seen[2];
     delta_vars *v = EVV_AT(delta_vars *, d->vars);
     const delta_stmt *e = &vstmtbl[st];
     delta_operand out;
@@ -2510,10 +2591,7 @@ int npush_fld(delta_state *d, uint8_t st, uint8_t fld)
     }
 
     out.ptr = delta_record_field(e, fld, TFLDS(EVV_AT(void *, p)));
-    if (field_viewed(st, fld, out.kind)) {
-        seen = delta_field_view->read(*(const int16_t *)out.ptr);
-        out.ptr = &seen;
-    }
+    out.ptr = (void *)overlay_read(st, fld, out.kind, out.ptr, seen);
     vnspush(d, &out);
     return 0;
 }
@@ -2646,6 +2724,7 @@ int testFldeq(delta_state *d, uint8_t st, uint8_t fld, uint8_t val)
     delta_vars *v = EVV_AT(delta_vars *, d->vars);
     int32_t p = v->scan_ptr;
     const uint8_t *q;
+    uint8_t seen[2];
     EVV_WALK(w);
 
     for (;;) {
@@ -2665,6 +2744,7 @@ int testFldeq(delta_state *d, uint8_t st, uint8_t fld, uint8_t val)
     }
 
     q = delta_record_field(&vstmtbl[st], fld, TFLDS(EVV_AT(void *, p)));
+    q = overlay_read(st, fld, DK_UBYTE, q, seen);
     return *q == val ? 0 : 1;
 }
 
@@ -4159,7 +4239,10 @@ int vmark(delta_state *d, uint8_t st, uint8_t fld, int32_t t, int32_t stop,
             continue;
         }
 
-        e->put[fld](TFLDS(EVV_AT(void *, next)), value);
+        if (!overlay_write(st, fld, e->fields[fld].kind,
+                           delta_record_field(e, fld, TFLDS(EVV_AT(void *, next))),
+                           value))
+            e->put[fld](TFLDS(EVV_AT(void *, next)), value);
         t = *EVV_AT(int32_t *, (next + 4)) & ~3;
     }
 
@@ -5557,7 +5640,6 @@ int mark_v(delta_state *d, uint8_t f, uint8_t fld, delta_loc *loc,
            uint8_t mode)
 {
     delta_operand v;
-    int16_t stored;
 
     if (vrange_2pt(d, &d->lpta, &d->rpta, (int8_t)f, mode)) {
         reset_field(loc);
@@ -5567,10 +5649,6 @@ int mark_v(delta_state *d, uint8_t f, uint8_t fld, delta_loc *loc,
     vinitloc_new(d, &v, loc);
 
     if (v.kind == vstmtbl[f].fields[fld].kind) {
-        if (field_viewed(f, fld, v.kind)) {
-            stored = delta_field_view->write(*(const int16_t *)v.ptr);
-            v.ptr = &stored;
-        }
         vmark(d, f, fld, d->lpta.node, d->rpta.node, v.ptr);
 
         if (v.kind == DK_SYNC || (v.kind > -5 && v.kind < 0))

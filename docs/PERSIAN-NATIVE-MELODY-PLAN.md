@@ -207,20 +207,54 @@ differently:
 | emphasis | 6, 7 | 3, 4 |
 
 The US rules compare against the English numbers, so every Persian word
-looked nearly unstressed to them. The levels live in four variables
-(`s236`, `s237`, `s242`, `s243`) and in the word records. While the US rules
-run, the variables hold the English numbers and the word-stress field is
-read and written through a view (`delta_field_view` in the rule machine,
-unset by default). The records keep the Persian numbers, so durations do not
-change.
+looked nearly unstressed to them. While they run, the four level variables
+(`s236`, `s237`, `s242`, `s243`) hold the English numbers and the records are
+read on the English scale.
 
 The translator also left field writes (`mark_s`, `mark_v`) untranslated; they
 are translated now.
 
 Result over the 30 sentences: median 0.18 st, 90 % within 0.84 st, 2.0 % of
-the frames more than 2 st apart (before: 0.53 st, 1.69 st, 6.8 %). The
-default output is bit-identical. What remains is in questions and directly
-after commas.
+the frames more than 2 st apart (before: 0.53 st, 1.69 st, 6.8 %).
+
+## Fourth step: two decisions on the same records
+
+Three more differences were found, all in questions:
+
+1. **Which language is speaking.** Many rules are the same text in both
+   providers and ask for the current language (`s473`). The first port
+   renamed the English language number to the Finnish one, which made the
+   rules' own "is this Finnish" branches true as well. Now the current
+   language is US English while the US rules run, and nothing is renamed.
+2. **The accent rules decide durations too.** With English accent decisions
+   a question came out 55 ms shorter. The Persian rules must therefore still
+   decide, and the US rules must decide separately. `adjust_accents` and
+   `get_nuclear_accent` now run twice: first the US rule, whose writes to word
+   and phrase records go into an overlay, then the Persian rule, whose writes
+   reach the records. Only the US rules read the overlay
+   (`delta_field_overlay` in the rule machine, unset by default).
+3. **The accented word.** The Persian duration stage finds it with the
+   Finnish rule. The US melody looks for it again with the US rule and puts
+   the pointers back afterwards.
+
+Result over the 30 sentences:
+
+| | first port | now |
+|---|---|---|
+| median distance | 0.53 st | 0.18 st |
+| 90 % of frames within | 1.69 st | 0.81 st |
+| frames more than 2 st apart | 6.8 % | 1.8 % |
+| last 300 ms, median | 0.33 st | 0.24 st |
+| sentences with a different length | – | 0 of 30 |
+
+Every sentence has exactly the length of the accepted output, so phones and
+durations are unchanged. The default output is bit-identical. Statements and
+yes/no questions follow the accepted contour closely. What remains:
+
+- three short questions ("این چیست؟", "ساعت چند است؟", "کجا می‌روی؟"): the
+  first word is up to 2.7 st off;
+- the last syllable before a comma: up to 4.3 st, the accepted contour falls
+  further there.
 
 ## Stages
 
