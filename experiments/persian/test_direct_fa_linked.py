@@ -27,14 +27,17 @@ CASES = (
     (f'هم{ZWNJ}وطن', '`[.0hAm.0vA.1tAn]', True),
     (f'بی{ZWNJ}وفا', '`[.0bi.0vA.1fa]', True),
     (f'نخست{ZWNJ}وزیر', '`[.0no.0Gost.0vA.1zir]', True),
+    # A suffix that begins with a consonantal و is not a conjunction.
+    (f'آبرفت{ZWNJ}وار', '`[.0ab.0roft.1var]', True),
     # Arabic article: /ol/, sun-letter assimilation, shortened final vowel.
+    # Existing readings that already link the article are kept as they are.
     (f'حق{ZWNJ}الزحمه', '`[.0hA.0Roz.0zAh.1me]', True),
     (f'فی{ZWNJ}البداهه', '`[.0fel.0be.0da.1he]', True),
-    (f'فارغ{ZWNJ}التحصیل', '`[.0fa.0re.0Rot.0tAh.1sil]', True),
-    (f'لازم{ZWNJ}الاجرا', '`[.0la.0ze.0mo.0leJ.1ra]', True),
+    (f'فارغ{ZWNJ}التحصیل', '`[.0fa.0reR.0ot.0tAh.1sil]', True),
+    (f'لازم{ZWNJ}الاجرا', '`[.0la.0zem.0o.0leJ.1ra]', True),
     (f'حتی{ZWNJ}المقدور', '`[.0hAt.0tAl.0mAR.1dur]', True),
     (f'روح{ZWNJ}الله', '`[.0ru.0hol.1lahw]', True),
-    (f'بین{ZWNJ}المللی', '`[.0bej.0nol.0me.0lA.1li]', True),
+    (f'بین{ZWNJ}المللی', '`[.0bejn.0ol.0me.0lA.1li]', True),
     (f'فوق{ZWNJ}العاده', '`[.0fo.0Ro.0la.1de]', True),
     ('دارالفنون', '`[.0da.0rol.0fo.1nun]', True),
     ('الوصل', '`[.0Al.1vAsl]', False),

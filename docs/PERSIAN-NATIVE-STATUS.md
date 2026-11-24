@@ -171,7 +171,10 @@ letter guess. A half-space compound with a written `و` keeps it as a linking
 /o/ (`گفت‌وگو`), unless the tail is a classified word of its own (`هم‌وطن`).
 The Arabic article inside a compound is read /ol/ with sun-letter
 assimilation and a shortened preceding vowel (`حق‌الزحمه`, `فی‌البداهه`,
-`روح‌الله`); a word that begins with the article and is otherwise unknown
+`روح‌الله`). An existing reading that already links the article is kept; the
+rule replaces only a missing reading or one that says a separate "al". A
+Roman-script spelling follows its Persian word, so these readings reach
+Pinglish too. A word that begins with the article and is otherwise unknown
 uses the known reading of the rest (`الوصل`). An unknown word made of two
 known words written together is read as those words (`سیدمهدی`). A final
 tanwin in a guessed word no longer makes the whole phrase fail, and a guessed
