@@ -508,6 +508,7 @@ jobs:
             [ -f "$file" ] || continue
             echo "== $file"
             python -B -c 'import json,sys; d=json.load(open(sys.argv[1],encoding="utf8")); print("ok:",d.get("ok")); print(str(d.get("error",""))[-6000:])' "$file" || head -c 6000 "$file"
+            python -B -c 'import json,sys; d=json.load(open(sys.argv[1],encoding="utf8")); [print(json.dumps(r,ensure_ascii=True)[:1500]) for r in d.get("cases",[]) if "decimal" in str(r.get("spelling")) or "version" in str(r.get("text"))]' "$file" || true
           done
       - name: Confirm the full acoustic test
         shell: bash
