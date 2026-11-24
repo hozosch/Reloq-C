@@ -1,0 +1,114 @@
+# Moving the US sentence melody into the Persian core
+
+Status: groundwork only. Nothing in the voice has changed. This file records
+what was measured and the plan, so the work can continue in later sessions.
+
+## Goal
+
+Persian keeps the accepted US-derived sentence melody, but the provider
+produces it itself, syllable by syllable, the way it does for every other
+language. The driver then only controls the voice: no second synthesis pass
+and no melody planning in Python.
+
+## What is measured today
+
+First audio through the planner that the NVDA add-on uses (Linux, warm):
+
+| Text | Persian | English |
+|---|---|---|
+| letter | 1.8 ms | 0.4 ms |
+| word | 2.0 to 2.3 ms | 0.3 ms |
+| sentence | 3.9 ms | 1.1 ms |
+| long sentence | 5.9 ms | 1.7 ms |
+| Persian with English words | 6.9 to 12.6 ms | 0.7 to 1.3 ms |
+| first word after start | 14.4 ms | 0.9 ms |
+
+The gap comes from rendering each sentence twice (the Persian target and a
+silent US donor) and, for mixed text, from frame loops in Python. The pure C
+two-pass entry point waits for the whole sentence: about 22 ms for a long
+sentence and 220 ms for 100 seconds of unbroken speech.
+
+How far the provider's own melody is from the accepted contour, measured by
+`tools/persian_melody/compare_contours.py` over 30 sentences:
+
+- all voiced frames: median 0.82 semitones apart, 90 % within 2.12, largest 7.69
+- last 300 ms of each sentence: median 1.05, 90 % within 2.45
+- 12.6 % of the frames are more than 2 semitones apart
+
+Plain statements are already close (median about 0.4 to 0.9). Questions,
+exclamations and comma phrases differ most (up to 5 to 8 semitones). The same
+script is the acceptance measure for the native melody.
+
+## Why a port is possible
+
+The Finnish-based provider that Persian uses and the US-English provider come
+from one rule family:
+
+- 410 rules exist in both; 289 have the same number of lines.
+- 75 intonation rules are shared. `insert_f0` (300 lines) differs in 8 lines,
+  `f0_step` in 2.
+- The language-specific tone rules pair up one to one: `fin_high_tone` and
+  `eng_high_tone`, `fin_phrase_tone` and `eng_phrase_tone`, and so on.
+- The record types have the same numbers (phone 2, word 4, phrase 5,
+  syllable 7). The phrase record is identical.
+- Global variables line up: every `s` variable has the same number except
+  one (`s474` in English is `s483` here), `w` variables from 82 up are 12
+  lower here, and `c` and `f` variables are identical.
+  `tools/persian_melody/rosetta.py` derives this from the shared rules:
+  436 variables and 202 authored symbols, with that single exception.
+
+The English-only rules that produce the melody, with everything they call
+that the Persian provider lacks, are 28 rules and about 7,800 lines:
+
+`eng_high_tone`, `eng_low_tone`, the four starred and six nuclear tone rules,
+`eng_boundary_tone`, `eng_phrase_tone`, `eng_phr_initial_F0`,
+`eng_prenucl_f0`, `eng_postnucl_f0`, `eng_first_postnucl_accent`,
+`find_eng_nucleus`, `adjust_eng_accents`, `eng_position_t_ptrs`,
+`nucl_acc_t1pos`, `postnucl_high_tone`, the continuation-phrase rules and
+`is_minor_phrase_break`. They call four shared rules that already exist here.
+
+## What still has to be solved
+
+1. **Record fields.** The phone and word records order their fields
+   differently (the English word record has four extra fields before
+   `stress_level`; the phone record differs after `transition`). Field
+   numbers appear as literals and are also passed around in locals, so each
+   use has to be translated by field name, not by a blanket substitution.
+2. **Field values.** Word categories and phone classes are numbered per
+   language. English syntactic tests (`is_minor_phrase_break`, noun and
+   preposition phrases) do not apply to Persian; in the accepted contour they
+   run on a nonsense donor text, so they must behave as they do for words of
+   unknown category.
+3. **Authored constants.** The 28 rules use 16 English constants that have no
+   counterpart here (scan fences and test strings). They have to be embedded,
+   as the Brazilian R port in `experiments/persian/build_native_probe.py`
+   already does for its donor.
+4. **Inputs.** The accepted contour is fitted from a donor built by
+   `src/reloq_persian_us_proxy.c`: its stress pattern, weak words and the
+   artificial primary stress for all-unstressed words. The native rules must
+   see the same stresses on the Persian records.
+5. **Selection.** The Finnish dispatchers (`high_tone`, `phrase_tone`, …)
+   choose the `fin_*` rule from a language variable. Under a new scoped key
+   they would choose the ported rule instead; the default stays unchanged.
+
+## Stages
+
+1. Translate the 28 rules mechanically (rule prefix, variables, symbols),
+   then resolve fields, values and constants rule by rule. Compile them into
+   the Persian provider behind a scoped key that nothing selects.
+2. Measure with `compare_contours.py` against the accepted contour. Target
+   before any listening: median under 0.25 semitones and no frame more than
+   2 semitones apart in the 30 sentences, then a larger set.
+3. Offer it as another listening variant in the NVDA test add-on.
+4. Only after listeners accept it: make it the path the voice uses, register
+   Persian and Pinglish as ordinary dialects, and remove the melody planning
+   from the driver. Mixed Persian and English text and source indexes need
+   their own stage; they are not solved by the melody alone.
+
+## Risks
+
+- The rules are machine-recovered code. A wrong field or value number does
+  not fail to compile; it produces a slightly wrong melody. Every stage is
+  therefore checked by measurement, not by reading.
+- The result may be very close rather than identical. Remaining differences
+  will be named with the sentences that show them.
