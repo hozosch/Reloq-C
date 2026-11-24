@@ -38,7 +38,7 @@ FA_EXPORT int reloq_fa_set_native_melody(int enabled)
 
 FA_EXPORT int reloq_fa_set_sound_variant(int variant)
 {
-    if(variant<0 || variant>3)return -1;
+    if(variant<0 || variant>4)return -1;
     int previous=fa_sound_variant;
     fa_sound_variant=variant;
     return previous;

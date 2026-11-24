@@ -120,6 +120,9 @@ def main():
                         help="melody to compare with the accepted US contour: the provider's "
                              'own, or the US rules inside the provider')
     parser.add_argument('--list', action='store_true', help='print every sentence')
+    parser.add_argument('--check', action='store_true',
+                        help='fail unless every sentence keeps its length, the median distance is '
+                             'at most 0.3 st and at most 3 %% of the frames are more than 2 st apart')
     args = parser.parse_args()
     render, _keep = load(args.library, us_rules=args.candidate == 'us-rules')
     semitone = lambda a, b: 12 * abs(__import__('math').log2(a / b))
@@ -153,7 +156,10 @@ def main():
           % (quantile(every, .5), quantile(every, .9), every[-1]))
     print('last 300 ms:     median %.2f st, 90%% within %.2f st, largest %.2f st'
           % (quantile(finals, .5), quantile(finals, .9), finals[-1]))
-    print('frames more than 2 st apart: %.1f %%' % (100 * sum(v > 2 for v in every) / len(every)))
+    far = 100 * sum(v > 2 for v in every) / len(every)
+    print('frames more than 2 st apart: %.1f %%' % far)
+    if args.check and (compared != len(rows) or quantile(every, .5) > 0.3 or far > 3.0):
+        raise SystemExit('the candidate melody is too far from the accepted contour')
 
 
 if __name__ == '__main__':

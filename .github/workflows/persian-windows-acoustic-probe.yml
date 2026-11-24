@@ -445,6 +445,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Persian medial r after i failed' }
           python -B experiments/persian/test_persian_sound_variant.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian sound variant switch failed' }
+          python -B experiments/persian/test_core_melody_route.py --library eci/eci.dll
+          if ($LASTEXITCODE -ne 0) { throw 'Persian route with the core melody failed' }
+          python -B tools/persian_melody/compare_contours.py --library eci/eci.dll --candidate us-rules --check
+          if ($LASTEXITCODE -ne 0) { throw 'Persian core melody comparison failed' }
           python -B experiments/persian/test_bakhtiari_football.py --library eci/eci.dll
           if ($LASTEXITCODE -ne 0) { throw 'Persian Bakhtiari or football acoustics failed' }
           python -B experiments/persian/test_initial_vowel_timing.py --library eci/eci.dll

@@ -766,6 +766,16 @@ def _syllable_word_edges(item, bounds, counts):
     return tuple(groups)
 
 
+# Set by the NVDA adapter when the package asks for the US sentence melody
+# that is fixed in the core (eciPersianNativeMelody). Persian sentences then
+# need no donor voice: the frames the core makes already carry the melody.
+CORE_MELODY = False
+
+
+def core_melody():
+    return CORE_MELODY
+
+
 def fit_us_word_pitch(item, bounds, donor, donor_bounds, target_markers, donor_markers,
                       rate, capture_api, check=None, *, syllable_counts=()):
     """Fit complete US word contours, including each final voiced vowel.

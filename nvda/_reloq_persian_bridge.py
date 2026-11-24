@@ -6,6 +6,38 @@ from pathlib import Path
 import sys
 
 from ._persian.nvda_driver_probe import PERSIAN_PROBE, PINGLISH_PROBE, make_language_engine
+from ._persian import continuous_plan, nvda_driver_probe
+
+
+NATIVE_MELODY_FILE = 'persian_native_melody.txt'
+
+
+def select_native_melody(library: Path, folder: Path | None = None):
+    """Use the US sentence melody that is fixed in the core, if this package asks.
+
+    A test package can carry a one-line file containing 1 next to this
+    module. The core then makes the melody with its own rules in the same
+    pass as the speech, ordinary Persian text is spoken by one call into the
+    core, and no melody is taken from a second voice. Without the file, or
+    with an older library, nothing changes. Returns whether it is in use.
+    """
+    folder = Path(__file__).resolve().parent if folder is None else folder
+    try:
+        value = (folder / NATIVE_MELODY_FILE).read_text(encoding='ascii').strip()
+    except (OSError, UnicodeError):
+        return False
+    if value != '1':
+        return False
+    try:
+        loader = ctypes.WinDLL if sys.platform == 'win32' else ctypes.CDLL
+        select = loader(str(library.resolve())).eciPersianNativeMelody
+    except (OSError, AttributeError):
+        return False
+    select.argtypes, select.restype = (ctypes.c_int,), ctypes.c_int
+    if select(1) < 0:
+        return False
+    continuous_plan.CORE_MELODY = nvda_driver_probe.CORE_MELODY = True
+    return True
 
 
 def _paths(library: Path):
@@ -23,7 +55,7 @@ def select_sound_variant(library: Path, folder: Path | None = None):
     """Apply the Persian listening variant named by this package, if any.
 
     A test package can carry a one-line file containing 0 (previous sound) or
-    a candidate number from 1 to 3 next to this module. Without the file, or with an
+    a candidate number from 1 to 4 next to this module. Without the file, or with an
     older library, the library's default is left alone. Returns the selected
     variant or None.
     """
@@ -32,7 +64,7 @@ def select_sound_variant(library: Path, folder: Path | None = None):
         value = (folder / SOUND_VARIANT_FILE).read_text(encoding='ascii').strip()
     except (OSError, UnicodeError):
         return None
-    if value not in ('0', '1', '2', '3'):
+    if value not in ('0', '1', '2', '3', '4'):
         return None
     try:
         loader = ctypes.WinDLL if sys.platform == 'win32' else ctypes.CDLL
@@ -75,6 +107,7 @@ def add_profiles(languages, library: Path):
     except (OSError, AttributeError):
         return languages
     select_sound_variant(library)
+    select_native_melody(library)
     return {**languages, PERSIAN_PROBE.id: PERSIAN_PROBE, PINGLISH_PROBE.id: PINGLISH_PROBE}
 
 

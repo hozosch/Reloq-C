@@ -46,6 +46,8 @@ def main():
     assert PREFIX + 'fa-direct.dll' not in entries
     assert PREFIX + 'persian_sound_variant.txt' not in entries
     assert add_persian(base, sound_variant=1)[PREFIX + 'persian_sound_variant.txt'] == b'1\n'
+    assert PREFIX + 'persian_native_melody.txt' not in entries
+    assert add_persian(base, sound_variant=4, core_melody=True)[PREFIX + 'persian_native_melody.txt'] == b'1\n'
     with tempfile.TemporaryDirectory(prefix='reloq-fa-package-') as temp:
         folder = Path(temp)
         package = folder / 'probe_driver'

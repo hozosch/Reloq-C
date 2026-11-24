@@ -256,6 +256,31 @@ yes/no questions follow the accepted contour closely. What remains:
 - the last syllable before a comma: up to 4.3 st, the accepted contour falls
   further there.
 
+## Fifth step: the NVDA driver uses it
+
+A test package can carry `persian_native_melody.txt` (built with
+`build_experimental_nvda.py --core-melody`). The adapter then turns the core
+melody on, and:
+
+- ordinary Persian text (letters, digits, `. , ? ! ، ؟ ؛ : ;`) is spoken by one
+  call, `eciPersianSpeakNativeUtf8`: no US donor voice, no captured frames,
+  no planning in Python. Sentence length is no longer limited to three words.
+- text that call does not take (other scripts, symbols, emoji) still goes
+  through the planner, but the planner no longer synthesizes a donor or
+  aligns its contour for Persian sentences.
+- sentences that mix Persian and English still use the previous shared
+  contour. That part is not moved yet.
+
+This also removes the failure reported in issue 49, where a paragraph with
+emoji and Latin text stopped after a few words: the donor alignment raised an
+error in the middle of a stream (`invalid native US/Persian contour
+alignment`), and a second case failed inside the donor synthesis itself.
+`test_core_melody_route.py` reads that paragraph to its end and checks that
+every test sentence has the same length in both routes.
+
+Without the marker file nothing changes; the previous route still has that
+failure.
+
 ## Stages
 
 1. Translate the 28 rules mechanically (rule prefix, variables, symbols),

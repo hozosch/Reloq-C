@@ -77,7 +77,7 @@ def main():
 
         # The switch: default, return values, rejection of unknown variants.
         assert dll.eciPersianSoundVariant(0) == 0, 'the previous sound must be the default'
-        assert dll.eciPersianSoundVariant(4) == -1
+        assert dll.eciPersianSoundVariant(5) == -1
         assert dll.eciPersianSoundVariant(-1) == -1
         assert dll.eciPersianSoundVariant(0) == 0
 
@@ -114,6 +114,32 @@ def main():
         for word in ('بد', 'دو'):
             assert half[word] != previous[word] and half[word] != candidate[word], word
         assert half['دوری'] == unshifted['دوری'] == candidate['دوری']
+
+        # Variant 4: previous vowels, an R that dips once and smoothly, and a
+        # quieter M and N whose colour leaves the next vowel sooner.
+        nasal_words = ('نان', 'میم', 'سیمین')
+        loud = {word: speak(word) for word in nasal_words}
+        assert dll.eciPersianSoundVariant(4) == 0
+        smooth = {word: speak(word) for word in words}
+        quiet = {word: speak(word) for word in nasal_words}
+        assert dll.eciPersianSoundVariant(0) == 4
+        for word in ('بد', 'دو', 'دیر', 'سیب'):
+            assert smooth[word] == previous[word], word
+        assert smooth['دوری'] != previous['دوری'] and smooth['دوری'] != unshifted['دوری']
+        # The R keeps more of the vowels' level than the earlier tap, and the
+        # level never moves by more than a small step from one 5 ms to the next
+        # inside the word.
+        smooth_dip = deepest_inner_dip(smooth['دوری'])
+        assert new_dip < smooth_dip < 0.9, (new_dip, smooth_dip)
+        for word in nasal_words:
+            assert len(quiet[word]) == len(loud[word]), word
+            before, after = levels(loud[word]), levels(quiet[word])
+            # The opening murmur (first 50 ms) is clearly quieter; the loudest
+            # part of the word, a vowel, is not.
+            if word[0] in 'نم':
+                assert sum(after[:10]) < 0.75 * sum(before[:10]), (word, before[:10], after[:10])
+            assert sum(after) < 0.97 * sum(before), word
+            assert max(after) > 0.9 * max(before), word
 
         # English spoken by the English voice is unaffected by the Persian variant.
         def english_text(text):

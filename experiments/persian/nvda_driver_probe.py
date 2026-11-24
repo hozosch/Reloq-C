@@ -278,7 +278,13 @@ def _bracket_continuations(parts):
     return tuple(result)
 
 
-def try_native_persian_sentence(owner, parts, on_pcm, on_index, *, fa_ids):
+# Set by the NVDA adapter when the package asks for the US sentence melody
+# that is fixed in the core. Ordinary Persian text is then spoken by one call
+# into the core: no donor voice, no captured frames, no planning here.
+CORE_MELODY = False
+
+
+def try_native_persian_sentence(owner, parts, on_pcm, on_index, *, fa_ids, single_pass=False):
     """Use one native Persian/US analysis for short ordinary sentences.
 
     The native backend has not yet acquired the established mixed-script,
@@ -297,7 +303,8 @@ def try_native_persian_sentence(owner, parts, on_pcm, on_index, *, fa_ids):
             offsets.append(len(text)); values.append(part.value)
         elif isinstance(part, (str, EciText)):
             if isinstance(part, EciText) and (part.character_mode or part.is_control or
-                    part.segmentation_guarded or part.internal_punctuation):
+                    part.segmentation_guarded or
+                    (part.internal_punctuation and not single_pass)):
                 return None
             value = part if isinstance(part, str) else part.text
             if '`' in value:
@@ -306,10 +313,14 @@ def try_native_persian_sentence(owner, parts, on_pcm, on_index, *, fa_ids):
             saw_text = saw_text or bool(value)
         else:
             return None
-    if key[0] not in fa_ids or not text or len(text) > 256 or len(offsets) > 4096:
+    if key[0] not in fa_ids or not text or len(offsets) > 4096:
+        return None
+    if len(text) > (4096 if single_pass else 256):
         return None
     source = bytes(text).decode('utf-8')
-    if len(source) <= 1 or len(source) > 64 or len(source.split()) > 3:
+    if len(source) <= 1:
+        return None
+    if not single_pass and (len(source) > 64 or len(source.split()) > 3):
         return None
     if re.search(r'(^|\s)[.,?!،؟]', source):
         return None
@@ -320,13 +331,15 @@ def try_native_persian_sentence(owner, parts, on_pcm, on_index, *, fa_ids):
         category = unicodedata.category(char)
         persian = 0x600 <= ord(char) <= 0x6ff and category[0] in ('L', 'M', 'N')
         pinglish = key[0] == PINGLISH_PROBE.id and char.isascii() and char.isalpha()
-        if not (persian or pinglish or char in '0123456789 \t\r\n.,?!،؟\u200c'):
+        if not (persian or pinglish or char in '0123456789 \t\r\n.,?!،؟\u200c' or
+                (single_pass and char in '؛:;')):
             return None
     engine = owner._activate(key)
     if not isinstance(engine, ScopedDirectPersianEngine) or getattr(engine._frontend, '_reference_available', False):
         return None
     target = engine._voice
-    speak = getattr(target._dll, 'eciPersianSpeakUsNativeUtf8', None)
+    speak = getattr(target._dll, 'eciPersianSpeakNativeUtf8' if single_pass
+                    else 'eciPersianSpeakUsNativeUtf8', None)
     if speak is None:
         return None
     pilot = None
@@ -337,8 +350,12 @@ def try_native_persian_sentence(owner, parts, on_pcm, on_index, *, fa_ids):
         target._cancelled.clear()
         owner._native_persian_active = True
     size, integer = ctypes.c_size_t, ctypes.c_int
-    speak.argtypes = (ctypes.c_void_p, ctypes.c_void_p, ctypes.c_char_p, size, integer,
-                      ctypes.POINTER(size), ctypes.POINTER(integer), size, size, ctypes.POINTER(size))
+    if single_pass:
+        speak.argtypes = (ctypes.c_void_p, ctypes.c_char_p, size, integer,
+                          ctypes.POINTER(size), ctypes.POINTER(integer), size, ctypes.POINTER(size))
+    else:
+        speak.argtypes = (ctypes.c_void_p, ctypes.c_void_p, ctypes.c_char_p, size, integer,
+                          ctypes.POINTER(size), ctypes.POINTER(integer), size, size, ctypes.POINTER(size))
     speak.restype = integer
     positions = (size * len(offsets))(*offsets) if offsets else None
     indexes = (integer * len(values))(*values) if values else None
@@ -353,8 +370,8 @@ def try_native_persian_sentence(owner, parts, on_pcm, on_index, *, fa_ids):
         emitted = True
         on_index(value)
     try:
-        prepare = getattr(target._dll, 'eciPersianPrepareUsPilot', None)
-        owned = False
+        prepare = None if single_pass else getattr(target._dll, 'eciPersianPrepareUsPilot', None)
+        owned = single_pass
         if prepare is not None:
             prepare.argtypes, prepare.restype = (ctypes.c_void_p,), integer
             prepared = prepare(target._handle)
@@ -372,10 +389,15 @@ def try_native_persian_sentence(owner, parts, on_pcm, on_index, *, fa_ids):
                 owner._native_persian_pilot = pilot
         target._callback_error = None
         target._on_pcm, target._on_index = pcm, index
-        status = speak(target._handle, pilot._handle if pilot is not None else None,
-                       bytes(text), len(text),
-                       int(key[0] == PINGLISH_PROBE.id), positions, indexes,
-                       len(offsets), 30000, ctypes.byref(error))
+        if single_pass:
+            status = speak(target._handle, bytes(text), len(text),
+                           int(key[0] == PINGLISH_PROBE.id), positions, indexes,
+                           len(offsets), ctypes.byref(error))
+        else:
+            status = speak(target._handle, pilot._handle if pilot is not None else None,
+                           bytes(text), len(text),
+                           int(key[0] == PINGLISH_PROBE.id), positions, indexes,
+                           len(offsets), 30000, ctypes.byref(error))
         if target._callback_error is not None:
             raise target._callback_error
         if owner._cancelled.is_set():
@@ -945,10 +967,15 @@ class PersianProbeLanguageEngine(LanguageEngine):
                         # the bracket's actual speech and melody are intact.
                         raw.set_parameter(PAUSE_MODE, 1)
                 try:
-                    result = try_continuous(self, job, on_pcm, on_index,
-                                            fa_ids=(PERSIAN_PROBE.id, PINGLISH_PROBE.id),
-                                            english_id=US_ENGLISH.id, german_id=GERMAN.id,
-                                            reset_cancellation=False, end_pause_shortened=old_pause == 0)
+                    result = None
+                    if CORE_MELODY and not self._cancelled.is_set():
+                        result = try_native_persian_sentence(self, job, on_pcm, on_index,
+                            fa_ids=(PERSIAN_PROBE.id, PINGLISH_PROBE.id), single_pass=True)
+                    if result is None and not self._cancelled.is_set():
+                        result = try_continuous(self, job, on_pcm, on_index,
+                                                fa_ids=(PERSIAN_PROBE.id, PINGLISH_PROBE.id),
+                                                english_id=US_ENGLISH.id, german_id=GERMAN.id,
+                                                reset_cancellation=False, end_pause_shortened=old_pause == 0)
                     if result is None and getattr(self, '_native_sentences', False) and not self._cancelled.is_set():
                         result = try_native_persian_sentence(self, job, on_pcm, on_index,
                             fa_ids=(PERSIAN_PROBE.id, PINGLISH_PROBE.id))

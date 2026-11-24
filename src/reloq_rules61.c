@@ -1749,6 +1749,9 @@ static void tune_fa_frame_base(struct rule_plan *s,int64_t tick,float controls[6
  * hold the two noise sources low from the approach to the release. R after
  * a voiceless sound, before a consonant and at the end of a word keeps the
  * existing sound. Runs after every other Persian frame adjustment. */
+#define FA_TAP_DEPTH 6.0f
+#define FA_TAP_MS 40.0f
+#define FA_NASAL_QUIETER 6.0f
 static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],float duration)
 {
     tune_fa_frame_base(s,tick,controls,duration);
@@ -1773,11 +1776,24 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
              * that H must stay voiceless. */
             if(s->fa_tap_reference>0 && !(controls[2]>0))s->fa_tap_reference=0;
             if(s->fa_tap_reference>0 && isfinite(controls[2])) {
-                float closed=s->fa_tap_reference-11,open=s->fa_tap_reference-3;
-                if(!s->fa_tap_released && controls[2]>closed+1 &&
-                   native-p->from>80000)s->fa_tap_released=1;
-                float floor_level=s->fa_tap_released?open:closed;
-                if(controls[2]<floor_level)controls[2]=floor_level;
+                if(reloq_fa_sound_variant()>=4) {
+                    /* One smooth dip. The donor R closes twice within its
+                     * first 40 ms and then already carries the next vowel.
+                     * Wherever it is closed, the voice follows one arc that
+                     * leaves the level of the vowel gradually and is back
+                     * when the closure ends; a step at either edge is heard
+                     * as a click. Whole levels only. */
+                    float since=(float)(native-p->from)/10000.0f;
+                    float arc=since<FA_TAP_MS?sinf(3.14159265f*since/FA_TAP_MS):0;
+                    float level=roundf(s->fa_tap_reference-FA_TAP_DEPTH*arc*arc);
+                    if(controls[2]<level)controls[2]=level;
+                } else {
+                    float closed=s->fa_tap_reference-11,open=s->fa_tap_reference-3;
+                    if(!s->fa_tap_released && controls[2]>closed+1 &&
+                       native-p->from>80000)s->fa_tap_released=1;
+                    float floor_level=s->fa_tap_released?open:closed;
+                    if(controls[2]<floor_level)controls[2]=floor_level;
+                }
                 if(controls[36]>25)controls[36]=25;
                 if(controls[37]>25)controls[37]=25;
             }
@@ -1788,6 +1804,18 @@ static void tune_fa_frame(struct rule_plan *s,int64_t tick,float controls[62],fl
             if(controls[36]>25)controls[36]=25;
             if(controls[37]>25)controls[37]=25;
         }
+    }
+    if(reloq_fa_tuning_enabled()==1 && reloq_fa_sound_variant()>=4 && controls[2]>0 &&
+       isfinite(controls[27]) && isfinite(controls[29]) && controls[29]>controls[27]+5) {
+        /* M and N. The nasal zero stands apart from the nasal pole during
+         * the murmur and closes in on it over some 50 ms into the
+         * neighbouring vowel. The murmur was nearly as loud as the vowels
+         * and the vowels kept a nasal colour for long. Make the murmur
+         * quieter, and let both effects fade faster than the zero moves:
+         * at half the distance a quarter is left. */
+        float apart=fminf(1.0f,(controls[29]-controls[27])/150.0f);
+        controls[29]=roundf(controls[27]+(controls[29]-controls[27])*apart);
+        controls[2]=fmaxf(1.0f,roundf(controls[2]-FA_NASAL_QUIETER*apart*apart));
     }
     s->fa_tap_previous_voice=voice;
 }

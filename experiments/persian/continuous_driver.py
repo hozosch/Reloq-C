@@ -19,7 +19,8 @@ if __package__:
     from .._reloq_persian_projection import ProjectedJob
     from .direct_fa_sequence import ScopedDirectPersianEngine, _safe_native_punctuation, project, project_resilient
     from .continuous_plan import (CapturedRows, context_plan, replay_marks, selected_sentence,
-                                  _bracket_boundary, fit_us_word_pitch, indexed_us_proxy, word_boundary)
+                                  _bracket_boundary, core_melody, fit_us_word_pitch, indexed_us_proxy,
+                                  word_boundary)
     from .._reloq_languages import US_ENGLISH
     from .korean_contour import align_english_edges, contour
     from .text_frontend import SpeechPart, UnsupportedPronunciation
@@ -32,7 +33,8 @@ else:
     from _reloq_persian_projection import ProjectedJob
     from direct_fa_sequence import ScopedDirectPersianEngine, _safe_native_punctuation, project, project_resilient
     from continuous_plan import (CapturedRows, context_plan, replay_marks, selected_sentence,
-                                 _bracket_boundary, fit_us_word_pitch, indexed_us_proxy, word_boundary)
+                                 _bracket_boundary, core_melody, fit_us_word_pitch, indexed_us_proxy,
+                                  word_boundary)
     from _reloq_languages import US_ENGLISH
     from korean_contour import align_english_edges, contour
     from text_frontend import SpeechPart, UnsupportedPronunciation
@@ -762,7 +764,9 @@ def try_persian_glides(owner, parts, on_pcm, on_index, *, fa_ids):
                             'w' not in b and sep.isspace())
         has_glide = bool(glide_words)
         korean_available = False
-        us_available = bool(matches)
+        # With the melody fixed in the core there is nothing to take from a
+        # US donor: no second synthesis and no alignment of the two.
+        us_available = bool(matches) and not core_melody()
         if not has_glide and not korean_available and not us_available:
             return engine._speak_prepared(replace(prepared, parts=(*prefix, *prepared.parts)), on_pcm, on_index)
         inserts, source, offset, next_mark, internal_pitch = [], [], 0, 1, False
