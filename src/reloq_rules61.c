@@ -22,6 +22,8 @@
 #include <string.h>
 #include "reloq_inline_word_controls.h"
 
+extern const char *ECICALL es_engsynDictLookup(void *,int,const char *);
+
 static int dash_space(uint32_t c)
 {return c==' '||c=='\t'||c=='\r'||c=='\n'||c==0xa0;}
 static int dash_word_edge(uint32_t c)
@@ -201,7 +203,47 @@ static int german_quote_close(unsigned char open,unsigned char close)
 }
 static int german_compound_alnum(unsigned char c)
 {return german_letter(c)||(c>='0'&&c<='9')||c=='_';}
-static void german_normalize_quoted_text(unsigned char *a,size_t n,size_t i)
+
+/* Native Main phonetic lookup cannot see a word behind some typographic
+ * quotes. A Main text alias may also introduce a hyphen after quote handling.
+ * Recognize only those entries so unrelated quoted prose keeps its contour. */
+static int german_quote_needs_main(const unsigned char *a,size_t begin,size_t end,void *dictionary)
+{
+    if(!dictionary)return 0;
+    int spelling=0;
+    for(size_t at=begin;at<end;) {
+        struct reloq_inline_tag tag=reloq_inline_tag_read(a+at,end-at,1);
+        if(tag.length) {
+            if(tag.kind==RELOQ_TAG_SPELL)spelling=tag.value;
+            at+=tag.length;continue;
+        }
+        if(spelling||!german_word_byte(a[at])){++at;continue;}
+        size_t word_end=at;
+        while(word_end<end&&(german_word_byte(a[word_end])||
+            (a[word_end]=='-'&&word_end+1<end&&german_word_byte(a[word_end+1]))))++word_end;
+        size_t part=at;
+        while(part<word_end) {
+            size_t stop=word_end;char key[129];const char *value=NULL;
+            if(stop-part<=128) {
+                memcpy(key,a+part,stop-part);key[stop-part]=0;
+                value=es_engsynDictLookup(dictionary,0,key);
+            }
+            if(!value) {
+                stop=part;while(stop<word_end&&a[stop]!='-')++stop;
+                if(stop-part<=128) {
+                    memcpy(key,a+part,stop-part);key[stop-part]=0;
+                    value=es_engsynDictLookup(dictionary,0,key);
+                }
+            }
+            if(value&&(strchr(value,'-')||strstr(value,"`[")))return 1;
+            part=stop<word_end?stop+1:word_end;
+        }
+        at=word_end;
+    }
+    return 0;
+}
+
+static void german_normalize_quoted_text(unsigned char *a,size_t n,size_t i,void *dictionary)
 {
     unsigned char opening=a[i];
     if(opening!=0x84&&opening!=0x93&&opening!=0xab&&opening!=0xbb&&
@@ -211,7 +253,7 @@ static void german_normalize_quoted_text(unsigned char *a,size_t n,size_t i)
     while(end<limit) {
         unsigned char c=a[end];
         if(german_quote_close(opening,c)) {
-            if(hyphen||question)a[i]=a[end]='"';
+            if(hyphen||question||german_quote_needs_main(a,i+1,end,dictionary))a[i]=a[end]='"';
             return;
         }
         if(c=='\n'||c=='\r')return;
@@ -226,10 +268,11 @@ static void german_compact_input(unsigned char *a,size_t *map,size_t *length,int
 {
     const size_t n=*length;size_t out=0;int spelling=0,in_spr=0;
     struct reloq61_text_options options=reloq61_text_options_current();
+    void *dictionary=reloq_wordseg_current().dictionary;
     for(size_t i=0;i<n;) {
         struct reloq_inline_tag t=tags?reloq_inline_tag_read(a+i,n-i,0):(struct reloq_inline_tag){0};
         if(!tags&&!in_spr&&a[i]=='`'&&i+1<n&&a[i+1]=='[')in_spr=1;
-        if(!spelling&&!in_spr&&!t.length)german_normalize_quoted_text(a,n,i);
+        if(!spelling&&!in_spr&&!t.length)german_normalize_quoted_text(a,n,i,dictionary);
         int end_spr=in_spr&&a[i]==']';
         size_t count=t.length?t.length:1;int omit=0;
         if(t.kind==RELOQ_TAG_SPELL)spelling=t.value;
@@ -278,7 +321,6 @@ static int german_shared_append(struct german_shared_buffer *b,const unsigned ch
 /* The segmenter runs on the already admitted native input, before language
  * analysis.  Its output keeps source positions so ECI indices and pitch
  * controls are still projected by the ordinary sentence frontend. */
-extern const char *ECICALL es_engsynDictLookup(void *,int,const char *);
 struct wordseg_marks {
     const struct reloq61_mark *phoneme;size_t phoneme_count;
     const struct reloq_german_generic_index *indices;size_t index_count;
