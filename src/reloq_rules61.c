@@ -1538,7 +1538,8 @@ static size_t annotation_boundary(const unsigned char *a,size_t n,const size_t *
  * native acoustic parameters of a word. */
 static int cjk_pitch_input(unsigned char **input,size_t **source,size_t *length,
     const struct reloq_german_generic_pitch_mark *pitches,size_t pitch_count,
-    size_t original_length,int initial_pitch,int initial_native_pitch,int initial_volume,int use_pitch_marks,
+    size_t original_length,int initial_pitch,int initial_native_pitch,int initial_volume,
+    int use_pitch_marks,int use_native_pitch,
     struct cjk_pitch_marker **markers,size_t *marker_count)
 {
     unsigned char *a=*input;size_t *map=*source,n=*length,events=pitch_count;
@@ -1577,7 +1578,7 @@ static int cjk_pitch_input(unsigned char **input,size_t **source,size_t *length,
         int next_pitch=pitch,next_native_pitch=native_pitch,next_volume=volume;
         if(t.kind==RELOQ_TAG_PITCH) {
             next_pitch=t.value;
-            if(!reloq_pitch_is_hz(t.value)) {
+            if(use_native_pitch&&!reloq_pitch_is_hz(t.value)) {
                 next_native_pitch=t.value;
                 memcpy(bytes+out,a+i,size);memcpy(positions+out,map+i,size*sizeof *map);out+=size;
             }
@@ -1585,8 +1586,15 @@ static int cjk_pitch_input(unsigned char **input,size_t **source,size_t *length,
         else if(t.kind==RELOQ_TAG_VOLUME)next_volume=t.value;
         else if(t.kind==RELOQ_TAG_PRESET) {
             struct reloq_inline_word v={0};reloq_inline_preset(&v,t.value);
-            next_pitch=next_native_pitch=v.pitch;next_volume=v.volume;
-            memcpy(bytes+out,a+i,size);memcpy(positions+out,map+i,size*sizeof *map);out+=size;
+            next_pitch=v.pitch;next_volume=v.volume;
+            if(use_native_pitch) {
+                next_native_pitch=v.pitch;
+                memcpy(bytes+out,a+i,size);memcpy(positions+out,map+i,size*sizeof *map);out+=size;
+            } else {
+                int written=snprintf((char *)bytes+out,capacity-out,"`vs%d `vf%d ",v.speed,v.inflection);
+                if(written<0||(size_t)written>=capacity-out)goto invalid;
+                for(int j=0;j<written;++j)positions[out++]=map[i];
+            }
         } else {
             memcpy(bytes+out,a+i,size);memcpy(positions+out,map+i,size*sizeof *map);out+=size;
         }
@@ -1966,8 +1974,13 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     }
     int cjk_glide=0;
     if(plan.cjk_volume&&pitch_glide_ms) {
+        /* Japanese has no non-disruptive acoustic boundary for interior
+         * eciInsertPitch marks yet; a synthetic tag there changes its word
+         * analysis. Keep that existing behavior while supporting text tags.
+         * A Hertz request already routes native VB through host controls, so
+         * keep native VB tags only when the unmodified path would do so. */
         cjk_glide=cjk_pitch_input(&a,&map,&n,pitches,pitch_count,length,configured_pitch,provider_pitch,native_volume,
-            family!=8,
+            family!=8,!cjk_exact_pitch,
             &plan.pitch_markers,&plan.pitch_marker_count);
         if(cjk_glide<0)goto memory;
         if(cjk_glide){pitch_count=0;plan.index_count=index_count;}

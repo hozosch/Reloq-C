@@ -52,6 +52,8 @@ def main():
                 plain_vb = render(engine, vb)
                 pitch = [prefix, EciIndex(83), EciPitch(90), word, EciIndex(84), suffix]
                 plain_pitch = render(engine, pitch)
+                mixed = ['`vbhz125 ' + prefix, EciIndex(85), '`vb90 ' + word, EciIndex(86), suffix]
+                plain_mixed = render(engine, mixed)
                 volume = [prefix, '`vv40 ' + word, suffix]
                 plain_volume = render(engine, volume)
                 base_pitch = engine._dll.eciGetParam(engine._handle, NATIVE_PITCH)
@@ -66,8 +68,11 @@ def main():
                     assert eased_pitch == plain_pitch, (hex(dialect), 'Japanese pitch mark fallback')
                 else:
                     assert eased_pitch[0] != plain_pitch[0], (hex(dialect), 'pitch mark transition')
+                eased_mixed = render(engine, mixed)
+                assert len(eased_mixed[0]) == len(plain_mixed[0]) and eased_mixed[1] == plain_mixed[1], (hex(dialect), 'mixed Hertz/VB timing')
+                assert eased_mixed[0] != plain_mixed[0], (hex(dialect), 'mixed Hertz/VB transition')
                 assert render(engine, [f'`vb{base_pitch} ' + prefix, '`vv40 ' + word, suffix]) == plain_volume, (hex(dialect), 'volume changed')
-                checks += 7
+                checks += 9
         finally:
             engine.close()
             if previous:
