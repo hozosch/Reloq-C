@@ -139,6 +139,7 @@ jobs:
           python3 -B nvda/test_eci_camel_prominence.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_camel_dictionary_priority.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_pitch_glide.py --library eci/libreloq_eci.so
+          python3 -B nvda/test_eci_pitch_boundary.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_f0_tag.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_german_main_quotes.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_upper_number.py --library eci/libreloq_eci.so
@@ -308,7 +309,7 @@ jobs:
           python -c "import zipfile; z=zipfile.ZipFile(r'$addon'); assert z.testzip() is None; z.extract('synthDrivers/reloqC/eci.dll', 'candidate')"
           if ($LASTEXITCODE -ne 0) { throw 'Core extraction failed' }
           $dll = (Get-Item candidate/synthDrivers/reloqC/eci.dll).FullName
-          foreach ($test in @('nvda/test_eci_ptbr_numbers.py','nvda/test_eci_equalizer.py','nvda/test_eci_inflection_tags.py','nvda/test_eci_wpm_setting.py','nvda/test_eci_italian_apostrophe_native.py','nvda/test_eci_acronyms_native.py','nvda/test_eci_wordseg_native.py','nvda/test_eci_camel_prominence.py','nvda/test_eci_pitch_glide.py','nvda/test_eci_f0_tag.py','nvda/test_eci_german_main_quotes.py','nvda/test_eci_upper_number.py','nvda/test_eci_inline_queue_digits.py','nvda/test_eci_english_currency_case.py','nvda/test_eci_aragonese_native.py')) {
+          foreach ($test in @('nvda/test_eci_ptbr_numbers.py','nvda/test_eci_equalizer.py','nvda/test_eci_inflection_tags.py','nvda/test_eci_wpm_setting.py','nvda/test_eci_italian_apostrophe_native.py','nvda/test_eci_acronyms_native.py','nvda/test_eci_wordseg_native.py','nvda/test_eci_camel_prominence.py','nvda/test_eci_pitch_glide.py','nvda/test_eci_pitch_boundary.py','nvda/test_eci_f0_tag.py','nvda/test_eci_german_main_quotes.py','nvda/test_eci_upper_number.py','nvda/test_eci_inline_queue_digits.py','nvda/test_eci_english_currency_case.py','nvda/test_eci_aragonese_native.py')) {
             python -B $test --library $dll
             if ($LASTEXITCODE -ne 0) { throw "$test failed" }
           }

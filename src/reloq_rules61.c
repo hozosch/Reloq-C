@@ -1361,7 +1361,7 @@ struct rule_span {
     struct reloq_german_voice_model model;
 };
 struct quiet_cut { int64_t from,to,after; };
-struct rule_control { int64_t tick;size_t ordinal;int parameter,value; };
+struct rule_control { int64_t tick;size_t ordinal;int parameter,value,projected; };
 struct cjk_pitch_marker { int code,pitch,native_pitch,volume,glide_ms; };
 static int cjk_has_latin_words(const unsigned char *a,size_t n)
 {
@@ -1383,7 +1383,7 @@ struct rule_plan {
     int64_t pitch_tick;
     const size_t *control_sources;size_t pitch_source;
     const int *control_glides;
-    struct rule_control *controls;size_t control_count,control_capacity;
+    struct rule_control *controls;size_t control_count,control_capacity,control_consumed;
     struct cjk_pitch_marker *pitch_markers;size_t pitch_marker_count;
     struct reloq_session *session;
     int memory,retracted_filter,retracted_st,word_volume,cjk_volume,managed_voice_controls,word_pitch,native_pitch,word_speed,german_af_markers,original_clock;
@@ -1452,12 +1452,32 @@ static void take_control(void *context,int parameter,int value,int64_t tick,size
 {
     struct rule_plan *s=context;
     if(s->control_count>=s->control_capacity||ordinal>=s->control_capacity){s->memory=1;return;}
+    if(parameter==2) {
+        /* A second, very close target may arrive after the first has been
+         * projected. The earlier target cannot be applied after the later
+         * one, even if its coarticulation window extends past this marker. */
+        int changed=0;
+        for(size_t i=s->control_consumed;i<s->control_count;++i) {
+            struct rule_control *c=s->controls+i;
+            if(c->parameter==2&&c->projected&&c->ordinal<ordinal&&c->tick>tick) {
+                c->tick=tick;changed=1;
+            }
+        }
+        if(changed)for(size_t i=s->control_consumed+1;i<s->control_count;++i) {
+            struct rule_control c=s->controls[i];size_t j=i;
+            while(j>s->control_consumed&&(s->controls[j-1].tick>c.tick||
+                  (s->controls[j-1].tick==c.tick&&s->controls[j-1].ordinal>c.ordinal))) {
+                s->controls[j]=s->controls[j-1];--j;
+            }
+            s->controls[j]=c;
+        }
+    }
     size_t at=s->control_count++;
-    while(at&&(s->controls[at-1].tick>tick ||
+    while(at>s->control_consumed&&(s->controls[at-1].tick>tick ||
         (s->controls[at-1].tick==tick&&s->controls[at-1].ordinal>ordinal))) {
         s->controls[at]=s->controls[at-1];--at;
     }
-    s->controls[at]=(struct rule_control){tick,ordinal,parameter,value};
+    s->controls[at]=(struct rule_control){tick,ordinal,parameter,value,0};
 }
 static int32_t curve_value(const struct reloq61_curve *c,int32_t at)
 {
@@ -1665,7 +1685,7 @@ struct rule_playback {
     const struct reloq_german_generic_settings *settings;
     const struct reloq_german_generic_pitch_mark *pitches;
     size_t index_count,pitch_count,next,next_pitch,next_cut,read;
-    size_t next_control;
+    size_t next_control,prepared_pitch;
     struct rule_span voice;
     int32_t at;
     int64_t last_pitch_tick;
@@ -1676,6 +1696,8 @@ struct rule_playback {
     int *pitch_glide_state;
     size_t next_pitch_marker;
     int cjk_marker_code,cjk_marker_pitch,cjk_marker_native_pitch,cjk_marker_volume;
+    int cjk_prepared_code,cjk_pending_pitch,cjk_pending;
+    int64_t cjk_prepared_due,cjk_pending_due;
     struct reloq_pitch_glide pitch_glide;
     int slow_wpm;
     /* Native Eloquence reads the acoustic targets every five milliseconds.
@@ -1771,6 +1793,108 @@ static double pitch_ratio(int target,int native_baseline)
     }
     return reloq_voice_pitch_f0_scale(target)/baseline;
 }
+/* Pitch markers arrive at the start of the provider's cross-phone
+ * interpolation. Prefer its midpoint when a significant formant transition
+ * starts there: the earlier portion still belongs perceptually to the
+ * preceding voiced phone. Do not add a delay at silence or initial speech.
+ * Buffer the short planned region around a marker until its next acoustic
+ * target is available; the native word and public index clocks stay intact. */
+static int pitch_boundary(const struct rule_plan *s,const struct rule_playback *p,
+    int64_t tick,int64_t *due)
+{
+    const struct rule_span *current=s->spans+p->read;
+    *due=tick;
+    if(tick<=0)return 1;
+    int32_t at=current->from+(int32_t)(tick-current->tick);
+    if(at<current->from)at=current->from;
+    if(curve_value(current->curve+2,at)<=0)return 1;
+    int64_t boundary=tick;
+    /* Some language modules attach the word marker before the current
+     * phoneme's final endpoint. Use the next near endpoint, not a fixed
+     * time offset. */
+    int64_t nearest=INT64_MAX;
+    const unsigned timing[]={9,2};
+    for(size_t k=0;k<sizeof timing/sizeof timing[0];++k) {
+        const struct reloq61_curve *c=current->curve+timing[k];
+        int64_t right=current->tick+c->at_r-current->from;
+        if(right>=tick&&right<nearest)nearest=right;
+    }
+    if(nearest!=INT64_MAX&&nearest<=tick+80)boundary=nearest;
+    const struct rule_span *last=s->spans+s->count-1;
+    if(last->tick+last->to-last->from<=boundary+2&&!p->final)return 0;
+    int64_t shortest=INT64_MAX,best=tick;
+    const unsigned fields[]={2,9,13};
+    const int thresholds[]={6,80,120};
+    for(size_t k=0;k<sizeof fields/sizeof fields[0];++k) {
+        for(size_t j=p->read;j<s->count;++j) {
+            const struct rule_span *f=s->spans+j;
+            if(f->tick>boundary+2)break;
+            if(f->tick+f->to-f->from<=boundary)continue;
+            const struct reloq61_curve *c=f->curve+fields[k];
+            int64_t left=f->tick+c->at_l-f->from,right=f->tick+c->at_r-f->from;
+            int64_t delta=(int64_t)c->val_r-c->val_l;
+            if(left<boundary-2||left>boundary+2||right<=boundary||
+               (delta>=-thresholds[k]&&delta<=thresholds[k]))continue;
+            if(right-left<shortest) {
+                shortest=right-left;best=left+(right-left+1)/2;
+            }
+        }
+    }
+    if(best>tick)*due=best;
+    return 1;
+}
+static int prepare_pitch_boundaries(struct rule_plan *s,struct rule_playback *p,
+    int64_t tick)
+{
+    /* Public indices keep their own native timing. Only the private pitch
+     * marker is projected to the following coarticulation midpoint. */
+    if(p->next_pitch<p->pitch_count&&p->prepared_pitch!=p->next_pitch) {
+        size_t at=p->index_count+p->next_pitch;
+        if(s->indices[at]>=0&&s->indices[at]<=tick) {
+            int64_t due;
+            if(!pitch_boundary(s,p,s->indices[at],&due))return 0;
+            if(p->next_pitch+1<p->pitch_count) {
+                int64_t next=s->indices[at+1];
+                if(next>=0&&next<due)due=next;
+            }
+            s->indices[at]=due;p->prepared_pitch=p->next_pitch;
+        }
+    }
+    if(s->pitch_markers) {
+        const struct rule_span *f=s->spans+p->read;
+        if(f->volume!=p->cjk_marker_code&&f->volume!=p->cjk_prepared_code) {
+            size_t next=p->next_pitch_marker;
+            while(next<s->pitch_marker_count&&s->pitch_markers[next].code!=f->volume)++next;
+            if(next<s->pitch_marker_count) {
+                int64_t due=tick;
+                if(s->pitch_markers[next].pitch!=p->cjk_marker_pitch&&
+                   !pitch_boundary(s,p,tick,&due))return 0;
+                p->cjk_prepared_code=f->volume;p->cjk_prepared_due=due;
+            }
+        }
+    }
+    for(size_t j=p->next_control;j<s->control_count&&s->controls[j].tick<=tick;) {
+        struct rule_control *c=s->controls+j;
+        if(c->parameter!=2||c->projected){++j;continue;}
+        int64_t due;
+        if(!pitch_boundary(s,p,c->tick,&due))return 0;
+        c->projected=1;
+        if(due>c->tick) {
+            struct rule_control delayed=*c;delayed.tick=due;
+            size_t where=j;
+            while(where+1<s->control_count&&
+                  (s->controls[where+1].tick<due||
+                   (s->controls[where+1].tick==due&&s->controls[where+1].ordinal<delayed.ordinal))) {
+                s->controls[where]=s->controls[where+1];++where;
+            }
+            s->controls[where]=delayed;
+            /* Everything already in the queue after this event retains its
+             * own clock, including vfg and volume controls. */
+            if(where==j)++j;
+        } else ++j;
+    }
+    return 1;
+}
 static int render_until(struct rule_plan *s,int64_t limit)
 {
     struct rule_playback *p=s->playback;
@@ -1781,6 +1905,7 @@ static int render_until(struct rule_plan *s,int64_t limit)
         if(p->at>=f->to){++p->read;p->at=0;continue;}
         int32_t at=p->at;int64_t tick=f->tick+at-f->from;
         if(tick>=limit)break;
+        if(!prepare_pitch_boundaries(s,p,tick))return 0;
         p->at+=f->step;
         while(p->next_cut<s->cut_count&&tick>=s->cuts[p->next_cut].to)++p->next_cut;
         if(p->final&&p->next_cut<s->cut_count&&
@@ -1817,6 +1942,7 @@ static int render_until(struct rule_plan *s,int64_t limit)
         if(s->control_capacity) {
             while(p->next_control<s->control_count&&s->controls[p->next_control].tick<=tick) {
                 const struct rule_control *change=s->controls+p->next_control++;
+                s->control_consumed=p->next_control;
                 int parameter=change->parameter,value=change->value;
                 if(s->control_glides&&s->control_glides[change->ordinal]>=0)
                     set_glide_time(p,s->control_glides[change->ordinal]);
@@ -1835,13 +1961,26 @@ static int render_until(struct rule_plan *s,int64_t limit)
         }
         struct rule_span cjk_voice;
         if(s->pitch_markers) {
+            if(p->cjk_pending&&p->cjk_pending_due<=tick) {
+                p->cjk_marker_pitch=p->cjk_pending_pitch;p->cjk_pending=0;
+            }
             if(f->volume!=p->cjk_marker_code) {
                 size_t next=p->next_pitch_marker;
                 while(next<s->pitch_marker_count&&s->pitch_markers[next].code!=f->volume)++next;
                 if(next<s->pitch_marker_count) {
                     const struct cjk_pitch_marker *marker=s->pitch_markers+next;
+                    /* Do not reverse consecutive target changes when another
+                     * marker arrives before the preceding projection. */
+                    if(p->cjk_pending) {
+                        p->cjk_marker_pitch=p->cjk_pending_pitch;p->cjk_pending=0;
+                    }
                     p->next_pitch_marker=next+1;p->cjk_marker_code=marker->code;
-                    p->cjk_marker_pitch=marker->pitch;p->cjk_marker_native_pitch=marker->native_pitch;
+                    if(p->cjk_prepared_code==marker->code&&p->cjk_prepared_due>tick) {
+                        p->cjk_pending=1;p->cjk_pending_pitch=marker->pitch;
+                        p->cjk_pending_due=p->cjk_prepared_due;
+                    } else p->cjk_marker_pitch=marker->pitch;
+                    p->cjk_prepared_code=-1;
+                    p->cjk_marker_native_pitch=marker->native_pitch;
                     p->cjk_marker_volume=marker->volume;
                     if(marker->glide_ms>=0)set_glide_time(p,marker->glide_ms);
                 }
@@ -1931,8 +2070,8 @@ static int process_spans(struct rule_plan *s,int final)
 {
     struct rule_playback *p=s->playback;
     if(p->result)return 1;
-    if(!p->pause_mode)return render_until(s,s->ticks);
     p->final=final;
+    if(!p->pause_mode)return render_until(s,s->ticks);
     int64_t limit=s->ticks;
     if(!final&&s->cut_count) {
         const struct quiet_cut *tail=s->cuts+s->cut_count-1;
@@ -2035,26 +2174,31 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
         i+=t.length?t.length:1;
     }
     int cjk_exact_pitch=plan.cjk_volume && reloq_pitch_is_hz(configured_pitch);
+    int cjk_any_pitch=plan.cjk_volume&&pitch_count!=0,cjk_native_preset=0;
     if(plan.cjk_volume && tags)for(size_t i=0;i<n;) {
         struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,1);
         if(t.kind==RELOQ_TAG_PITCH) {
+            cjk_any_pitch=1;
             if(reloq_pitch_is_hz(t.value))cjk_exact_pitch=1;
         }
+        if(t.kind==RELOQ_TAG_PRESET){cjk_any_pitch=1;cjk_native_preset=1;}
         i+=t.length?t.length:1;
     }
     int cjk_glide=0;
     /* In the Chinese English-donor path inserting a synthetic annotation
      * can introduce a new pause. Keep its existing timing until that path
      * exposes a non-disruptive acoustic word boundary. */
-    if(plan.cjk_volume&&has_glide&&!(family==6&&cjk_has_latin_words(a,n))) {
+    if(plan.cjk_volume&&(has_glide||cjk_exact_pitch||cjk_any_pitch)&&
+       !(family==6&&cjk_has_latin_words(a,n))) {
         /* Japanese has no non-disruptive acoustic boundary for interior
          * eciInsertPitch marks yet; a synthetic tag there changes its word
          * analysis. Keep that existing behavior while supporting text tags.
-         * A Hertz request already routes native VB through host controls, so
-         * keep native VB tags only when the unmodified path would do so. */
+         * Route explicit VB and Hertz changes through the host so neither
+         * the initial jump nor the glide precedes its acoustic boundary.
+         * Native voice presets retain their other voice attributes. */
         size_t cjk_pitch_count=family==8?0:pitch_count;
         cjk_glide=cjk_pitch_input(&a,&map,&n,pitches,cjk_pitch_count,length,configured_pitch,provider_pitch,native_volume,
-            family!=8,!cjk_exact_pitch,
+            family!=8,cjk_native_preset&&!cjk_exact_pitch,
             &plan.pitch_markers,&plan.pitch_marker_count);
         if(cjk_glide<0)goto memory;
         if(cjk_glide&&family!=8){pitch_count=0;plan.index_count=index_count;}
@@ -2253,11 +2397,13 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
         else if(pitches[i].annotation_offset>=length)plan.indices[index_count+i]=INT64_MAX;
     }
     struct rule_playback playback={
+        .prepared_pitch=SIZE_MAX,
         .voice={.volume=native_volume,.pitch=-1,.native_pitch=q.voice[2],.speed=-1,
             .model={q.voice[1],q.voice[4],q.voice[5],q.voice[0],reloq_session_sample_rate(session)}},
         .model={q.voice[1],q.voice[4],q.voice[5],q.voice[0],reloq_session_sample_rate(session)},
         .settings=settings,.pitches=pitches,.index_count=index_count,.pitch_count=pitch_count,
         .pitch_glide_ms=pitch_glide_ms,.pitch_glide_state=pitch_glide_state,
+        .cjk_prepared_code=-1,
         .cjk_marker_code=native_volume,.cjk_marker_pitch=configured_pitch,
         .cjk_marker_native_pitch=provider_pitch,.cjk_marker_volume=native_volume,
         .pause_mode=!explicit_pause&&settings->pause_mode==1,
