@@ -547,6 +547,62 @@ static int wordseg_only_words(const unsigned char *pieces)
     return parts>1;
 }
 
+/* Some two-part identifiers lose their internal capital in the native
+ * planner because it treats their components as an ordinary two-word phrase.
+ * Only reduce the first component when the isolated native plan demonstrably
+ * emphasizes it and suppresses the second; let the ordinary sentence planner
+ * choose where the phrase accent belongs. Exact dictionary entries, marks,
+ * abbreviations and already naturally accented combinations are left alone. */
+static int wordseg_camel_needs_first_reduction(int language,const unsigned char *word,
+    size_t n,void *dictionary,int abbreviations_disabled,void **probe_worker)
+{
+    if((language!=0x10000&&language!=0x10001)||n<4||n>120)return 0;
+    size_t split=0;
+    for(size_t j=0;j<n;++j) {
+        unsigned char c=word[j];
+        if(c>='A'&&c<='Z') {
+            if(!j)continue;
+            if(split)return 0;
+            split=j;
+        } else if(c<'a'||c>'z')return 0;
+    }
+    if(split<2||n-split<2)return 0;
+    if(wordseg_dictionary(dictionary,word,split,1,0,abbreviations_disabled)||
+       wordseg_dictionary(dictionary,word+split,n-split,1,0,abbreviations_disabled))return 0;
+    char text[122],phonemes[8192];
+    memcpy(text,word,split);text[split]=' ';
+    memcpy(text+split+1,word+split,n-split);text[n+1]=0;
+    struct reloq61_request q={.language=language,.annotations=1,.phonemes_only=1,
+        .voice={0,50,65,30,0,0,50,100},.text=text,
+        .phonemes=phonemes,.phonemes_capacity=sizeof phonemes};
+    if(!*probe_worker)*probe_worker=reloq61_worker_new(language);
+    if(!*probe_worker)return 0;
+    struct reloq61_result result={0};
+    void *previous=reloq61_worker_scope(*probe_worker);
+    int status=reloq61_generate(&q,&result);
+    reloq61_worker_scope(previous);
+    if(status||result.error||result.unsupported)return 0;
+    const char *first=strstr(phonemes,"`[");
+    const char *first_end=first?strchr(first+2,']'):NULL;
+    const char *second=first_end?strstr(first_end+1,"`["):NULL;
+    const char *second_end=second?strchr(second+2,']'):NULL;
+    if(!first||!first_end||!second||!second_end||strstr(second_end+1,"`["))return 0;
+    if(first-phonemes<3||second-first_end<4)return 0;
+    return !memcmp(first-3,"`2 ",3)&&!memcmp(second-3,"`0 ",3);
+}
+
+/* An explicit caller prominence command must beat the automatic treatment. */
+static int wordseg_prior_prominence(const unsigned char *text,size_t at)
+{
+    while(at&&(text[at-1]==' '||text[at-1]=='\t'||text[at-1]=='\n'||text[at-1]=='\r'))--at;
+    size_t start=at;
+    while(start&&text[start-1]>='0'&&text[start-1]<='9')--start;
+    if(!start||text[start-1]!='`')return 0;
+    --start;
+    struct reloq_inline_tag tag=reloq_inline_tag_read(text+start,at-start,1);
+    return tag.kind==RELOQ_TAG_PROMINENCE&&tag.length==at-start;
+}
+
 static int wordseg_input_pass(unsigned char **text,size_t **source,size_t *length,int language,
     const struct wordseg_marks *marks,int upper_only)
 {
@@ -558,7 +614,7 @@ static int wordseg_input_pass(unsigned char **text,size_t **source,size_t *lengt
        !wordseg_maybe_upper_number(*text,*length))return 0;
     int family=language>>16,utf8=family==6||family==8||family==10||family==18;
     const unsigned char *a=*text;const size_t *map=*source,n=*length;
-    struct german_shared_buffer b={0};int changed=0,spelling=0;
+    struct german_shared_buffer b={0};int changed=0,spelling=0;void *probe_worker=NULL;
     int abbreviations_disabled=options.abbreviations_disabled;
     for(size_t i=0;i<n;) {
         struct reloq_inline_tag tag=reloq_inline_tag_read(a+i,n-i,1);
@@ -633,6 +689,11 @@ static int wordseg_input_pass(unsigned char **text,size_t **source,size_t *lengt
         }
         int plural_acronym=wordseg_plural_acronym(a,i,end,utf8);
         int camel_boundary=!plural_acronym&&wordseg_camel_boundary(a,i,end,utf8);
+        if(options.camel&&camel_boundary&&!wordseg_prior_prominence(a,i)&&
+           wordseg_camel_needs_first_reduction(language,a+i,end-i,dictionary,abbreviations_disabled,&probe_worker)) {
+            if(german_shared_append(&b,(const unsigned char *)"`0 ",NULL,3,map[i]))goto fail;
+            changed=1;
+        }
         if(plural_acronym) {
             size_t stem_n=end-i-1;
             if(stem_n&&a[i+stem_n-1]=='e')--stem_n;
@@ -726,11 +787,12 @@ static int wordseg_input_pass(unsigned char **text,size_t **source,size_t *lengt
         } else if(german_shared_append(&b,a+i,map+i,end-i,0))goto fail;
         i=end;
     }
+    reloq61_worker_free(probe_worker);probe_worker=NULL;
     if(!changed){free(b.bytes);free(b.map);return 0;}
     if(german_shared_append(&b,(const unsigned char *)"",NULL,0,map[n]))goto fail;
     b.bytes[b.used]=0;b.map[b.used]=map[n];
     free(*text);free(*source);*text=b.bytes;*source=b.map;*length=b.used;return 0;
-fail:free(b.bytes);free(b.map);return -1;
+fail:reloq61_worker_free(probe_worker);free(b.bytes);free(b.map);return -1;
 }
 
 static int wordseg_input(unsigned char **text,size_t **source,size_t *length,int language,
