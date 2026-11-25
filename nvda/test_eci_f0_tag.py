@@ -109,9 +109,16 @@ def main():
             assert render(eng, [prefix, '`vfg80 ', suffix]) == reference, (hex(dialect), 'mid enable')
             eng.set_parameter(PITCH_GLIDE_MS, 0)
             direct = render(eng, [prefix, suffix])
+            # CJK selects its pitch-marker planner for the whole request
+            # whenever any nonzero glide can occur. A trailing tag forces
+            # that same planner without changing the preceding audio.
+            eng.set_parameter(PITCH_GLIDE_MS, 0)
+            direct_same_planner = render(eng, [prefix, suffix, '`vfg80'])
             eng.set_parameter(PITCH_GLIDE_MS, 80)
-            assert render(eng, [prefix, '`vfg0 ', suffix]) == direct, (hex(dialect), 'mid disable')
-            count += 2
+            assert render(eng, [prefix, '`vfg0 ', suffix]) == direct_same_planner, (hex(dialect), 'mid disable')
+            assert eng.get_parameter(PITCH_GLIDE_MS) == 0
+            assert render(eng, [prefix, suffix]) == direct, (hex(dialect), 'disabled next request')
+            count += 4
         finally:
             eng.close()
     multi = LanguageEngine(lib)
