@@ -144,13 +144,11 @@ class EloquenceSettingsPanel(SettingsPanel):
         self.pending, self.closing = False, False
         self.operation = 0
         self.pitch_dirty = False
-        self.f0_glide_dirty = False
         self.wpm_dirty = False
         self.eq_dirty = False
         self._updating_controls = False
         self._saved_pitch = ((self.synth._pitchInHertz, self.synth._pitchHertz)
                              if self.synth else None)
-        self._saved_f0_glide = self.synth._f0GlideMs if self.synth else None
         self._saved_wpm = ((self.synth._rateInWpm, self.synth._rateWpm)
                            if self.synth else None)
         self._saved_eq = self._equalizer_state(self.synth)
@@ -174,14 +172,6 @@ class EloquenceSettingsPanel(SettingsPanel):
         self.pitch_hz_mode.Bind(wx.EVT_CHECKBOX, self.on_pitch_changed)
         self.pitch_hz_value.Bind(wx.EVT_SPINCTRL, self.on_pitch_changed)
         self.pitch_hz_value.Bind(wx.EVT_TEXT, self.on_pitch_changed)
-        glide_label = wx.StaticText(self, label=_("F0 transition time in milliseconds (0–500, 0 off):"))
-        content.Add(glide_label, 0, wx.LEFT | wx.RIGHT, 10)
-        self.f0_glide_value = wx.SpinCtrl(self, min=0, max=500,
-            initial=self.synth._f0GlideMs if self.synth else 0)
-        self.f0_glide_value.SetName(glide_label.GetLabelText())
-        self.f0_glide_value.Bind(wx.EVT_SPINCTRL, self.on_f0_glide_changed)
-        self.f0_glide_value.Bind(wx.EVT_TEXT, self.on_f0_glide_changed)
-        content.Add(self.f0_glide_value, 0, wx.ALL, 10)
         content.Add(wx.StaticText(self, label=_("Exact speech rate")), 0, wx.ALL, 10)
         self.wpm_mode = wx.CheckBox(self, label=_("Use speech rate in &words per minute"))
         self.wpm_mode.SetValue(self.synth._rateInWpm if self.synth else False)
@@ -365,7 +355,6 @@ class EloquenceSettingsPanel(SettingsPanel):
         self._update_dictionary_controls(enabled)
         self.pitch_hz_mode.Enable(enabled)
         self.pitch_hz_value.Enable(enabled and self.pitch_hz_mode.GetValue())
-        self.f0_glide_value.Enable(enabled)
         self.wpm_mode.Enable(enabled)
         self.wpm_value.Enable(enabled and self.wpm_mode.GetValue())
         self.eq_mode.Enable(enabled)
@@ -465,14 +454,6 @@ class EloquenceSettingsPanel(SettingsPanel):
             if isinstance(value, int) and 1 <= value <= 6000:
                 synth.configure_rate_wpm(bool(self.wpm_mode.GetValue()), value)
                 self.wpm_dirty = True
-        event.Skip()
-
-    def on_f0_glide_changed(self, event):
-        if not self._updating_controls and self.current_synth():
-            value = self.f0_glide_value.GetValue()
-            if type(value) is int and 0 <= value <= 500:
-                self.synth.configure_f0_glide(value)
-                self.f0_glide_dirty = True
         event.Skip()
 
     def on_segmentation_changed(self, event):
@@ -739,8 +720,6 @@ class EloquenceSettingsPanel(SettingsPanel):
             try:
                 if self.pitch_dirty:
                     self.synth.configure_pitch_hertz(self.pitch_hz_mode.GetValue(), self.pitch_hz_value.GetValue())
-                if self.f0_glide_dirty:
-                    self.synth.configure_f0_glide(self.f0_glide_value.GetValue())
                 if self.wpm_dirty:
                     self.synth.configure_rate_wpm(self.wpm_mode.GetValue(), self.wpm_value.GetValue())
                 if self.eq_dirty:
@@ -760,11 +739,10 @@ class EloquenceSettingsPanel(SettingsPanel):
                     "alternative" if self.repository.GetSelection() == 1 else "community")
                 self.synth.saveSettings()
                 self._saved_pitch = (self.synth._pitchInHertz, self.synth._pitchHertz)
-                self._saved_f0_glide = self.synth._f0GlideMs
                 self._saved_wpm = (self.synth._rateInWpm, self.synth._rateWpm)
                 self._saved_eq = self._equalizer_state(self.synth)
                 self._saved_filters = self.synth.equalizer_filters()
-                self.pitch_dirty = self.f0_glide_dirty = self.wpm_dirty = self.eq_dirty = False
+                self.pitch_dirty = self.wpm_dirty = self.eq_dirty = False
             except Exception as error:
                 completed(error, None)
 
@@ -773,15 +751,13 @@ class EloquenceSettingsPanel(SettingsPanel):
         if synth:
             if self.pitch_dirty and self._saved_pitch is not None:
                 synth.configure_pitch_hertz(*self._saved_pitch)
-            if self.f0_glide_dirty and self._saved_f0_glide is not None:
-                synth.configure_f0_glide(self._saved_f0_glide)
             if self.wpm_dirty and self._saved_wpm is not None:
                 synth.configure_rate_wpm(*self._saved_wpm)
             if self.eq_dirty and self._saved_eq is not None:
                 synth.configure_equalizer(*self._saved_eq)
                 if self._saved_filters is not None:
                     synth.configure_equalizer_filters(self._saved_filters)
-        self.pitch_dirty = self.f0_glide_dirty = self.wpm_dirty = self.eq_dirty = False
+        self.pitch_dirty = self.wpm_dirty = self.eq_dirty = False
 
     def onDiscard(self):
         self._restore_preview()
@@ -813,8 +789,6 @@ class EloquenceSettingsPanel(SettingsPanel):
             self.pitch_hz_mode.SetValue(synth._pitchInHertz)
             self.pitch_hz_value.SetValue(synth._pitchHertz)
             self.pitch_dirty = False
-            self.f0_glide_value.SetValue(synth._f0GlideMs)
-            self.f0_glide_dirty = False
             self.wpm_mode.SetValue(synth._rateInWpm)
             self.wpm_value.SetValue(synth._rateWpm)
             self.wpm_dirty = False
@@ -834,9 +808,6 @@ class EloquenceSettingsPanel(SettingsPanel):
             self.pitch_hz_value.SetValue(self.synth._pitchHertz)
             self._saved_pitch = (self.synth._pitchInHertz, self.synth._pitchHertz)
             self.pitch_dirty = False
-        if self.current_synth() and not self.f0_glide_dirty:
-            self.f0_glide_value.SetValue(self.synth._f0GlideMs)
-            self._saved_f0_glide = self.synth._f0GlideMs
         if self.current_synth() and not self.wpm_dirty:
             self.wpm_mode.SetValue(self.synth._rateInWpm)
             self.wpm_value.SetValue(self.synth._rateWpm)

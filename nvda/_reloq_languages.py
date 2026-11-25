@@ -23,9 +23,9 @@ def N_(message: str) -> str:
     return message
 
 if __package__:
-    from ._reloq_eci_direct import DirectEciEngine, EciText, EciCapitalWord, EciLanguage, EciPitch, EciPitchHz, EciProsody, persistent_tag_control, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, ORIGINAL_ACOUSTIC_CLOCK
+    from ._reloq_eci_direct import DirectEciEngine, EciText, EciCapitalWord, EciLanguage, EciPitch, EciPitchHz, EciProsody, persistent_tag_control, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, ORIGINAL_ACOUSTIC_CLOCK, PITCH_GLIDE_MS
 else:
-    from _reloq_eci_direct import DirectEciEngine, EciText, EciCapitalWord, EciLanguage, EciPitch, EciPitchHz, EciProsody, persistent_tag_control, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, ORIGINAL_ACOUSTIC_CLOCK
+    from _reloq_eci_direct import DirectEciEngine, EciText, EciCapitalWord, EciLanguage, EciPitch, EciPitchHz, EciProsody, persistent_tag_control, GERMAN_DIALECT, ENGLISH_DIALECT, NATIVE_PITCH, NATIVE_INFLECTION, NATIVE_VOLUME, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, ORIGINAL_ACOUSTIC_CLOCK, PITCH_GLIDE_MS
 
 
 def speech_has_context(parts):
@@ -346,6 +346,13 @@ class LanguageEngine:
                               part.text and not part.is_control and not part.character_mode else part
                               for part in chunk)
             result = engine.speak(chunk, on_pcm, on_index)
+            # Handles are per language. Carry the last accepted glide tag to
+            # other and future handles after its audio has actually rendered.
+            tagged = any((isinstance(part, EciText) and '`vfg' in part.text) or
+                         (isinstance(part, str) and '`vfg' in part) for part in chunk)
+            getter = getattr(engine, 'get_parameter', None)
+            if tagged and getter is not None:
+                self.set_parameter(PITCH_GLIDE_MS, getter(PITCH_GLIDE_MS))
             pending.clear()
             return result and not self._cancelled.is_set()
 

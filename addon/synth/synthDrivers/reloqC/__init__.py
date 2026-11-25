@@ -35,7 +35,7 @@ from synthDriverHandler import (SynthDriver as BaseSynthDriver, VoiceInfo, Langu
 from ._reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch, EciPitchHz, EciProsody, EciLanguage, EciText, EciCapitalWord, NATIVE_VOLUME,
                                 NATIVE_SPEED, NATIVE_WPM, NATIVE_PITCH, NATIVE_INFLECTION, PROCESS_TAGS,
                                 PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATES,
-                                DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE, ORIGINAL_ACOUSTIC_CLOCK, WORD_SEGMENTATION, CAMEL_CASE, CAMEL_IGNORE_DICTIONARY, PITCH_GLIDE_MS,
+                                DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE, ORIGINAL_ACOUSTIC_CLOCK, WORD_SEGMENTATION, CAMEL_CASE, CAMEL_IGNORE_DICTIONARY,
                                 EQ_LOW, EQ_MID, EQ_HIGH, EQ_FILTER_BASE, EQ_FILTER_COUNT, EQ_FILTER_STRIDE, PITCH_HZ)
 from ._reloq_eci_transport import DictionaryStartupError, EciTextTransport
 from ._reloq_dictionary_manager import DictionaryManager as CommunityDictionaries, DictionarySource
@@ -286,7 +286,6 @@ class SynthDriver(BaseSynthDriver):
         # panel uses a numeric input, while the standard pitch stays 0..100.
         NumericDriverSetting("_pitchHertz", _("Pitch in hertz"), defaultVal=150, minVal=1, maxVal=24000),
         BooleanDriverSetting("_pitchInHertz", _("Use pitch in hertz"), defaultVal=False),
-        NumericDriverSetting("_f0GlideMs", _("F0 transition time in milliseconds"), defaultVal=0, minVal=0, maxVal=500),
         NumericDriverSetting("_rateWpm", _("Rate in words per minute"), defaultVal=150, minVal=1, maxVal=6000),
         BooleanDriverSetting("_rateInWpm", _("Use rate in words per minute"), defaultVal=False),
         BooleanDriverSetting("_eqEnabled", _("Enable equalizer"), defaultVal=False),
@@ -336,8 +335,6 @@ class SynthDriver(BaseSynthDriver):
         self._pitchHertz = 150
         self._pitchInHertz = False
         self._applied_pitch_hz = 0
-        self._f0GlideMs = 0
-        self._applied_f0_glide_ms = 0
         self._loading_voice_settings = False
         self._inflection = 30
         self._volume = 100
@@ -1391,19 +1388,6 @@ class SynthDriver(BaseSynthDriver):
             self._rateWpm, self._rateInWpm = value, enabled
             self._sync_wpm()
 
-    def _sync_f0_glide(self):
-        with self._submit_lock:
-            if not self._terminating and self._f0GlideMs != self._applied_f0_glide_ms:
-                self._transport.set_parameter(PITCH_GLIDE_MS, self._f0GlideMs)
-                self._applied_f0_glide_ms = self._f0GlideMs
-
-    def configure_f0_glide(self, value):
-        if type(value) is not int or not 0 <= value <= 500:
-            raise ValueError("F0 transition time must be 0..500 ms")
-        with self._submit_lock:
-            self._f0GlideMs = value
-            self._sync_f0_glide()
-
     def _get_pitch(self):
         return self._pitch
 
@@ -1574,7 +1558,6 @@ class SynthDriver(BaseSynthDriver):
                 if value != old:
                     self._transport.set_parameter(parameter, int(value))
             self._applied_segmentation = wanted
-            self._sync_f0_glide()
             self._transport.submit(parts)
 
     def cancel(self):

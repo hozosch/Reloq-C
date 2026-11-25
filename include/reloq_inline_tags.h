@@ -11,7 +11,8 @@ enum reloq_inline_kind { RELOQ_TAG_NONE, RELOQ_TAG_SPR, RELOQ_TAG_SPELL,
     RELOQ_TAG_VOLUME, RELOQ_TAG_INFLECTION, RELOQ_TAG_PAUSE,
     RELOQ_TAG_GENDER, RELOQ_TAG_HEAD_SIZE, RELOQ_TAG_ROUGHNESS,
     RELOQ_TAG_BREATHINESS, RELOQ_TAG_PRESET, RELOQ_TAG_LANGUAGE,
-    RELOQ_TAG_DICTIONARY, RELOQ_TAG_PREDICTION, RELOQ_TAG_WPM };
+    RELOQ_TAG_DICTIONARY, RELOQ_TAG_PREDICTION, RELOQ_TAG_WPM,
+    RELOQ_TAG_F0_GLIDE };
 struct reloq_inline_tag { enum reloq_inline_kind kind; size_t length; int value; };
 struct reloq_inline_word {
     int pitch,speed,volume,inflection,pause,explicit_pause;
@@ -44,6 +45,9 @@ static inline struct reloq_inline_tag reloq_inline_tag_read(
     }
     else if(n>5 && s[1]=='v' && s[2]=='b' && s[3]=='h' && s[4]=='z') {
         t.kind=RELOQ_TAG_PITCH;at=5;limit=RELOQ_PITCH_HZ_MAX;pitch_hz=1;
+    }
+    else if(n>4 && s[1]=='v' && s[2]=='f' && s[3]=='g') {
+        t.kind=RELOQ_TAG_F0_GLIDE;at=4;limit=500;
     }
     else if(n>3 && s[1]=='v') {
         at=3;

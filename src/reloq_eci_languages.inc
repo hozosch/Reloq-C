@@ -3,7 +3,7 @@
  * new native language plan. Indices, pitch marks and cancellation retain
  * their source positions. No text result survives this request. */
 struct language_run {size_t begin,end;int language;};
-struct language_controls {struct reloq_inline_word voice;unsigned mask;int spelling,emphasis,dictionary,prediction,wpm;};
+struct language_controls {struct reloq_inline_word voice;unsigned mask;int spelling,emphasis,dictionary,prediction,wpm,glide_plus_one;};
 static struct reloq_inline_tag source_tag(const unsigned char *text,size_t n,
     const unsigned char *modes,size_t at)
 {
@@ -42,6 +42,7 @@ static void language_control(struct language_controls *c,struct reloq_inline_tag
     case RELOQ_TAG_BREATHINESS:v->breathiness=tag.value;c->mask|=32;break;
     case RELOQ_TAG_SPEED:v->speed=tag.value;c->mask|=64;c->wpm=0;break;
     case RELOQ_TAG_WPM:c->wpm=tag.value;c->mask&=~64u;break;
+    case RELOQ_TAG_F0_GLIDE:c->glide_plus_one=tag.value+1;break;
     case RELOQ_TAG_VOLUME:v->volume=tag.value;c->mask|=128;break;
     case RELOQ_TAG_SPELL:c->spelling=tag.value;break;
     case RELOQ_TAG_PROMINENCE:
@@ -63,6 +64,7 @@ static size_t language_prefix(const struct language_controls *c,char prefix[192]
         else n+=(size_t)snprintf(prefix+n,192-n,"`v%c%d ",letters[i],values[i]);
     }
     if(c->wpm)n+=(size_t)snprintf(prefix+n,192-n,"`vwpm%d ",c->wpm);
+    if(c->glide_plus_one)n+=(size_t)snprintf(prefix+n,192-n,"`vfg%d ",c->glide_plus_one-1);
     if(c->spelling)n+=(size_t)snprintf(prefix+n,192-n,"`ts%d ",c->spelling);
     if(c->emphasis) {
         static const char *const emphasis[]={"","`00 ","`0 ","`1 ","`2 ","`3 ","`4 "};

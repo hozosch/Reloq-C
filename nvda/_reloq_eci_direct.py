@@ -102,7 +102,7 @@ def persistent_tag_control(part):
     """
     if not isinstance(part, EciText) or not part.tag_control:
         return None
-    match = re.fullmatch(r'`(vbhz|v[bfghryv])([0-9]+)', part.tag_control)
+    match = re.fullmatch(r'`(vbhz|vfg|v[bfghryv])([0-9]+)', part.tag_control)
     if match is None:
         return None
     name = match.group(1)
@@ -285,6 +285,15 @@ class DirectEciEngine:
         encoded = str(path).encode("utf-8") if path is not None else None
         if not target(self._handle, encoded):
             raise RuntimeError("native ECI dictionary volumes could not be loaded")
+
+    def get_parameter(self, parameter: int) -> int:
+        self._assert_owner()
+        if not self._handle:
+            raise RuntimeError("ECI engine has been closed")
+        value = self._dll.eciGetParam(self._handle, parameter)
+        if value < 0:
+            raise RuntimeError(f"eciGetParam rejected parameter {parameter:#x}")
+        return value
 
     def set_parameter(self, parameter: int, value: int) -> None:
         """Change a generic-voice setting on the ECI owner's worker thread."""

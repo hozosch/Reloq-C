@@ -582,7 +582,7 @@ static int synthesize_generic(struct reloq_eci_engine *e,
     int rendered=reset?RELOQ_DE_UTTERANCE_INVALID:reloq_language_rules_render(e->language,phrase,length,e->process_tags||admitted,
         frame_volume?(e->native_volume_active?e->native_volume:e->generic_volume):100,
         e->native_wpm,e->original_acoustic_clock==1||(e->original_acoustic_clock==2&&
-            (e->language==0x20000||e->language==0x120000||e->language==0x130000)),e->pitch_glide_ms,&settings,english_indices,mark_count,english_pitch,pitch_count,e->text_session,
+            (e->language==0x20000||e->language==0x120000||e->language==0x130000)),e->pitch_glide_ms,&e->pitch_glide_ms,&settings,english_indices,mark_count,english_pitch,pitch_count,e->text_session,
         send_pcm,send_generic_index,&bridge);
     reloq_wordseg_scope(wordseg);
     free(english_indices);free(english_pitch);
@@ -945,7 +945,7 @@ int ECICALL eciSynthesize(ECIHand handle)
     e->failure_utf8_offset = -1;
     int result = RELOQ_ECI_OK;
     struct queued_voice saved_voice=capture_voice(e),initial_voice=saved_voice,last_voice=saved_voice;
-    int saved_tags=e->process_tags,have_voice=0;
+    int saved_tags=e->process_tags,have_voice=0,last_glide_tag=-1;
     struct queued_control *controls=NULL;size_t control_count=0;
     struct reloq_session *saved_text_session=NULL;
     size_t text_bytes = 0;
@@ -1083,6 +1083,15 @@ int ECICALL eciSynthesize(ECIHand handle)
             if(modes)memset(modes+offset,item->character_mode,item->length);
             if(guards)memset(guards+offset,item->segmentation_guarded,item->length);
             offset += item->length;
+        }
+    }
+    if(text_bytes && saved_tags && e->voice_mode==RELOQ_ECI_VOICE_GENERIC) {
+        int spelling=0;
+        for(size_t at=0;at<text_bytes;) {
+            struct reloq_inline_tag tag=source_tag(phrase,text_bytes,modes,at);
+            if(tag.kind==RELOQ_TAG_SPELL)spelling=tag.value;
+            else if(!spelling&&tag.kind==RELOQ_TAG_F0_GLIDE)last_glide_tag=tag.value;
+            at+=tag.length?tag.length:1;
         }
     }
     if(text_bytes && !control_count && e->process_tags && e->voice_mode==RELOQ_ECI_VOICE_GENERIC &&
@@ -1334,6 +1343,7 @@ done:
     free(source_map);free(modes);free(guards);
     if (result == RELOQ_ECI_OK && epoch_get(&e->stop_epoch) != before)
         result = RELOQ_ECI_CANCELLED;
+    if(result==RELOQ_ECI_OK&&last_glide_tag>=0)e->pitch_glide_ms=last_glide_tag;
     free(boundaries);
     free(spans);
     free(marks);

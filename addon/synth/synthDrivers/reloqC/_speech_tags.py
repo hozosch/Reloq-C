@@ -59,10 +59,10 @@ def register_remote_commands():
             setattr(commands, command.__name__, command)
 
 
-_NUMBER = re.compile(r"`(vbhz|vwpm|v[bsvfghry]|ts|da|pp|l|p|v(?=[1-9])|(?=[0-9]))([0-9]+)")
+_NUMBER = re.compile(r"`(vbhz|vwpm|vfg|v[bsvfghry]|ts|da|pp|l|p|v(?=[1-9])|(?=[0-9]))([0-9]+)")
 _LIMITS = {"vs": 250, "vg": 1, "ts": 2, "da": 1, "pp": 1,
-           "l": 32767, "p": 60000, "v": 9, "": 9, "vbhz": 24000, "vwpm": 6000}
-_WORD_CONTROLS = {"vb", "vbhz", "vs", "vwpm", "vv", "vf", "vg", "vh", "vr", "vy", "v"}
+           "l": 32767, "p": 60000, "v": 9, "": 9, "vbhz": 24000, "vwpm": 6000, "vfg": 500}
+_WORD_CONTROLS = {"vb", "vbhz", "vs", "vwpm", "vv", "vf", "vfg", "vg", "vh", "vr", "vy", "v"}
 
 
 def _read(text, at):

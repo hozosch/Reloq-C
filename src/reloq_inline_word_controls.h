@@ -7,7 +7,7 @@
 static int word_voice_control(struct reloq_inline_tag t)
 {
     return (t.kind>=RELOQ_TAG_PITCH&&t.kind<=RELOQ_TAG_PRESET&&t.kind!=RELOQ_TAG_PAUSE)||
-        t.kind==RELOQ_TAG_WPM;
+        t.kind==RELOQ_TAG_WPM||t.kind==RELOQ_TAG_F0_GLIDE;
 }
 
 static size_t voice_word_letter(const unsigned char *p,size_t n,int unicode)
