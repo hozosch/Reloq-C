@@ -1,5 +1,9 @@
 # Eloquence C – user guide
 
+## Version 2.1.1
+
+Explicit pitch changes can glide over a configurable time using the `vfg` ECI tag. CamelCase stress is improved in English, and the priority of whole-word dictionaries can be selected when CamelCase splitting is enabled. German Main dictionary entries are recognized inside typographic quotation marks.
+
 ## Version 2.1.0
 
 Mandarin retains its speech contour when pauses are shortened. Uppercase words in letter-and-number combinations such as `RICHEDIT50W` keep their usual reading.
@@ -124,7 +128,7 @@ Under **NVDA settings → Eloquence C → Equalizer**, bass, midrange and treble
 
 `` `vbhz150 `` sets the base pitch of the following text to 150 hertz; integer values from 1 to 24,000 hertz are supported. `` `vb65 `` returns to the usual ECI pitch scale. For measurements, `` `vf0 `` can turn off inflection; linguistic tones in tonal languages may remain. The sample rate must exceed twice the desired frequency, and the voice filters can attenuate very high values. An insufficient sample rate can distort the result or cause synthesis to fail. These tags do not change the saved settings.
 
-`` `vfg40 `` sets the F0 transition time to 40 milliseconds. Whole numbers from 0 to 500 are supported; `` `vfg0 `` turns smoothing off. The value remains active for later speech and language changes until another `` `vfg `` command replaces it; it resets to 0 on restart. Smoothing applies to explicit pitch changes, such as `` `vbhz `` or NVDA pitch marks. Normal speech inflection remains in place. Smoothing is not yet reliable for Chinese text mixed with Latin words or for NVDA pitch marks within Japanese text.
+`` `vfg40 `` sets the F0 transition time to 40 milliseconds. Whole numbers from 0 to 500 are supported; `` `vfg0 `` turns smoothing off. The value remains active for later speech and language changes until another `` `vfg `` command replaces it; it resets to 0 on restart. Smoothing applies to explicit pitch changes, such as `` `vbhz `` or NVDA pitch marks. Normal speech inflection remains in place. Smoothing is not yet reliable for Chinese text mixed with Latin words or for NVDA pitch marks within Japanese text. A pitch tag can also introduce an extra pause in some short Japanese kana sequences.
 
 **Use abbreviation dictionary** controls native abbreviation expansion and starts enabled. Main and Root pronunciation dictionaries remain active independently. **Phrase prediction** starts disabled; enabled, it uses the language core to infer phrase boundaries in text without punctuation. Both settings also appear on Android and apply to the next synthesis request. Equal speed values retain each language’s own duration model; they do not promise equal words or syllables per minute.
 

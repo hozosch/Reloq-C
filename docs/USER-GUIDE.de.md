@@ -1,5 +1,9 @@
 # Eloquence C – Bedienungsanleitung
 
+## Version 2.1.1
+
+Ausdrückliche Tonhöhenwechsel können mit dem ECI-Tag `vfg` über eine einstellbare Zeit gleiten. Englische Camel-Case-Wörter werden besser betont; bei aktivierter Zerlegung lässt sich der Vorrang von Wörterbucheinträgen wählen. Deutsche Main-Wörterbucheinträge werden innerhalb typografischer Anführungszeichen erkannt.
+
 ## Version 2.1.0
 
 Die chinesische Sprachmelodie bleibt beim Verkürzen von Pausen erhalten. Großgeschriebene Wörter in Buchstaben-Zahlen-Kombinationen wie `RICHEDIT50W` behalten ihre übliche Aussprache.
@@ -124,7 +128,7 @@ Mit `` `vwpm150 `` kann die folgende Sprache über die native WPM-Zeitsteuerung 
 
 Mit `` `vbhz150 `` lässt sich die Grundtonhöhe für den folgenden Text auf 150 Hertz setzen; möglich sind ganzzahlige Werte von 1 bis 24.000 Hertz. `` `vb65 `` wechselt zurück zur üblichen ECI-Skala. Für eine Messung kann zusätzlich `` `vf0 `` die Sprachmelodie ausschalten; in Tonsprachen können sprachliche Tonverläufe dennoch erhalten bleiben. Die Abtastrate muss höher als das Doppelte der gewünschten Frequenz sein; sehr hohe Werte können durch die Stimmfilter stark gedämpft werden. Bei unzureichender Abtastrate kann das Ergebnis verfälscht sein oder die Synthese abbrechen. Die Tags ändern nicht die gespeicherten Einstellungen.
 
-Mit `` `vfg40 `` wird die F0-Gleitzeit auf 40 Millisekunden gesetzt. Ganzzahlen von 0 bis 500 sind möglich; `` `vfg0 `` schaltet das Gleiten aus. Der Wert bleibt für spätere Sprachausgaben und Sprachwechsel aktiv, bis ein neuer `` `vfg ``-Befehl ihn ersetzt; nach dem Neustart ist er 0. Die Glättung wirkt auf ausdrückliche Tonhöhenwechsel, etwa `` `vbhz `` oder NVDA-Tonhöhenmarken. Die gewöhnliche Sprachmelodie bleibt erhalten. Bei chinesischen Mischtexten mit lateinischen Wörtern und bei NVDA-Tonhöhenmarken innerhalb japanischer Texte wirkt sie noch nicht in jedem Fall.
+Mit `` `vfg40 `` wird die F0-Gleitzeit auf 40 Millisekunden gesetzt. Ganzzahlen von 0 bis 500 sind möglich; `` `vfg0 `` schaltet das Gleiten aus. Der Wert bleibt für spätere Sprachausgaben und Sprachwechsel aktiv, bis ein neuer `` `vfg ``-Befehl ihn ersetzt; nach dem Neustart ist er 0. Die Glättung wirkt auf ausdrückliche Tonhöhenwechsel, etwa `` `vbhz `` oder NVDA-Tonhöhenmarken. Die gewöhnliche Sprachmelodie bleibt erhalten. Bei chinesischen Mischtexten mit lateinischen Wörtern und bei NVDA-Tonhöhenmarken innerhalb japanischer Texte wirkt sie noch nicht in jedem Fall. Ein Tonhöhen-Tag kann bei manchen kurzen japanischen Kana-Folgen eine zusätzliche Pause erzeugen.
 
 **Abkürzungswörterbuch verwenden** schaltet die native Abkürzungsauflösung und ist zunächst eingeschaltet. Haupt- und Stammwörterbücher für die Aussprache bleiben davon unabhängig aktiv. **Satzvorhersage** ist zunächst ausgeschaltet; eingeschaltet ermittelt der Sprachkern Phrasengrenzen in Text ohne Satzzeichen. Beide Einstellungen stehen auch unter Android zur Verfügung und gelten ab der nächsten Syntheseanfrage. Gleiche Geschwindigkeitswerte behalten das Dauermodell der jeweiligen Sprache bei; sie garantieren keine gleiche Anzahl Wörter oder Silben pro Minute.
 

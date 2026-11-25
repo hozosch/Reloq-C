@@ -4,6 +4,7 @@ ReLoq C is a speech synthesis project that preserves the familiar character of E
 
 The shared synthesis engine is written in C. NVDA, Android, Windows SAPI5 and Linux use the same core. The project is developed and tested with screen-reader users; language reliability, responsiveness and lower resource use remain active priorities.
 
+**2.1.1** adds adjustable ECI pitch transitions and improves CamelCase stress and German dictionary entries inside quotation marks.
 **2.1.0** preserves Mandarin intonation with shortened pauses and improves uppercase letter-and-number combinations.
 **2.0.0** adds Aragonese, improves number handling and supplies additional NVDA interface translations.
 **1.4.1** improves CamelCase and acronym handling and makes automatic NVDA dictionary updates non-modal.
@@ -27,7 +28,7 @@ The [latest release](https://github.com/hozosch/Reloq-C/releases/latest) provide
 | Linux Speech Dispatcher | `-linux-x64-*.tar.gz` | x86-64, glibc 2.35+, Speech Dispatcher 0.11+ |
 | Linda on Linux | `-synth-linux-x64-*.nvda-addon` | x86-64, glibc 2.35+ and Linda |
 
-Release **2.1.0** updates existing Windows and Android installations. For Linux installation instructions, see the [Linux guide](linux/README.md). If you are upgrading directly from the published 1.1 NVDA or Android package, consult the [1.1.1 transition notes](docs/releases/1.1.1.md) for the one-time identity change. See the [2.1.0 release notes](docs/releases/2.1.0.md) for this update. Source archives are for developers and are not installable packages.
+Release **2.1.1** updates existing Windows and Android installations. For Linux installation instructions, see the [Linux guide](linux/README.md). If you are upgrading directly from the published 1.1 NVDA or Android package, consult the [1.1.1 transition notes](docs/releases/1.1.1.md) for the one-time identity change. See the [2.1.1 release notes](docs/releases/2.1.1.md) for this update. Source archives are for developers and are not installable packages.
 
 ## Current features
 
@@ -46,7 +47,7 @@ First, make the supported languages and everyday speech reliable. This includes 
 
 Next, reduce binary size, memory use and CPU demand, and keep navigation responsive even at high sample rates. These improvements belong in the shared C core so that every platform can benefit. The project aims for compact, independently expressed C rules without runtime bytecode or original DLL/SYN modules.
 
-All three integrations are available. Android offers an offline TTS service, live controls and pronunciation dictionaries. SAPI5 provides one voice per language and a native dialog with live settings, optional shared parameters and a common synthesis rate. Its unified installer supplies both architectures, localized installation and Start menu entries for settings, the guide and removal. See the [SAPI guide](sapi/README.txt). Native Windows ARM64 SAPI support remains future work; the current Windows components are x64 and x86.
+All four integrations are available. Android offers an offline TTS service, live controls and pronunciation dictionaries. SAPI5 provides one voice per language and a native dialog with live settings, optional shared parameters and a common synthesis rate. Its unified installer supplies both architectures, localized installation and Start menu entries for settings, the guide and removal. See the [SAPI guide](sapi/README.txt). Native Windows ARM64 SAPI support remains future work; the current Windows components are x64 and x86.
 
 ## Using the NVDA add-on
 
@@ -58,7 +59,7 @@ The [English user guide](docs/USER-GUIDE.en.md) and [German user guide](docs/USE
 
 ## Android
 
-The Android app targets **ARM64 and x86-64 devices running Android 8 or later**. It includes all 14 language variants and eight voice presets, runs offline, and appears as **ReLoq C** in Android's text-to-speech settings. Its launcher screen provides all voice/output controls, independent Android speed and pitch overrides, and optional community/custom dictionaries.
+The Android app targets **ARM64 and x86-64 devices running Android 8 or later**. It includes the supported languages and eight voice presets, runs offline, and appears as **ReLoq C** in Android's text-to-speech settings. Its launcher screen provides all voice/output controls, independent Android speed and pitch overrides, and optional community/custom dictionaries.
 
 The [Android instructions](android/README.md) explain installation, building and validation limits. Android's live settings and speech engine have been confirmed in practical use. Automated host tests complement device testing; they do not establish audible performance on every device.
 
@@ -66,7 +67,7 @@ The [Android instructions](android/README.md) explain installation, building and
 
 On 64-bit Intel and AMD Linux systems, ReLoq C is available as a **Speech Dispatcher module** named `reloq`, for Orca and every other program that speaks through Speech Dispatcher, and as an add-on for **[Linda](https://github.com/Mudb0y/linda)**, the NVDA port to Linux. The Linda add-on is the NVDA add-on with the engine built for Linux, so it offers the same voices, settings, dictionaries and update checks. Both need the GNU C library 2.35 or later; the module needs Speech Dispatcher 0.11 or later.
 
-Linux packages are built and verified with each release candidate but are not yet part of the published release assets. Until they are, build them from source. The [Linux instructions](linux/README.md) cover installation, voices, settings, building and removal.
+Linux packages are available in the published release assets. The [Linux instructions](linux/README.md) cover installation, voices, settings, building and removal.
 
 ## iPhone, iPad and Mac
 
