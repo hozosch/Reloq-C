@@ -637,3 +637,6 @@ msgstr "Automatisch nach Add-on-Updates suchen"
 
 msgid "Eloquence C version %s is available. Download and install it?"
 msgstr "Eloquence C Version %s ist verfügbar. Herunterladen und installieren?"
+
+msgid "Give dictionaries priority over camel case"
+msgstr "Wörterbucheinträge haben Vorrang"

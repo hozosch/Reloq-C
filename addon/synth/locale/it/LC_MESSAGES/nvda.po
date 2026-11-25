@@ -501,3 +501,6 @@ msgstr "Caldo"
 
 msgid "Word roots"
 msgstr "Radici"
+
+msgid "Give dictionaries priority over camel case"
+msgstr "Dai priorità alle voci dei dizionari rispetto a camelCase"

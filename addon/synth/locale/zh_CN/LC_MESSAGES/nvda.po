@@ -501,3 +501,6 @@ msgstr "温暖"
 
 msgid "Word roots"
 msgstr "词根"
+
+msgid "Give dictionaries priority over camel case"
+msgstr "词典条目优先于驼峰拆分"

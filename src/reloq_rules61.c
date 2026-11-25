@@ -637,10 +637,14 @@ static int wordseg_input_pass(unsigned char **text,size_t **source,size_t *lengt
             end=after;
         }
         void *dictionary=options.dictionary;
+        /* Only a real CamelCase boundary overrides a whole-token entry. All
+         * other segmentation and explicit source guards retain priority. */
+        int camel_override=!upper_only&&options.camel&&options.camel_ignore_dictionary&&
+            wordseg_camel_boundary(a,i,end,utf8);
         /* A longer exact dictionary key may include punctuation such as a
          * hyphen. Keep the complete entry intact before considering parts. */
         size_t extended=end;
-        if(dictionary) {
+        if(dictionary&&!camel_override) {
             while(extended<n&&a[extended]>32&&a[extended]!='`'&&extended-i<128)++extended;
             while(extended>end&&strchr(",.;:!?)]}",a[extended-1]))--extended;
             if(extended>end&&wordseg_dictionary(dictionary,a+i,extended-i,english,utf8,abbreviations_disabled))end=extended;
@@ -651,7 +655,7 @@ static int wordseg_input_pass(unsigned char **text,size_t **source,size_t *lengt
             if(last>options.protected_length)last=options.protected_length;
             for(size_t j=first;j<last;++j)if(options.protected_text[j]){protected=1;break;}
         }
-        if(protected||wordseg_dictionary(dictionary,a+i,end-i,english,utf8,abbreviations_disabled)) {
+        if(protected||(!camel_override&&wordseg_dictionary(dictionary,a+i,end-i,english,utf8,abbreviations_disabled))) {
             if(german_shared_append(&b,a+i,map+i,end-i,0))goto fail;
             i=end;continue;
         }

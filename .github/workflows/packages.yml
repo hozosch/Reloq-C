@@ -135,6 +135,7 @@ jobs:
           python3 -B nvda/test_eci_wordseg_native.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_acronyms_native.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_camel_prominence.py --library eci/libreloq_eci.so
+          python3 -B nvda/test_eci_camel_dictionary_priority.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_german_main_quotes.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_upper_number.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_aragonese_native.py --library eci/libreloq_eci.so

@@ -137,6 +137,9 @@ enum {
     RELOQ_ECI_CAMEL_CASE = 0x101d,
     /* Read-only UTF-8 input mode bits supported by eciAddTextUtf8. */
     RELOQ_ECI_UTF8_INPUT_MODES = 0x101e,
+    /* When CamelCase is enabled, split it before whole-word dictionary
+     * lookup. Defaults to 0, preserving pronunciation dictionary priority. */
+    RELOQ_ECI_CAMEL_IGNORE_DICTIONARY = 0x101f,
     /* Five optional peaking filters, each with four consecutive parameters:
      * enabled 0/1, frequency 1..24000 Hz, gain 0..24 (-12..+12 dB),
      * and bandwidth 10..400 percent of an octave. */

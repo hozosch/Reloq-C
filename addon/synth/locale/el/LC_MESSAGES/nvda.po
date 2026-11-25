@@ -501,3 +501,6 @@ msgstr "Ζεστό"
 
 msgid "Word roots"
 msgstr "Ρίζες λέξεων"
+
+msgid "Give dictionaries priority over camel case"
+msgstr "Προτεραιότητα στις καταχωρίσεις λεξικού έναντι του camelCase"

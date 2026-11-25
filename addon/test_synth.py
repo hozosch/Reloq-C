@@ -353,7 +353,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert PitchCommand in driver.supportedCommands
                 assert CharacterModeCommand in driver.supportedCommands
                 assert [setting.id for setting in driver.supportedSettings] == [
-                    "language", "voice", "rate", "rateBoost", "originalAcousticClock", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "originalQuestions", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate", "mellowMode", "_acousticClockMask", "_pitchHertz", "_pitchInHertz", "_rateWpm", "_rateInWpm", "_eqEnabled", "_eqPreset", "_eqCustomLow", "_eqCustomMid", "_eqCustomHigh", *[f"_eqFilter{i}{field}" for i in range(1,6) for field in ("Enabled","Frequency","Gain","Width")], "_wordSegmentation", "_camelCase"]
+                    "language", "voice", "rate", "rateBoost", "originalAcousticClock", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "originalQuestions", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate", "mellowMode", "_acousticClockMask", "_pitchHertz", "_pitchInHertz", "_rateWpm", "_rateInWpm", "_eqEnabled", "_eqPreset", "_eqCustomLow", "_eqCustomMid", "_eqCustomHigh", *[f"_eqFilter{i}{field}" for i in range(1,6) for field in ("Enabled","Frequency","Gain","Width")], "_wordSegmentation", "_camelCase", "_camelDictionaryPriority"]
                 assert driver.supportedSettings[0].availableInSettingsRing
                 assert not any(hasattr(driver, '_'+name) for name in
                                ('glideOpening', 'glideBackness', 'glideSoftness'))
@@ -642,6 +642,27 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert parts[0].text == "Ersatz" and parts[0].segmentation_guarded
                 assert any(part.text == "anderesWort" and not part.segmentation_guarded for part in parts
                            if isinstance(part, driver_module.EciText))
+                # With priority disabled an NVDA whole-word entry must not
+                # replace the CamelCase source before the C core sees it.
+                driver._camelDictionaryPriority = False
+                result = driver._protect_tags(["meinTest anderesWort"])
+                processed = [simple.compiled.sub(simple.replacement, item) if isinstance(item, str) else item
+                             for item in result]
+                parts = driver_module._parts(processed)
+                assert any(part.text == "meinTest" and not part.segmentation_guarded for part in parts
+                           if isinstance(part, driver_module.EciText)), parts
+                assert not any(part.text == "Ersatz" for part in parts if isinstance(part, driver_module.EciText))
+                class ImportedCamel:
+                    records = (object(),)
+                    def matches(self, text, language, voice): return "meinTest" in text
+                    def process(self, text, language, voice): return text.replace("meinTest", "Importiert")
+                driver._imported_dictionaries = ImportedCamel()
+                result = driver._protect_tags(["vor meinTest danach"])
+                parts = driver_module._parts(result)
+                assert any(part.text == "meinTest" for part in parts if isinstance(part, driver_module.EciText)), parts
+                assert not any("Importiert" in part.text for part in parts if isinstance(part, driver_module.EciText))
+                driver._imported_dictionaries = saved_imports
+                driver._camelDictionaryPriority = True
                 phrase = types.SimpleNamespace(compiled=re.compile("meinTest und"), type=0)
                 speech_dicts.dictionaries["default"] = [phrase]
                 result = driver._protect_tags(["meinTest und anderesWort"])
@@ -1172,10 +1193,13 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                         fresh.initSettings()
                         assert not fresh._pitchInHertz and fresh.pitch == 65
                         assert not fresh._wordSegmentation and not fresh._camelCase
+                        assert fresh._camelDictionaryPriority
                         fresh._wordSegmentation = fresh._camelCase = True
+                        fresh._camelDictionaryPriority = False
                         fresh.saveSettings()
                         assert profile["speech"][fresh.name]["_wordSegmentation"] is True
                         assert profile["speech"][fresh.name]["_camelCase"] is True
+                        assert profile["speech"][fresh.name]["_camelDictionaryPriority"] is False
                         fresh.configure_pitch_hertz(True, 151)
                         fresh.configure_rate_wpm(True, 151)
                         fresh.configure_equalizer(True, 4, 6, -2, 3)
@@ -1215,6 +1239,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                         assert fresh.equalizer_filters()[0]==(True,777,6,50)
                         assert fresh.equalizer_filters()[4]==(True,22000,-4,150)
                         assert fresh._wordSegmentation and fresh._camelCase
+                        assert not fresh._camelDictionaryPriority
                         fresh.voice = "2"
                         fresh.language = "en_US"
                         fresh.speak([PitchCommand(), "Test"])

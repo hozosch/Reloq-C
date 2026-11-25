@@ -105,7 +105,8 @@ int ECICALL eciGeneratePhonemes(ECIHand handle,int room,void *buffer)
         (struct reloq61_cancel_check){phoneme_cancelled,&output});
     struct reloq_wordseg_options wordseg=reloq_wordseg_scope((struct reloq_wordseg_options){
         e->word_segmentation,e->camel_case,
-        reloq61_worker_dictionary_handle(e->rule_worker),e->dictionary_disabled,guards,length});
+        reloq61_worker_dictionary_handle(e->rule_worker),e->dictionary_disabled,guards,length,
+        e->camel_ignore_dictionary});
     int voice[8]={e->gender,e->head_size,e->native_pitch,e->native_inflection,
         e->roughness,e->breathiness,e->native_speed,e->native_volume};
     /* Unicode admission has already escaped disabled user tags and can add

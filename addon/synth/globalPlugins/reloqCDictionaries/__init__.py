@@ -155,6 +155,7 @@ class EloquenceSettingsPanel(SettingsPanel):
         self._saved_filters = self.synth.equalizer_filters() if self.synth else None
         self.segmentation_dirty = False
         self.camel_dirty = False
+        self.camel_priority_dirty = False
         content.Add(wx.StaticText(self, label=_("Exact base pitch")), 0, wx.ALL, 10)
         self.pitch_hz_mode = wx.CheckBox(self, label=_("Use base pitch in &hertz"))
         self.pitch_hz_mode.SetValue(self.synth._pitchInHertz if self.synth else False)
@@ -224,6 +225,10 @@ class EloquenceSettingsPanel(SettingsPanel):
         self.camel_case.SetValue(getattr(self.synth, "_camelCase", False) if self.synth else False)
         self.camel_case.Bind(wx.EVT_CHECKBOX, self.on_camel_changed)
         content.Add(self.camel_case, 0, wx.ALL, 10)
+        self.camel_dictionary_priority = wx.CheckBox(self, label=_("Give dictionaries priority over camel case"))
+        self.camel_dictionary_priority.SetValue(getattr(self.synth, "_camelDictionaryPriority", True) if self.synth else True)
+        self.camel_dictionary_priority.Bind(wx.EVT_CHECKBOX, self.on_camel_priority_changed)
+        content.Add(self.camel_dictionary_priority, 0, wx.ALL, 10)
         content.Add(wx.StaticText(self, label=_("Pronunciation dictionaries")), 0, wx.ALL, 10)
         self.community = wx.CheckBox(self, label=_("Use &community pronunciation dictionaries"))
         self.community.SetValue(self.synth.communityDictionaries if self.synth else False)
@@ -357,6 +362,18 @@ class EloquenceSettingsPanel(SettingsPanel):
         self.eq_preset.Enable(enabled and self.eq_mode.GetValue())
         for control in self.eq_bands:
             control.Enable(enabled and self.eq_mode.GetValue())
+        self._update_camel_priority(enabled)
+
+    def _update_camel_priority(self, enabled=None):
+        if enabled is None:
+            enabled = bool(self.current_synth() and not self.pending)
+        visible = bool(self.camel_case.GetValue())
+        self.camel_dictionary_priority.Show(visible)
+        self.camel_dictionary_priority.Enable(enabled and visible)
+        self.Layout()
+        fit = getattr(self, "FitInside", None)
+        if fit:
+            fit()
 
     @staticmethod
     def _equalizer_state(synth):
@@ -445,6 +462,11 @@ class EloquenceSettingsPanel(SettingsPanel):
 
     def on_camel_changed(self, event):
         self.camel_dirty = True
+        self._update_camel_priority()
+        event.Skip()
+
+    def on_camel_priority_changed(self, event):
+        self.camel_priority_dirty = True
         event.Skip()
 
     def _selected_dictionary(self):
@@ -710,6 +732,9 @@ class EloquenceSettingsPanel(SettingsPanel):
                 if self.camel_dirty:
                     self.synth._camelCase = self.camel_case.GetValue()
                     self.camel_dirty = False
+                if self.camel_priority_dirty:
+                    self.synth._camelDictionaryPriority = self.camel_dictionary_priority.GetValue()
+                    self.camel_priority_dirty = False
                 self.synth.configure_dictionaries(self.sources, self.community.GetValue(), completed,
                     "alternative" if self.repository.GetSelection() == 1 else "community")
                 self.synth.saveSettings()
@@ -772,6 +797,8 @@ class EloquenceSettingsPanel(SettingsPanel):
             self.segmentation_dirty = False
             self.camel_case.SetValue(getattr(synth, "_camelCase", False))
             self.camel_dirty = False
+            self.camel_dictionary_priority.SetValue(getattr(synth, "_camelDictionaryPriority", True))
+            self.camel_priority_dirty = False
             self.community.SetValue(synth.communityDictionaries)
             self.repository.SetSelection(1 if synth.dictionary_manager().repository == "alternative" else 0)
             self.redraw()
@@ -796,6 +823,8 @@ class EloquenceSettingsPanel(SettingsPanel):
             self.segmentation.SetValue(getattr(self.synth, "_wordSegmentation", False))
         if self.current_synth() and not self.camel_dirty:
             self.camel_case.SetValue(getattr(self.synth, "_camelCase", False))
+        if self.current_synth() and not self.camel_priority_dirty:
+            self.camel_dictionary_priority.SetValue(getattr(self.synth, "_camelDictionaryPriority", True))
 
 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):

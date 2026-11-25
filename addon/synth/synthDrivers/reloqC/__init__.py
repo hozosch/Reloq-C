@@ -7,7 +7,7 @@ worker. Speech and playback are queued without blocking NVDA's UI thread.
 from __future__ import annotations
 
 from bisect import bisect_left
-from collections import OrderedDict
+from collections import OrderedDict, deque
 import ctypes
 import json
 import math
@@ -35,7 +35,7 @@ from synthDriverHandler import (SynthDriver as BaseSynthDriver, VoiceInfo, Langu
 from ._reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch, EciPitchHz, EciProsody, EciLanguage, EciText, EciCapitalWord, NATIVE_VOLUME,
                                 NATIVE_SPEED, NATIVE_WPM, NATIVE_PITCH, NATIVE_INFLECTION, PROCESS_TAGS,
                                 PAUSE_MODE, HEAD_SIZE, ROUGHNESS, BREATHINESS, GENDER, SAMPLE_RATES,
-                                DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE, ORIGINAL_ACOUSTIC_CLOCK, WORD_SEGMENTATION, CAMEL_CASE,
+                                DICTIONARY, PHRASE_PREDICTION, ORIGINAL_QUESTIONS, MELLOW_MODE, ORIGINAL_ACOUSTIC_CLOCK, WORD_SEGMENTATION, CAMEL_CASE, CAMEL_IGNORE_DICTIONARY,
                                 EQ_LOW, EQ_MID, EQ_HIGH, EQ_FILTER_BASE, EQ_FILTER_COUNT, EQ_FILTER_STRIDE, PITCH_HZ)
 from ._reloq_eci_transport import DictionaryStartupError, EciTextTransport
 from ._reloq_dictionary_manager import DictionaryManager as CommunityDictionaries, DictionarySource
@@ -301,6 +301,7 @@ class SynthDriver(BaseSynthDriver):
         )),
         BooleanDriverSetting("_wordSegmentation", _("Split unfamiliar English words"), defaultVal=False),
         BooleanDriverSetting("_camelCase", _("Split camel case"), defaultVal=False),
+        BooleanDriverSetting("_camelDictionaryPriority", _("Give dictionaries priority over camel case"), defaultVal=True),
     )
 
     @classmethod
@@ -357,7 +358,8 @@ class SynthDriver(BaseSynthDriver):
         self._voiceTags = False
         self._wordSegmentation = False
         self._camelCase = False
-        self._applied_segmentation = (False, False)
+        self._camelDictionaryPriority = True
+        self._applied_segmentation = (False, False, False)
         self._wordseg_keys = None
         self._speech_preparation_marker = _SpeechPreparationMarker()
         self._word_segmenters = {}
@@ -569,7 +571,8 @@ class SynthDriver(BaseSynthDriver):
             return sequence
         with self._submit_lock:
             home, voice = self._selectedLanguage, self._voice
-            word_segment, camel, keys = self._wordSegmentation, self._camelCase, self._wordseg_keys
+            word_segment, camel, priority, keys = (self._wordSegmentation, self._camelCase,
+                                                    self._camelDictionaryPriority, self._wordseg_keys)
         segment = word_segment or camel
         try:
             initial_normalization = bool(config.conf["speech"]["unicodeNormalization"])
@@ -577,7 +580,9 @@ class SynthDriver(BaseSynthDriver):
             initial_normalization = False
         selected, spelling, result = home, False, []
         normalization = initial_normalization
-        for item in sequence:
+        pending = deque(sequence)
+        while pending:
+            item = pending.popleft()
             if isinstance(item, LangChangeCommand):
                 chosen = language_for(item.lang, home, self._languages)
                 if chosen is not None: selected = chosen
@@ -586,6 +591,34 @@ class SynthDriver(BaseSynthDriver):
             elif isinstance(item, CharacterModeCommand):
                 spelling = bool(item.state)
             elif isinstance(item, str) and not spelling:
+                if camel and not priority:
+                    # Protect only the original CamelCase words from NVDA's
+                    # earlier whole-word substitutions. The shared core then
+                    # separates them and still consults native dictionaries
+                    # for each resulting component.
+                    language = self._languages[selected]
+                    words = tuple(word_runs(item))
+                    starts = tuple(start for start, _end in words)
+                    chunks, cursor = [], 0
+                    for start, end in words:
+                        word = item[start:end]
+                        if camel_word(word) == word:
+                            continue
+                        boundary = self._native_following_boundary(item, start, end, words, starts,
+                                                                   language.locale, symbolLevel, normalization)
+                        if boundary is None:
+                            continue
+                        if start > cursor:
+                            chunks.append(item[cursor:start])
+                        chunks.append(NativeDictionaryWord(word))
+                        cursor, following = boundary
+                        if following:
+                            chunks.append(NativeDictionaryWord(following))
+                    if chunks:
+                        if cursor < len(item):
+                            chunks.append(item[cursor:])
+                        pending.extendleft(reversed(chunks))
+                        continue
                 protected = segment and self._imported_dictionaries.matches(item, selected, voice)
                 item = self._imported_dictionaries.process(item, selected, voice)
                 # With both splitting options off, common text follows NVDA's
@@ -1493,7 +1526,8 @@ class SynthDriver(BaseSynthDriver):
             voice = self._voice
             rate, boost, volume = self._rate, self._rateBoost, self._volume
             wpm = self._rateWpm if self._rateInWpm else 0
-            segment, camel, segment_keys = self._wordSegmentation, self._camelCase, self._wordseg_keys
+            segment, camel, priority, segment_keys = (self._wordSegmentation, self._camelCase,
+                                                       self._camelDictionaryPriority, self._wordseg_keys)
         def make_parts():
             return _parts(speechSequence, base_pitch=pitch, base_pitch_hz=pitch_hz, voice_tags=tags,
                           base_rate=rate, base_wpm=wpm, rate_boost=boost, base_volume=volume,
@@ -1506,20 +1540,21 @@ class SynthDriver(BaseSynthDriver):
             # normalized. Keep its inline relative commands paired with the
             # base pitch which will precede this job in the native queue.
             if (self._pitch, self._pitchHertz if self._pitchInHertz else 0, self._voiceTags, self._selectedLanguage, self._voice,
-                self._rate, self._rateBoost, self._volume, self._rateWpm if self._rateInWpm else 0, self._wordSegmentation, self._camelCase, self._wordseg_keys) != (pitch, pitch_hz, tags, language, voice, rate, boost, volume, wpm, segment, camel, segment_keys):
+                self._rate, self._rateBoost, self._volume, self._rateWpm if self._rateInWpm else 0, self._wordSegmentation, self._camelCase, self._camelDictionaryPriority, self._wordseg_keys) != (pitch, pitch_hz, tags, language, voice, rate, boost, volume, wpm, segment, camel, priority, segment_keys):
                 pitch, tags, language, voice = self._pitch, self._voiceTags, self._selectedLanguage, self._voice
                 pitch_hz = self._pitchHertz if self._pitchInHertz else 0
                 rate, boost, volume = self._rate, self._rateBoost, self._volume
                 wpm = self._rateWpm if self._rateInWpm else 0
-                segment, camel, segment_keys = self._wordSegmentation, self._camelCase, self._wordseg_keys
+                segment, camel, priority, segment_keys = (self._wordSegmentation, self._camelCase,
+                                                           self._camelDictionaryPriority, self._wordseg_keys)
                 parts = make_parts()
             characters = sum(len(p.text) if isinstance(p, EciText) else len(p.original) if isinstance(p, EciCapitalWord) else len(p) if isinstance(p, str) else 0 for p in parts)
             protected_tags = sum(isinstance(p, EciTagCommand) for p in speechSequence)
             if characters >= 1024 or protected_tags:
                 log.info("Eloquence C queued speech: characters=%d, protected_tags=%d, rate=%d Hz, tags=%s",
                     characters, protected_tags, SAMPLE_RATES[int(self._sampleRate)], tags)
-            wanted = (segment, camel)
-            for parameter, old, value in zip((WORD_SEGMENTATION, CAMEL_CASE), self._applied_segmentation, wanted):
+            wanted = (segment, camel, not priority)
+            for parameter, old, value in zip((WORD_SEGMENTATION, CAMEL_CASE, CAMEL_IGNORE_DICTIONARY), self._applied_segmentation, wanted):
                 if value != old:
                     self._transport.set_parameter(parameter, int(value))
             self._applied_segmentation = wanted

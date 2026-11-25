@@ -28,6 +28,7 @@ int reloq_wordseg_reference(const unsigned char *word, size_t length, int uk,
 struct reloq_wordseg_options {
     int english, camel; void *dictionary; int abbreviations_disabled;
     const unsigned char *protected_text; size_t protected_length;
+    int camel_ignore_dictionary;
 };
 struct reloq_wordseg_options reloq_wordseg_scope(struct reloq_wordseg_options);
 struct reloq_wordseg_options reloq_wordseg_current(void);

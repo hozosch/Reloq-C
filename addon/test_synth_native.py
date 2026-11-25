@@ -381,6 +381,8 @@ def main():
                 dictionaries = {'builtin': stock, 'default': []}
                 handler = types.SimpleNamespace(dictionaries=dictionaries)
                 def dictionary(text):
+                    for entry in dictionaries['default']:
+                        text = entry.compiled.sub(entry.replacement, text)
                     for entry in dictionaries['builtin']:
                         text = entry.compiled.sub(entry.replacement, text)
                     return text
@@ -413,11 +415,45 @@ def main():
                                             finally:
                                                 dictionaries['builtin'] = stock
                                             report['checks'] += 1
+                        # A personal NVDA entry for the complete mixed-case
+                        # word wins by default, but not when the new option
+                        # gives the CamelCase boundary priority.
+                        driver.language = 'en_US'
+                        driver._wordSegmentation, driver._camelCase = False, True
+                        driver._camelDictionaryPriority = False
+                        baseline = run(['decTalk'])
+                        entry = types.SimpleNamespace(pattern='decTalk', compiled=re.compile('decTalk'),
+                            replacement='banana', type=0, caseSensitive=True)
+                        dictionaries['default'] = [entry]
+                        assert run(['decTalk']) == baseline, 'NVDA entry overrode CamelCase'
+                        driver._camelDictionaryPriority = True
+                        assert run(['decTalk']) == run(['banana']), 'NVDA entry did not retain priority'
+                        driver._camelCase = False
+                        driver._camelDictionaryPriority = False
+                        assert run(['decTalk']) == run(['banana']), 'disabled CamelCase changed NVDA entry'
+                        dictionaries['default'] = []
+                        class ImportedCamel:
+                            records = (object(),)
+                            def matches(self, text, *_args): return 'decTalk' in text
+                            def process(self, text, *_args): return text.replace('decTalk', 'banana')
+                        previous_imported = driver._imported_dictionaries
+                        try:
+                            driver._imported_dictionaries = ImportedCamel()
+                            driver._camelCase = True
+                            driver._camelDictionaryPriority = False
+                            assert run(['decTalk']) == baseline, 'imported NVDA entry overrode CamelCase'
+                            driver._camelDictionaryPriority = True
+                            assert run(['decTalk']) == run(['banana']), 'imported NVDA entry lost priority'
+                        finally:
+                            driver._imported_dictionaries = previous_imported
+                        driver._camelDictionaryPriority = True
+                        report['checks'] += 5
                 finally:
                     api.speak.__globals__['speechDictHandler'] = original_handler
                     sys.modules['config'].conf['speech']['unicodeNormalization'] = original_normalization
                     driver.language = 'en_US'
                     driver._wordSegmentation = driver._camelCase = False
+                    driver._camelDictionaryPriority = True
                 # Exercise commas after real abbreviations through NVDA's
                 # symbol processor and the native abbreviation switch.
                 for enabled in (True, False):

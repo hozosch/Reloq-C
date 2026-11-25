@@ -501,3 +501,6 @@ msgstr "暖かい"
 
 msgid "Word roots"
 msgstr "語根"
+
+msgid "Give dictionaries priority over camel case"
+msgstr "camelCaseの分割より辞書の項目を優先する"

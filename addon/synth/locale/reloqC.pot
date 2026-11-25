@@ -661,3 +661,8 @@ msgstr ""
 #: addon/synth/globalPlugins/reloqCDictionaries/__init__.py:124
 msgid "Word roots"
 msgstr ""
+
+#: addon/synth/globalPlugins/reloqCDictionaries/__init__.py
+#: addon/synth/synthDrivers/reloqC/__init__.py
+msgid "Give dictionaries priority over camel case"
+msgstr ""

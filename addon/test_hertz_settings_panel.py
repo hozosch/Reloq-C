@@ -11,12 +11,14 @@ import types
 class Widget:
     def __init__(self,*args,**kwargs):
         self.value=kwargs.get('initial',False);self.label=kwargs.get('label','')
-        self.enabled=True;self.name='';self.selection=0;self.items=[]
+        self.enabled=True;self.visible=True;self.name='';self.selection=0;self.items=[]
     def Add(self,*a,**k):pass
     def Bind(self,*a,**k):pass
     def SetValue(self,value):self.value=value
     def GetValue(self):return self.value
     def Enable(self,value):self.enabled=value
+    def Show(self,value):self.visible=value
+    def Layout(self):pass
     def SetName(self,value):self.name=value
     def GetLabelText(self):return self.label
     def SetLabel(self,value):self.label=value
@@ -93,15 +95,26 @@ def main():
         assert panel.pitch_hz_value.name!='Base pitch in hertz (1–24000):',locale
         assert panel.package_button.label!='Check for add-on updates',locale
     assert panel.camel_case.enabled and not panel.camel_case.GetValue()
+    assert not panel.camel_dictionary_priority.visible and panel.camel_dictionary_priority.GetValue()
+    assert panel.camel_dictionary_priority.label == translate('Give dictionaries priority over camel case')
+    if locale:
+        assert panel.camel_dictionary_priority.label != 'Give dictionaries priority over camel case', locale
     panel.pitch_hz_mode.SetValue(True);panel.on_pitch_changed(Widget())
     assert panel.pitch_hz_value.enabled and panel.pitch_dirty
     assert synth._pitchInHertz and synth._pitchHertz==150 and not hasattr(synth, 'saved')
     panel.pitch_hz_value.SetValue(151);panel.on_pitch_changed(Widget())
     assert synth._pitchHertz==151 and not hasattr(synth, 'saved')
     panel.camel_case.SetValue(True);panel.on_camel_changed(Widget())
+    assert panel.camel_dictionary_priority.visible and panel.camel_dictionary_priority.enabled
+    panel.camel_dictionary_priority.SetValue(False);panel.on_camel_priority_changed(Widget())
+    panel.camel_case.SetValue(False);panel.on_camel_changed(Widget())
+    assert not panel.camel_dictionary_priority.visible and not panel.camel_dictionary_priority.GetValue()
+    panel.camel_case.SetValue(True);panel.on_camel_changed(Widget())
+    assert panel.camel_dictionary_priority.visible and not panel.camel_dictionary_priority.GetValue()
     panel.onSave()
     assert synth._pitchInHertz and synth._pitchHertz==151 and synth.saved
     assert synth._camelCase and not panel.camel_dirty
+    assert not synth._camelDictionaryPriority and not panel.camel_priority_dirty
     assert not panel.pitch_dirty
     panel.wpm_mode.SetValue(True);panel.on_wpm_changed(Widget())
     assert panel.wpm_value.enabled and panel.wpm_dirty
@@ -156,6 +169,7 @@ def main():
     assert not panel.pitch_hz_mode.GetValue() and not panel.pitch_hz_value.enabled
     synth._camelCase=False;panel.onPanelActivated()
     assert not panel.camel_case.GetValue()
+    assert not panel.camel_dictionary_priority.visible and not panel.camel_dictionary_priority.GetValue()
     print(f'NVDA settings panel ({locale or "en"}): translations, live Hertz/WPM/EQ preview, apply, cancel and refresh passed')
 
 
