@@ -54,6 +54,10 @@ def main():
                 plain_pitch = render(engine, pitch)
                 mixed = ['`vbhz125 ' + prefix, EciIndex(85), '`vb90 ' + word, EciIndex(86), suffix]
                 plain_mixed = render(engine, mixed)
+                foreign = ['Windows ', EciIndex(87), EciPitch(90), 'eleven test.', EciIndex(88)]
+                foreign_pitch = render(engine, foreign)
+                foreign_mixed = ['`vbhz125 Windows ', EciIndex(89), '`vb90 eleven test.', EciIndex(90)]
+                plain_foreign_mixed = render(engine, foreign_mixed)
                 volume = [prefix, '`vv40 ' + word, suffix]
                 plain_volume = render(engine, volume)
                 base_pitch = engine._dll.eciGetParam(engine._handle, NATIVE_PITCH)
@@ -71,8 +75,11 @@ def main():
                 eased_mixed = render(engine, mixed)
                 assert len(eased_mixed[0]) == len(plain_mixed[0]) and eased_mixed[1] == plain_mixed[1], (hex(dialect), 'mixed Hertz/VB timing')
                 assert eased_mixed[0] != plain_mixed[0], (hex(dialect), 'mixed Hertz/VB transition')
+                for parts, before in ((foreign, foreign_pitch), (foreign_mixed, plain_foreign_mixed)):
+                    after = render(engine, parts)
+                    assert len(after[0]) == len(before[0]) and after[1] == before[1], (hex(dialect), 'foreign word timing')
                 assert render(engine, [f'`vb{base_pitch} ' + prefix, '`vv40 ' + word, suffix]) == plain_volume, (hex(dialect), 'volume changed')
-                checks += 9
+                checks += 11
         finally:
             engine.close()
             if previous:

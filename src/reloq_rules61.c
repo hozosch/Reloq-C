@@ -1363,6 +1363,16 @@ struct rule_span {
 struct quiet_cut { int64_t from,to,after; };
 struct rule_control { int64_t tick;size_t ordinal;int parameter,value; };
 struct cjk_pitch_marker { int code,pitch,native_pitch,volume; };
+static int cjk_has_latin_words(const unsigned char *a,size_t n)
+{
+    for(size_t i=0;i<n;) {
+        struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,1);
+        if(t.length){i+=t.length;continue;}
+        unsigned c=a[i++];
+        if((c>='A'&&c<='Z')||(c>='a'&&c<='z'))return 1;
+    }
+    return 0;
+}
 extern int reloq61_generate_with_pauses(const struct reloq61_request *,struct reloq61_result *,
     int,void (*)(void *,int64_t,int64_t,int64_t),void *);
 struct rule_playback;
@@ -1973,17 +1983,21 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
         i+=t.length?t.length:1;
     }
     int cjk_glide=0;
-    if(plan.cjk_volume&&pitch_glide_ms) {
+    /* In the Chinese English-donor path inserting a synthetic annotation
+     * can introduce a new pause. Keep its existing timing until that path
+     * exposes a non-disruptive acoustic word boundary. */
+    if(plan.cjk_volume&&pitch_glide_ms&&!(family==6&&cjk_has_latin_words(a,n))) {
         /* Japanese has no non-disruptive acoustic boundary for interior
          * eciInsertPitch marks yet; a synthetic tag there changes its word
          * analysis. Keep that existing behavior while supporting text tags.
          * A Hertz request already routes native VB through host controls, so
          * keep native VB tags only when the unmodified path would do so. */
-        cjk_glide=cjk_pitch_input(&a,&map,&n,pitches,pitch_count,length,configured_pitch,provider_pitch,native_volume,
+        size_t cjk_pitch_count=family==8?0:pitch_count;
+        cjk_glide=cjk_pitch_input(&a,&map,&n,pitches,cjk_pitch_count,length,configured_pitch,provider_pitch,native_volume,
             family!=8,!cjk_exact_pitch,
             &plan.pitch_markers,&plan.pitch_marker_count);
         if(cjk_glide<0)goto memory;
-        if(cjk_glide){pitch_count=0;plan.index_count=index_count;}
+        if(cjk_glide&&family!=8){pitch_count=0;plan.index_count=index_count;}
     }
     int managed_controls=!plan.cjk_volume || (cjk_exact_pitch&&!cjk_glide);
     plan.managed_voice_controls=managed_controls;
