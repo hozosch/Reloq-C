@@ -1,0 +1,130 @@
+name: Validate F0 timing NVDA candidate
+on:
+  push:
+    branches: [codex/f0-timing-validation-20261125]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: dictionary-snapshot
+          run-id: 45668127824
+          github-token: ${{ github.token }}
+          path: data/community
+      - name: Wait for the Windows core artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PYWAIT'
+          import json, os, subprocess, time
+          repo = os.environ['GITHUB_REPOSITORY']
+          for _ in range(90):
+              data = json.loads(subprocess.check_output(['gh', 'api',
+                  f'repos/{repo}/actions/runs/45668127824/artifacts?per_page=100']))
+              if any(a['name'] == 'sapi-native-x64' and not a['expired'] for a in data['artifacts']):
+                  break
+              jobs = json.loads(subprocess.check_output(['gh', 'api',
+                  f'repos/{repo}/actions/runs/45668127824/jobs?per_page=100']))['jobs']
+              failed = [j for j in jobs if j['name'] == 'sapi / native (x64)'
+                        and j['status'] == 'completed' and j['conclusion'] != 'success']
+              if failed:
+                  raise SystemExit('Windows core build failed')
+              time.sleep(10)
+          else:
+              raise SystemExit('Timed out waiting for the Windows core artifact')
+          PYWAIT
+      - uses: actions/download-artifact@v8
+        with:
+          name: sapi-native-x64
+          run-id: 45668127824
+          github-token: ${{ github.token }}
+          path: dist
+      - name: Prepare translations and package the verified Windows core
+        run: |
+          if ! command -v msgfmt >/dev/null; then
+            sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 update -qq
+            sudo apt-get install -y --no-install-recommends gettext
+          fi
+          python3 - <<'PY'
+          import os, pathlib, sys, zipfile
+          sys.path.insert(0,'addon')
+          from build_synth import build, DEFAULT_OUTPUT
+          payload, = pathlib.Path('dist').glob('reloq-c-sapi5-x64-*-payload.zip')
+          with zipfile.ZipFile(payload) as z:
+              assert z.testzip() is None
+              core=pathlib.Path('eci/eci.dll')
+              core.write_bytes(z.read('eci.dll'))
+              os.environ['RELOQ_BUILD_EPOCH']=z.read('build-epoch.txt').decode().strip()
+          build(DEFAULT_OUTPUT,core,refresh_dictionaries=False)
+          PY
+          python3 addon/test_speech_tags.py
+          python3 addon/test_hertz_settings_panel.py
+          for language in en de; do
+            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-2.1.1-dev7.nvda-addon"))' "$language"
+          done
+      - uses: actions/upload-artifact@v7
+        with:
+          name: f0-timing-nvda-dev7
+          path: dist/reloq-c-synth-x64-2.1.1-dev7.nvda-addon
+          compression-level: 0
+          retention-days: 14
+  native:
+    needs: package
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: f0-timing-nvda-dev7
+          path: candidate
+      - name: Verify Windows audio, persistent tag and NVDA transport
+        shell: pwsh
+        run: |
+          $addon = (Get-Item candidate/reloq-c-synth-x64-2.1.1-dev7.nvda-addon).FullName
+          python -c "import zipfile; z=zipfile.ZipFile(r'$addon'); assert z.testzip() is None; z.extract('synthDrivers/reloqC/eci.dll', 'candidate')"
+          if ($LASTEXITCODE -ne 0) { throw 'Core extraction failed' }
+          $dll = (Get-Item candidate/synthDrivers/reloqC/eci.dll).FullName
+          foreach ($test in @('nvda/test_eci_f0_tag.py','nvda/test_eci_pitch_glide.py','nvda/test_eci_pitch_hz.py','nvda/test_eci_pitch_boundary.py')) {
+            python -B $test --library $dll
+            if ($LASTEXITCODE -ne 0) { throw "$test failed" }
+          }
+          $env:PYTHONPATH = 'addon;nvda'
+          python -B addon/test_synth_native.py --library $dll --addon $addon
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA transport integration failed' }
+  settings:
+    needs: package
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: f0-timing-nvda-dev7
+          path: candidate
+      - name: Verify real NVDA settings panel
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download release-2026.3.1 --repo nvaccess/nvda --pattern nvda_2026.3.1.exe --dir candidate
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA download failed' }
+          if ((Get-FileHash candidate/nvda_2026.3.1.exe -Algorithm SHA256).Hash -ne '6F80A5B0CA720A7D0D314B5BE212F37388BBE81A1107AC3298C1821A1CD3F052') { throw 'Unexpected NVDA installer' }
+          $portable = Join-Path $pwd 'portable-nvda'
+          $installer = (Get-Item candidate/nvda_2026.3.1.exe).FullName
+          $p = Start-Process $installer -ArgumentList '--create-portable-silent', "--portable-path=$portable" -Wait -PassThru
+          if ($p.ExitCode -ne 0 -or !(Test-Path "$portable/nvda.exe")) { throw 'NVDA portable install failed' }
+          python -B addon/test_nvda_real_settings.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-2.1.1-dev7.nvda-addon --work settings-results
+          if ($LASTEXITCODE -ne 0) { throw 'Real NVDA settings probe failed' }
