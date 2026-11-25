@@ -1362,6 +1362,7 @@ struct rule_span {
 };
 struct quiet_cut { int64_t from,to,after; };
 struct rule_control { int64_t tick;size_t ordinal;int parameter,value; };
+struct cjk_pitch_marker { int code,pitch,native_pitch,volume; };
 extern int reloq61_generate_with_pauses(const struct reloq61_request *,struct reloq61_result *,
     int,void (*)(void *,int64_t,int64_t,int64_t),void *);
 struct rule_playback;
@@ -1372,6 +1373,7 @@ struct rule_plan {
     int64_t pitch_tick;
     const size_t *control_sources;size_t pitch_source;
     struct rule_control *controls;size_t control_count,control_capacity;
+    struct cjk_pitch_marker *pitch_markers;size_t pitch_marker_count;
     struct reloq_session *session;
     int memory,retracted_filter,retracted_st,word_volume,cjk_volume,managed_voice_controls,word_pitch,native_pitch,word_speed,german_af_markers,original_clock;
     struct reloq_german_voice_model word_model;
@@ -1527,6 +1529,83 @@ static size_t annotation_boundary(const unsigned char *a,size_t n,const size_t *
     }
     return boundary;
 }
+
+/* CJK providers carry word-scoped volume in each acoustic span but do not
+ * deliver private index events at the word's acoustic boundary. Use a
+ * reserved stream of native volume annotations to carry pitch transitions;
+ * the host restores the real volume before producing PCM. The marker values
+ * stay in the native saturated-volume range, so they do not change the
+ * native acoustic parameters of a word. */
+static int cjk_pitch_input(unsigned char **input,size_t **source,size_t *length,
+    const struct reloq_german_generic_pitch_mark *pitches,size_t pitch_count,
+    size_t original_length,int initial_pitch,int initial_native_pitch,int initial_volume,int use_pitch_marks,
+    struct cjk_pitch_marker **markers,size_t *marker_count)
+{
+    unsigned char *a=*input;size_t *map=*source,n=*length,events=pitch_count;
+    int has_pitch=pitch_count!=0;
+    for(size_t i=0;i<n;) {
+        struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,1);
+        if(t.kind==RELOQ_TAG_PITCH||t.kind==RELOQ_TAG_VOLUME||t.kind==RELOQ_TAG_PRESET) {
+            if(events==SIZE_MAX)return -1;
+            ++events;
+            if(t.kind!=RELOQ_TAG_VOLUME)has_pitch=1;
+        }
+        i+=t.length?t.length:1;
+    }
+    if(!has_pitch)return 0;
+    if(events>(SIZE_MAX-n-1)/64 || n+events*64+1>SIZE_MAX/sizeof *map ||
+       events>SIZE_MAX/sizeof **markers)return -1;
+    size_t capacity=n+events*64+1,out=0,count=0,pi=0;
+    unsigned char *bytes=malloc(capacity);size_t *positions=malloc(capacity*sizeof *positions);
+    struct cjk_pitch_marker *found=malloc(events*sizeof *found);
+    if(!bytes||!positions||!found){free(bytes);free(positions);free(found);return -1;}
+    int pitch=initial_pitch,native_pitch=initial_native_pitch,volume=initial_volume,code=initial_volume;
+    for(size_t i=0;i<=n;) {
+        while(pi<pitch_count && pitches[pi].annotation_offset<=map[i]) {
+            size_t offset=pitches[pi].annotation_offset;int value=pitches[pi++].native_pitch;
+            if(offset>original_length||value<0||value>100)goto invalid;
+            if((!use_pitch_marks&&offset)||offset==original_length||value==pitch)continue;
+            pitch=value;code=code<81||code>=100?81:code+1;
+            found[count++]=(struct cjk_pitch_marker){code,pitch,native_pitch,volume};
+            int written=snprintf((char *)bytes+out,capacity-out,"`vv%d ",code);
+            if(written<0||(size_t)written>=capacity-out)goto invalid;
+            for(int j=0;j<written;++j)positions[out++]=offset;
+        }
+        if(i==n)break;
+        struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,1);
+        size_t size=t.length?t.length:1;
+        int next_pitch=pitch,next_native_pitch=native_pitch,next_volume=volume;
+        if(t.kind==RELOQ_TAG_PITCH) {
+            next_pitch=t.value;
+            if(!reloq_pitch_is_hz(t.value)) {
+                next_native_pitch=t.value;
+                memcpy(bytes+out,a+i,size);memcpy(positions+out,map+i,size*sizeof *map);out+=size;
+            }
+        }
+        else if(t.kind==RELOQ_TAG_VOLUME)next_volume=t.value;
+        else if(t.kind==RELOQ_TAG_PRESET) {
+            struct reloq_inline_word v={0};reloq_inline_preset(&v,t.value);
+            next_pitch=next_native_pitch=v.pitch;next_volume=v.volume;
+            memcpy(bytes+out,a+i,size);memcpy(positions+out,map+i,size*sizeof *map);out+=size;
+        } else {
+            memcpy(bytes+out,a+i,size);memcpy(positions+out,map+i,size*sizeof *map);out+=size;
+        }
+        if(next_pitch!=pitch||next_native_pitch!=native_pitch||next_volume!=volume) {
+            pitch=next_pitch;native_pitch=next_native_pitch;volume=next_volume;
+            code=code<81||code>=100?81:code+1;
+            found[count++]=(struct cjk_pitch_marker){code,pitch,native_pitch,volume};
+            int written=snprintf((char *)bytes+out,capacity-out,"`vv%d ",code);
+            if(written<0||(size_t)written>=capacity-out)goto invalid;
+            for(int j=0;j<written;++j)positions[out++]=map[i];
+        }
+        i+=size;
+    }
+    if(pi!=pitch_count)goto invalid;
+    bytes[out]=0;positions[out]=map[n];free(a);free(map);
+    *input=bytes;*source=positions;*length=out;*markers=found;*marker_count=count;return 1;
+invalid:
+    free(bytes);free(positions);free(found);return -1;
+}
 struct rule_delivery {
     reloq_session_pcm_sink sink;void *context;double gain;
     int16_t pending[1024];size_t used,limit,next_limit;
@@ -1567,6 +1646,8 @@ struct rule_playback {
     int pause_mode,final,result;
     double pitch_scale,base_pitch,time_fraction;
     int pitch_glide_ms;
+    size_t next_pitch_marker;
+    int cjk_marker_code,cjk_marker_pitch,cjk_marker_native_pitch,cjk_marker_volume;
     struct reloq_pitch_glide pitch_glide;
     int slow_wpm;
     /* Native Eloquence reads the acoustic targets every five milliseconds.
@@ -1711,16 +1792,33 @@ static int render_until(struct rule_plan *s,int64_t limit)
             }
             if(s->managed_voice_controls)voice=&p->voice;
         }
+        struct rule_span cjk_voice;
+        if(s->pitch_markers) {
+            if(f->volume!=p->cjk_marker_code) {
+                size_t next=p->next_pitch_marker;
+                while(next<s->pitch_marker_count&&s->pitch_markers[next].code!=f->volume)++next;
+                if(next<s->pitch_marker_count) {
+                    const struct cjk_pitch_marker *marker=s->pitch_markers+next;
+                    p->next_pitch_marker=next+1;p->cjk_marker_code=marker->code;
+                    p->cjk_marker_pitch=marker->pitch;p->cjk_marker_native_pitch=marker->native_pitch;
+                    p->cjk_marker_volume=marker->volume;
+                }
+            }
+            cjk_voice=*voice;cjk_voice.volume=p->cjk_marker_volume;
+            voice=&cjk_voice;
+        }
         if(!voice->model.gender) {
             if(s->original_clock&&p->af_marked)controls[8]=p->male_af;
             else if(!s->original_clock&&f->af_marked)controls[8]=(float)curve_value(&f->male_af,at);
         }
         word_voice_frame(s,voice,controls);
-        double pitch_scale=voice->pitch>=0&&(voice->pitch_tick>p->last_pitch_tick||
+        double pitch_scale=s->pitch_markers?pitch_ratio(p->cjk_marker_pitch,s->base_voice[2]):
+            voice->pitch>=0&&(voice->pitch_tick>p->last_pitch_tick||
             (voice->pitch_tick==p->last_pitch_tick&&voice->pitch_source>=p->last_pitch_source))?
             pitch_ratio(voice->pitch,voice->native_pitch):p->pitch_scale;
         if(p->pitch_glide_ms)
             pitch_scale=reloq_pitch_glide_value(&p->pitch_glide,pitch_scale,p->pitch_glide_ms);
+        if(s->pitch_markers)pitch_scale/=pitch_ratio(p->cjk_marker_native_pitch,s->base_voice[2]);
         if(pitch_scale!=1)controls[1]=(float)(controls[1]*pitch_scale);
         if(memcmp(&p->model,&voice->model,sizeof p->model)) {
             p->model=voice->model;
@@ -1859,16 +1957,22 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
         i+=t.length?t.length:1;
     }
     int cjk_exact_pitch=plan.cjk_volume && reloq_pitch_is_hz(configured_pitch);
-    int cjk_pitch_tag=0;
     if(plan.cjk_volume && tags)for(size_t i=0;i<n;) {
         struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,1);
         if(t.kind==RELOQ_TAG_PITCH) {
-            cjk_pitch_tag=1;
             if(reloq_pitch_is_hz(t.value))cjk_exact_pitch=1;
         }
         i+=t.length?t.length:1;
     }
-    int managed_controls=!plan.cjk_volume || cjk_exact_pitch || (pitch_glide_ms&&cjk_pitch_tag);
+    int cjk_glide=0;
+    if(plan.cjk_volume&&pitch_glide_ms) {
+        cjk_glide=cjk_pitch_input(&a,&map,&n,pitches,pitch_count,length,configured_pitch,provider_pitch,native_volume,
+            family!=8,
+            &plan.pitch_markers,&plan.pitch_marker_count);
+        if(cjk_glide<0)goto memory;
+        if(cjk_glide){pitch_count=0;plan.index_count=index_count;}
+    }
+    int managed_controls=!plan.cjk_volume || (cjk_exact_pitch&&!cjk_glide);
     plan.managed_voice_controls=managed_controls;
     /* Speed changes must reach the native duration planner for every scale.
      * A renderer-side time multiplier cannot reproduce its per-phone rules. */
@@ -2050,6 +2154,8 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
         .model={q.voice[1],q.voice[4],q.voice[5],q.voice[0],reloq_session_sample_rate(session)},
         .settings=settings,.pitches=pitches,.index_count=index_count,.pitch_count=pitch_count,
         .pitch_glide_ms=pitch_glide_ms,
+        .cjk_marker_code=native_volume,.cjk_marker_pitch=configured_pitch,
+        .cjk_marker_native_pitch=provider_pitch,.cjk_marker_volume=native_volume,
         .pause_mode=!explicit_pause&&settings->pause_mode==1,
         .pitch_scale=reloq_pitch_is_hz(configured_pitch)?pitch_ratio(configured_pitch,provider_pitch):
             language==0x40000&&!settings->native_pitch_plus_one?
@@ -2093,7 +2199,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     }
     result=RELOQ_DE_UTTERANCE_OK;goto done;
 memory:result=RELOQ_DE_UTTERANCE_MEMORY;
-done:free(a);free(map);free(marks);free(volumes);free(control_sources);free(plan.controls);free(plan.spans);free(plan.cuts);free(plan.indices);return result;
+done:free(a);free(map);free(marks);free(volumes);free(control_sources);free(plan.controls);free(plan.pitch_markers);free(plan.spans);free(plan.cuts);free(plan.indices);return result;
 }
 
 int reloq_english_rules_render(const unsigned char *text,size_t length,int tags,int native_volume,

@@ -4,7 +4,7 @@ import ctypes
 from pathlib import Path
 
 from _reloq_eci_direct import (DirectEciEngine, EciIndex, EciPitch,
-                               PITCH_GLIDE_MS, PROCESS_TAGS, SAMPLE_RATE)
+                               NATIVE_PITCH, PITCH_GLIDE_MS, PROCESS_TAGS, SAMPLE_RATE)
 from test_eci_german_clock_native import render
 from test_eci_inline_queue import TEXTS
 
@@ -42,6 +42,32 @@ def main():
             engine.set_parameter(PITCH_GLIDE_MS, 0)
             assert render(engine, commands) == normal, (hex(dialect), 'restore')
             checks += 5
+            if dialect in (0x60000, 0x60001, 0x80000, 0xa0000):
+                # CJK providers use their native word volume scheduling for
+                # Hertz markers. Ordinary VB and volume must retain their own
+                # timing and acoustic volume in the same sentence.
+                leading = ['`vbhz150 ' + plain]
+                initial = render(engine, leading)
+                vb = [prefix, EciIndex(81), '`vb90 ' + word, EciIndex(82), suffix]
+                plain_vb = render(engine, vb)
+                pitch = [prefix, EciIndex(83), EciPitch(90), word, EciIndex(84), suffix]
+                plain_pitch = render(engine, pitch)
+                volume = [prefix, '`vv40 ' + word, suffix]
+                plain_volume = render(engine, volume)
+                base_pitch = engine._dll.eciGetParam(engine._handle, NATIVE_PITCH)
+                engine.set_parameter(PITCH_GLIDE_MS, 80)
+                assert render(engine, leading) == initial, (hex(dialect), 'initial Hertz')
+                eased_vb = render(engine, vb)
+                assert len(eased_vb[0]) == len(plain_vb[0]) and eased_vb[1] == plain_vb[1], (hex(dialect), 'VB timing')
+                assert eased_vb[0] != plain_vb[0], (hex(dialect), 'VB transition')
+                eased_pitch = render(engine, pitch)
+                assert len(eased_pitch[0]) == len(plain_pitch[0]) and eased_pitch[1] == plain_pitch[1], (hex(dialect), 'pitch mark timing')
+                if dialect == 0x80000:
+                    assert eased_pitch == plain_pitch, (hex(dialect), 'Japanese pitch mark fallback')
+                else:
+                    assert eased_pitch[0] != plain_pitch[0], (hex(dialect), 'pitch mark transition')
+                assert render(engine, [f'`vb{base_pitch} ' + prefix, '`vv40 ' + word, suffix]) == plain_volume, (hex(dialect), 'volume changed')
+                checks += 7
         finally:
             engine.close()
             if previous:
