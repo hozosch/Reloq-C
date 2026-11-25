@@ -277,12 +277,11 @@ windows-abi: $(WINDOWS_OUTPUT)
 
 # Linux: Speech Dispatcher output module (speechd/reloq.c), linked with the
 # same engine objects as libreloq_eci.so. It hands its audio back to the
-# server and depends only on Speech Dispatcher's module helper library.
-# speechd/spd_audio.h stands in for a header spd_module_main.h includes and
-# Speech Dispatcher does not install.
+# server. The BSD-licensed Speech Dispatcher 0.12.1 module helper is built
+# into the executable because 0.11 distributions do not ship it as a library.
+# speechd/spd_audio.h stands in for a header Speech Dispatcher does not install.
 SPEECHD_CFLAGS ?= $(or $(shell pkg-config --cflags speech-dispatcher 2>/dev/null),-I/usr/include/speech-dispatcher)
-SPEECHD_LIBDIRS := $(shell pkg-config --libs-only-L speech-dispatcher 2>/dev/null | sed 's|-L\([^ ]*\)|-L\1 -Wl,-rpath,\1|g')
-SPEECHD_LIBS ?= $(SPEECHD_LIBDIRS) -lspeechd_module
+SPEECHD_HELPERS := $(addprefix build/posix/speechd_,$(addsuffix .o,module_main module_readline module_process))
 PREFIX ?= /usr/local
 LIBDIR ?= $(PREFIX)/lib
 INCLUDEDIR ?= $(PREFIX)/include
@@ -292,11 +291,14 @@ SPEECHD_CONFDIR ?= /etc/speech-dispatcher/modules
 USER_MODULEDIR ?= $(HOME)/.local/libexec/speech-dispatcher-modules
 USER_CONFDIR ?= $(or $(XDG_CONFIG_HOME),$(HOME)/.config)/speech-dispatcher/modules
 
-build/posix/speechd_reloq.o: ../speechd/reloq.c ../speechd/spd_audio.h ../include/reloq_eci.h
+build/posix/speechd_reloq.o: ../speechd/reloq.c ../speechd/spd_audio.h ../vendor/speechd-module/spd_module_main.h ../include/reloq_eci.h
 	@mkdir -p $(dir $@)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -I../include -I../speechd $(SPEECHD_CFLAGS) -c $< -o $@
-sd_reloq: build/posix/speechd_reloq.o $(OBJECTS) $(RULES61) Makefile
-	$(CC) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) build/posix/speechd_reloq.o $(OBJECTS) $(RULES61) $(SPEECHD_LIBS) -pthread -Wl,--gc-sections,--as-needed -lm -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -I../include -I../speechd -I../vendor/speechd-module $(SPEECHD_CFLAGS) -c $< -o $@
+build/posix/speechd_module_%.o: ../vendor/speechd-module/module_%.c ../vendor/speechd-module/spd_module_main.h ../speechd/spd_audio.h
+	@mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) $(filter-out -std=c11 -Werror -pedantic,$(CFLAGS)) -std=gnu11 -I../speechd -I../vendor/speechd-module $(SPEECHD_CFLAGS) -c $< -o $@
+sd_reloq: build/posix/speechd_reloq.o $(SPEECHD_HELPERS) $(OBJECTS) $(RULES61) Makefile
+	$(CC) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) build/posix/speechd_reloq.o $(SPEECHD_HELPERS) $(OBJECTS) $(RULES61) -pthread -Wl,--gc-sections,--as-needed -lm -o $@
 
 .PHONY: speechd speechd-test speechd-install speechd-install-user install-lib
 speechd: sd_reloq

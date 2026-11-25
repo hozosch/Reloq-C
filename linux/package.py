@@ -31,6 +31,7 @@ LICENSES = {
     "ReLoq-C-NOTICE.txt": "NOTICE",
     "OpenEVV-LICENSE.txt": "vendor/openevv61/LICENSE",
     "OpenEVV-NOTICE.txt": "vendor/openevv61/NOTICE",
+    "SpeechDispatcher-module-LICENSE.txt": "vendor/speechd-module/LICENSE",
     "Dictionaries-CC0.txt": "data/community/LICENSE.md",
     "Unicode-LICENSE.txt": "reference-apple/behavior-0.2.82/unicode-input/LICENSE.txt",
     "SCOWL-Copyright.txt": "reference-apple/behavior-0.2.83/input/SCOWL-Copyright.txt",
