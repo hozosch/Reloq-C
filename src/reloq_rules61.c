@@ -553,8 +553,9 @@ static int wordseg_prior_prominence(const unsigned char *text,size_t at)
 {
     while(at&&(text[at-1]==' '||text[at-1]=='\t'||text[at-1]=='\n'||text[at-1]=='\r'))--at;
     size_t end=at;
-    while(at&&text[at-1]!=' '&&text[at-1]!='\n'&&text[at-1]!='\t'&&text[at-1]!='\r')--at;
-    if(at==end)return 0;
+    while(at&&end-at<2&&text[at-1]>='0'&&text[at-1]<='9')--at;
+    if(at==end||!at||text[at-1]!='`')return 0;
+    --at;
     struct reloq_inline_tag tag=reloq_inline_tag_read(text+at,end-at,1);
     return tag.kind==RELOQ_TAG_PROMINENCE&&tag.length==end-at;
 }
@@ -697,7 +698,7 @@ static int wordseg_input_pass(unsigned char **text,size_t **source,size_t *lengt
         }
         if(options.camel&&!plural_acronym) {
             size_t at=i,capitals=i;unsigned previous=0;
-            int caller_prominence=wordseg_prior_prominence(a,i);
+            int caller_prominence=english&&camel_boundary&&wordseg_prior_prominence(a,i);
             while(at<end) {
                 uint32_t c=0;size_t after=wordseg_character(a,end,at,utf8,&c);
                 if(after<=at)goto fail;
