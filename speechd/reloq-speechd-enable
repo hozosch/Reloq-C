@@ -1,0 +1,244 @@
+#!/usr/bin/env bash
+# Make the ReLoq C module available to Speech Dispatcher without hiding any
+# other installed voice.
+#
+# Speech Dispatcher discovers modules in its own module directory by itself,
+# but only while speechd.conf has no AddModule line: the first explicit
+# registration turns discovery off for every module at once. This script
+# therefore
+#   - does nothing when the module is installed in the system module
+#     directory and the configuration relies on discovery;
+#   - adds ReLoq C next to existing AddModule lines; and
+#   - for a module installed outside the system directory (a user install),
+#     registers ReLoq C together with every module discovery would have found,
+#     so the other voices stay available.
+# Every line it writes is enclosed in marker comments, and --remove takes them
+# out again. The first change keeps a backup of speechd.conf.
+#
+# ReLoq C, SPDX-License-Identifier: GPL-3.0-or-later
+
+set -eu
+
+markerBegin='# BEGIN ReLoq C (reloq-speechd-enable)'
+markerEnd='# END ReLoq C (reloq-speechd-enable)'
+
+usage() {
+    printf '%s\n' \
+        'Usage: reloq-speechd-enable [OPTIONS]' \
+        '' \
+        'Register the ReLoq C voice with Speech Dispatcher while keeping every' \
+        'other installed voice available.' \
+        '' \
+        'With no option, the current user configuration is changed; as root, the' \
+        'system configuration in /etc/speech-dispatcher.' \
+        '' \
+        '  --system                use /etc/speech-dispatcher' \
+        '  --config-dir DIRECTORY  use DIRECTORY, which holds speechd.conf' \
+        '  --module PATH           the sd_reloq executable (default: the one in' \
+        "                          Speech Dispatcher's module directory)" \
+        '  --module-config PATH    its reloq.conf' \
+        '  --remove                remove the lines this script added' \
+        '  -h, --help              show this help'
+}
+
+print_restart_note() {
+    printf '%s\n' \
+        'Restart Speech Dispatcher for the change to take effect, for example:' \
+        '  killall speech-dispatcher' \
+        'Speech stops briefly while it restarts; do this only from a session you' \
+        'can recover without speech.'
+}
+
+configRoot=
+systemMode=0
+modulePath=
+moduleConfig=
+remove=0
+
+while (( $# > 0 )); do
+    case $1 in
+        --system) configRoot=/etc/speech-dispatcher; systemMode=1 ;;
+        --config-dir|--module|--module-config)
+            if (( $# < 2 )); then
+                printf '%s requires a value.\n' "$1" >&2
+                usage >&2
+                exit 2
+            fi
+            case $1 in
+                --config-dir) configRoot=$2 ;;
+                --module) modulePath=$2 ;;
+                --module-config) moduleConfig=$2 ;;
+            esac
+            shift ;;
+        --remove) remove=1 ;;
+        -h|--help) usage; exit 0 ;;
+        *) printf 'Unknown option: %s\n' "$1" >&2; usage >&2; exit 2 ;;
+    esac
+    shift
+done
+
+if [[ -z ${configRoot} ]]; then
+    if (( EUID == 0 )); then
+        configRoot=/etc/speech-dispatcher
+        systemMode=1
+    else
+        configRoot=${XDG_CONFIG_HOME:-${HOME}/.config}/speech-dispatcher
+    fi
+fi
+if (( systemMode == 1 && EUID != 0 )); then
+    printf '%s\n' '--system must be run as root, normally through sudo.' >&2
+    exit 1
+fi
+
+configPath=${configRoot}/speechd.conf
+backupPath=${configPath}.reloq.bak
+
+systemModuleDir=$(pkg-config --variable=modulebindir speech-dispatcher 2>/dev/null || true)
+if [[ -z ${systemModuleDir} ]]; then
+    for candidate in /usr/lib/speech-dispatcher-modules /usr/lib64/speech-dispatcher-modules \
+                     /usr/libexec/speech-dispatcher-modules \
+                     /usr/lib/x86_64-linux-gnu/speech-dispatcher-modules; do
+        if [[ -d ${candidate} ]]; then
+            systemModuleDir=${candidate}
+            break
+        fi
+    done
+fi
+systemModuleDir=${systemModuleDir%/}
+
+# Rewrite speechd.conf without our block, keeping its permissions.
+strip_block() {
+    local source=$1 target=$2 inside=0 line
+    : > "${target}"
+    while IFS= read -r line || [[ -n ${line} ]]; do
+        if [[ ${line} == "${markerBegin}" ]]; then inside=1; continue; fi
+        if [[ ${line} == "${markerEnd}" ]]; then inside=0; continue; fi
+        (( inside )) || printf '%s\n' "${line}" >> "${target}"
+    done < "${source}"
+}
+
+replace_config() {
+    local temporary=$1
+    if [[ ! -e ${backupPath} ]]; then
+        cp -p -- "${configPath}" "${backupPath}"
+        printf 'Backup of the previous configuration: %s\n' "${backupPath}"
+    fi
+    chmod --reference="${configPath}" "${temporary}"
+    chown --reference="${configPath}" "${temporary}" 2>/dev/null || true
+    mv -f -- "${temporary}" "${configPath}"
+}
+
+if (( remove )); then
+    if [[ ! -f ${configPath} ]] || ! grep -Fqx -- "${markerBegin}" "${configPath}"; then
+        printf 'No ReLoq C registration was found in %s.\n' "${configPath}"
+        exit 0
+    fi
+    temporary=$(mktemp "${configPath}.reloq.XXXXXX")
+    trap 'rm -f "${temporary}"' EXIT
+    strip_block "${configPath}" "${temporary}"
+    replace_config "${temporary}"
+    trap - EXIT
+    printf 'Removed the ReLoq C registration from %s.\n' "${configPath}"
+    print_restart_note
+    exit 0
+fi
+
+if [[ -z ${modulePath} ]]; then
+    if [[ -n ${systemModuleDir} && -x ${systemModuleDir}/sd_reloq ]]; then
+        modulePath=${systemModuleDir}/sd_reloq
+    else
+        printf '%s\n' 'sd_reloq is not in the Speech Dispatcher module directory.' \
+            'Install it there, or name it with --module.' >&2
+        exit 1
+    fi
+fi
+if [[ ! -x ${modulePath} ]]; then
+    printf '%s is not an executable module.\n' "${modulePath}" >&2
+    exit 1
+fi
+modulePath=$(realpath -- "${modulePath}")
+if [[ -n ${moduleConfig} ]]; then
+    moduleConfig=$(realpath -m -- "${moduleConfig}")
+fi
+discovered=0
+if [[ -n ${systemModuleDir} && $(dirname -- "${modulePath}") == "$(realpath -m -- "${systemModuleDir}")" ]]; then
+    discovered=1
+fi
+
+if [[ ! -f ${configPath} ]]; then
+    if (( discovered )); then
+        printf '%s\n' 'Speech Dispatcher discovers ReLoq C in its module directory.' \
+            "No configuration exists at ${configPath}; no change is needed."
+        exit 0
+    fi
+    # A user configuration replaces the system one entirely, so start from it.
+    if [[ ! -f /etc/speech-dispatcher/speechd.conf ]]; then
+        printf 'Neither %s nor /etc/speech-dispatcher/speechd.conf exists.\n' "${configPath}" >&2
+        exit 1
+    fi
+    mkdir -p -- "${configRoot}"
+    cp -- /etc/speech-dispatcher/speechd.conf "${configPath}"
+    printf 'Created %s from the system configuration.\n' "${configPath}"
+fi
+
+temporary=$(mktemp "${configPath}.reloq.XXXXXX")
+trap 'rm -f "${temporary}"' EXIT
+strip_block "${configPath}" "${temporary}"
+
+addModulePattern='^[[:space:]]*AddModule([[:space:]]|$)'
+reloqPattern='^[[:space:]]*AddModule[[:space:]]+"?reloq"?([[:space:]]|$)'
+if grep -Eq -- "${reloqPattern}" "${temporary}"; then
+    printf 'An AddModule line for reloq already exists in %s; nothing was changed.\n' "${configPath}"
+    exit 0
+fi
+explicit=0
+if grep -Eq -- "${addModulePattern}" "${temporary}"; then
+    explicit=1
+fi
+
+if (( discovered && ! explicit )); then
+    if grep -Fqx -- "${markerBegin}" "${configPath}"; then
+        replace_config "${temporary}"
+        trap - EXIT
+        printf 'Removed an earlier registration from %s; discovery finds ReLoq C.\n' "${configPath}"
+        print_restart_note
+    else
+        printf '%s\n' 'Speech Dispatcher discovers ReLoq C in its module directory.' \
+            "${configPath} lists no modules explicitly; no change is needed."
+    fi
+    exit 0
+fi
+
+{
+    printf '%s\n' "${markerBegin}"
+    if (( ! explicit )) && [[ -n ${systemModuleDir} && -d ${systemModuleDir} ]]; then
+        # Registering one module ends discovery: list what it would have found.
+        for binary in "${systemModuleDir}"/sd_*; do
+            [[ -x ${binary} ]] || continue
+            name=${binary##*/sd_}
+            case ${name} in generic|dummy|reloq) continue ;; esac
+            config=
+            for directory in "${configRoot}/modules" /etc/speech-dispatcher/modules; do
+                if [[ -f ${directory}/${name}.conf ]]; then
+                    config=${name}.conf
+                    break
+                fi
+            done
+            printf 'AddModule "%s" "%s" "%s"\n' "${name}" "sd_${name}" "${config}"
+        done
+    fi
+    if (( discovered )); then
+        printf 'AddModule "reloq" "sd_reloq" "%s"\n' "${moduleConfig:-reloq.conf}"
+    else
+        printf 'AddModule "reloq" "%s" "%s"\n' "${modulePath}" "${moduleConfig:-reloq.conf}"
+    fi
+    printf '%s\n' "${markerEnd}"
+} >> "${temporary}"
+
+replace_config "${temporary}"
+trap - EXIT
+printf 'Registered ReLoq C in %s.\n' "${configPath}"
+if (( ! explicit )); then
+    printf '%s\n' 'The other installed modules were registered with it, so they stay available.'
+fi
+print_restart_note

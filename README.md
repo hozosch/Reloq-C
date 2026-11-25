@@ -2,7 +2,7 @@
 
 ReLoq C is a speech synthesis project that preserves the familiar character of Eloquence while improving pronunciation, responsiveness and control over the voice. Apple Eloquence serves as the reference for language behaviour and sound.
 
-The shared synthesis engine is written in C. NVDA, Android and Windows SAPI5 use the same core. The project is developed and tested with screen-reader users; language reliability, responsiveness and lower resource use remain active priorities.
+The shared synthesis engine is written in C. NVDA, Android, Windows SAPI5 and Linux use the same core. The project is developed and tested with screen-reader users; language reliability, responsiveness and lower resource use remain active priorities.
 
 **2.0.0** adds Aragonese, improves number handling and supplies additional NVDA interface translations.
 **1.4.1** improves CamelCase and acronym handling and makes automatic NVDA dictionary updates non-modal.
@@ -58,6 +58,12 @@ The [English user guide](docs/USER-GUIDE.en.md) and [German user guide](docs/USE
 The Android app targets **ARM64 and x86-64 devices running Android 8 or later**. It includes all 14 language variants and eight voice presets, runs offline, and appears as **ReLoq C** in Android's text-to-speech settings. Its launcher screen provides all voice/output controls, independent Android speed and pitch overrides, and optional community/custom dictionaries.
 
 The [Android instructions](android/README.md) explain installation, building and validation limits. Android's live settings and speech engine have been confirmed in practical use. Automated host tests complement device testing; they do not establish audible performance on every device.
+
+## Linux
+
+On 64-bit Intel and AMD Linux systems, ReLoq C is available as a **Speech Dispatcher module** named `reloq`, for Orca and every other program that speaks through Speech Dispatcher, and as an add-on for **[Linda](https://github.com/Mudb0y/linda)**, the NVDA port to Linux. The Linda add-on is the NVDA add-on with the engine built for Linux, so it offers the same voices, settings, dictionaries and update checks. Both need the GNU C library 2.35 or later; the module needs Speech Dispatcher 0.11 or later.
+
+Linux packages are built and verified with each release candidate but are not yet part of the published release assets. Until they are, build them from source. The [Linux instructions](linux/README.md) cover installation, voices, settings, building and removal.
 
 ## iPhone, iPad and Mac
 

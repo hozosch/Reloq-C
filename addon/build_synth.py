@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Build a separate, selectable NVDA synth-driver add-on from the C DLL."""
+"""Build the selectable NVDA synth-driver add-on from the C engine.
+
+The Windows package carries eci.dll for NVDA. The Linux package carries the
+same engine as libreloq_eci.so for Linda, the NVDA port to Linux; it has the
+same add-on name, driver and settings.
+"""
 
 from __future__ import annotations
 
@@ -17,7 +22,7 @@ from urllib.request import urlopen
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "nvda"))
 from _reloq_dictionaries import FILES as DICTIONARY_FILES, fetch_master, validate_snapshot
 
-from pe_format import assert_x64_pe
+from pe_format import assert_x64_pe, assert_x86_64_elf, glibc_floor
 from build_translations import translation_entries
 
 
@@ -31,10 +36,20 @@ def addon_version(manifest: Path = SOURCE / "manifest.ini") -> str:
         raise ValueError(f"invalid or ambiguous NVDA version: {manifest}")
     return matches[0]
 
-def addon_output(version: str) -> Path:
+# Package platform: (release asset tag, library entry name, library check, build).
+PLATFORMS = {
+    "windows": ("x64", "eci.dll", assert_x64_pe, "make -C eci windows-x64"),
+    "linux": ("linux-x64", "libreloq_eci.so", assert_x86_64_elf, "make -C eci libreloq_eci.so"),
+}
+# Linux packages are built on Ubuntu 22.04 so that Linda on older distributions
+# can load them; a library needing a newer C library is reported.
+RELEASE_GLIBC = (2, 35)
+
+
+def addon_output(version: str, platform: str = "windows") -> Path:
     if not re.fullmatch(r"\d+\.\d+\.\d+(?:-(?:dev|rc)\d+)?", version):
         raise ValueError("invalid NVDA package version")
-    return ROOT / "dist" / f"reloq-c-synth-x64-{version}.nvda-addon"
+    return ROOT / "dist" / f"reloq-c-synth-{PLATFORMS[platform][0]}-{version}.nvda-addon"
 
 DEFAULT_OUTPUT = addon_output(addon_version())
 RLEX_HEADER = b"RELOQ-DE-SPR-1\n"
@@ -77,16 +92,20 @@ def merged_german_lexicon() -> bytes:
     return RLEX_HEADER + b"".join(line for _, line in combined)
 
 
-def make_entries(dll_path: Path) -> dict[str, bytes]:
+def make_entries(dll_path: Path, platform: str = "windows") -> dict[str, bytes]:
+    _tag, library_name, check_library, build_command = PLATFORMS[platform]
     dll = dll_path.read_bytes()
-    assert_x64_pe(dll)
+    check_library(dll)
+    if platform == "linux" and glibc_floor(dll) > RELEASE_GLIBC:
+        print("warning: libreloq_eci.so needs glibc " + ".".join(map(str, glibc_floor(dll))) +
+              "; release packages are built against glibc 2.35 or older", file=sys.stderr)
     entries = {}
     revision = os.environ.get("GITHUB_SHA", "")
     if re.fullmatch(r"[0-9a-f]{40}", revision):
         metadata = {
             "source_commit": revision,
             "source_url": "https://github.com/hozosch/Reloq-C/tree/" + revision,
-            "build": "make -C eci windows-x64",
+            "build": build_command,
         }
         stamp = os.environ.get("RELOQ_BUILD_EPOCH", "")
         if stamp:
@@ -128,9 +147,10 @@ def make_entries(dll_path: Path) -> dict[str, bytes]:
     validate_snapshot(ROOT / "data/community")
     for name in (*DICTIONARY_FILES, "manifest.json"):
         entries[prefix + "communityDictionaries/" + name] = (ROOT / "data/community" / name).read_bytes()
-    entries[prefix + "eci.dll"] = dll
+    entries[prefix + library_name] = dll
     entries.update(translation_entries())
-    if any(name.endswith((".so", ".syn", ".dylib")) for name in entries):
+    if any(name.endswith((".so", ".dll", ".syn", ".dylib")) and name != prefix + library_name
+           for name in entries):
         raise ValueError("unexpected binary or language module")
     return entries
 
@@ -174,17 +194,19 @@ def refresh_community_dictionaries() -> None:
             shutil.copyfile(snapshot / name, destination / name)
 
 
-def build(output: Path, dll_path: Path, *, refresh_dictionaries: bool = True) -> Path:
+def build(output: Path, dll_path: Path, *, refresh_dictionaries: bool = True,
+          platform: str = "windows") -> Path:
+    library_entry = "synthDrivers/reloqC/" + PLATFORMS[platform][1]
     if refresh_dictionaries:
         refresh_community_dictionaries()
     output.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
-        for name, data in sorted(make_entries(dll_path).items()):
+        for name, data in sorted(make_entries(dll_path, platform).items()):
             info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
             # NVDA 2026.1 and 2026.3.1 both extract ZIP-LZMA with their own
             # AddonBundle and can load the resulting DLL. Apply it only to
             # the large native library; extraction happens at install time.
-            info.compress_type = (zipfile.ZIP_LZMA if name == "synthDrivers/reloqC/eci.dll"
+            info.compress_type = (zipfile.ZIP_LZMA if name == library_entry
                                   else zipfile.ZIP_DEFLATED)
             archive.writestr(info, data, compresslevel=9 if info.compress_type == zipfile.ZIP_DEFLATED else None)
     return output
@@ -192,10 +214,15 @@ def build(output: Path, dll_path: Path, *, refresh_dictionaries: bool = True) ->
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dll", type=Path, default=ROOT / "eci" / "eci.dll")
-    parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--platform", choices=sorted(PLATFORMS), default="windows",
+                        help="windows: NVDA with eci.dll; linux: Linda with libreloq_eci.so")
+    parser.add_argument("--dll", type=Path,
+                        help="the engine library (default: eci/eci.dll or eci/libreloq_eci.so)")
+    parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    print(build(args.output, args.dll))
+    library = args.dll or ROOT / "eci" / PLATFORMS[args.platform][1]
+    output = args.output or addon_output(addon_version(), args.platform)
+    print(build(output, library, platform=args.platform))
 
 
 if __name__ == "__main__":

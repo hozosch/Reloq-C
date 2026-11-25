@@ -36,6 +36,25 @@ class Updates(unittest.TestCase):
         self.assertEqual(check('0.2.196', fetch=lambda *a, **kw: io.BytesIO(json.dumps(self.feed).encode())),
                          select(self.feed, '0.2.196'))
 
+    def test_windows_and_linux_packages_never_replace_each_other(self):
+        linux_name = 'reloq-c-synth-linux-x64-0.2.197.nvda-addon'
+        linux = {**self.asset, 'name': linux_name, 'browser_download_url':
+                 'https://github.com/hozosch/Reloq-C/releases/download/v0.2.197/' + linux_name}
+        feed = [{'assets': [linux, self.asset], 'draft': False}]
+        # The test runs from the source tree, which carries no Linux library.
+        self.assertEqual(_reloq_updates.installed_platform(), 'x64')
+        self.assertEqual(select(feed, '0.2.196').name, self.asset['name'])
+        self.assertIsNone(select([{'assets': [linux]}], '0.2.196'))
+        with patch.object(_reloq_updates, 'PACKAGE', _reloq_updates.package_pattern('linux-x64')):
+            self.assertEqual(select(feed, '0.2.196').name, linux_name)
+            self.assertIsNone(select(self.feed, '0.2.196'))
+            update = select(feed, '0.2.196')
+            with tempfile.TemporaryDirectory() as directory:
+                fetch = lambda *a, **kw: io.BytesIO(self.bytes)
+                self.assertEqual(download(update, directory, fetch=fetch).name, linux_name)
+        with self.assertRaises(ValueError):
+            _reloq_updates.package_pattern('arm64')
+
     def test_development_build_waits_for_matching_stable_release(self):
         def feed(number):
             name = f'reloq-c-synth-x64-{number}.nvda-addon'

@@ -20,9 +20,11 @@ licenses. This project notice does not replace them. In particular:
 - SCOWL data: its retained copyright and permission notice.
 - addon/testdata/nvda: NVDA's own license, for development tests only.
 - sapi/installer: the retained Inno Setup notice for its included files.
+- speechd/reloq.c: its SSML reader and punctuation filter are adapted from
+  OpenEVV's Speech Dispatcher module, MIT; see vendor/openevv61/LICENSE.
 
 The installable binaries include the applicable component notices. Anyone
-redistributing eci.dll must also comply with GPL-3.0-or-later for the combined
+redistributing eci.dll, libreloq_eci.so or sd_reloq must also comply with GPL-3.0-or-later for the combined
 ReLoq C binary, including provision of its complete corresponding source and
 build scripts, and preserve the applicable third-party notices. The matching
 source is in https://github.com/hozosch/Reloq-C at the package's source commit.

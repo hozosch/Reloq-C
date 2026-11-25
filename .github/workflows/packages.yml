@@ -332,6 +332,108 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA early startup probe failed' }
           python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-${{ needs.version.outputs.value }}.nvda-addon --plugin addon/test_nvda_real_dictionary_feedback_plugin.py --work dictionary-feedback-results
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA dictionary feedback probe failed' }
+  # Linux packages. They are built and verified with every candidate but are
+  # not yet part of the published release set collected below.
+  linux:
+    needs: [version, dictionaries]
+    runs-on: ubuntu-24.04
+    # Ubuntu 22.04's C library (2.35) is the oldest the packages support.
+    container: ubuntu:22.04
+    timeout-minutes: 40
+    env:
+      RELOQ_BUILD_EPOCH: ${{ needs.version.outputs.build_epoch }}
+    steps:
+      - name: Install the build tools and Speech Dispatcher
+        timeout-minutes: 8
+        run: |
+          apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::Retries=2 install -y --no-install-recommends \
+            ca-certificates git gcc make binutils python3 pkg-config libspeechd-dev speech-dispatcher
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: dictionary-snapshot
+          path: data/community
+      - name: Build the engine library and the Speech Dispatcher module
+        run: make -C eci -j4 libreloq_eci.so sd_reloq PROVIDER_LTO=-flto=4
+      - name: Check the C library the binaries need
+        run: |
+          python3 - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0, 'addon')
+          from pe_format import glibc_floor
+          for path in ('eci/libreloq_eci.so', 'eci/sd_reloq'):
+              floor = glibc_floor(Path(path).read_bytes())
+              print(path, 'needs glibc', '.'.join(map(str, floor)))
+              if floor > (2, 35):
+                  sys.exit(f'{path} needs a C library newer than 2.35')
+          PY
+      - name: Verify the module over Speech Dispatcher's module protocol
+        run: python3 -B speechd/test_speechd.py eci/sd_reloq speechd/reloq.conf --library eci/libreloq_eci.so
+      - name: Package, install, use and remove the Linux archive
+        run: |
+          python3 -B linux/package.py
+          python3 -B linux/test_package.py --archive dist/reloq-c-linux-x64-${{ needs.version.outputs.value }}.tar.gz
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux-native
+          path: eci/libreloq_eci.so
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux-archive
+          path: dist/reloq-c-linux-x64-*.tar.gz
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 14
+  linda:
+    needs: [version, linux]
+    runs-on: ubuntu-24.04
+    env:
+      RELOQ_BUILD_EPOCH: ${{ needs.version.outputs.build_epoch }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: dictionary-snapshot
+          path: data/community
+      - uses: actions/download-artifact@v8
+        with:
+          name: linux-native
+          path: eci
+      - name: Install translation compiler
+        timeout-minutes: 6
+        run: |
+          if command -v msgfmt >/dev/null; then exit 0; fi
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -qq
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y --no-install-recommends gettext
+      - name: Package the same verified Linux core for Linda
+        run: |
+          python3 - <<'PY'
+          import pathlib, sys
+          sys.path.insert(0, 'addon')
+          from build_synth import addon_output, addon_version, build
+          build(addon_output(addon_version(), 'linux'), pathlib.Path('eci/libreloq_eci.so'),
+                refresh_dictionaries=False, platform='linux')
+          PY
+      - name: Verify the Linda driver and offline dictionary startup
+        run: |
+          for language in en de; do
+            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-linux-x64-${{ needs.version.outputs.value }}.nvda-addon"), platform="linux")' "$language"
+          done
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linda-addon
+          path: dist/reloq-c-synth-linux-x64-*.nvda-addon
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 14
   collect:
     needs: [version, native-regressions, sapi, android, nvda, nvda-windows]
     if: needs.version.outputs.stable == 'true'

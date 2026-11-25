@@ -275,7 +275,57 @@ windows-x86:
 windows-abi: $(WINDOWS_OUTPUT)
 	python3 verify_pe_exports.py $(WINDOWS_OUTPUT) --arch $(WINDOWS_ARCH) --objdump $(WINDOWS_OBJDUMP) --header ../include/reloq_eci.h
 
+# Linux: Speech Dispatcher output module (speechd/reloq.c), linked with the
+# same engine objects as libreloq_eci.so. It hands its audio back to the
+# server and depends only on Speech Dispatcher's module helper library.
+# speechd/spd_audio.h stands in for a header spd_module_main.h includes and
+# Speech Dispatcher does not install.
+SPEECHD_CFLAGS ?= $(or $(shell pkg-config --cflags speech-dispatcher 2>/dev/null),-I/usr/include/speech-dispatcher)
+SPEECHD_LIBDIRS := $(shell pkg-config --libs-only-L speech-dispatcher 2>/dev/null | sed 's|-L\([^ ]*\)|-L\1 -Wl,-rpath,\1|g')
+SPEECHD_LIBS ?= $(SPEECHD_LIBDIRS) -lspeechd_module
+PREFIX ?= /usr/local
+LIBDIR ?= $(PREFIX)/lib
+INCLUDEDIR ?= $(PREFIX)/include
+DATADIR ?= $(PREFIX)/share
+SPEECHD_MODULEDIR ?= $(or $(shell pkg-config --variable=modulebindir speech-dispatcher 2>/dev/null),$(LIBDIR)/speech-dispatcher-modules)
+SPEECHD_CONFDIR ?= /etc/speech-dispatcher/modules
+USER_MODULEDIR ?= $(HOME)/.local/libexec/speech-dispatcher-modules
+USER_CONFDIR ?= $(or $(XDG_CONFIG_HOME),$(HOME)/.config)/speech-dispatcher/modules
+
+build/posix/speechd_reloq.o: ../speechd/reloq.c ../speechd/spd_audio.h ../include/reloq_eci.h
+	@mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -I../include -I../speechd $(SPEECHD_CFLAGS) -c $< -o $@
+sd_reloq: build/posix/speechd_reloq.o $(OBJECTS) $(RULES61) Makefile
+	$(CC) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) build/posix/speechd_reloq.o $(OBJECTS) $(RULES61) $(SPEECHD_LIBS) -pthread -Wl,--gc-sections,--as-needed -lm -o $@
+
+.PHONY: speechd speechd-test speechd-install speechd-install-user install-lib
+speechd: sd_reloq
+speechd-test: sd_reloq libreloq_eci.so
+	python3 -B ../speechd/test_speechd.py ./sd_reloq ../speechd/reloq.conf --library ./libreloq_eci.so
+
+# Writes into Speech Dispatcher's own directories, where the server finds the
+# module by itself. An edited reloq.conf is never replaced.
+speechd-install: sd_reloq
+	install -D -m 755 sd_reloq $(DESTDIR)$(SPEECHD_MODULEDIR)/sd_reloq
+	test -e $(DESTDIR)$(SPEECHD_CONFDIR)/reloq.conf || install -D -m 644 ../speechd/reloq.conf $(DESTDIR)$(SPEECHD_CONFDIR)/reloq.conf
+	install -D -m 755 ../speechd/reloq-speechd-enable $(DESTDIR)$(PREFIX)/bin/reloq-speechd-enable
+
+# Without root. Speech Dispatcher only discovers modules in its system
+# directory, so reloq-speechd-enable registers this one in the user's
+# speechd.conf, keeping the other installed modules registered as well.
+speechd-install-user: sd_reloq
+	install -D -m 755 sd_reloq $(USER_MODULEDIR)/sd_reloq
+	test -e $(USER_CONFDIR)/reloq.conf || install -D -m 644 ../speechd/reloq.conf $(USER_CONFDIR)/reloq.conf
+	../speechd/reloq-speechd-enable --module $(USER_MODULEDIR)/sd_reloq --module-config $(USER_CONFDIR)/reloq.conf
+
+# The ECI library and its header for other Linux programs.
+install-lib: libreloq_eci.so
+	install -D -m 755 libreloq_eci.so $(DESTDIR)$(LIBDIR)/libreloq_eci.so
+	install -D -m 644 ../include/reloq_eci.h $(DESTDIR)$(INCLUDEDIR)/reloq-c/reloq_eci.h
+	install -D -m 644 ../include/eci.h $(DESTDIR)$(INCLUDEDIR)/reloq-c/eci.h
+
 clean:
+	rm -f sd_reloq
 	rm -f libreloq_eci.so test_reloq_eci test_reloq_german_context test_reloq_german_cancel test_reloq_hash_delete test_reloq_rate_dispatch test_reloq_silence_cut eci.dll libeci.dll.a eci_windows_x64_abi_probe.exe eci_windows_x64_runtime_smoke.exe
 	rm -rf build
 .DELETE_ON_ERROR:

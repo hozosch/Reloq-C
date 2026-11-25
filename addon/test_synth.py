@@ -18,7 +18,7 @@ from unittest import mock
 import zipfile
 
 from pe_format import assert_x64_pe
-from build_synth import build
+from build_synth import build, PLATFORMS
 from nvda_test_api import (
     configuration_manager, install as install_nvda_contract, load as load_nvda_api,
 )
@@ -90,7 +90,7 @@ class Engine:
 
     def __init__(self, path, *, native_voice=False, lexicon_path=None,
                  dialect=0x40000, encoding="cp1252"):
-        assert Path(path).name == "eci.dll"
+        assert Path(path).name == LIBRARY_NAME
         assert native_voice
         assert dialect in (0x40000, 0x10000, 0x10001, 0x20000, 0x20001, 0x30000, 0x30001, 0x50000, 0x70000, 0x90000, 0x60000, 0x60001, 0x80000, 0xa0000, 0x120000, 0x130000) and encoding == "utf-8"
         assert lexicon_path is None
@@ -126,7 +126,17 @@ class Engine:
         self.closed = True
 
 
-def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=None, persian_package=False):
+# The engine library the package under test carries: eci.dll or libreloq_eci.so.
+LIBRARY_NAME = "eci.dll"
+
+
+def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=None, persian_package=False,
+         platform="windows"):
+    global LIBRARY_NAME
+    _tag, LIBRARY_NAME, check_library, _build = PLATFORMS[platform]
+    library_entry = "synthDrivers/reloqC/" + LIBRARY_NAME
+    if platform == "linux" and not sys.platform.startswith("linux"):
+        raise SystemExit("the Linux package is tested on Linux")
     # ctypes keeps a loaded Windows module mapped until process exit, even
     # after all ECI handles/threads are closed. The native fixture must not
     # turn that expected file lock into a failed behavioural test.
@@ -134,7 +144,8 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
         path = Path(directory)
         package = package_path or path / "synth.nvda-addon"
         if package_path is None:
-            build(package, dll_path or ROOT / "eci" / "eci.dll", refresh_dictionaries=False)
+            build(package, dll_path or ROOT / "eci" / LIBRARY_NAME, refresh_dictionaries=False,
+                  platform=platform)
             # A normal build re-resolves master even when all verified Git blobs
             # already match. Reuse avoids redundant downloads, never the head check.
             import build_synth as builder
@@ -143,15 +154,16 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
             server = Server()
             server.commit = validate_snapshot(ROOT / "data/community")["commit"]
             with mock.patch.object(builder, "fetch_master", side_effect=lambda cache, **kwargs: fetch_master(cache, fetch=server)):
-                build(package, dll_path or ROOT / "eci" / "eci.dll")
+                build(package, dll_path or ROOT / "eci" / LIBRARY_NAME, platform=platform)
             assert len(server.calls) == 1 and server.calls[0].endswith("/branches/master")
         with zipfile.ZipFile(package) as archive:
             names = set(archive.namelist())
             assert "synthDrivers/reloqC/__init__.py" in names
-            assert "synthDrivers/reloqC/eci.dll" in names
-            assert archive.getinfo("synthDrivers/reloqC/eci.dll").compress_type == zipfile.ZIP_LZMA
+            assert library_entry in names
+            assert not any(name.endswith((".dll", ".so")) and name != library_entry for name in names)
+            assert archive.getinfo(library_entry).compress_type == zipfile.ZIP_LZMA
             assert all(info.compress_type == zipfile.ZIP_DEFLATED for info in archive.infolist()
-                       if info.filename != "synthDrivers/reloqC/eci.dll")
+                       if info.filename != library_entry)
             wordseg = "synthDrivers/reloqC/wordseg-data/"
             american = (ROOT / "nvda/wordseg-data/enus-pieces").read_bytes()
             british = (ROOT / "nvda/wordseg-data/engb-pieces").read_bytes()
@@ -179,7 +191,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
             assert "globalPlugins/reloqCDictionaries/__init__.py" in names
             assert not any("__pycache__" in name or name.endswith(".pyc")
                            for name in names)
-            assert_x64_pe(archive.read("synthDrivers/reloqC/eci.dll"))
+            check_library(archive.read(library_entry))
             archive.extractall(path)
 
         ui_language = sys.argv[1] if len(sys.argv) > 1 else "en"
@@ -297,6 +309,12 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                     previous = 40 + (116 * percent + 50) // 100
                     assert driver_module._native_speed(percent, True) == min(250, (8 * previous + 2) // 5)
                 driver_module.DirectEciEngine = Engine
+                # The driver selects the library its package carries; the
+                # Linux check really loads the extracted shared object.
+                assert driver_module.DLL.name == LIBRARY_NAME
+                updates = importlib.import_module("synthDrivers.reloqC._reloq_updates")
+                assert updates.installed_platform() == PLATFORMS[platform][0]
+                assert updates.PACKAGE.fullmatch(f"reloq-c-synth-{PLATFORMS[platform][0]}-9.9.9.nvda-addon")
                 assert driver_module.SynthDriver.check()
                 with mock.patch.object(ctypes, "sizeof", return_value=4):
                     assert not driver_module.SynthDriver.check()
@@ -1294,4 +1312,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
 
 
 if __name__ == "__main__":
-    main()
+    # --linux tests the Linda package, which carries libreloq_eci.so.
+    linux = "--linux" in sys.argv
+    sys.argv = [argument for argument in sys.argv if argument != "--linux"]
+    main(platform="linux" if linux else "windows")
