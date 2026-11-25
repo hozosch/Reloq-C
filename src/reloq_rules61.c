@@ -547,6 +547,18 @@ static int wordseg_only_words(const unsigned char *pieces)
     return parts>1;
 }
 
+/* A caller-supplied prominence immediately before the original word takes
+ * precedence over the automatic emphasis at artificial case boundaries. */
+static int wordseg_prior_prominence(const unsigned char *text,size_t at)
+{
+    while(at&&text[at-1]==' ')--at;
+    size_t end=at;
+    while(at&&text[at-1]!=' '&&text[at-1]!='\n'&&text[at-1]!='\t')--at;
+    if(at==end)return 0;
+    struct reloq_inline_tag tag=reloq_inline_tag_read(text+at,end-at,1);
+    return tag.kind==RELOQ_TAG_PROMINENCE&&tag.length==end-at;
+}
+
 static int wordseg_input_pass(unsigned char **text,size_t **source,size_t *length,int language,
     const struct wordseg_marks *marks,int upper_only)
 {
@@ -685,6 +697,7 @@ static int wordseg_input_pass(unsigned char **text,size_t **source,size_t *lengt
         }
         if(options.camel&&!plural_acronym) {
             size_t at=i,capitals=i;unsigned previous=0;
+            int caller_prominence=wordseg_prior_prominence(a,i);
             while(at<end) {
                 uint32_t c=0;size_t after=wordseg_character(a,end,at,utf8,&c);
                 if(after<=at)goto fail;
@@ -702,7 +715,11 @@ static int wordseg_input_pass(unsigned char **text,size_t **source,size_t *lengt
                     ((previous&RELOQ_WORDSEG_LOWER)||
                      ((previous&RELOQ_WORDSEG_UPPER)&&(following&RELOQ_WORDSEG_LOWER)&&
                       !wordseg_plural_acronym(a,capitals,end,utf8)))) {
-                    if(german_shared_append(&b,(const unsigned char *)" ",NULL,1,map[at]))goto fail;
+                    /* A new capitalized word should receive its own normal
+                     * word stress. `1 leaves the later phrase plan intact.
+                     * Keep initialisms and explicit caller emphasis as-is. */
+                    const char *boundary=(following&RELOQ_WORDSEG_LOWER)&&!caller_prominence?" `1 ":" ";
+                    if(german_shared_append(&b,(const unsigned char *)boundary,NULL,strlen(boundary),map[at]))goto fail;
                     changed=1;
                     /* A CamelCase component can itself be a plural
                      * initialism, as in myCDs or BlindURLs. Process it with
