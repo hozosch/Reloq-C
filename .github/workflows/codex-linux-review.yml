@@ -1,0 +1,46 @@
+name: Review Linux speech module on x64 and ARM64
+on:
+  push:
+    branches: ['codex/2.1-source-snapshot-20261125']
+    paths: ['.github/workflows/codex-linux-review.yml']
+permissions:
+  contents: read
+jobs:
+  review:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - architecture: x64
+            runner: ubuntu-22.04
+          - architecture: arm64
+            runner: ubuntu-22.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/pull/59/head
+          persist-credentials: false
+      - name: Install Speech Dispatcher development files
+        timeout-minutes: 8
+        run: |
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::Retries=2 install -y --no-install-recommends gcc make binutils python3 pkg-config libspeechd-dev speech-dispatcher
+      - name: Check module API availability
+        run: make -C eci build/posix/speechd_reloq.o
+      - name: Build native engine and module
+        run: make -C eci -j4 libreloq_eci.so sd_reloq PROVIDER_LTO=-flto=4
+      - name: Test module protocol and pause regressions
+        run: |
+          python3 -B speechd/test_speechd.py eci/sd_reloq speechd/reloq.conf --library eci/libreloq_eci.so
+          python3 -B nvda/test_eci_chinese_pause_melody.py --library eci/libreloq_eci.so
+          python3 -B nvda/test_eci_korean_pause_boundary.py --library eci/libreloq_eci.so
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux-review-native-${{ matrix.architecture }}
+          path: |
+            eci/libreloq_eci.so
+            eci/sd_reloq
+          if-no-files-found: error
+          retention-days: 7
