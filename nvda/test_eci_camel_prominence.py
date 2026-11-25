@@ -58,8 +58,9 @@ def main():
                 engine.set_parameter(CAMEL_CASE, 1)
                 engine.set_parameter(PROCESS_TAGS, 1)
                 for tag in ('`0', '`1', '`2'):
-                    assert render(engine, [tag + ' radioWave']) == render(engine, [tag + ' radio Wave']), (dialect, tag, 'caller prominence')
-                    checks += 1
+                    for separator in (' ', '\t', '\n'):
+                        assert render(engine, [tag + separator + 'radioWave']) == render(engine, [tag + separator + 'radio Wave']), (dialect, tag, separator, 'caller prominence')
+                        checks += 1
             engine.set_parameter(PROCESS_TAGS, 0)
             engine.set_parameter(CAMEL_CASE, 0)
             spelling = render(engine, [EciText('radioWave', character_mode=True)])
@@ -72,6 +73,25 @@ def main():
             _, events = render(engine, [EciIndex(11), 'radioWave', EciIndex(12), ' now'])
             assert [event for event, _ in events] == [11, 12], events
             checks += 4
+        finally:
+            engine.close()
+
+    # Other language modules do not all interpret `1 like English. In
+    # particular, Japanese may speak the digit and Italian can de-emphasize
+    # the word. Retain their original split behavior instead.
+    for dialect in (0x40000, 0x20000, 0x20001, 0x30000, 0x30001,
+                    0x50000, 0x70000, 0x90000, 0x60000, 0x80000,
+                    0xa0000, 0x120000, 0x130000):
+        engine = DirectEciEngine(args.library.resolve(), dialect=dialect,
+                                 encoding='utf8', native_voice=True)
+        try:
+            for tags in (0, 1):
+                engine.set_parameter(PROCESS_TAGS, tags)
+                engine.set_parameter(CAMEL_CASE, 0)
+                expected = render(engine, ['radio Wave is ready'])
+                engine.set_parameter(CAMEL_CASE, 1)
+                assert render(engine, ['radioWave is ready']) == expected, (dialect, tags, 'non-English speech changed')
+                checks += 1
         finally:
             engine.close()
 

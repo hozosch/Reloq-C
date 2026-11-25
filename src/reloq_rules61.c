@@ -551,9 +551,9 @@ static int wordseg_only_words(const unsigned char *pieces)
  * precedence over the automatic emphasis at artificial case boundaries. */
 static int wordseg_prior_prominence(const unsigned char *text,size_t at)
 {
-    while(at&&text[at-1]==' ')--at;
+    while(at&&(text[at-1]==' '||text[at-1]=='\t'||text[at-1]=='\n'||text[at-1]=='\r'))--at;
     size_t end=at;
-    while(at&&text[at-1]!=' '&&text[at-1]!='\n'&&text[at-1]!='\t')--at;
+    while(at&&text[at-1]!=' '&&text[at-1]!='\n'&&text[at-1]!='\t'&&text[at-1]!='\r')--at;
     if(at==end)return 0;
     struct reloq_inline_tag tag=reloq_inline_tag_read(text+at,end-at,1);
     return tag.kind==RELOQ_TAG_PROMINENCE&&tag.length==end-at;
@@ -715,10 +715,11 @@ static int wordseg_input_pass(unsigned char **text,size_t **source,size_t *lengt
                     ((previous&RELOQ_WORDSEG_LOWER)||
                      ((previous&RELOQ_WORDSEG_UPPER)&&(following&RELOQ_WORDSEG_LOWER)&&
                       !wordseg_plural_acronym(a,capitals,end,utf8)))) {
-                    /* A new capitalized word should receive its own normal
-                     * word stress. `1 leaves the later phrase plan intact.
-                     * Keep initialisms and explicit caller emphasis as-is. */
-                    const char *boundary=(following&RELOQ_WORDSEG_LOWER)&&!caller_prominence?" `1 ":" ";
+                    /* In English a capitalized word gets normal word stress;
+                     * `1 leaves the later phrase plan intact. Other language
+                     * modules can interpret this tag differently. Preserve
+                     * initialisms and explicit caller emphasis as well. */
+                    const char *boundary=english&&(following&RELOQ_WORDSEG_LOWER)&&!caller_prominence?" `1 ":" ";
                     if(german_shared_append(&b,(const unsigned char *)boundary,NULL,strlen(boundary),map[at]))goto fail;
                     changed=1;
                     /* A CamelCase component can itself be a plural
