@@ -547,11 +547,12 @@ static int wordseg_only_words(const unsigned char *pieces)
     return parts>1;
 }
 
-static int wordseg_input(unsigned char **text,size_t **source,size_t *length,int language,
-    const struct wordseg_marks *marks)
+static int wordseg_input_pass(unsigned char **text,size_t **source,size_t *length,int language,
+    const struct wordseg_marks *marks,int upper_only)
 {
     struct reloq_wordseg_options options=reloq_wordseg_current();
     int english=(language==0x10000||language==0x10001);
+    if(upper_only&&!wordseg_maybe_upper_number(*text,*length))return 0;
     if(!options.camel&&!(english&&options.english)&&
        (!(english||language==0x40000)||!wordseg_maybe_plural_acronym(*text,*length))&&
        !wordseg_maybe_upper_number(*text,*length))return 0;
@@ -600,16 +601,31 @@ static int wordseg_input(unsigned char **text,size_t **source,size_t *length,int
             i=end;continue;
         }
         /* Reuse each language's own reading of the uppercase word and its
-         * number. Preserve whole dictionary entries and caller spelling. */
+         * number. Preserve whole dictionary entries and caller spelling.
+         * Uppercase blocks can also follow the number, as in RICHEDIT50W;
+         * process every letter/digit boundary in an all-uppercase token. */
         size_t digits=i;
         while(digits<end&&a[digits]>='A'&&a[digits]<='Z')++digits;
         size_t after=digits;
         while(after<end&&a[after]>='0'&&a[after]<='9')++after;
-        if(digits-i>=2&&digits<end&&after==end) {
-            if(german_shared_append(&b,a+i,map+i,digits-i,0)||
-               german_shared_append(&b,(const unsigned char *)" ",NULL,1,map[digits])||
-               german_shared_append(&b,a+digits,map+digits,end-digits,0))goto fail;
+        size_t valid=after;
+        while(valid<end&&((a[valid]>='A'&&a[valid]<='Z')||
+                          (a[valid]>='0'&&a[valid]<='9')))++valid;
+        if(digits-i>=2&&after>digits&&valid==end) {
+            size_t start=i;
+            while(start<end) {
+                int number=a[start]>='0'&&a[start]<='9';
+                size_t boundary=start+1;
+                while(boundary<end&&((a[boundary]>='0'&&a[boundary]<='9')==number))++boundary;
+                if(start>i&&german_shared_append(&b,(const unsigned char *)" ",NULL,1,map[start]))goto fail;
+                if(german_shared_append(&b,a+start,map+start,boundary-start,0))goto fail;
+                start=boundary;
+            }
             changed=1;i=end;continue;
+        }
+        if(upper_only) {
+            if(german_shared_append(&b,a+i,map+i,end-i,0))goto fail;
+            i=end;continue;
         }
         if(wordseg_mark_inside(marks,map[i],map[end])) {
             if(german_shared_append(&b,a+i,map+i,end-i,0))goto fail;
@@ -715,6 +731,18 @@ static int wordseg_input(unsigned char **text,size_t **source,size_t *length,int
     b.bytes[b.used]=0;b.map[b.used]=map[n];
     free(*text);free(*source);*text=b.bytes;*source=b.map;*length=b.used;return 0;
 fail:free(b.bytes);free(b.map);return -1;
+}
+
+static int wordseg_input(unsigned char **text,size_t **source,size_t *length,int language,
+    const struct wordseg_marks *marks)
+{
+    struct reloq_wordseg_options options=reloq_wordseg_current();
+    int english=language==0x10000||language==0x10001;
+    /* Establish number boundaries before optional word analysis. This lets
+     * those options see each uppercase component as they would when spaced. */
+    if((options.camel||(english&&options.english))&&
+       wordseg_input_pass(text,source,length,language,marks,1))return -1;
+    return wordseg_input_pass(text,source,length,language,marks,0);
 }
 
 /* Main text aliases are resolved once before grammar, including components

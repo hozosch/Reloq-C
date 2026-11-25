@@ -1,5 +1,9 @@
 # Eloquence C – Bedienungsanleitung
 
+## Version 2.1.0
+
+Die chinesische Sprachmelodie bleibt beim Verkürzen von Pausen erhalten. Großgeschriebene Wörter in Buchstaben-Zahlen-Kombinationen wie `RICHEDIT50W` behalten ihre übliche Aussprache.
+
 ## Version 2.0.0
 
 Aragonesisch ist jetzt als Sprache verfügbar. Großgeschriebene Wörter vor Zahlen, Währungsbeträge mit großem B und Ziffern nach Stimmänderungen werden zuverlässiger verarbeitet. Die Oberfläche und die Eloquence-Kategorie sind in weiteren Sprachen verfügbar.

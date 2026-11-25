@@ -9,6 +9,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tarfile
 import zipfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'nvda'))
@@ -43,6 +44,14 @@ def android_names(version):
     return tuple(f'reloq-c-android-{arch}-{version}.apk' for arch in archs)
 
 
+def linux_names(version):
+    names(version)
+    if tuple(map(int, version.split('.'))) < (2, 1, 0):
+        return ()
+    return (f'reloq-c-linux-x64-{version}.tar.gz',
+            f'reloq-c-synth-linux-x64-{version}.nvda-addon')
+
+
 def verify_packaged_dictionaries(archives, directory):
     """All platform packages must contain exactly the resolved snapshot."""
     directory = Path(directory)
@@ -57,18 +66,42 @@ def verify_packaged_dictionaries(archives, directory):
     return manifest
 
 
-def verify_packaged_build_epoch(addon, androids, payloads):
+def verify_packaged_build_epoch(addon, androids, payloads, other_addons=()):
     """All installers must identify the exact same candidate build."""
     with zipfile.ZipFile(addon) as archive:
         epoch = json.loads(archive.read('doc/source.json')).get('build_epoch')
     if type(epoch) is not int or not 0 < epoch <= 253402300799:
         raise ValueError('invalid NVDA build timestamp')
+    for path in other_addons:
+        with zipfile.ZipFile(path) as archive:
+            if json.loads(archive.read('doc/source.json')).get('build_epoch') != epoch:
+                raise ValueError(f'package build timestamp differs: {path.name}')
     for path, name in [*((p, 'assets/reloq-build-epoch.txt') for p in androids),
                        *((p, 'build-epoch.txt') for p in payloads)]:
         with zipfile.ZipFile(path) as archive:
             if archive.read(name) != f'{epoch}\n'.encode('ascii'):
                 raise ValueError(f'package build timestamp differs: {path.name}')
     return epoch
+
+
+def verify_linux_archive(path, version, directory, epoch):
+    """Ensure the Linux archive uses this candidate's dictionaries and epoch."""
+    top = f'reloq-c-linux-x64-{version}'
+    with tarfile.open(path, 'r:gz') as archive:
+        for name in DICTIONARY_FILES:
+            if not name.endswith('.dic'):
+                continue
+            member = archive.getmember(f'{top}/dictionaries/{name}')
+            if not member.isfile() or member.mtime != epoch:
+                raise ValueError(f'invalid Linux dictionary metadata: {name}')
+            with archive.extractfile(member) as data:
+                if data.read() != (Path(directory) / name).read_bytes():
+                    raise ValueError(f'Linux dictionary differs: {name}')
+        for name in ('sd_reloq', 'libreloq_eci.so', 'install.sh',
+                     'licenses/SpeechDispatcher-module-LICENSE.txt'):
+            member = archive.getmember(f'{top}/{name}')
+            if not member.isfile() or member.mtime != epoch:
+                raise ValueError(f'invalid Linux package member: {name}')
 
 
 def release_body(notes, epoch):
@@ -84,13 +117,15 @@ def release_body(notes, epoch):
 
 def collect(source, destination):
     version = re.search(r'^version\s*=\s*(\S+)', Path('addon/synth/manifest.ini').read_text(), re.M)[1].strip('"')
-    required = (*names(version), *android_names(version))
+    required = (*names(version), *android_names(version), *linux_names(version))
     files = [path for path in source.rglob('*') if path.is_file() and
              path.name in required]
     if len(files) != len(required) or set(required) != {path.name for path in files}:
-        raise ValueError('expected one SAPI installer, one NVDA add-on and every Android ABI')
-    addon = next(p for p in files if p.name.endswith('.nvda-addon'))
+        raise ValueError('missing or duplicate installable packages')
+    addon = next(p for p in files if p.name == names(version)[1])
     androids = [p for p in files if p.name.endswith('.apk')]
+    linux = {p.name: p for p in files if p.name in linux_names(version)}
+    linda = [p for p in linux.values() if p.name.endswith('.nvda-addon')]
     payloads = []
     for arch in ('x64', 'x86'):
         matches = list(source.rglob(f'reloq-c-sapi5-{arch}-{version}-payload.zip'))
@@ -99,9 +134,13 @@ def collect(source, destination):
         payloads.append(matches[0])
     dictionary = verify_packaged_dictionaries(
         [(addon, 'synthDrivers/reloqC/communityDictionaries/'),
+         *((p, 'synthDrivers/reloqC/communityDictionaries/') for p in linda),
          *((p, 'assets/community/') for p in androids),
          *((p, 'dictionaries/') for p in payloads)], Path('data/community'))
-    epoch = verify_packaged_build_epoch(addon, androids, payloads)
+    epoch = verify_packaged_build_epoch(addon, androids, payloads, linda)
+    if linux:
+        archive = next(p for p in linux.values() if p.name.endswith('.tar.gz'))
+        verify_linux_archive(archive, version, Path('data/community'), epoch)
     destination.mkdir(parents=True, exist_ok=False)
     manifest = {'version': version, 'release_version': release_version(version),
                 'source_commit': os.environ['GITHUB_SHA'],
@@ -136,7 +175,7 @@ def verify(directory, request):
     actual = json.loads((directory / 'manifest.json').read_text())
     if actual != wanted:
         raise ValueError('candidate artifact differs from the approved release manifest')
-    expected = (*names(actual['version']), *android_names(actual['version']))
+    expected = (*names(actual['version']), *android_names(actual['version']), *linux_names(actual['version']))
     if actual['release_version'] != release_version(actual['version']):
         raise ValueError('release name differs from package version')
     assets = actual['assets']

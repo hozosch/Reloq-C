@@ -102,7 +102,7 @@ if [[ ${mode} == system && ( -z ${moduleDir} || ! -d ${moduleDir} ) ]]; then
 fi
 if missing=$(ldd "${here}/sd_reloq" 2>/dev/null | grep 'not found'); then
     printf '%s\n' 'The module cannot start on this system:' "${missing}" \
-        'Install Speech Dispatcher (version 0.11 or later), which provides libspeechd_module.' >&2
+        'Install the missing system libraries before retrying.' >&2
     exit 1
 fi
 

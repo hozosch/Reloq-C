@@ -24,12 +24,15 @@ def main():
         prefix = {0x10000:'ENU', 0x10001:'ENG', 0x40000:'DEU'}.get(dialect)
         engine = DirectEciEngine(args.library.resolve(), dialect=dialect, encoding='utf8', native_voice=True)
         try:
-            for word, digits in (('SAPI', '5'), ('NASA', '3'), ('CAT', '23'),
-                                 ('NVDA', '2026'), ('HTML', '5')):
+            for joined, spaced in (('SAPI5', 'SAPI 5'), ('NASA3', 'NASA 3'),
+                                   ('CAT23', 'CAT 23'), ('NVDA2026', 'NVDA 2026'),
+                                   ('HTML5', 'HTML 5'),
+                                   ('RICHEDIT50W', 'RICHEDIT 50 W'),
+                                   ('RICHEDIT50TEST', 'RICHEDIT 50 TEST'),
+                                   ('SAPI5API2W', 'SAPI 5 API 2 W')):
                 for segmentation, camel in ((0, 0), (1, 0), (0, 1), (1, 1)):
                     engine.set_parameter(WORD_SEGMENTATION, segmentation)
                     engine.set_parameter(CAMEL_CASE, camel)
-                    joined, spaced = word + digits, word + ' ' + digits
                     assert groups(engine._phonemes_for_probe(joined)) == groups(engine._phonemes_for_probe(spaced)), (
                         dialect, joined, segmentation, camel)
                     assert render(engine, [EciIndex(1), joined, EciIndex(2)]) == \
@@ -37,7 +40,7 @@ def main():
                     count += 1
             # A caller's spelling and protected replacement remain under the
             # caller's control, even with both segmentation options enabled.
-            for text in ('SAPI5', 'NVDA2026'):
+            for text in ('SAPI5', 'NVDA2026', 'RICHEDIT50W'):
                 assert render(engine, [EciText(text, character_mode=True)]) == \
                        render(engine, [EciText(text, character_mode=True, segmentation_guarded=True)])
             # An index within a word remains an original event and must not
@@ -47,12 +50,16 @@ def main():
             assert (pcm, marks) == render(engine, ['SAPI', EciIndex(71), ' 5'])
             assert render(engine, ['SA', EciIndex(72), 'PI5']) == \
                    render(engine, ['SA', EciIndex(72), 'PI 5'])
+            assert render(engine, ['RICHEDIT50', EciIndex(73), 'W']) == \
+                   render(engine, ['RICHEDIT 50', EciIndex(73), ' W'])
             if prefix:
                 with tempfile.TemporaryDirectory() as temp:
                     folder = Path(temp)
-                    (folder / (prefix + 'main.dic')).write_bytes(b'SAPI5\t`[.1tEst]\n')
+                    (folder / (prefix + 'main.dic')).write_bytes(
+                        b'SAPI5\t`[.1tEst]\nRICHEDIT50W\t`[.1tEst]\n')
                     engine.set_dictionary_path(folder)
-                    assert 'tEst' in engine._phonemes_for_probe('SAPI5'), (dialect, 'dictionary')
+                    for text in ('SAPI5', 'RICHEDIT50W'):
+                        assert 'tEst' in engine._phonemes_for_probe(text), (dialect, text, 'dictionary')
         finally:
             engine.close()
     print(f'Passed {count} uppercase-number readings, spelling, indexes and dictionary cases.')

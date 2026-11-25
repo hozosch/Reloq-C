@@ -4,6 +4,7 @@ ReLoq C is a speech synthesis project that preserves the familiar character of E
 
 The shared synthesis engine is written in C. NVDA, Android, Windows SAPI5 and Linux use the same core. The project is developed and tested with screen-reader users; language reliability, responsiveness and lower resource use remain active priorities.
 
+**2.1.0** preserves Mandarin intonation with shortened pauses and improves uppercase letter-and-number combinations.
 **2.0.0** adds Aragonese, improves number handling and supplies additional NVDA interface translations.
 **1.4.1** improves CamelCase and acronym handling and makes automatic NVDA dictionary updates non-modal.
 **1.4.0** improves optional word segmentation and NVDA dictionary import,
@@ -16,15 +17,17 @@ question intonation for German and American English.
 
 ## Download and install
 
-The [latest release](https://github.com/hozosch/Reloq-C/releases/latest) provides installable packages for three platforms:
+The [latest release](https://github.com/hozosch/Reloq-C/releases/latest) provides installable packages for Windows, Android and Linux:
 
 | Platform | Package | Requirements |
 | --- | --- | --- |
 | NVDA | `.nvda-addon` | NVDA 2026.1 or later, 64-bit process |
 | Android | ARM64 or x86-64 `.apk` | Android 8 or later, matching device architecture |
 | Windows SAPI5 | `-setup.exe` | Installs x64 and x86 voices together on compatible Windows |
+| Linux Speech Dispatcher | `-linux-x64-*.tar.gz` | x86-64, glibc 2.35+, Speech Dispatcher 0.11+ |
+| Linda on Linux | `-synth-linux-x64-*.nvda-addon` | x86-64, glibc 2.35+ and Linda |
 
-Release **2.0.0** updates existing installations on all three platforms. If you are upgrading directly from the published 1.1 NVDA or Android package, consult the [1.1.1 transition notes](docs/releases/1.1.1.md) for the one-time identity change. See the [2.0.0 release notes](docs/releases/2.0.0.md) for this update. Source archives are for developers and are not installable packages.
+Release **2.1.0** updates existing Windows and Android installations. For Linux installation instructions, see the [Linux guide](linux/README.md). If you are upgrading directly from the published 1.1 NVDA or Android package, consult the [1.1.1 transition notes](docs/releases/1.1.1.md) for the one-time identity change. See the [2.1.0 release notes](docs/releases/2.1.0.md) for this update. Source archives are for developers and are not installable packages.
 
 ## Current features
 

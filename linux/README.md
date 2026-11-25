@@ -1,6 +1,6 @@
 # ReLoq C on Linux
 
-ReLoq C runs on 64-bit Intel and AMD Linux systems in two ways:
+ReLoq C runs on 64-bit Intel and AMD Linux systems in two ways. ARM Linux and BT Speak Pro are outside the currently tested targets.
 
 - **Speech Dispatcher module** `reloq`, for Orca and every other program that speaks through Speech Dispatcher. It comes in `reloq-c-linux-x64-<version>.tar.gz`.
 - **Linda add-on** `reloq-c-synth-linux-x64-<version>.nvda-addon`, for [Linda](https://github.com/Mudb0y/linda), the NVDA port to Linux. It has the same voices, settings, dictionaries and update checks as the NVDA add-on on Windows.

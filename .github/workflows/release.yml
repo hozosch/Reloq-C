@@ -99,7 +99,9 @@ jobs:
           fi
           test -n "$RELEASE_ID"
           if [ ! -f /tmp/assets-already-verified ]; then
-            gh release upload "v$RELEASE_VERSION" release-packages/*.exe release-packages/*.nvda-addon release-packages/*.apk --clobber
+            shopt -s nullglob
+            packages=(release-packages/*.exe release-packages/*.nvda-addon release-packages/*.apk release-packages/*.tar.gz)
+            gh release upload "v$RELEASE_VERSION" "${packages[@]}" --clobber
           fi
           gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" > /tmp/release-assets.json
           python3 - <<'PY'
@@ -136,7 +138,7 @@ jobs:
           repo = os.environ['GITHUB_REPOSITORY']
           releases = json.loads(subprocess.check_output(['gh', 'api', f'repos/{repo}/releases?per_page=100']))
           current = next(release for release in releases if release['tag_name'] == 'v' + request['release_version'])
-          assert not current['draft'] and len(current['assets']) == 3
+          assert not current['draft'] and len(current['assets']) == len(request['assets'])
           previous = next((release for release in releases if release['tag_name'] == tag), None)
           if previous and not previous['draft']:
               subprocess.run(['gh', 'api', '--method', 'PATCH', f"repos/{repo}/releases/{previous['id']}",
