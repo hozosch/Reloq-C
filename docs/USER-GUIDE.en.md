@@ -1,5 +1,9 @@
 # Eloquence C – user guide
 
+## Version 2.1.0
+
+Mandarin retains its speech contour when pauses are shortened. Uppercase words in letter-and-number combinations such as `RICHEDIT50W` keep their usual reading.
+
 ## Version 2.0.0
 
 Aragonese is now available. Uppercase words before numbers, currency amounts with uppercase B, and digits after voice changes are handled more reliably. The interface and Eloquence category are available in additional languages.

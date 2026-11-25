@@ -1,13 +1,13 @@
 # Android
 
 ReLoq C uses the same C pronunciation and acoustic core as the NVDA
-add-on. Version `2.0.0` targets ARM64 (`arm64-v8a`) and x86-64 (`x86_64`), Android 8/API 26
+add-on. Version `2.1.0` targets ARM64 (`arm64-v8a`) and x86-64 (`x86_64`), Android 8/API 26
 or later. Speech runs offline. Network access is used for dictionary updates and automatic or manual app-update checks. Package downloads open in the browser.
 
 ## Install or update
 
-Install the `reloq-c-android-arm64-2.0.0.apk` or
-`reloq-c-android-x86_64-2.0.0.apk` from GitHub Releases according to the device architecture. This build
+Install the `reloq-c-android-arm64-2.1.0.apk` or
+`reloq-c-android-x86_64-2.1.0.apk` from GitHub Releases according to the device architecture. This build
 is named **ReLoq C** and uses the app identity `org.reloq.tts`. Installations
 already using this identity update in place and retain their settings and
 dictionaries. The published 1.1 uses an earlier identity, so a direct upgrade
@@ -162,7 +162,7 @@ resolved independently and the local snapshot has been verified. Output goes
 under `dist/`. Android uses separate object directories and preserves the
 Windows/Linux outputs. Rebuild the Android objects after changing compiler flags.
 
-`--abi x86_64` builds an x86-64 APK, `dist/reloq-c-android-x86_64-2.0.0.apk`,
+`--abi x86_64` builds an x86-64 APK, `dist/reloq-c-android-x86_64-2.1.0.apk`,
 with its objects under `android/build-x86_64`. The default is `arm64-v8a`.
 The package name and signing identity are the same for both ABIs. App updates
 select the architecture of the installed package. The NDK host directory is
@@ -234,8 +234,8 @@ The NDK-compiled ARM64 register/stack test uses Unicorn and pyelftools:
 ```sh
 python3 android/test_arm64_landing.py \
   vendor/openevv61/build/android-arm64/src/port/evv_land.o
-python3 android/verify_apk.py dist/reloq-c-android-arm64-2.0.0.apk
-python3 android/verify_apk.py dist/reloq-c-android-x86_64-2.0.0.apk --abi x86_64
+python3 android/verify_apk.py dist/reloq-c-android-arm64-2.1.0.apk
+python3 android/verify_apk.py dist/reloq-c-android-x86_64-2.1.0.apk --abi x86_64
 ```
 
 Build verification checks signatures, the install-critical resource table,
