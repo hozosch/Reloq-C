@@ -332,8 +332,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA early startup probe failed' }
           python -B addon/test_nvda_real_segmentation.py --nvda portable-nvda/nvda.exe --addon candidate/reloq-c-synth-x64-${{ needs.version.outputs.value }}.nvda-addon --plugin addon/test_nvda_real_dictionary_feedback_plugin.py --work dictionary-feedback-results
           if ($LASTEXITCODE -ne 0) { throw 'Real NVDA dictionary feedback probe failed' }
-  # Linux packages. They are built and verified with every candidate but are
-  # not yet part of the published release set collected below.
+  # Linux packages, verified alongside the other release candidates.
   linux:
     needs: [version, dictionaries]
     runs-on: ubuntu-24.04
@@ -348,7 +347,7 @@ jobs:
         run: |
           apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 update -qq
           DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::Retries=2 install -y --no-install-recommends \
-            ca-certificates git gcc make binutils python3 pkg-config libspeechd-dev speech-dispatcher
+            ca-certificates git gcc make binutils python3 pkg-config libspeechd-dev speech-dispatcher speech-dispatcher-audio-plugins
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
@@ -373,6 +372,8 @@ jobs:
           PY
       - name: Verify the module over Speech Dispatcher's module protocol
         run: python3 -B speechd/test_speechd.py eci/sd_reloq speechd/reloq.conf --library eci/libreloq_eci.so
+      - name: Exercise the module through the Ubuntu Speech Dispatcher server
+        run: python3 -B linux/test_speechd_server.py
       - name: Package, install, use and remove the Linux archive
         run: |
           python3 -B linux/package.py
@@ -435,7 +436,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
   collect:
-    needs: [version, native-regressions, sapi, android, nvda, nvda-windows]
+    needs: [version, native-regressions, sapi, android, nvda, nvda-windows, linux, linda]
     if: needs.version.outputs.stable == 'true'
     runs-on: ubuntu-24.04
     steps:
@@ -464,7 +465,15 @@ jobs:
         with:
           name: nvda-addon
           path: artifacts/nvda
-      - name: Collect the four installable packages
+      - uses: actions/download-artifact@v8
+        with:
+          name: linux-archive
+          path: artifacts/linux
+      - uses: actions/download-artifact@v8
+        with:
+          name: linda-addon
+          path: artifacts/linda
+      - name: Collect the installable packages
         run: python3 tools/release_packages.py collect artifacts release-packages
       - uses: actions/upload-artifact@v7
         with:

@@ -17,15 +17,17 @@ question intonation for German and American English.
 
 ## Download and install
 
-The [latest release](https://github.com/hozosch/Reloq-C/releases/latest) provides installable packages for three platforms:
+The [latest release](https://github.com/hozosch/Reloq-C/releases/latest) provides installable packages for Windows, Android and Linux:
 
 | Platform | Package | Requirements |
 | --- | --- | --- |
 | NVDA | `.nvda-addon` | NVDA 2026.1 or later, 64-bit process |
 | Android | ARM64 or x86-64 `.apk` | Android 8 or later, matching device architecture |
 | Windows SAPI5 | `-setup.exe` | Installs x64 and x86 voices together on compatible Windows |
+| Linux Speech Dispatcher | `-linux-x64-*.tar.gz` | x86-64, glibc 2.35+, Speech Dispatcher 0.11+ |
+| Linda on Linux | `-synth-linux-x64-*.nvda-addon` | x86-64, glibc 2.35+ and Linda |
 
-Release **2.1.0** updates existing installations on all three platforms. If you are upgrading directly from the published 1.1 NVDA or Android package, consult the [1.1.1 transition notes](docs/releases/1.1.1.md) for the one-time identity change. See the [2.1.0 release notes](docs/releases/2.1.0.md) for this update. Source archives are for developers and are not installable packages.
+Release **2.1.0** updates existing Windows and Android installations. For Linux installation instructions, see the [Linux guide](linux/README.md). If you are upgrading directly from the published 1.1 NVDA or Android package, consult the [1.1.1 transition notes](docs/releases/1.1.1.md) for the one-time identity change. See the [2.1.0 release notes](docs/releases/2.1.0.md) for this update. Source archives are for developers and are not installable packages.
 
 ## Current features
 
