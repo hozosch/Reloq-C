@@ -118,6 +118,16 @@ def main():
                 received.append(sequence), driver.speak(sequence)))
 
             def run(sequence, *, first_only=False, level=0):
+                # cancel() can return while an already-entered WavePlayer
+                # feed is still unwinding. The transport stops that stale
+                # feed before playing the next generation, but this fake
+                # player's historical buffer list is not erased by stop().
+                # Let the old feed settle before taking the snapshot, or its
+                # discarded PCM can be mistaken for the next utterance.
+                with driver._transport._condition:
+                    assert driver._transport._condition.wait_for(
+                        lambda: driver._transport._active_playback is None,
+                        timeout=20), "cancelled playback did not settle"
                 done.clear(); first.clear(); first_times.clear()
                 submitted_times.clear(); native_times.clear(); native_pcm_times.clear()
                 start = time.perf_counter()
