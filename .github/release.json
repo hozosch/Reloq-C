@@ -1,8 +1,8 @@
 {
-  "version": "2.1.0",
-  "release_version": "2.1.0",
-  "source_commit": "48253f02c5845862cb32f7bac4aee3646ea58cf6",
-  "run_id": 45587165071,
+  "version": "2.1.1",
+  "release_version": "2.1.1",
+  "source_commit": "fbf03ca533af428a72bdff6c661dfd76dfb1d45e",
+  "run_id": 45671840144,
   "dictionary_snapshot": {
     "repository": "eigencrow/IBMTTSDictionaries",
     "branch": "master",
@@ -38,31 +38,31 @@
       }
     }
   },
-  "build_epoch": 1795599464,
+  "build_epoch": 1795630047,
   "assets": {
-    "reloq-c-android-arm64-2.1.0.apk": {
-      "size": 18376535,
-      "sha256": "fc74f30cbd075b55a74f1aae4f2cbbe992db4d83bbef8454328b0ed714156d15"
+    "reloq-c-android-arm64-2.1.1.apk": {
+      "size": 18380631,
+      "sha256": "19d537c145b6b49a1599113544189f1fae7f38019e053cd400f4199d2d34215a"
     },
-    "reloq-c-android-x86_64-2.1.0.apk": {
-      "size": 19892052,
-      "sha256": "226a4d880bc6eabcab2dd9b4ae5aa4ad470a2e22618a67e21a85d408124ed010"
+    "reloq-c-android-x86_64-2.1.1.apk": {
+      "size": 19896148,
+      "sha256": "1f0bf0520e6e0be320ba8b2a189415038e2107e8b97be615e4ad729dc38f6efd"
     },
-    "reloq-c-synth-linux-x64-2.1.0.nvda-addon": {
-      "size": 13765309,
-      "sha256": "3e7559844ac01e6ae504da6fb24899d2859e2ca21885d2d95557218b2abe0ca7"
+    "reloq-c-synth-linux-x64-2.1.1.nvda-addon": {
+      "size": 13777679,
+      "sha256": "112ca73c34ae842d2640530d305d7b7c07baf6ad412374ec3871157cd4406a1b"
     },
-    "reloq-c-linux-x64-2.1.0.tar.gz": {
-      "size": 39102395,
-      "sha256": "5b2d0f34edbdad6196bff30aace4d1af33193a2c1e6e22ecb89f43fec92789ee"
+    "reloq-c-linux-x64-2.1.1.tar.gz": {
+      "size": 39114590,
+      "sha256": "da80ac0bea436708a4d2029502369ea31276cc2ecf1cce675e8740d6049228c4"
     },
-    "reloq-c-synth-x64-2.1.0.nvda-addon": {
-      "size": 14246624,
-      "sha256": "3d9d4ef155e5070fa321b544b0bf64d6723a4d5fa5abf8bce2ca555991fffeba"
+    "reloq-c-synth-x64-2.1.1.nvda-addon": {
+      "size": 14261474,
+      "sha256": "eef53dba64ee231816302c48483957f27e51d4924cb74eb0961e32ae35bf65e0"
     },
-    "reloq-c-sapi5-2.1.0-setup.exe": {
-      "size": 20584957,
-      "sha256": "436526f8b292551c2ffce874aabbc0954d8d5825ab60f2daa9e74088abeeb80a"
+    "reloq-c-sapi5-2.1.1-setup.exe": {
+      "size": 20595550,
+      "sha256": "cf39cc5d4fa90ef01ef58b15ca7f92a5a265c62e45c0939d7ddd8981d7940d41"
     }
   }
 }
