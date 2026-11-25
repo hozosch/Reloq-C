@@ -1,0 +1,27 @@
+name: Snapshot PR source for review
+on:
+  push:
+    branches: ['codex/2.1-source-snapshot-20261125']
+    paths: ['.github/workflows/codex-source-snapshot.yml']
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/pull/59/head
+          persist-credentials: false
+      - name: Verify review source and archive it
+        run: |
+          test "$(git rev-parse HEAD)" = "a4468116330ac621f9a5aa879c94a7e8ae8a8fa7"
+          git archive --format=tar.gz --output="$RUNNER_TEMP/reloq-pr59-source.tar.gz" HEAD
+          sha256sum "$RUNNER_TEMP/reloq-pr59-source.tar.gz"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: reloq-pr59-source
+          path: ${{ runner.temp }}/reloq-pr59-source.tar.gz
+          if-no-files-found: error
+          retention-days: 7
