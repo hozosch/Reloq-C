@@ -22,7 +22,7 @@ def main():
             f'AddModule "reloq" "{ROOT / "eci/sd_reloq"}" "{ROOT / "speechd/reloq.conf"}"\n'
             'DefaultModule reloq\n', encoding='utf-8')
         environment = {key: value for key, value in os.environ.items() if not key.startswith('XDG_')}
-        environment.update(HOME=str(root), XDG_RUNTIME_DIR=str(runtime),
+        environment.update(HOME=str(root), XDG_RUNTIME_DIR=str(runtime), LC_ALL='C',
                            SPEECHD_ADDRESS=f'unix_socket:{socket}')
         server_output = (root / 'server-output.log').open('wb')
         server = subprocess.Popen(['speech-dispatcher', '-s', '-c', 'unix_socket', '-S', str(socket),
@@ -37,10 +37,14 @@ def main():
                 time.sleep(0.05)
             if not socket.exists():
                 raise RuntimeError('Speech Dispatcher did not create its socket')
+            voices = subprocess.run(['spd-say', '-o', 'reloq', '-l', 'en-US', '-L'],
+                                    env=environment, capture_output=True, text=True, timeout=30)
+            if voices.returncode or 'Reed (American English)' not in voices.stdout:
+                raise RuntimeError('ReLoq voices were not available: ' + voices.stdout + voices.stderr)
             result = subprocess.run(['spd-say', '-w', '-o', 'reloq', '-l', 'en-US',
                                      'The ReLoq voice is ready.'], env=environment,
                                     capture_output=True, text=True, timeout=60)
-            if result.returncode:
+            if result.returncode or 'Invalid output module' in result.stdout:
                 raise RuntimeError(result.stdout + result.stderr)
         except Exception:
             server_output.flush()
