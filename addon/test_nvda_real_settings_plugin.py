@@ -106,7 +106,34 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             check(synth.language=='el_GR' and synth.originalAcousticClock, 'ring choice did not survive language switches and reload')
             ring_language.value=home
             synth.saveSettings()
+            synth._camelCase = False
+            synth._camelDictionaryPriority = True
             panel=EloquenceSettingsPanel(frame)
+            check(not panel.camel_dictionary_priority.IsShown() and
+                  panel.camel_dictionary_priority.GetValue(), 'CamelCase priority default or visibility')
+            children = list(panel.GetChildren())
+            check(children.index(panel.camel_dictionary_priority) == children.index(panel.camel_case) + 1,
+                  'CamelCase priority checkbox is not directly after the CamelCase checkbox')
+            panel.camel_case.SetValue(True);event(panel.camel_case,wx.wxEVT_CHECKBOX)
+            wx.Yield()
+            check(panel.camel_dictionary_priority.IsShown() and panel.camel_dictionary_priority.IsEnabled(),
+                  'CamelCase priority checkbox did not appear')
+            panel.camel_dictionary_priority.SetValue(False);event(panel.camel_dictionary_priority,wx.wxEVT_CHECKBOX)
+            panel.onSave()
+            wx.Yield()
+            check(synth._camelCase and not synth._camelDictionaryPriority and
+                  not config.conf['speech'][synth.name]['_camelDictionaryPriority'],
+                  'CamelCase priority was not saved')
+            panel.camel_case.SetValue(False);event(panel.camel_case,wx.wxEVT_CHECKBOX)
+            check(not panel.camel_dictionary_priority.IsShown() and not panel.camel_dictionary_priority.GetValue(),
+                  'hidden CamelCase priority did not keep its value')
+            panel.camel_case.SetValue(True);event(panel.camel_case,wx.wxEVT_CHECKBOX)
+            check(panel.camel_dictionary_priority.IsShown() and not panel.camel_dictionary_priority.GetValue(),
+                  'CamelCase priority did not restore its selected value')
+            panel.camel_dictionary_priority.SetValue(True);event(panel.camel_dictionary_priority,wx.wxEVT_CHECKBOX)
+            panel.camel_case.SetValue(False);event(panel.camel_case,wx.wxEVT_CHECKBOX)
+            panel.onSave()
+            wx.Yield()
             # The combined list accepts each format through one accessible
             # control and chooses the correct parser before asking scope.
             import gui
