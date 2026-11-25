@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "reloq_inline_word_controls.h"
+#include "reloq_pitch_glide.h"
 
 extern const char *ECICALL es_engsynDictLookup(void *,int,const char *);
 
@@ -1565,6 +1566,8 @@ struct rule_playback {
     size_t last_pitch_source;
     int pause_mode,final,result;
     double pitch_scale,base_pitch,time_fraction;
+    int pitch_glide_ms;
+    struct reloq_pitch_glide pitch_glide;
     int slow_wpm;
     /* Native Eloquence reads the acoustic targets every five milliseconds.
      * Keep that clock independent of sparse-span and output-buffer edges. */
@@ -1716,6 +1719,8 @@ static int render_until(struct rule_plan *s,int64_t limit)
         double pitch_scale=voice->pitch>=0&&(voice->pitch_tick>p->last_pitch_tick||
             (voice->pitch_tick==p->last_pitch_tick&&voice->pitch_source>=p->last_pitch_source))?
             pitch_ratio(voice->pitch,voice->native_pitch):p->pitch_scale;
+        if(p->pitch_glide_ms)
+            pitch_scale=reloq_pitch_glide_value(&p->pitch_glide,pitch_scale,p->pitch_glide_ms);
         if(pitch_scale!=1)controls[1]=(float)(controls[1]*pitch_scale);
         if(memcmp(&p->model,&voice->model,sizeof p->model)) {
             p->model=voice->model;
@@ -1768,6 +1773,8 @@ static int render_until(struct rule_plan *s,int64_t limit)
             p->result=status==RELOQ_SESSION_CANCELLED?RELOQ_DE_UTTERANCE_CANCELLED:RELOQ_DE_UTTERANCE_SINK;
             return 1;
         }
+        if(p->pitch_glide_ms)
+            reloq_pitch_glide_advance(&p->pitch_glide,frame.noise.duration_ms,p->pitch_glide_ms);
     }
     return 0;
 }
@@ -1789,7 +1796,7 @@ static int process_spans(struct rule_plan *s,int final)
 static int rule_cancelled(void *context)
 {return reloq_session_cancelled(context);}
 
-int reloq_language_rules_render(int language,const unsigned char *text,size_t length,int tags,int native_volume,int default_wpm,int original_clock,
+int reloq_language_rules_render(int language,const unsigned char *text,size_t length,int tags,int native_volume,int default_wpm,int original_clock,int pitch_glide_ms,
     const struct reloq_german_generic_settings *settings,
     const struct reloq_german_generic_index *indices,size_t index_count,
     const struct reloq_german_generic_pitch_mark *pitches,size_t pitch_count,
@@ -1852,12 +1859,16 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
         i+=t.length?t.length:1;
     }
     int cjk_exact_pitch=plan.cjk_volume && reloq_pitch_is_hz(configured_pitch);
+    int cjk_pitch_tag=0;
     if(plan.cjk_volume && tags)for(size_t i=0;i<n;) {
         struct reloq_inline_tag t=reloq_inline_tag_read(a+i,n-i,1);
-        if(t.kind==RELOQ_TAG_PITCH && reloq_pitch_is_hz(t.value))cjk_exact_pitch=1;
+        if(t.kind==RELOQ_TAG_PITCH) {
+            cjk_pitch_tag=1;
+            if(reloq_pitch_is_hz(t.value))cjk_exact_pitch=1;
+        }
         i+=t.length?t.length:1;
     }
-    int managed_controls=!plan.cjk_volume || cjk_exact_pitch;
+    int managed_controls=!plan.cjk_volume || cjk_exact_pitch || (pitch_glide_ms&&cjk_pitch_tag);
     plan.managed_voice_controls=managed_controls;
     /* Speed changes must reach the native duration planner for every scale.
      * A renderer-side time multiplier cannot reproduce its per-phone rules. */
@@ -2038,6 +2049,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
             .model={q.voice[1],q.voice[4],q.voice[5],q.voice[0],reloq_session_sample_rate(session)}},
         .model={q.voice[1],q.voice[4],q.voice[5],q.voice[0],reloq_session_sample_rate(session)},
         .settings=settings,.pitches=pitches,.index_count=index_count,.pitch_count=pitch_count,
+        .pitch_glide_ms=pitch_glide_ms,
         .pause_mode=!explicit_pause&&settings->pause_mode==1,
         .pitch_scale=reloq_pitch_is_hz(configured_pitch)?pitch_ratio(configured_pitch,provider_pitch):
             language==0x40000&&!settings->native_pitch_plus_one?
@@ -2091,6 +2103,6 @@ int reloq_english_rules_render(const unsigned char *text,size_t length,int tags,
     struct reloq_session *session,reloq_session_pcm_sink sink,
     reloq_german_generic_index_sink index_sink,void *context)
 {
-    return reloq_language_rules_render(0x10000,text,length,tags,native_volume,0,0,
+    return reloq_language_rules_render(0x10000,text,length,tags,native_volume,0,0,0,
         settings,indices,index_count,pitches,pitch_count,session,sink,index_sink,context);
 }

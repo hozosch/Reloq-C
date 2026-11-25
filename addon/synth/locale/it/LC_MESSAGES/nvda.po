@@ -504,3 +504,9 @@ msgstr "Radici"
 
 msgid "Give dictionaries priority over camel case"
 msgstr "Dai priorità alle voci dei dizionari rispetto a camelCase"
+
+msgid "F0 transition time in milliseconds"
+msgstr "Durata della transizione F0 in millisecondi"
+
+msgid "F0 transition time in milliseconds (0–500, 0 off):"
+msgstr "Durata della transizione F0 in millisecondi (0–500, 0 disattivato):"

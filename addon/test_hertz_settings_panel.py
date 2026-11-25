@@ -63,12 +63,13 @@ def main():
         EQ_PRESETS=((0,0,0),(4,0,-1),(-1,0,4),(0,-1,-4)))
     module('synthDrivers.reloqC._reloq_dictionary_manager',DictionarySource=object)
     class Synth:
-        name='reloqC';communityDictionaries=False;_pitchInHertz=False;_pitchHertz=150
+        name='reloqC';communityDictionaries=False;_pitchInHertz=False;_pitchHertz=150;_f0GlideMs=0
         _rateInWpm=False;_rateWpm=150
         _eqEnabled=False;_eqPreset=0;_eqCustomLow=0;_eqCustomMid=0;_eqCustomHigh=0
         filters=tuple((False,f,0,100) for f in (125,500,1200,3000,6000))
         def dictionary_manager(self):return types.SimpleNamespace(sources=[],repository='community')
         def configure_pitch_hertz(self,enabled,value):self._pitchInHertz=enabled;self._pitchHertz=value
+        def configure_f0_glide(self,value):self._f0GlideMs=value
         def configure_rate_wpm(self,enabled,value):self._rateInWpm=enabled;self._rateWpm=value
         def configure_equalizer(self,enabled,preset,low,mid,high):
             self._eqEnabled,self._eqPreset=enabled,preset
@@ -83,6 +84,8 @@ def main():
     plugin=importlib.util.module_from_spec(spec);spec.loader.exec_module(plugin)
     panel=plugin.EloquenceSettingsPanel();panel.makeSettings(Widget())
     assert panel.pitch_hz_mode.enabled and not panel.pitch_hz_value.enabled
+    assert panel.f0_glide_value.enabled and panel.f0_glide_value.GetValue()==0
+    assert panel.f0_glide_value.name==translate('F0 transition time in milliseconds (0–500, 0 off):')
     assert panel.wpm_mode.enabled and not panel.wpm_value.enabled
     assert panel.pitch_hz_value.name==translate('Base pitch in hertz (1–24000):')
     assert panel.pitch_hz_mode.label==translate('Use base pitch in &hertz')
@@ -104,6 +107,8 @@ def main():
     assert synth._pitchInHertz and synth._pitchHertz==150 and not hasattr(synth, 'saved')
     panel.pitch_hz_value.SetValue(151);panel.on_pitch_changed(Widget())
     assert synth._pitchHertz==151 and not hasattr(synth, 'saved')
+    panel.f0_glide_value.SetValue(40);panel.on_f0_glide_changed(Widget())
+    assert synth._f0GlideMs==40 and panel.f0_glide_dirty
     panel.camel_case.SetValue(True);panel.on_camel_changed(Widget())
     assert panel.camel_dictionary_priority.visible and panel.camel_dictionary_priority.enabled
     panel.camel_dictionary_priority.SetValue(False);panel.on_camel_priority_changed(Widget())
@@ -113,6 +118,7 @@ def main():
     assert panel.camel_dictionary_priority.visible and not panel.camel_dictionary_priority.GetValue()
     panel.onSave()
     assert synth._pitchInHertz and synth._pitchHertz==151 and synth.saved
+    assert synth._f0GlideMs==40 and not panel.f0_glide_dirty
     assert synth._camelCase and not panel.camel_dirty
     assert not synth._camelDictionaryPriority and not panel.camel_priority_dirty
     assert not panel.pitch_dirty
@@ -125,10 +131,12 @@ def main():
     # Apply becomes the new baseline; cancelling subsequent live changes
     # restores it instead of the values from when the dialog was opened.
     panel.pitch_hz_value.SetValue(220);panel.on_pitch_changed(Widget())
+    panel.f0_glide_value.SetValue(80);panel.on_f0_glide_changed(Widget())
     panel.wpm_mode.SetValue(False);panel.on_wpm_changed(Widget())
     assert synth._pitchHertz==220 and not synth._rateInWpm
     panel.onDiscard()
     assert (synth._pitchInHertz,synth._pitchHertz)==(True,151)
+    assert synth._f0GlideMs==40
     assert (synth._rateInWpm,synth._rateWpm)==(True,50)
     assert not panel.pitch_dirty and not panel.wpm_dirty
     panel=plugin.EloquenceSettingsPanel();panel.makeSettings(Widget())

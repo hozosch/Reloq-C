@@ -504,3 +504,9 @@ msgstr "語根"
 
 msgid "Give dictionaries priority over camel case"
 msgstr "camelCaseの分割より辞書の項目を優先する"
+
+msgid "F0 transition time in milliseconds"
+msgstr "F0の遷移時間（ミリ秒）"
+
+msgid "F0 transition time in milliseconds (0–500, 0 off):"
+msgstr "F0の遷移時間（ミリ秒、0～500、0で無効）:"

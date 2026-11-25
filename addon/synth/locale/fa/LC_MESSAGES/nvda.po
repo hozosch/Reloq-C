@@ -504,3 +504,9 @@ msgstr "ریشهٔ واژه‌ها"
 
 msgid "Give dictionaries priority over camel case"
 msgstr "اولویت مدخل‌های واژه‌نامه نسبت به camelCase"
+
+msgid "F0 transition time in milliseconds"
+msgstr "زمان گذار فرکانس پایه به میلی‌ثانیه"
+
+msgid "F0 transition time in milliseconds (0–500, 0 off):"
+msgstr "زمان گذار فرکانس پایه به میلی‌ثانیه (۰ تا ۵۰۰، ۰ خاموش):"

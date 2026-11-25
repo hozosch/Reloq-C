@@ -201,6 +201,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             check(not panel.pitch_hz_value.IsEnabled() and not panel.wpm_value.IsEnabled(), 'initial pitch or rate control enabled')
             check(not panel.eq_preset.IsEnabled(), 'initial equalizer control enabled')
             check(panel.pitch_hz_value.GetName() and all(x.GetName() for x in panel.eq_bands), 'accessible control names missing')
+            check(panel.f0_glide_value.GetName() and panel.f0_glide_value.IsEnabled() and
+                  panel.f0_glide_value.GetValue()==0, 'F0 transition control default or accessible name')
             check(panel.auto_update.GetValue(), 'automatic update checks should be enabled by default')
             panel.auto_update.SetValue(False)
 
@@ -208,6 +210,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             event(panel.pitch_hz_mode,wx.wxEVT_CHECKBOX)
             panel.pitch_hz_value.SetValue(151)
             event(panel.pitch_hz_value,wx.wxEVT_SPINCTRL)
+            panel.f0_glide_value.SetValue(40)
+            event(panel.f0_glide_value,wx.wxEVT_SPINCTRL)
             panel.wpm_mode.SetValue(True)
             event(panel.wpm_mode,wx.wxEVT_CHECKBOX)
             panel.wpm_value.SetValue(50)
@@ -217,6 +221,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             panel.eq_preset.SetSelection(1)
             event(panel.eq_preset,wx.wxEVT_CHOICE)
             check((synth._pitchInHertz,synth._pitchHertz)==(True,151), 'pitch preview failed')
+            check(synth._f0GlideMs==40, 'F0 transition preview failed')
             check((synth._rateInWpm,synth._rateWpm)==(True,50), 'rate preview failed')
             check(synth._eqEnabled and synth._eqPreset==1, 'equalizer preset preview failed')
             check(tuple(x.GetValue() for x in panel.eq_bands)==(4,0,-1), 'equalizer preset controls incorrect')
@@ -246,10 +251,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             check(not config.conf['reloqCUpdates']['automatic'], 'automatic update setting did not save')
             stored=tuple(section.get(key) for key in ('_pitchHertz','_rateWpm','_eqEnabled'))
             check(stored==(151,50,True), f'saved values: {stored!r}; keys: {list(section)!r}')
+            check(section.get('_f0GlideMs')==40, 'F0 transition value was not saved')
             check(section.get('_eqFilter1Frequency')==777 and section.get('_eqFilter1Enabled') is True,
                   'advanced filter settings were not saved')
             panel.pitch_hz_value.SetValue(220)
             event(panel.pitch_hz_value,wx.wxEVT_SPINCTRL)
+            panel.f0_glide_value.SetValue(80)
+            event(panel.f0_glide_value,wx.wxEVT_SPINCTRL)
             panel.wpm_value.SetValue(90)
             event(panel.wpm_value,wx.wxEVT_SPINCTRL)
             panel.eq_bands[1].SetValue(3)
@@ -259,8 +267,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             check((synth._pitchHertz,synth._rateWpm,synth._eqPreset)==(220,90,4), 'custom preview failed')
             panel.onDiscard()
             check((synth._pitchHertz,synth._rateWpm,synth._eqPreset)==(151,50,1), 'Cancel did not restore Apply values')
+            check(synth._f0GlideMs==40, 'Cancel did not restore F0 transition')
             check(synth.equalizer_filters()[0]==(True,777,6,50), 'Cancel did not restore saved filters')
             synth.configure_pitch_hertz(False,111)
+            synth.configure_f0_glide(0)
             synth.configure_rate_wpm(False,100)
             synth.configure_equalizer(False,0,0,0,0)
             synth.configure_equalizer_filters([(False,125,0,100)]*5)
@@ -268,6 +278,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             check((synth._pitchInHertz,synth._pitchHertz,synth._rateInWpm,synth._rateWpm,
                    synth._eqEnabled,synth._eqPreset)==(True,151,True,50,True,1), 'saved settings did not reload')
             check(synth.equalizer_filters()[0]==(True,777,6,50), 'saved filter did not reload')
+            check(synth._f0GlideMs==40, 'saved F0 transition did not reload')
             RESULT.write_text(json.dumps({'ok':True,'details':'real NVDA wx controls, acoustic clock, advanced filters, live preview, Apply and Cancel'}),encoding='utf8')
         except BaseException:
             RESULT.write_text(json.dumps({'ok':False,'error':traceback.format_exc()}),encoding='utf8')

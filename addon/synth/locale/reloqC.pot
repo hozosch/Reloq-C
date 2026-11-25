@@ -666,3 +666,9 @@ msgstr ""
 #: addon/synth/synthDrivers/reloqC/__init__.py
 msgid "Give dictionaries priority over camel case"
 msgstr ""
+
+msgid "F0 transition time in milliseconds"
+msgstr ""
+
+msgid "F0 transition time in milliseconds (0–500, 0 off):"
+msgstr ""

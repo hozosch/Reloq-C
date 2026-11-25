@@ -144,6 +144,9 @@ enum {
      * enabled 0/1, frequency 1..24000 Hz, gain 0..24 (-12..+12 dB),
      * and bandwidth 10..400 percent of an octave. */
     RELOQ_ECI_EQ_FILTER_BASE = 0x1020,
+    /* Explicit pitch changes glide over 0..500 ms; 0 preserves the native
+     * instantaneous behavior. The existing speech contour is retained. */
+    RELOQ_ECI_PITCH_GLIDE_MS = 0x1034,
     RELOQ_ECI_ENGLISH = 0x00010000,
     RELOQ_ECI_ENGLISH_BRITAIN = 0x00010001,
     RELOQ_ECI_SPANISH_SPAIN = 0x00020000,

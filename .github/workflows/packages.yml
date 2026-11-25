@@ -76,6 +76,8 @@ jobs:
           git diff --exit-code -- src/reloq_wordseg_data.inc
           cc -std=c11 -O2 -Wall -Wextra -Werror -pedantic -Iinclude tests/test_wordseg_native.c src/reloq_wordseg.c -o /tmp/test-wordseg
           /tmp/test-wordseg
+          cc -std=c11 -O2 -Wall -Wextra -Werror -pedantic -Iinclude tests/test_reloq_pitch_glide.c -lm -o /tmp/test-pitch-glide
+          /tmp/test-pitch-glide
           make -C eci -j2 libreloq_eci.so test_reloq_native_rules test_reloq_wpm_native test_wpm_arithmetic test_eci_stream_time test_reloq_text_peaks test_reloq_presence test_reloq_hearing_profiles test_reloq_classic_noise test_provider_licence_start test_low_arena_concurrent test_win32_task_start PROVIDER_LTO=-flto=2
       - name: Check number, pitch, pause, source-index and multilingual behavior
         run: |
@@ -136,6 +138,7 @@ jobs:
           python3 -B nvda/test_eci_acronyms_native.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_camel_prominence.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_camel_dictionary_priority.py --library eci/libreloq_eci.so
+          python3 -B nvda/test_eci_pitch_glide.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_german_main_quotes.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_upper_number.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_aragonese_native.py --library eci/libreloq_eci.so
@@ -304,7 +307,7 @@ jobs:
           python -c "import zipfile; z=zipfile.ZipFile(r'$addon'); assert z.testzip() is None; z.extract('synthDrivers/reloqC/eci.dll', 'candidate')"
           if ($LASTEXITCODE -ne 0) { throw 'Core extraction failed' }
           $dll = (Get-Item candidate/synthDrivers/reloqC/eci.dll).FullName
-          foreach ($test in @('nvda/test_eci_ptbr_numbers.py','nvda/test_eci_equalizer.py','nvda/test_eci_inflection_tags.py','nvda/test_eci_wpm_setting.py','nvda/test_eci_italian_apostrophe_native.py','nvda/test_eci_acronyms_native.py','nvda/test_eci_wordseg_native.py','nvda/test_eci_camel_prominence.py','nvda/test_eci_german_main_quotes.py','nvda/test_eci_upper_number.py','nvda/test_eci_inline_queue_digits.py','nvda/test_eci_english_currency_case.py','nvda/test_eci_aragonese_native.py')) {
+          foreach ($test in @('nvda/test_eci_ptbr_numbers.py','nvda/test_eci_equalizer.py','nvda/test_eci_inflection_tags.py','nvda/test_eci_wpm_setting.py','nvda/test_eci_italian_apostrophe_native.py','nvda/test_eci_acronyms_native.py','nvda/test_eci_wordseg_native.py','nvda/test_eci_camel_prominence.py','nvda/test_eci_pitch_glide.py','nvda/test_eci_german_main_quotes.py','nvda/test_eci_upper_number.py','nvda/test_eci_inline_queue_digits.py','nvda/test_eci_english_currency_case.py','nvda/test_eci_aragonese_native.py')) {
             python -B $test --library $dll
             if ($LASTEXITCODE -ne 0) { throw "$test failed" }
           }

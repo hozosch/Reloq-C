@@ -504,3 +504,9 @@ msgstr "어근"
 
 msgid "Give dictionaries priority over camel case"
 msgstr "카멜 케이스 분리보다 사전 항목 우선"
+
+msgid "F0 transition time in milliseconds"
+msgstr "F0 전환 시간(밀리초)"
+
+msgid "F0 transition time in milliseconds (0–500, 0 off):"
+msgstr "F0 전환 시간(밀리초, 0–500, 0은 끔):"

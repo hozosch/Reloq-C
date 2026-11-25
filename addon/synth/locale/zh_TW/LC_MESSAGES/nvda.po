@@ -504,3 +504,9 @@ msgstr "詞根"
 
 msgid "Give dictionaries priority over camel case"
 msgstr "詞典項目優先於駝峰拆分"
+
+msgid "F0 transition time in milliseconds"
+msgstr "基頻過渡時間（毫秒）"
+
+msgid "F0 transition time in milliseconds (0–500, 0 off):"
+msgstr "基頻過渡時間（毫秒，0–500，0為關閉）："

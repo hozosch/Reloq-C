@@ -353,7 +353,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                 assert PitchCommand in driver.supportedCommands
                 assert CharacterModeCommand in driver.supportedCommands
                 assert [setting.id for setting in driver.supportedSettings] == [
-                    "language", "voice", "rate", "rateBoost", "originalAcousticClock", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "originalQuestions", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate", "mellowMode", "_acousticClockMask", "_pitchHertz", "_pitchInHertz", "_rateWpm", "_rateInWpm", "_eqEnabled", "_eqPreset", "_eqCustomLow", "_eqCustomMid", "_eqCustomHigh", *[f"_eqFilter{i}{field}" for i in range(1,6) for field in ("Enabled","Frequency","Gain","Width")], "_wordSegmentation", "_camelCase", "_camelDictionaryPriority"]
+                    "language", "voice", "rate", "rateBoost", "originalAcousticClock", "pitch", "inflection", "volume", "headSize", "roughness", "breathiness", "abbreviationDictionary", "phrasePrediction", "originalQuestions", "voiceTags", "_dictionaryCommunity", "pauseMode", "sampleRate", "mellowMode", "_acousticClockMask", "_pitchHertz", "_pitchInHertz", "_f0GlideMs", "_rateWpm", "_rateInWpm", "_eqEnabled", "_eqPreset", "_eqCustomLow", "_eqCustomMid", "_eqCustomHigh", *[f"_eqFilter{i}{field}" for i in range(1,6) for field in ("Enabled","Frequency","Gain","Width")], "_wordSegmentation", "_camelCase", "_camelDictionaryPriority"]
                 assert driver.supportedSettings[0].availableInSettingsRing
                 assert not any(hasattr(driver, '_'+name) for name in
                                ('glideOpening', 'glideBackness', 'glideSoftness'))
@@ -1201,6 +1201,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                         assert profile["speech"][fresh.name]["_camelCase"] is True
                         assert profile["speech"][fresh.name]["_camelDictionaryPriority"] is False
                         fresh.configure_pitch_hertz(True, 151)
+                        fresh.configure_f0_glide(40)
                         fresh.configure_rate_wpm(True, 151)
                         fresh.configure_equalizer(True, 4, 6, -2, 3)
                         filters=list(fresh.equalizer_filters());filters[0]=(True,777,6,50)
@@ -1208,6 +1209,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                         fresh.saveSettings()
                         assert profile["speech"][fresh.name]["_pitchHertz"] == 151
                         assert profile["speech"][fresh.name]["_pitchInHertz"] is True
+                        assert profile["speech"][fresh.name]["_f0GlideMs"] == 40
                         assert profile["speech"][fresh.name]["_rateInWpm"] is True
                         assert profile["speech"][fresh.name]["_rateWpm"] == 151
                         assert profile["speech"][fresh.name]["_eqEnabled"] is True
@@ -1233,6 +1235,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                     try:
                         fresh.initSettings()
                         assert fresh._pitchInHertz and fresh._pitchHertz==151 and fresh.pitch==65
+                        assert fresh._f0GlideMs == 40
                         assert fresh._rateInWpm and fresh._rateWpm==151
                         assert (fresh._eqEnabled,fresh._eqPreset,fresh._eqCustomLow,
                                 fresh._eqCustomMid,fresh._eqCustomHigh)==(True,4,6,-2,3)
@@ -1248,6 +1251,7 @@ def main(inspect_adapter=None, dll_path=None, inspect_only=False, package_path=N
                         worker = next(instance for instance in reversed(Engine.instances[before:])
                                       if instance.dialect==0x10000 and instance.parts)
                         assert dict(worker.parameters)[driver_module.PITCH_HZ] == 151
+                        assert dict(worker.parameters)[driver_module.PITCH_GLIDE_MS] == 40
                         assert dict(worker.parameters)[driver_module.NATIVE_WPM] == 151
                         assert [dict(worker.parameters)[p] for p in
                                 (driver_module.EQ_LOW,driver_module.EQ_MID,driver_module.EQ_HIGH)] == [18,10,15]

@@ -184,7 +184,7 @@ struct reloq_eci_engine {
     int input_type;
     int process_tags;
     int dictionary_disabled,phrase_prediction,original_questions,mellow_mode,original_acoustic_clock;
-    int word_segmentation,camel_case,camel_ignore_dictionary;
+    int word_segmentation,camel_case,camel_ignore_dictionary,pitch_glide_ms;
     int eq_low,eq_mid,eq_high;
     int eq_filters[RELOQ_EQ_FILTER_COUNT][RELOQ_ECI_EQ_FILTER_STRIDE];
     int pause_mode;
@@ -582,7 +582,7 @@ static int synthesize_generic(struct reloq_eci_engine *e,
     int rendered=reset?RELOQ_DE_UTTERANCE_INVALID:reloq_language_rules_render(e->language,phrase,length,e->process_tags||admitted,
         frame_volume?(e->native_volume_active?e->native_volume:e->generic_volume):100,
         e->native_wpm,e->original_acoustic_clock==1||(e->original_acoustic_clock==2&&
-            (e->language==0x20000||e->language==0x120000||e->language==0x130000)),&settings,english_indices,mark_count,english_pitch,pitch_count,e->text_session,
+            (e->language==0x20000||e->language==0x120000||e->language==0x130000)),e->pitch_glide_ms,&settings,english_indices,mark_count,english_pitch,pitch_count,e->text_session,
         send_pcm,send_generic_index,&bridge);
     reloq_wordseg_scope(wordseg);
     free(english_indices);free(english_pitch);
@@ -1473,6 +1473,7 @@ int ECICALL eciGetParam(ECIHand handle, int parameter)
     case RELOQ_ECI_WORD_SEGMENTATION: return e->word_segmentation;
     case RELOQ_ECI_CAMEL_CASE: return e->camel_case;
     case RELOQ_ECI_CAMEL_IGNORE_DICTIONARY: return e->camel_ignore_dictionary;
+    case RELOQ_ECI_PITCH_GLIDE_MS: return e->pitch_glide_ms;
     case RELOQ_ECI_UTF8_INPUT_MODES: return 7;
     case RELOQ_ECI_EQ_LOW: return e->eq_low;
     case RELOQ_ECI_EQ_MID: return e->eq_mid;
@@ -1631,6 +1632,9 @@ int ECICALL eciSetParam(ECIHand handle, int parameter, int value)
     case RELOQ_ECI_CAMEL_IGNORE_DICTIONARY:
         if(value!=0 && value!=1)return eci_refuse(e,-1);
         e->camel_ignore_dictionary=value;break;
+    case RELOQ_ECI_PITCH_GLIDE_MS:
+        if(value<0 || value>500)return eci_refuse(e,-1);
+        e->pitch_glide_ms=value;break;
     case RELOQ_ECI_EQ_LOW:
     case RELOQ_ECI_EQ_MID:
     case RELOQ_ECI_EQ_HIGH:

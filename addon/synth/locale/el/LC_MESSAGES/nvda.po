@@ -504,3 +504,9 @@ msgstr "Ρίζες λέξεων"
 
 msgid "Give dictionaries priority over camel case"
 msgstr "Προτεραιότητα στις καταχωρίσεις λεξικού έναντι του camelCase"
+
+msgid "F0 transition time in milliseconds"
+msgstr "Χρόνος μετάβασης F0 σε χιλιοστά του δευτερολέπτου"
+
+msgid "F0 transition time in milliseconds (0–500, 0 off):"
+msgstr "Χρόνος μετάβασης F0 σε χιλιοστά του δευτερολέπτου (0–500, 0 ανενεργό):"

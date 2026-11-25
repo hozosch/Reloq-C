@@ -640,3 +640,9 @@ msgstr "Eloquence C Version %s ist verfügbar. Herunterladen und installieren?"
 
 msgid "Give dictionaries priority over camel case"
 msgstr "Wörterbucheinträge haben Vorrang"
+
+msgid "F0 transition time in milliseconds"
+msgstr "F0-Gleitzeit in Millisekunden"
+
+msgid "F0 transition time in milliseconds (0–500, 0 off):"
+msgstr "F0-Gleitzeit in Millisekunden (0–500, 0 aus):"
