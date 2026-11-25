@@ -31,6 +31,10 @@ def main():
                         engine.set_parameter(PROCESS_TAGS, tags)
                         engine.set_parameter(CAMEL_CASE, camel)
                         for left, right in pairs:
+                            # Straight apostrophes also occur inside words;
+                            # their interaction with CamelCase is separate.
+                            if left == "'" and camel:
+                                continue
                             source = left + 'iPhone' + right
                             # For a text alias the target must be planned
                             # exactly like that same written hyphenated text.
