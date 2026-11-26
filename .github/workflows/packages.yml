@@ -142,6 +142,8 @@ jobs:
           python3 -B nvda/test_eci_pitch_boundary.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_f0_tag.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_german_main_quotes.py --library eci/libreloq_eci.so
+          python3 -B nvda/test_eci_german_er_compounds.py --library eci/libreloq_eci.so
+          python3 -B nvda/test_eci_greek_english_prosody.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_upper_number.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_aragonese_native.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_unicode_single.py --library eci/libreloq_eci.so
@@ -318,6 +320,22 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'NVDA Remote integration failed' }
           python -B addon/test_synth_native.py --library $dll --addon $addon
           if ($LASTEXITCODE -ne 0) { throw 'NVDA/native integration failed' }
+      - name: Compare German and Greek with version 2.1.2
+        if: needs.version.outputs.value == '2.1.3'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v2.1.2 --repo "$env:GITHUB_REPOSITORY" --pattern 'reloq-c-synth-x64-2.1.2.nvda-addon' --dir previous-213
+          if ($LASTEXITCODE -ne 0) { throw 'Reference add-on download failed' }
+          python -c "import zipfile; z=zipfile.ZipFile('previous-213/reloq-c-synth-x64-2.1.2.nvda-addon'); assert z.testzip() is None; z.extract('synthDrivers/reloqC/eci.dll', 'previous-213')"
+          if ($LASTEXITCODE -ne 0) { throw 'Reference core extraction failed' }
+          $dll = (Get-Item candidate/synthDrivers/reloqC/eci.dll).FullName
+          $reference = (Get-Item previous-213/synthDrivers/reloqC/eci.dll).FullName
+          foreach ($test in @('nvda/test_eci_german_er_compounds.py','nvda/test_eci_greek_english_prosody.py')) {
+            python -B $test --library $dll --reference $reference
+            if ($LASTEXITCODE -ne 0) { throw "$test failed" }
+          }
       - name: Compare English transitions with version 2.1.1
         if: needs.version.outputs.value == '2.1.2'
         shell: pwsh

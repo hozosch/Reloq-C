@@ -1,5 +1,9 @@
 # Eloquence C – user guide
 
+## Version 2.1.3
+
+German compound boundaries are corrected in words such as “Schieberegler” and “Leserichtung”. In the Greek voice, English sentences use improved stress from the US analyzer, and symbol names, including those in malformed phonetic input, use the ordinary Greek text pronunciation. The Latin question mark `?` and Greek question mark `;` have distinguishable character names. The Greek question mark now produces question intonation.
+
 ## Version 2.1.2
 
 The sound of “sh” before “r” after “t” is improved in American and British English. In American English, the schwa transition in phrases such as “Iowa awaits” has a more natural timbre.

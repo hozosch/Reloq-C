@@ -4,6 +4,7 @@ ReLoq C is a speech synthesis project that preserves the familiar character of E
 
 The shared synthesis engine is written in C. NVDA, Android, Windows SAPI5 and Linux use the same core. The project is developed and tested with screen-reader users; language reliability, responsiveness and lower resource use remain active priorities.
 
+**2.1.3** improves German compound boundaries and Greek pronunciation of English phrases and symbol names.
 **2.1.2** improves the sound of English “sh” before “r” and the schwa in transitions such as “Iowa awaits”.
 **2.1.1** adds adjustable ECI pitch transitions and improves CamelCase stress and German dictionary entries inside quotation marks.
 **2.1.0** preserves Mandarin intonation with shortened pauses and improves uppercase letter-and-number combinations.
@@ -29,7 +30,7 @@ The [latest release](https://github.com/hozosch/Reloq-C/releases/latest) provide
 | Linux Speech Dispatcher | `-linux-x64-*.tar.gz` | x86-64, glibc 2.35+, Speech Dispatcher 0.11+ |
 | Linda on Linux | `-synth-linux-x64-*.nvda-addon` | x86-64, glibc 2.35+ and Linda |
 
-Release **2.1.2** updates existing Windows and Android installations. For Linux installation instructions, see the [Linux guide](linux/README.md). If you are upgrading directly from the published 1.1 NVDA or Android package, consult the [1.1.1 transition notes](docs/releases/1.1.1.md) for the one-time identity change. See the [2.1.2 release notes](docs/releases/2.1.2.md) for this update. Source archives are for developers and are not installable packages.
+Release **2.1.3** updates existing Windows and Android installations. For Linux installation instructions, see the [Linux guide](linux/README.md). If you are upgrading directly from the published 1.1 NVDA or Android package, consult the [1.1.1 transition notes](docs/releases/1.1.1.md) for the one-time identity change. See the [2.1.3 release notes](docs/releases/2.1.3.md) for this update. Source archives are for developers and are not installable packages.
 
 ## Current features
 

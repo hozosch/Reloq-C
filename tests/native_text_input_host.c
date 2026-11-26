@@ -22,6 +22,9 @@ int romanize(const char *text,size_t length,size_t split,char *output,size_t cap
 struct english_words {char *text;size_t length,capacity;};
 static int english(void *context,const char *word,char *phonemes,size_t capacity)
 {
+    /* This stub provides isolated-word analyses only. The real provider
+     * also supplies sentence analyses and may ask for one speculatively. */
+    if(strpbrk(word," \t\r\n.,!?;:()\"-"))return -1;
     struct english_words *words=context;size_t n=strlen(word);
     if(words->length+n+2>words->capacity||capacity<15)return -1;
     memcpy(words->text+words->length,word,n);words->length+=n;

@@ -272,9 +272,11 @@ static size_t written_vowels(const char *word,size_t wanted,struct written_vowel
     if(n>wanted&&n&&out[n-1].value=='e'&&!word[out[n-1].at+1])--n;
     return n;
 }
-static int latin(struct buffer *out,const char *word,reloq_greek_english english,void *context)
+#include "reloq_greek_phrase.inc"
+
+static int latin_phones(struct buffer *out,const char *word,const char *phonemes,
+    int prominence)
 {
-    char phonemes[16384];if(english(context,word,phonemes,sizeof phonemes))return -1;
     size_t wanted=0;
     for(size_t i=0;phonemes[i];++i)if(phonemes[i]=='[') {
         while(phonemes[++i]&&phonemes[i]!=']')wanted+=strchr("aAeEiIoOuUxXHYWcRN",phonemes[i])!=NULL;
@@ -285,7 +287,16 @@ static int latin(struct buffer *out,const char *word,reloq_greek_english english
     struct written_vowel *vowels=malloc((length+1)*sizeof *vowels);
     if(!vowels)return -1;
     size_t count=written_vowels(word,wanted,vowels),position=0,stop=0;int found=0;
-    for(size_t i=0;phonemes[i];++i){if(phonemes[i]!='[')continue;++i;found=1;if(say(out," `[") )goto error;
+    for(size_t i=0;phonemes[i];++i){
+        if(prominence&&phonemes[i]=='`'&&phonemes[i+1]>='0'&&phonemes[i+1]<='9') {
+            struct reloq_inline_tag tag=reloq_inline_tag_read(
+                (const unsigned char *)phonemes+i,strlen(phonemes+i),0);
+            if(tag.kind==RELOQ_TAG_PROMINENCE) {
+                if(say(out," ")||add(out,phonemes+i,tag.length)||say(out," "))goto error;
+                i+=tag.length-1;continue;
+            }
+        }
+        if(phonemes[i]!='[')continue;++i;found=1;if(say(out," `[") )goto error;
         /* Castilian SPR has primary/unstressed syllables. English's
            secondary stress marker is not part of that grammar: a single
            .2 invalidates the whole group and makes it spoken as text. */
@@ -338,6 +349,11 @@ static int latin(struct buffer *out,const char *word,reloq_greek_english english
 error:
     free(vowels);return -1;
 }
+static int latin(struct buffer *out,const char *word,reloq_greek_english english,void *context)
+{
+    char phonemes[16384];if(english(context,word,phonemes,sizeof phonemes))return -1;
+    return latin_phones(out,word,phonemes,0);
+}
 static int latin_character(struct buffer *out,char value,int spelling,
     reloq_greek_english english,void *context)
 {
@@ -356,7 +372,8 @@ static const char *character_name(uint32_t cp)
     switch(cp){
     case 0x384:return "τόνος";case 0x385:return "διαλυτικά τόνος";
     case '.':return "τελεία";case ',':return "κόμμα";
-    case '?':case ';':case 0x37e:return "ερωτηματικό";
+    case '?':return "αγγλικό ερωτηματικό";
+    case ';':case 0x37e:return "ερωτηματικό";
     case '!':return "θαυμαστικό";case ':':return "άνω και κάτω τελεία";
     case 0xb7:case 0x387:return "άνω τελεία";
     case '(':return "ανοιχτή παρένθεση";case ')':return "κλειστή παρένθεση";
@@ -402,6 +419,7 @@ static const char *character_name(uint32_t cp)
     default:return NULL;
     }
 }
+#include "reloq_greek_symbols.inc"
 /* Character labels are full Greek text, not a series of isolated words:
    use the same connected-word and letter rules as ordinary speech. */
 static int greek_character_phrase(struct buffer *out,const char *text,
@@ -450,11 +468,28 @@ static const char *punctuation(uint32_t cp)
     default:return cp>=0x2000&&cp<=0x200a?" ":NULL;
     }
 }
+/* An explicit caller prominence command takes precedence over automatic
+   English phrase analysis for the whole request, as it did previously. */
+static int greek_explicit_prominence(const char *text,int annotations)
+{
+    if(!annotations)return 0;
+    size_t length=strlen(text);
+    for(size_t i=0;i<length;++i)if(text[i]=='`') {
+        size_t back=i;while(back&&text[back-1]=='\\')--back;
+        if((i-back)&1)continue;
+        struct reloq_inline_tag tag=reloq_inline_tag_read((const unsigned char *)text+i,length-i,0);
+        if(tag.kind==RELOQ_TAG_PROMINENCE)return 1;
+        if(tag.length)i+=tag.length-1;
+    }
+    return 0;
+}
 int reloq_greek_text(const char *text,int annotations,reloq_greek_english english,void *context,char **output,size_t **offsets)
 {
     size_t length=strlen(text);if(length>SIZE_MAX/sizeof(size_t)-1)return -1;
     size_t *map=malloc((length+1)*sizeof *map);if(!map)return -1;
     struct buffer b={0};int spelling=0,previous=0,failed=0;
+    struct latin_phrase *phrase=NULL;
+    int use_phrase=!greek_explicit_prominence(text,annotations);
     for(size_t i=0;i<length&&!failed;){size_t begin=i,start=b.length;int expanded=0;uint32_t cp;size_t z=decode(text+i,&cp);if(!z){failed=1;break;}
         if(cp>=0xff01&&cp<=0xff5e&&
            strchr("!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~",(int)(cp-0xfee0)))cp-=0xfee0;
@@ -518,7 +553,16 @@ int reloq_greek_text(const char *text,int annotations,reloq_greek_english englis
                 if(add(&word,&byte,1)){failed=1;break;}
                 end+=k;++bytes;
             }
-            if(!failed&&bytes)failed=latin(&b,word.data,english,context);
+            if(!failed&&bytes) {
+                if(use_phrase&&!phrase)phrase=calloc(1,sizeof *phrase);
+                if(phrase&&i>=phrase->end)latin_phrase_build(phrase,text,i,english,context);
+                struct buffer contextual={0};
+                int projected=phrase?latin_phrase_phones(phrase,i,&contextual):0;
+                if(projected<0)failed=1;
+                else if(projected)failed=latin_phones(&b,word.data,contextual.data,1);
+                else failed=latin(&b,word.data,english,context);
+                free(contextual.data);
+            }
             free(word.data);i=end;previous=0;expanded=1;
         } else if(cp=='\\') {
             /* Internal SPR must not become an escaped literal after a
@@ -546,6 +590,7 @@ int reloq_greek_text(const char *text,int annotations,reloq_greek_english englis
         }
         map[begin]=start;for(size_t j=begin+1;j<=i;++j)map[j]=b.length;
     }
+    free(phrase);
     if(failed||add(&b,"",0)){free(map);free(b.data);return -1;}
     map[length]=b.length;*output=b.data;*offsets=map;return 0;
 }

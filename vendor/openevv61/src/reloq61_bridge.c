@@ -7,6 +7,7 @@
 #include "reloq61_english_plan.h"
 #include "reloq61_english_bank.h"
 #include "reloq61_parameter_names.h"
+#include "reloq_inline_tags.h"
 #include "reloq_voice_controls.h"
 #include "evv_abi.h"
 #include "evv_port.h"
@@ -952,13 +953,87 @@ static int german_clock_generate(const struct reloq61_request *q,struct reloq61_
     if(!projected)return generate_core(q,r,sink,context);
     return projected_generate(q,r,sink,context,text,map);
 }
+/* The Greek frontend may add prominence controls taken from the English
+ * analyzer. They must not disable Greek's own stress rules elsewhere in a
+ * mixed utterance. Only a control supplied by the caller has that effect. */
+static _Thread_local int greek_user_prominence=-1;
+static int greek_source_prominence(const struct reloq61_request *q)
+{
+    if(!q->annotations)return 0;
+    const char *text=q->text;size_t n=strlen(text);
+    for(size_t i=0;i<n;++i)if(text[i]=='`') {
+        size_t back=i;while(back&&text[back-1]=='\\')--back;
+        if((i-back)&1)continue;
+        struct reloq_inline_tag tag=reloq_inline_tag_read((const unsigned char *)text+i,n-i,0);
+        if(tag.kind==RELOQ_TAG_PROMINENCE)return 1;
+        if(tag.length)i+=tag.length-1;
+    }
+    return 0;
+}
+static int greek_symbol_in_dictionary(void *context,uint32_t cp)
+{
+    struct provider_worker *worker=context;
+    if(!worker||!worker->dictionary)return 0;
+    unsigned char value=0;
+    if(cp>0&&cp<128)value=(unsigned char)cp;
+    else if(cp>=0xa0&&cp<=0xff)value=(unsigned char)cp;
+    else switch(cp) {
+        case 0x20ac:value=0x80;break;case 0x2022:value=0x95;break;
+        case 0x2122:value=0x99;break;case 0x2030:value=0x89;break;
+        case 0x2dc:value=0x98;break;default:return 0;
+    }
+    char key[2]={(char)value,0};
+    for(int volume=0;volume<3;++volume)
+        if(es_engsynDictLookup(worker->dictionary,volume,key))return 1;
+    return 0;
+}
+/* Ask the same native Greek SPR parser before altering an explicitly typed
+ * phonetic group. A valid group produces one SPR word; an invalid group is
+ * instead read as several character names. On errors leave the text alone. */
+static int greek_valid_spr(void *context,const char *text,size_t length)
+{
+    if(!context||length<2||length>1024)return -1;
+    char input[1025],phonemes[16384];memcpy(input,text,length);input[length]=0;
+    struct reloq61_request q=*(const struct reloq61_request *)context;
+    struct reloq61_result r;
+    q.text=input;q.annotations=1;q.phonemes_only=1;
+    q.phonemes=phonemes;q.phonemes_capacity=sizeof phonemes;
+    q.marks=NULL;q.mark_count=0;q.index=NULL;q.frame=NULL;q.span=NULL;
+    q.controls=NULL;q.control_count=0;q.control=NULL;q.context=NULL;q.phoneme_indices=0;
+    int policy=pause_request.policy;pause_sink sink=pause_request.sink;
+    void *pause_context=pause_request.context;
+    pause_request.policy=0;pause_request.sink=NULL;pause_request.context=NULL;
+    int status=generate_core(&q,&r,NULL,NULL);
+    pause_request.policy=policy;pause_request.sink=sink;pause_request.context=pause_context;
+    if(status||r.error||r.unsupported)return -1;
+    unsigned groups=0;
+    for(const char *p=phonemes;(p=strstr(p,"`["))!=NULL;p+=2)++groups;
+    return groups==1?1:groups>1?0:-1;
+}
 static int greek_generate(const struct reloq61_request *q,struct reloq61_result *r,
     reloq61_phoneme_sink sink,void *context)
 {
-    char *text=NULL;size_t *map=NULL;
-    if(reloq_greek_text(q->text,q->annotations,greek_english,(void *)q,&text,&map))return -1;
+    char *expanded=NULL,*text=NULL;size_t *first=NULL,*map=NULL;
+    struct provider_worker *worker=owner_worker&&owner_worker->language==0x120000?owner_worker:NULL;
+    int projected=reloq_greek_symbol_text(q->text,q->annotations,greek_symbol_in_dictionary,
+                                          worker,greek_valid_spr,(void *)q,&expanded,&first);
+    if(projected<0)return -1;
+    const char *source=projected?expanded:q->text;
+    if(reloq_greek_text(source,q->annotations,greek_english,(void *)q,&text,&map)) {
+        free(expanded);free(first);return -1;
+    }
+    if(projected) {
+        size_t n=strlen(q->text),expanded_n=strlen(expanded);
+        for(size_t i=0;i<=n;++i) {
+            if(first[i]>expanded_n){free(expanded);free(first);free(text);free(map);return -1;}
+            first[i]=map[first[i]];
+        }
+        free(map);map=first;free(expanded);
+    }
     struct reloq61_request request=*q;request.annotations=1;
-    return projected_generate(&request,r,sink,context,text,map);
+    int saved=greek_user_prominence;greek_user_prominence=greek_source_prominence(q);
+    int result=projected_generate(&request,r,sink,context,text,map);
+    greek_user_prominence=saved;return result;
 }
 
 int reloq61_generate(const struct reloq61_request *q,struct reloq61_result *r)
@@ -1008,7 +1083,9 @@ static int generate_core_impl(const struct reloq61_request *q,struct reloq61_res
     if(!q||!r||!q->text||(q->mark_count&&!q->marks)||
        (q->sample_rate && q->sample_rate!=8000 && q->sample_rate!=11025))return -1;
     memset(r,0,sizeof *r);memset(&c,0,sizeof c);c.q=q;c.r=r;
-    if(q->language==0x120000) {
+    if(q->language==0x120000&&greek_user_prominence>=0)
+        c.greek_explicit_prominence=greek_user_prominence;
+    else if(q->language==0x120000) {
         for(const char *p=q->text;(p=strchr(p,'`'))!=NULL;++p)
             if(p[1]>='0'&&p[1]<='2'){c.greek_explicit_prominence=1;break;}
     }

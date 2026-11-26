@@ -371,6 +371,25 @@ const struct reloq_lexicon *reloq61_dictionary_overlay_current(void)
 {return owner_worker&&owner_worker->language==0x40000?owner_worker->overlay:NULL;}
 
 extern const char *STDCALL es_engsynDictLookup(void *,int32_t,const char *);
+/* The compound admission filter must not mistake a short dictionary entry
+ * occurring inside a word for an explicit pronunciation of the whole word. */
+int reloq61_dictionary_exact(const unsigned char *key,size_t length)
+{
+    struct provider_worker *w=owner_worker;
+    if(!w||w->language!=0x40000||!w->dictionary||!length||length>255)return 0;
+    char word[256],folded[256];memcpy(word,key,length);word[length]=0;
+    if(es_engsynDictLookup(w->dictionary,0,word))return 1;
+    for(size_t i=0;i<length;++i) {
+        unsigned char c=key[i];
+        folded[i]=((c>='A'&&c<='Z')||(c>=0xc0&&c<=0xde&&c!=0xd7))?
+            (char)(c+32):(char)c;
+    }
+    folded[length]=0;
+    for(int volume=1;volume<3;++volume)
+        if(es_engsynDictLookup(w->dictionary,volume,word)||
+           es_engsynDictLookup(w->dictionary,volume,folded))return 1;
+    return 0;
+}
 const char *reloq61_dictionary_main_text(const unsigned char *key,size_t length)
 {
     struct provider_worker *w=owner_worker;

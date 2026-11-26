@@ -101,6 +101,7 @@ int reloq61_worker_dictionary(void *,const char *);
 /* Borrow the native volume set of a warmed, owner-scoped dictionary worker. */
 void *reloq61_worker_dictionary_handle(void *);
 size_t reloq61_dictionary_match(const unsigned char *,size_t);
+int reloq61_dictionary_exact(const unsigned char *,size_t);
 const char *reloq61_dictionary_main_text(const unsigned char *,size_t);
 int reloq61_dictionary_text_scope(int);
 uint64_t reloq61_dictionary_hits(void);

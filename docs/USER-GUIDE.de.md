@@ -1,5 +1,9 @@
 # Eloquence C – Bedienungsanleitung
 
+## Version 2.1.3
+
+Die Wortzerlegung bei deutschen Zusammensetzungen wie „Schieberegler“ und „Leserichtung“ wurde korrigiert. In griechischer Sprachausgabe folgen englische Sätze besser der Betonung des US-Analysators; Zeichennamen werden auch bei fehlerhafter Lautschrift wie gewöhnlicher griechischer Text ausgesprochen. Das englische Fragezeichen `?` und das griechische Fragezeichen `;` erhalten unterschiedliche Zeichenansagen. Das griechische Fragezeichen löst eine Fragemelodie aus.
+
 ## Version 2.1.2
 
 Der Klang von „sch“ vor „r“ nach „t“ wurde im amerikanischen und britischen Englisch verbessert. Im amerikanischen Englisch klingt außerdem der Schwa-Übergang in Wendungen wie „Iowa awaits“ natürlicher.
