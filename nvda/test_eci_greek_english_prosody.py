@@ -96,13 +96,14 @@ def main():
         checks += 5
         # Malformed phonetic input is read as characters. Its bracket names
         # must use the same Greek sounds as normal text and character review.
-        invalid = phonemes(greek, '`[xyz]')
-        assert invalid.count('`[.0an.1gi.0li]') == 2, invalid
-        assert '`[.0an.1ji.0li]' not in invalid, invalid
+        for text in ('`[xyz]', '`ts2 `[xyz] `ts0'):
+            invalid = phonemes(greek, text)
+            assert invalid.count('`[.0an.1gi.0li]') == 2, invalid
+            assert '`[.0an.1ji.0li]' not in invalid, invalid
         indexed_bad = render(greek, ['`[', EciIndex(1), 'xyz', EciIndex(2), ']', EciIndex(3)])
         assert [mark[0] for mark in indexed_bad[1]] == [1, 2, 3]
         assert [mark[1] for mark in indexed_bad[1]] == sorted(mark[1] for mark in indexed_bad[1])
-        checks += 4
+        checks += 6
         if old:
             for engine in (greek, old):
                 engine.set_parameter(SAMPLE_RATE, 3)

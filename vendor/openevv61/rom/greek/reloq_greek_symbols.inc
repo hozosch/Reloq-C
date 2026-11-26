@@ -53,18 +53,18 @@ int reloq_greek_symbol_text(const char *text,int annotations,
             else if(text[end]=='['){while(text[end]&&text[end]!=']')++end;if(text[end])++end;}
             else while(text[end]&&(unsigned char)text[end]>32&&(unsigned char)text[end]<128)++end;
             size_t slash=at;while(slash&&text[slash-1]=='\\')--slash;
-            if(!spelling&&text[at+1]=='['&&valid_spr&&!((at-slash)&1)&&
+            if(text[at+1]=='['&&valid_spr&&!((at-slash)&1)&&
                !memchr(text+at+1,'`',end-at-1)&&
                valid_spr(spr_context,text+at,end-at)==0) {
                 /* The native parser spells a malformed SPR token. Send that
                    spelling through the same Greek character-name frontend
                    as explicit character review instead of its legacy names. */
-                if(say(&b,"βαρεία `ts2 "))goto fail;
+                if(say(&b,spelling?" `ts0 βαρεία `ts2 ":"βαρεία `ts2 "))goto fail;
                 map[at]=start;
                 for(size_t j=at+1;j<end;++j) {
                     map[j]=b.length;if(add(&b,text+j,1))goto fail;
                 }
-                if(say(&b," `ts0 "))goto fail;
+                if(say(&b,spelling==1?" `ts1 ":spelling==2?" `ts2 ":" `ts0 "))goto fail;
                 at=end;map[at]=b.length;changed=1;continue;
             }
             if(add(&b,text+at,end-at))goto fail;
