@@ -1,5 +1,9 @@
 # Eloquence C – user guide
 
+## Version 2.1.2
+
+The sound of “sh” before “r” after “t” is improved in American and British English. In American English, the schwa transition in phrases such as “Iowa awaits” has a more natural timbre.
+
 ## Version 2.1.1
 
 Explicit pitch changes can glide over a configurable time using the `vfg` ECI tag. CamelCase stress is improved in English, and the priority of whole-word dictionaries can be selected when CamelCase splitting is enabled. German Main dictionary entries are recognized inside typographic quotation marks.

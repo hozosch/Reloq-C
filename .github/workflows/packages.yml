@@ -318,6 +318,21 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'NVDA Remote integration failed' }
           python -B addon/test_synth_native.py --library $dll --addon $addon
           if ($LASTEXITCODE -ne 0) { throw 'NVDA/native integration failed' }
+      - name: Compare English transitions with version 2.1.1
+        if: needs.version.outputs.value == '2.1.2'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v2.1.1 --repo "$env:GITHUB_REPOSITORY" --pattern 'reloq-c-synth-x64-2.1.1.nvda-addon' --dir previous-english
+          if ($LASTEXITCODE -ne 0) { throw 'Reference add-on download failed' }
+          python -c "import zipfile; files=[('candidate/reloq-c-synth-x64-2.1.2.nvda-addon','candidate/english'),('previous-english/reloq-c-synth-x64-2.1.1.nvda-addon','previous-english/unpacked')]; [(lambda z,d: (z.testzip() is None or (_ for _ in ()).throw(ValueError('corrupt package')), z.extractall(d)))(zipfile.ZipFile(p),d) for p,d in files]"
+          if ($LASTEXITCODE -ne 0) { throw 'Could not extract add-ons for English comparison' }
+          $dll = (Get-Item candidate/english/synthDrivers/reloqC/eci.dll).FullName
+          $reference = (Get-Item previous-english/unpacked/synthDrivers/reloqC/eci.dll).FullName
+          $dictionary = (Get-Item candidate/english/synthDrivers/reloqC/communityDictionaries).FullName
+          python -B nvda/test_eci_english_transitions.py --library $dll --reference $reference --dictionary $dictionary
+          if ($LASTEXITCODE -ne 0) { throw 'English transition regression' }
       - name: Verify live settings in real NVDA
         shell: pwsh
         env:

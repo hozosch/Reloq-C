@@ -1,5 +1,9 @@
 # Eloquence C – Bedienungsanleitung
 
+## Version 2.1.2
+
+Der Klang von „sch“ vor „r“ nach „t“ wurde im amerikanischen und britischen Englisch verbessert. Im amerikanischen Englisch klingt außerdem der Schwa-Übergang in Wendungen wie „Iowa awaits“ natürlicher.
+
 ## Version 2.1.1
 
 Ausdrückliche Tonhöhenwechsel können mit dem ECI-Tag `vfg` über eine einstellbare Zeit gleiten. Englische Camel-Case-Wörter werden besser betont; bei aktivierter Zerlegung lässt sich der Vorrang von Wörterbucheinträgen wählen. Deutsche Main-Wörterbucheinträge werden innerhalb typografischer Anführungszeichen erkannt.
