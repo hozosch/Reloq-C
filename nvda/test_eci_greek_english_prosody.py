@@ -89,7 +89,11 @@ def main():
         assert ';' in phonemes(greek, 'This costs $3; it is cheap.')
         assert render(greek, ['Πώς είναι το 2.1;', EciIndex(7)]) == \
                render(greek, ['Πώς είναι το 2.1?', EciIndex(7)])
-        checks += 3
+        assert render(greek, ['Τι είπε ο Dr. Smith;', EciIndex(7)]) == \
+               render(greek, ['Τι είπε ο Dr. Smith?', EciIndex(7)])
+        assert render(greek, ['Dr. Smith is here;', EciIndex(7)]) != \
+               render(greek, ['Dr. Smith is here?', EciIndex(7)])
+        checks += 5
         # Malformed phonetic input is read as characters. Its bracket names
         # must use the same Greek sounds as normal text and character review.
         invalid = phonemes(greek, '`[xyz]')

@@ -18,6 +18,21 @@ static int greek_symbol_is_spoken(uint32_t cp)
     }
 }
 
+/* A Latin title inside Greek text does not end its surrounding sentence. */
+static int greek_symbol_title_period(const char *text,size_t at)
+{
+    size_t first=at;
+    while(first&&((text[first-1]>='A'&&text[first-1]<='Z')||
+                  (text[first-1]>='a'&&text[first-1]<='z')))--first;
+    size_t n=at-first;if(!n||n>4)return 0;
+    char word[5];for(size_t i=0;i<n;++i)word[i]=lower_ascii(text[first+i]);word[n]=0;
+    if(strcmp(word,"dr")&&strcmp(word,"mr")&&strcmp(word,"mrs")&&
+       strcmp(word,"ms")&&strcmp(word,"prof")&&strcmp(word,"st"))return 0;
+    size_t next=at+1;while(text[next]==' '||text[next]=='\t')++next;
+    uint32_t cp=0;if(!text[next]||!decode(text+next,&cp))return 0;
+    return letter(cp).base||reloq61_latin_byte(cp);
+}
+
 int reloq_greek_symbol_text(const char *text,int annotations,
     int (*protected_symbol)(void *,uint32_t),void *context,
     int (*valid_spr)(void *,const char *,size_t),void *spr_context,
@@ -68,7 +83,8 @@ int reloq_greek_symbol_text(const char *text,int annotations,
             else if(reloq61_latin_byte(cp))latin_clause=1;
             int decimal=cp=='.'&&at&&text[at-1]>='0'&&text[at-1]<='9'&&
                 text[at+z]>='0'&&text[at+z]<='9';
-            if((cp=='.'&&!decimal)||cp=='?'||cp=='!'||cp==';'||
+            if((cp=='.'&&!decimal&&!greek_symbol_title_period(text,at))||
+               cp=='?'||cp=='!'||cp==';'||
                cp==0x37e||cp=='\n'||cp=='\r')greek_clause=latin_clause=0;
         }
         const char *name=!spelling&&greek_symbol_is_spoken(cp)?character_name(cp):NULL;
