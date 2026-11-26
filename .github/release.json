@@ -1,12 +1,12 @@
 {
-  "version": "2.1.1",
-  "release_version": "2.1.1",
-  "source_commit": "fbf03ca533af428a72bdff6c661dfd76dfb1d45e",
-  "run_id": 45671840144,
+  "version": "2.1.2",
+  "release_version": "2.1.2",
+  "source_commit": "3f3c2d80513d984c1673860629659f90864d1201",
+  "run_id": 45812349406,
   "dictionary_snapshot": {
     "repository": "eigencrow/IBMTTSDictionaries",
     "branch": "master",
-    "commit": "ddd1fa472b1bf9baac1bbb5df8a5263c4e077b43",
+    "commit": "514cc67471df1014434c5f1f35f22f79d62e1467",
     "files": {
       "DEUmain.dic": {
         "sha": "fb8c156bbd28f1dceeed53e2527ed5e0370c6fa7",
@@ -21,12 +21,12 @@
         "size": 254
       },
       "ENUmain.dic": {
-        "sha": "6c2118d3f2567601caa077cb0d2f91b89a33cd1c",
-        "size": 28479
+        "sha": "2217b8c73797bfc7d28b43fd36c7c95e8badf5fc",
+        "size": 28490
       },
       "ENURoot.dic": {
-        "sha": "a3581aff6104ad686e779297e8b42029e97c3243",
-        "size": 2272939
+        "sha": "aaba5c209b69ccb9f4de8ac643ecd77a8762b691",
+        "size": 2273872
       },
       "ENUabbr.dic": {
         "sha": "edfdaa94d633a08fe57d63dbd12294a1f40f6450",
@@ -38,31 +38,31 @@
       }
     }
   },
-  "build_epoch": 1795630047,
+  "build_epoch": 1795693096,
   "assets": {
-    "reloq-c-android-arm64-2.1.1.apk": {
+    "reloq-c-android-arm64-2.1.2.apk": {
       "size": 18380631,
-      "sha256": "19d537c145b6b49a1599113544189f1fae7f38019e053cd400f4199d2d34215a"
+      "sha256": "266a4437b642c9156788ec9281cd37e19869519b44231f3d482bd1f660cd61c2"
     },
-    "reloq-c-android-x86_64-2.1.1.apk": {
-      "size": 19896148,
-      "sha256": "1f0bf0520e6e0be320ba8b2a189415038e2107e8b97be615e4ad729dc38f6efd"
+    "reloq-c-android-x86_64-2.1.2.apk": {
+      "size": 19900244,
+      "sha256": "e73a22bfdbf51f44ab44cd413021860b5ee827925fe39810df8b19b88b57b68f"
     },
-    "reloq-c-synth-linux-x64-2.1.1.nvda-addon": {
-      "size": 13777679,
-      "sha256": "112ca73c34ae842d2640530d305d7b7c07baf6ad412374ec3871157cd4406a1b"
+    "reloq-c-synth-linux-x64-2.1.2.nvda-addon": {
+      "size": 13782804,
+      "sha256": "67a45bfe079cbb735fa54f74ebacb3c233e11e6cb0bba95c86b8da127e8eff4a"
     },
-    "reloq-c-linux-x64-2.1.1.tar.gz": {
-      "size": 39114590,
-      "sha256": "da80ac0bea436708a4d2029502369ea31276cc2ecf1cce675e8740d6049228c4"
+    "reloq-c-linux-x64-2.1.2.tar.gz": {
+      "size": 39120002,
+      "sha256": "e8cfe9f59696e7735623cd6af68ff5e641805febf43fe810258804845a89631f"
     },
-    "reloq-c-synth-x64-2.1.1.nvda-addon": {
-      "size": 14261474,
-      "sha256": "eef53dba64ee231816302c48483957f27e51d4924cb74eb0961e32ae35bf65e0"
+    "reloq-c-synth-x64-2.1.2.nvda-addon": {
+      "size": 14259822,
+      "sha256": "e1315ec551a63320f5ab097e256b6b624b94c2f079cb24ff7bf0a2952c01f5a4"
     },
-    "reloq-c-sapi5-2.1.1-setup.exe": {
-      "size": 20595550,
-      "sha256": "cf39cc5d4fa90ef01ef58b15ca7f92a5a265c62e45c0939d7ddd8981d7940d41"
+    "reloq-c-sapi5-2.1.2-setup.exe": {
+      "size": 20599703,
+      "sha256": "c013817d9470fa36e0e76a1f31466c05bbd69697a056bea85b92a14e7ecb2bde"
     }
   }
 }
