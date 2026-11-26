@@ -39,15 +39,29 @@ def header(tag,specs):
         '#define RELOQ_RULE_RETURN(x) do { int32_t out_=(x); evv_frame_pop(frame); \\',
         '    evv_land_release(reloq_landing_mark); return out_; } while (0)',
         '#endif']
+    if tag in ('enus61', 'engb61'):
+        rows.append('#include "reloq61_english_phonetics.h"')
     for name,n in sorted(specs.items()):
         function='reloq_'+tag+'_'+name;call='reloq_call_'+tag+'_'+name
         rows.append('int32_t '+function+'('+declaration(tag,name,n)+');')
         if name not in entries:continue
         rows.append('static inline int32_t '+call+'('+declaration(tag,name,n,True)+')\n{')
+        if tag in ('enus61', 'engb61') and name == 'modulate_noise':
+            rows.append('    reloq61_english_shr_noise(state);')
         rows.append('    if(delta_rule_trace) {')
         rows.append('        const int32_t args[]={'+', '.join('p'+str(i)for i in reversed(range(n)))+'};')
-        rows.append(f'        return delta_rule_called(DELTA_ENTRY_{name},args,{n},{n});\n    }}')
-        rows.append('    return '+function+'(state'+''.join(', p'+str(i)for i in range(n))+');\n}')
+        if tag in ('enus61', 'engb61') and name in ('eng_ph_S', 'eng_ph_x'):
+            fix='reloq61_english_shr_noise' if name == 'eng_ph_S' else 'reloq61_english_schwa_timbre'
+            rows.append(f'        int32_t result=delta_rule_called(DELTA_ENTRY_{name},args,{n},{n});')
+            rows.append(f'        if(!result){fix}(state);\n        return result;\n    }}')
+        else:
+            rows.append(f'        return delta_rule_called(DELTA_ENTRY_{name},args,{n},{n});\n    }}')
+        if tag in ('enus61', 'engb61') and name in ('eng_ph_S', 'eng_ph_x'):
+            fix='reloq61_english_shr_noise' if name == 'eng_ph_S' else 'reloq61_english_schwa_timbre'
+            rows.append('    int32_t result='+function+'(state'+''.join(', p'+str(i)for i in range(n))+');')
+            rows.append(f'    if(!result){fix}(state);\n    return result;\n}}')
+        else:
+            rows.append('    return '+function+'(state'+''.join(', p'+str(i)for i in range(n))+');\n}')
     rows.append('#endif\n');return '\n'.join(rows)
 
 def bodies(text,tag,specs):

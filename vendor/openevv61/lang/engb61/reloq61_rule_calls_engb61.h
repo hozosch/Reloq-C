@@ -6,6 +6,7 @@
 #define RELOQ_RULE_RETURN(x) do { int32_t out_=(x); evv_frame_pop(frame); \
     evv_land_release(reloq_landing_mark); return out_; } while (0)
 #endif
+#include "reloq61_english_phonetics.h"
 int32_t reloq_engb61_DeltaProc_end(void *, int32_t);
 int32_t reloq_engb61_DeltaProc_flush(void *, int32_t);
 int32_t reloq_engb61_DeltaProc_getInputCharCount(void *, int32_t);
@@ -2845,9 +2846,13 @@ static inline int32_t reloq_call_engb61_eng_ph_S(void *state, int32_t p0)
 {
     if(delta_rule_trace) {
         const int32_t args[]={p0};
-        return delta_rule_called(DELTA_ENTRY_eng_ph_S,args,1,1);
+        int32_t result=delta_rule_called(DELTA_ENTRY_eng_ph_S,args,1,1);
+        if(!result)reloq61_english_shr_noise(state);
+        return result;
     }
-    return reloq_engb61_eng_ph_S(state, p0);
+    int32_t result=reloq_engb61_eng_ph_S(state, p0);
+    if(!result)reloq61_english_shr_noise(state);
+    return result;
 }
 int32_t reloq_engb61_eng_ph_S_dur(void *, int32_t);
 static inline int32_t reloq_call_engb61_eng_ph_S_dur(void *state, int32_t p0)
@@ -3161,9 +3166,13 @@ static inline int32_t reloq_call_engb61_eng_ph_x(void *state, int32_t p0)
 {
     if(delta_rule_trace) {
         const int32_t args[]={p0};
-        return delta_rule_called(DELTA_ENTRY_eng_ph_x,args,1,1);
+        int32_t result=delta_rule_called(DELTA_ENTRY_eng_ph_x,args,1,1);
+        if(!result)reloq61_english_schwa_timbre(state);
+        return result;
     }
-    return reloq_engb61_eng_ph_x(state, p0);
+    int32_t result=reloq_engb61_eng_ph_x(state, p0);
+    if(!result)reloq61_english_schwa_timbre(state);
+    return result;
 }
 int32_t reloq_engb61_eng_ph_y(void *, int32_t);
 static inline int32_t reloq_call_engb61_eng_ph_y(void *state, int32_t p0)
@@ -6357,6 +6366,7 @@ static inline int32_t reloq_call_engb61_modulate_nas_AV(void *state, int32_t p0)
 int32_t reloq_engb61_modulate_noise(void *, int32_t);
 static inline int32_t reloq_call_engb61_modulate_noise(void *state, int32_t p0)
 {
+    reloq61_english_shr_noise(state);
     if(delta_rule_trace) {
         const int32_t args[]={p0};
         return delta_rule_called(DELTA_ENTRY_modulate_noise,args,1,1);
