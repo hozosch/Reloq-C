@@ -142,6 +142,7 @@ jobs:
           python3 -B nvda/test_eci_pitch_boundary.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_f0_tag.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_german_main_quotes.py --library eci/libreloq_eci.so
+          python3 -B nvda/test_eci_german_waechst.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_german_er_compounds.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_greek_english_prosody.py --library eci/libreloq_eci.so
           python3 -B nvda/test_eci_upper_number.py --library eci/libreloq_eci.so
@@ -281,6 +282,13 @@ jobs:
         run: |
           gh release download v1.4.1 --repo "$GITHUB_REPOSITORY" --pattern 'reloq-c-synth-x64-1.4.1.nvda-addon' --dir previous-addon
           python3 tools/test_nvda_upgrade.py --previous previous-addon/reloq-c-synth-x64-1.4.1.nvda-addon --candidate dist/reloq-c-synth-x64-${{ needs.version.outputs.value }}.nvda-addon
+      - name: Verify rebuilding the published 2.1.3 add-on
+        if: needs.version.outputs.value == '2.1.3'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v2.1.3 --repo "$GITHUB_REPOSITORY" --pattern 'reloq-c-synth-x64-2.1.3.nvda-addon' --dir previous-rebuild
+          python3 tools/test_nvda_upgrade.py --allow-rebuild --previous previous-rebuild/reloq-c-synth-x64-2.1.3.nvda-addon --candidate dist/reloq-c-synth-x64-2.1.3.nvda-addon
       - name: Verify NVDA driver and offline dictionary startup
         run: |
           for language in en de; do
@@ -336,6 +344,20 @@ jobs:
             python -B $test --library $dll --reference $reference
             if ($LASTEXITCODE -ne 0) { throw "$test failed" }
           }
+      - name: Compare German pronunciation with the published 2.1.3
+        if: needs.version.outputs.value == '2.1.3'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v2.1.3 --repo "$env:GITHUB_REPOSITORY" --pattern 'reloq-c-synth-x64-2.1.3.nvda-addon' --dir previous-growth
+          if ($LASTEXITCODE -ne 0) { throw 'Reference add-on download failed' }
+          python -c "import zipfile; z=zipfile.ZipFile('previous-growth/reloq-c-synth-x64-2.1.3.nvda-addon'); assert z.testzip() is None; z.extract('synthDrivers/reloqC/eci.dll', 'previous-growth')"
+          if ($LASTEXITCODE -ne 0) { throw 'Reference core extraction failed' }
+          $dll = (Get-Item candidate/synthDrivers/reloqC/eci.dll).FullName
+          $reference = (Get-Item previous-growth/synthDrivers/reloqC/eci.dll).FullName
+          python -B nvda/test_eci_german_waechst.py --library $dll --reference $reference
+          if ($LASTEXITCODE -ne 0) { throw 'German wachsen pronunciation regression' }
       - name: Compare English transitions with version 2.1.1
         if: needs.version.outputs.value == '2.1.2'
         shell: pwsh

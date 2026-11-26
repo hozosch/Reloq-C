@@ -1158,6 +1158,7 @@ fail_compound:free(b.bytes);free(b.map);return -1;
 }
 
 #include "reloq_german_er_compounds.inc"
+#include "reloq_german_wachsen.inc"
 
 /* Only an explicitly supplied pronunciation longer than the native lexer's
  * 100-letter token limit is projected early. All other text, compound parts
@@ -1302,6 +1303,7 @@ int reloq_rules61_phonemes(int language,const unsigned char *text,size_t length,
         if(german_main_input(&input,&map,&n,tags)){free(input);free(map);return -2;}
         if(german_dictionary_compound_input(&input,&map,&n,tags)){free(input);free(map);return -2;}
         if(german_er_compound_input(&input,&map,&n,tags)){free(input);free(map);return -2;}
+        if(german_wachsen_input(input,n,tags)){free(input);free(map);return -2;}
         if(german_long_overlay_input(&input,&map,&n,tags)){free(input);free(map);return -2;}
         if(german_currency_input(&input,&map,&n,tags)){free(input);free(map);return -2;}
     }
@@ -2153,6 +2155,7 @@ int reloq_language_rules_render(int language,const unsigned char *text,size_t le
     if(language==0x40000&&german_main_input(&a,&map,&n,tags))goto memory;
     if(language==0x40000&&german_dictionary_compound_input(&a,&map,&n,tags))goto memory;
     if(language==0x40000&&german_er_compound_input(&a,&map,&n,tags))goto memory;
+    if(language==0x40000&&german_wachsen_input(a,n,tags))goto memory;
     if(language==0x40000&&german_long_overlay_input(&a,&map,&n,tags))goto memory;
     if(language==0x40000&&german_currency_input(&a,&map,&n,tags))goto memory;
     if(default_wpm) {

@@ -4,7 +4,7 @@ ReLoq C is a speech synthesis project that preserves the familiar character of E
 
 The shared synthesis engine is written in C. NVDA, Android, Windows SAPI5 and Linux use the same core. The project is developed and tested with screen-reader users; language reliability, responsiveness and lower resource use remain active priorities.
 
-**2.1.3** improves German compound boundaries and Greek pronunciation of English phrases and symbol names.
+**2.1.3** improves German compound boundaries and pronunciations of “wächst” and related forms, and Greek pronunciation of English phrases and symbol names.
 **2.1.2** improves the sound of English “sh” before “r” and the schwa in transitions such as “Iowa awaits”.
 **2.1.1** adds adjustable ECI pitch transitions and improves CamelCase stress and German dictionary entries inside quotation marks.
 **2.1.0** preserves Mandarin intonation with shortened pauses and improves uppercase letter-and-number combinations.

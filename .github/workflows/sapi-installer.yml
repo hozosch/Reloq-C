@@ -145,6 +145,11 @@ jobs:
         run: |
           gh release download v1.4.1 --repo "$env:GITHUB_REPOSITORY" --pattern 'reloq-c-sapi5-1.4.1-setup.exe' --dir previous-sapi
           if ($LASTEXITCODE -ne 0) { throw 'Previous SAPI installer could not be downloaded' }
+          $version = python -c "import sys; sys.path.insert(0,'sapi'); from version import VERSION; print(VERSION)"
+          if ($version -eq '2.1.3') {
+            gh release download v2.1.3 --repo "$env:GITHUB_REPOSITORY" --pattern 'reloq-c-sapi5-2.1.3-setup.exe' --dir previous-sapi
+            if ($LASTEXITCODE -ne 0) { throw 'Published 2.1.3 installer could not be downloaded' }
+          }
       - name: Install, upgrade, test SAPI in RAM, and uninstall
         shell: pwsh
         run: |
@@ -176,6 +181,12 @@ jobs:
           $dictionary = Join-Path $install 'dictionaries\ENUmain.dic'
           [IO.File]::AppendAllText($dictionary, "`r`n", [Text.Encoding]::ASCII)
           $edited = (Get-FileHash $dictionary -Algorithm SHA256).Hash
+          $sameVersion = Join-Path $pwd 'previous-sapi/reloq-c-sapi5-2.1.3-setup.exe'
+          if (Test-Path $sameVersion) {
+            $p = Start-Process $sameVersion -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-','/LANG=en',"/LOG=$pwd\dist\validation\published-213.log" -Wait -PassThru
+            if ($p.ExitCode -ne 0) { throw "Published 2.1.3 install failed: $($p.ExitCode)" }
+            if ((Get-FileHash $dictionary -Algorithm SHA256).Hash -ne $edited) { throw 'Dictionary edit lost before same-version replacement' }
+          }
           $p = Start-Process $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-','/LANG=de',"/LOG=$pwd\dist\validation\upgrade.log" -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "Upgrade failed: $($p.ExitCode)" }
           foreach ($arch in @('x64','x86')) {
