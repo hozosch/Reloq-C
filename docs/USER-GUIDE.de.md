@@ -2,7 +2,7 @@
 
 ## Version 2.1.3
 
-Die Wortzerlegung bei deutschen Zusammensetzungen wie „Schieberegler“ und „Leserichtung“ wurde korrigiert. „Wächst“ und verwandte Gewächs-Formen werden mit k gesprochen; „ihr wachst“ und „du wachst“ werden im direkten Satzkontext unterschieden. In griechischer Sprachausgabe folgen englische Sätze besser der Betonung des US-Analysators; Zeichennamen werden auch bei fehlerhafter Lautschrift wie gewöhnlicher griechischer Text ausgesprochen. Das englische Fragezeichen `?` und das griechische Fragezeichen `;` erhalten unterschiedliche Zeichenansagen. Das griechische Fragezeichen löst eine Fragemelodie aus.
+Die Wortzerlegung bei deutschen Zusammensetzungen wie „Schieberegler“ und „Leserichtung“ wurde korrigiert. „Wächst“ und verwandte Gewächs-Formen werden mit k gesprochen; „ihr wachst“ und „du wachst“ werden im direkten Satzkontext auch in Anführungszeichen und Klammern unterschieden. „Wachst ihr?“ erhält den k-Laut auch bei angesagtem Fragezeichen. In griechischer Sprachausgabe folgen englische Sätze besser der Betonung des US-Analysators; Zeichennamen werden auch bei fehlerhafter Lautschrift wie gewöhnlicher griechischer Text ausgesprochen. Das englische Fragezeichen `?` und das griechische Fragezeichen `;` erhalten unterschiedliche Zeichenansagen. Das griechische Fragezeichen löst eine Fragemelodie aus.
 
 ## Version 2.1.2
 

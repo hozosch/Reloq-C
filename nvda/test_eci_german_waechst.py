@@ -33,10 +33,27 @@ def main():
              'Gewächshaus': 'Gewäckshaus', 'Pflanzengewächs': 'Pflanzengewäcks',
              'ihr wachst': 'ihr wackst', 'Ihr wachst': 'Ihr wackst',
              'Wachst ihr': 'Wackst ihr', 'IHR WACHST': 'IHR WACkST',
-             'ihr nachwachst': 'ihr nachwackst'}
+             'ihr nachwachst': 'ihr nachwackst',
+             'Wenn ihr wachst': 'Wenn ihr wackst',
+             'Ich finde, ihr wachst': 'Ich finde, ihr wackst',
+             'Wachst ihr Fragezeichen?': 'Wackst ihr Fragezeichen?',
+             '„ihr wachst“': '„ihr wackst“',
+             '“ihr wachst”': '“ihr wackst”',
+             '"ihr wachst"': '"ihr wackst"',
+             "'ihr wachst'": "'ihr wackst'",
+             "ihr 'wachst'": "ihr 'wackst'",
+             '(ihr wachst)': '(ihr wackst)', '[ihr wachst]': '[ihr wackst]',
+             'Klammer auf(ihr wachst)': 'Klammer auf(ihr wackst)',
+             '«ihr wachst»': '«ihr wackst»',
+             'Wenn „ihr wachst“ so steht.': 'Wenn „ihr wackst“ so steht.',
+             'The context “ihr wachst” is distinguished from “du wachst”.':
+                 'The context “ihr wackst” is distinguished from “du wachst”.'}
     unchanged = ('wachst', 'Wachstube', 'wachsen', 'Wachstum', 'Gewächse',
                  'wächsern', 'Wächter', 'nächste', 'nächtlich', 'lachst',
                  'Dachs', 'Luchs', 'Schieberegler', 'Leserichtung', 'du wachst', 'Wachst du?',
+                 'wachst ihr Haus', 'wachst ihr Fragezeichen', 'Du wachst ihr Fragezeichen?',
+                 'nichtihr wachst', "x'ihr wachst", '(du) wachst ihr Haus',
+                 "Du 'wachst' ihr Haus",
                  'Du bewachst ihr Haus.', 'Du bewachst ihr Kind.', 'bewachst ihr Haus',
                  'bewachst ihr kleines Haus', 'Du bewachst ihr kleines Haus.')
     checks = 0
@@ -51,6 +68,16 @@ def main():
                              'Er überwächst das Gewächshaus.', 'Sie wächst, sie wächst.',
                              'Ihr wachst schnell.', 'Wachst ihr heute?'):
                 before = re.sub(r'`vv\d+', '', phonemes(old, sentence)).replace('vEXs', 'vEks').replace('vAxst', 'vAkst')
+                after = re.sub(r'`vv\d+', '', phonemes(current, sentence))
+                before, after = ' '.join(before.split()), ' '.join(after.split())
+                assert after == before, (sentence, before, after)
+                checks += 1
+            for sentence in (
+                'Vor Runde Klammer auf(ihr wachst Runde Klammer zu).',
+                'Wenn „ihr wachst“ so steht.',
+                'The context “ihr wachst” is distinguished from “du wachst”.',
+            ):
+                before = re.sub(r'`vv\d+', '', phonemes(old, sentence)).replace('vAxst', 'vAkst', 1)
                 after = re.sub(r'`vv\d+', '', phonemes(current, sentence))
                 before, after = ' '.join(before.split()), ' '.join(after.split())
                 assert after == before, (sentence, before, after)
@@ -118,7 +145,8 @@ def main():
                 custom.set_dictionary_path(path)
                 if reference:
                     reference.set_dictionary_path(path)
-                    for word in ('wächst', 'überwächst', 'ihr wachst'):
+                    for word in ('wächst', 'überwächst', 'ihr wachst', '„ihr wachst“',
+                                 "'ihr wachst'", "ihr 'wachst'"):
                         assert render(custom, [word]) == render(reference, [word]), word
                         checks += 1
             finally:

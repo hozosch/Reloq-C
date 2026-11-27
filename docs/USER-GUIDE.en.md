@@ -2,7 +2,7 @@
 
 ## Version 2.1.3
 
-German compound boundaries are corrected in words such as “Schieberegler” and “Leserichtung”. “Wächst” and related “Gewächs” forms use /ks/; adjacent “ihr wachst” and “du wachst” are distinguished by their subject. In the Greek voice, English sentences use improved stress from the US analyzer, and symbol names, including those in malformed phonetic input, use the ordinary Greek text pronunciation. The Latin question mark `?` and Greek question mark `;` have distinguishable character names. The Greek question mark now produces question intonation.
+German compound boundaries are corrected in words such as “Schieberegler” and “Leserichtung”. “Wächst” and related “Gewächs” forms use /ks/; adjacent “ihr wachst” and “du wachst” are distinguished by their subject, including within quotation marks or parentheses. “Wachst ihr?” retains /ks/ when the question mark is spoken. In the Greek voice, English sentences use improved stress from the US analyzer, and symbol names, including those in malformed phonetic input, use the ordinary Greek text pronunciation. The Latin question mark `?` and Greek question mark `;` have distinguishable character names. The Greek question mark now produces question intonation.
 
 ## Version 2.1.2
 
