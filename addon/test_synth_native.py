@@ -156,6 +156,20 @@ def main():
                 speech_dictionary = api.speak.__globals__['speechDictHandler']
                 with mock.patch.dict(sys.modules, {'speechDictHandler': speech_dictionary,
                                                    'characterProcessing': api.symbols}):
+                    # Real NVDA symbol processing may insert the spoken word
+                    # "Fragezeichen" after the subject in an inverted question.
+                    for level in (0, 300):
+                        for actual, expected in (
+                            ('Ihr wachst.', 'Ihr wackst.'),
+                            ('Wenn ihr wachst, freut mich das.', 'Wenn ihr wackst, freut mich das.'),
+                            ('Wachst ihr?', 'Wackst ihr?'),
+                            ('Wenn „ihr wachst“ so steht.', 'Wenn „ihr wackst“ so steht.'),
+                            ('The context “ihr wachst” is distinguished from “du wachst”.',
+                             'The context “ihr wackst” is distinguished from “du wachst”.'),
+                            ('Vor (ihr wachst).', 'Vor (ihr wackst).'),
+                        ):
+                            assert run([actual], level=level) == run([expected], level=level), (actual, level)
+                            report['checks'] += 1
                     # A plain one-character utterance has no spelling or
                     # normalization command. It must still use the same
                     # native name as an explicit protected character.

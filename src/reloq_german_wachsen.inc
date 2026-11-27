@@ -35,17 +35,50 @@ static int german_wachsen_subject_tag(enum reloq_inline_kind kind)
     }
 }
 
+/* Quotes and brackets can surround a subject without belonging to the word.
+ * Do not skip sentence punctuation or arbitrary word characters. */
+static int german_wachsen_subject_wrapper(unsigned char c)
+{
+    switch(c) {
+    case '"':case '\'':case '(':case ')':case '[':case ']':case '{':case '}':
+    case 0x82:case 0x84:case 0x8b:case 0x91:case 0x92:case 0x93:case 0x94:
+    case 0x9b:case 0xab:case 0xbb:return 1;
+    default:return 0;
+    }
+}
+
+/* NVDA's "all punctuation" mode expands the final '?' into
+ * "Fragezeichen?" before the synthesizer sees the question. */
+static int german_wachsen_question_name(const unsigned char *text,size_t length,size_t at)
+{
+    static const char name[]="fragezeichen";
+    for(size_t i=0;i<sizeof name-1;++i)
+        if(at>=length||german_er_lower(text[at++])!=(unsigned char)name[i])return 0;
+    while(at<length&&(text[at]==' '||text[at]=='\t'))++at;
+    return at<length&&text[at]=='?';
+}
+
+static int german_wachsen_override(const unsigned char *text,size_t length,const struct reloq_lexicon *overlay)
+{
+    const struct reloq_lexicon_override *entry=NULL;
+    return reloq61_dictionary_exact(text,length)||
+        reloq_lexicon_find_override(overlay,text,length,&entry)==1;
+}
+
 static int german_wachsen_ihr(const unsigned char *text,size_t length,size_t begin,size_t end,int tags,int allow_inverted)
 {
     size_t at=begin;
     for(unsigned n=0;n<8&&at;++n) {
         while(at&&(text[at-1]==' '||text[at-1]=='\t'))--at;
         size_t stop=at;while(at&&text[at-1]>32)--at;
-        if(stop-at==3&&german_er_lower(text[at])=='i'&&
-           german_er_lower(text[at+1])=='h'&&german_er_lower(text[at+2])=='r')return 1;
+        size_t left=at,right=stop;
+        while(left<right&&german_wachsen_subject_wrapper(text[left]))++left;
+        while(right>left&&german_wachsen_subject_wrapper(text[right-1]))--right;
+        if(right-left==3&&german_er_lower(text[left])=='i'&&
+           german_er_lower(text[left+1])=='h'&&german_er_lower(text[left+2])=='r')return 1;
         /* An explicit preceding du wins over a later possessive ihr:
          * "du bewachst ihr Haus" belongs to bewachen, not bewachsen. */
-        if(stop-at==2&&german_er_lower(text[at])=='d'&&german_er_lower(text[at+1])=='u')return 0;
+        if(right-left==2&&german_er_lower(text[left])=='d'&&german_er_lower(text[left+1])=='u')return 0;
         struct reloq_inline_tag tag=reloq_inline_tag_read(text+at,stop-at,0);
         if(!tags||!tag.length||tag.length!=stop-at||!german_wachsen_subject_tag(tag.kind))break;
     }
@@ -60,9 +93,10 @@ static int german_wachsen_ihr(const unsigned char *text,size_t length,size_t beg
            (at+3==length||!german_word_byte(text[at+3]))) {
             size_t next=at+3;while(next<length&&(text[next]==' '||text[next]=='\t'))++next;
             unsigned char c=next<length?text[next]:0;
-            /* "bewachst ihr Haus" is also ambiguous as a fragment: prefer
-             * the unchanged reading when ihr can modify a following noun. */
-            if((c>='A'&&c<='Z')||(c>=0xc0&&c<=0xde&&c!=0xd7))return 0;
+            /* A following noun can make ihr possessive; a spoken question
+             * mark, however, is part of the question rather than an object. */
+            if(((c>='A'&&c<='Z')||(c>=0xc0&&c<=0xde&&c!=0xd7))&&
+               !german_wachsen_question_name(text,length,next))return 0;
             return 1;
         }
         struct reloq_inline_tag tag=reloq_inline_tag_read(text+at,length-at,0);
@@ -86,13 +120,19 @@ static int german_wachsen_input(unsigned char *text,size_t length,int tags)
             if(tags&&tag.kind==RELOQ_TAG_SPELL)spelling=tag.value;
             i+=tag.length;continue;
         }
-        if(spelling||!german_letter(text[i])||(i&&german_word_byte(text[i-1]))) {++i;continue;}
+        int quoted_start=i&&text[i-1]=='\''&&(i<2||!german_word_byte(text[i-2]));
+        if(spelling||!german_letter(text[i])||(i&&german_word_byte(text[i-1])&&!quoted_start)) {++i;continue;}
         size_t end=i;while(end<length&&german_word_byte(text[end]))++end;
-        size_t size=end-i;int letters=size<256;
-        for(size_t j=i;j<end&&letters;++j)if(!german_letter(text[j]))letters=0;
+        size_t size=end-i;
+        /* A closing straight quotation mark is not part of the verb. */
+        if(size>1&&text[end-1]=='\'')--size;
+        int letters=size<256;
+        for(size_t j=i;j<i+size&&letters;++j)if(!german_letter(text[j]))letters=0;
         const struct reloq_lexicon_override *entry=NULL;
-        if(letters&&german_wachsen_possible(text+i,size)&&!reloq61_dictionary_exact(text+i,size)&&
-           reloq_lexicon_find_override(overlay,text+i,size,&entry)!=1) {
+        if(letters&&german_wachsen_possible(text+i,size)&&
+           !german_wachsen_override(text+i,size,overlay)&&
+           (size==end-i||!german_wachsen_override(text+i,end-i,overlay))&&
+           (!quoted_start||!german_wachsen_override(text+i-1,end-i+1,overlay))) {
             for(size_t j=0;j+5<=size;++j) {
                 unsigned char *word=text+i;
                 unsigned char vowel=german_er_lower(word[j+1]);
@@ -100,7 +140,7 @@ static int german_wachsen_input(unsigned char *text,size_t length,int tags)
                    german_er_lower(word[j+2])!='c'||german_er_lower(word[j+3])!='h'||
                    german_er_lower(word[j+4])!='s')continue;
                 int ends_verb=j+6==size&&german_er_lower(word[j+5])=='t';
-                int verb=ends_verb&&(vowel==0xe4||german_wachsen_ihr(text,length,i,end,tags,j==0));
+                int verb=ends_verb&&(vowel==0xe4||german_wachsen_ihr(text,length,quoted_start?i-1:i,end,tags,j==0));
                 int noun=vowel==0xe4&&j>=2&&german_er_lower(word[j-2])=='g'&&german_er_lower(word[j-1])=='e';
                 if(!verb&&!noun)continue;
                 size_t root=noun?j-2:j,root_length=noun?7:6;
