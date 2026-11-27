@@ -1,8 +1,8 @@
 {
   "version": "2.1.3",
   "release_version": "2.1.3",
-  "source_commit": "09b5a6ba5b9962763841efcd4f579e3f162c87be",
-  "run_id": 45910242907,
+  "source_commit": "0be1c7248621e31038ca977d36670c7571bb746d",
+  "run_id": 45914124304,
   "dictionary_snapshot": {
     "repository": "eigencrow/IBMTTSDictionaries",
     "branch": "master",
@@ -38,31 +38,31 @@
       }
     }
   },
-  "build_epoch": 1795735179,
+  "build_epoch": 1795737601,
   "assets": {
     "reloq-c-android-arm64-2.1.3.apk": {
       "size": 18392919,
-      "sha256": "7a2dd4c92246adc594377cd37ec8b96bec523bd20eb50b3110693503a4edf18a"
+      "sha256": "4f2bc56d7aebd787ab4e995475c435f4de50a4b83b26c5469b5b4100b06d81e0"
     },
     "reloq-c-android-x86_64-2.1.3.apk": {
       "size": 19912532,
-      "sha256": "e5e092bca86f1db01867993531c78c76bbfd28de73c068f5d9f4ec68d3665c95"
+      "sha256": "9e7e90147794662bc7f9851801847284588d5c3bf87cee28389197c3306b8a49"
     },
     "reloq-c-synth-linux-x64-2.1.3.nvda-addon": {
-      "size": 13803403,
-      "sha256": "c1fa53f5d3f183665b436daf6d4492fa9ab4662c0b6850f87e14a5a8b4e82f38"
+      "size": 13807930,
+      "sha256": "495938f7197abb70fcedbef025adec60612fb5f06b3c966604fdeadd6cc62bfa"
     },
     "reloq-c-linux-x64-2.1.3.tar.gz": {
-      "size": 39141517,
-      "sha256": "918cf13459eec5da0cdf28575c19b84dac484b5baa0031c72195be08636c44d7"
+      "size": 39145863,
+      "sha256": "ed79f9375769e289be426c860baa2c38ca3d7af4d7eac5696d30290b88e61677"
     },
     "reloq-c-synth-x64-2.1.3.nvda-addon": {
-      "size": 14282108,
-      "sha256": "6e27ebc5531a206b95dc703bef39bbfa8a63e3cd5160cbdfc84b1ec6f945874a"
+      "size": 14282528,
+      "sha256": "2488e166ee35dec223e96227a15042aedb0936cb859622b17a0231a0ed33bddf"
     },
     "reloq-c-sapi5-2.1.3-setup.exe": {
-      "size": 20619388,
-      "sha256": "1a69006940404fc53169a4e79a25dd423b675109b1100b69ee703c613c6948dd"
+      "size": 20624652,
+      "sha256": "d7b09e54e4d06b8e98901ae02a59e9fc8eda0b29997392d441fe2e8ad6aa265a"
     }
   }
 }
