@@ -47,6 +47,21 @@ static int german_wachsen_subject_wrapper(unsigned char c)
     }
 }
 
+static int german_wachsen_subject_word(const unsigned char *text,size_t begin,size_t end,
+                                       const char *word,size_t length)
+{
+    while(end>begin&&german_wachsen_subject_wrapper(text[end-1]))--end;
+    if(end-begin<length)return 0;
+    size_t start=end-length;
+    for(size_t i=0;i<length;++i)
+        if(german_er_lower(text[start+i])!=(unsigned char)word[i])return 0;
+    if(start==begin)return 1;
+    unsigned char boundary=text[start-1];
+    if(!german_wachsen_subject_wrapper(boundary))return 0;
+    /* A letter followed by an apostrophe can be part of a single word. */
+    return boundary!='\''||start-1==begin||!german_word_byte(text[start-2]);
+}
+
 /* NVDA's "all punctuation" mode expands the final '?' into
  * "Fragezeichen?" before the synthesizer sees the question. */
 static int german_wachsen_question_name(const unsigned char *text,size_t length,size_t at)
@@ -71,14 +86,10 @@ static int german_wachsen_ihr(const unsigned char *text,size_t length,size_t beg
     for(unsigned n=0;n<8&&at;++n) {
         while(at&&(text[at-1]==' '||text[at-1]=='\t'))--at;
         size_t stop=at;while(at&&text[at-1]>32)--at;
-        size_t left=at,right=stop;
-        while(left<right&&german_wachsen_subject_wrapper(text[left]))++left;
-        while(right>left&&german_wachsen_subject_wrapper(text[right-1]))--right;
-        if(right-left==3&&german_er_lower(text[left])=='i'&&
-           german_er_lower(text[left+1])=='h'&&german_er_lower(text[left+2])=='r')return 1;
+        if(german_wachsen_subject_word(text,at,stop,"ihr",3))return 1;
         /* An explicit preceding du wins over a later possessive ihr:
          * "du bewachst ihr Haus" belongs to bewachen, not bewachsen. */
-        if(right-left==2&&german_er_lower(text[left])=='d'&&german_er_lower(text[left+1])=='u')return 0;
+        if(german_wachsen_subject_word(text,at,stop,"du",2))return 0;
         struct reloq_inline_tag tag=reloq_inline_tag_read(text+at,stop-at,0);
         if(!tags||!tag.length||tag.length!=stop-at||!german_wachsen_subject_tag(tag.kind))break;
     }

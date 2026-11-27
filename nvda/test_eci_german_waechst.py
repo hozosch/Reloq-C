@@ -43,6 +43,7 @@ def main():
              "'ihr wachst'": "'ihr wackst'",
              "ihr 'wachst'": "ihr 'wackst'",
              '(ihr wachst)': '(ihr wackst)', '[ihr wachst]': '[ihr wackst]',
+             'Klammer auf(ihr wachst)': 'Klammer auf(ihr wackst)',
              '«ihr wachst»': '«ihr wackst»',
              'Wenn „ihr wachst“ so steht.': 'Wenn „ihr wackst“ so steht.',
              'The context “ihr wachst” is distinguished from “du wachst”.':
