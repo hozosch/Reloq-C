@@ -124,7 +124,7 @@ static int german_wachsen_input(unsigned char *text,size_t length,int tags)
     const struct reloq_lexicon *overlay=reloq61_dictionary_overlay_current();
     struct reloq_lexicon empty={0};if(!overlay)overlay=&empty;
     const struct reloq_lexicon_resolver *previous=reloq_lexicon_resolver_scope(resolver);
-    int spelling=0;
+    int spelling=0;void *probe_worker=NULL;
     for(size_t i=0;i<length;) {
         struct reloq_inline_tag tag=reloq_inline_tag_read(text+i,length-i,0);
         if(tag.length&&(tags||tag.kind==RELOQ_TAG_SPR||tag.kind==RELOQ_TAG_PROMINENCE)) {
@@ -161,14 +161,21 @@ static int german_wachsen_input(unsigned char *text,size_t length,int tags)
                 /* A lowercase k also keeps a fully uppercase known word from
                    being misidentified as a newly spelled-out acronym. */
                 memcpy(alternative,word,size);alternative[j+3]='k';
-                if(reloq_rules61_word(0x40000,word,size,original,sizeof original,&a)==1&&
-                   reloq_rules61_word(0x40000,alternative,size,candidate,sizeof candidate,&b)==1&&
-                   german_waechs_phone_only(original,candidate))word[j+3]=alternative[j+3];
+                /* The two comparison probes must not alter the sentence's
+                 * prepared provider state or the stress of earlier words.
+                 * Reuse a separate worker for this whole utterance. */
+                if(!probe_worker)probe_worker=reloq61_worker_new(0x40000);
+                void *worker=reloq61_worker_scope(probe_worker);
+                int comparable=reloq_rules61_word(0x40000,word,size,original,sizeof original,&a)==1&&
+                    reloq_rules61_word(0x40000,alternative,size,candidate,sizeof candidate,&b)==1;
+                reloq61_worker_scope(worker);
+                if(comparable&&german_waechs_phone_only(original,candidate))word[j+3]=alternative[j+3];
                 break;
             }
         }
         i=end;
     }
+    reloq61_worker_free(probe_worker);
     reloq_lexicon_resolver_scope(previous);reloq61_dictionary_resolver_release(resolver);
     return 0;
 }

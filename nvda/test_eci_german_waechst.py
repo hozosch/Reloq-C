@@ -72,6 +72,16 @@ def main():
                 before, after = ' '.join(before.split()), ' '.join(after.split())
                 assert after == before, (sentence, before, after)
                 checks += 1
+            for sentence in (
+                'Vor Runde Klammer auf(ihr wachst Runde Klammer zu).',
+                'Wenn „ihr wachst“ so steht.',
+                'The context “ihr wachst” is distinguished from “du wachst”.',
+            ):
+                before = re.sub(r'`vv\d+', '', phonemes(old, sentence)).replace('vAxst', 'vAkst', 1)
+                after = re.sub(r'`vv\d+', '', phonemes(current, sentence))
+                before, after = ' '.join(before.split()), ' '.join(after.split())
+                assert after == before, (sentence, before, after)
+                checks += 1
         for rate in (0, 1, 3, 6):
             for speed in (50, 90):
                 for voice in (current, old):
