@@ -2880,7 +2880,9 @@ static inline int32_t reloq_call_enus61_eng_ph_s_dur(void *state, int32_t p0)
         const int32_t args[]={p0};
         return delta_rule_called(DELTA_ENTRY_eng_ph_s_dur,args,1,1);
     }
-    return reloq_enus61_eng_ph_s_dur(state, p0);
+    int32_t result=reloq_enus61_eng_ph_s_dur(state, p0);
+    if(!result)reloq61_english_stop_watch(state);
+    return result;
 }
 int32_t reloq_enus61_eng_ph_t(void *, int32_t);
 static inline int32_t reloq_call_enus61_eng_ph_t(void *state, int32_t p0)

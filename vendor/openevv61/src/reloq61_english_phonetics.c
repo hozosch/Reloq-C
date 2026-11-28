@@ -80,15 +80,41 @@ struct reloq61_english_stop_scope reloq61_english_stop_scope(
     return previous;
 }
 
-void reloq61_english_stop_prepare(void *state)
+/* Arm the transition while the preceding /s/ is being planned. The stop's
+ * tract targets are emitted before its non-sonorant amplitude rule. */
+void reloq61_english_stop_watch(void *state)
 {
     delta_state *d=state;
     if(soft_stop.state==state)soft_stop=(struct reloq61_english_stop_scope){0};
     if(!d || !d->vars || deltaErrorThrown(d))return;
     unsigned char *p=(unsigned char *)state+DG_BASE;
+    struct reloq61_spr_phone current,next,following;
+    if(!reloq61_spr_phone_at(d,long_at(p,PHONE_START),&current) ||
+       reloq61_spr_feature(d,&current,0)!=PHONE_S ||
+       !reloq61_spr_phone_at(d,current.after,&next))return;
+    unsigned phone=reloq61_spr_feature(d,&next,0);
+    if((phone!=PHONE_P && phone!=PHONE_T && phone!=PHONE_K) ||
+       reloq61_spr_feature(d,&next,PHONE_TRANSITION)!=TRANSITION_TO_VOICE ||
+       !reloq61_spr_phone_at(d,next.after,&following))return;
+    soft_stop=(struct reloq61_english_stop_scope){.state=state,.stop=next.node,
+        .following=following.node,.anchor=-1,.aspiration_begin=-1};
+}
+
+void reloq61_english_stop_prepare(void *state)
+{
+    delta_state *d=state;
+    if(!d || !d->vars || deltaErrorThrown(d))return;
+    unsigned char *p=(unsigned char *)state+DG_BASE;
     int32_t at=long_at(p,PHONE_START);
     struct reloq61_spr_phone current,next;
     if(!reloq61_spr_phone_at(d,at,&current))return;
+    if(soft_stop.state==state) {
+        /* Preserve the watch through /s/ and the gathered tract targets
+         * when do_non_son_amps is subsequently called for the same stop. */
+        if(soft_stop.anchor<0 && current.node!=soft_stop.stop)return;
+        if(soft_stop.anchor>=0 && current.node==soft_stop.stop)return;
+        soft_stop=(struct reloq61_english_stop_scope){0};
+    }
     unsigned phone=reloq61_spr_feature(d,&current,0);
     if(phone!=PHONE_P && phone!=PHONE_T && phone!=PHONE_K)return;
     struct reloq61_spr_phone previous={previous_phone(d,at),0};
@@ -157,6 +183,10 @@ void reloq61_english_stop_interval(void *state,int16_t stream,int16_t value,
        (stream<frication || stream>frication+6) && !tract)return;
     struct reloq61_spr_phone current;
     if(!reloq61_spr_phone_at(d,long_at(p,PHONE_START),&current))return;
+    if(current.node==soft_stop.stop && soft_stop.anchor<0) {
+        reloq61_english_stop_prepare(state);
+        if(soft_stop.state!=state || soft_stop.anchor<0)return;
+    }
     int32_t anchor=soft_stop.anchor;
     if(current.node==soft_stop.stop) {
         if(tract) {

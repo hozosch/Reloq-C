@@ -28,6 +28,7 @@ struct reloq61_english_release_guard {
     int active;
 };
 void reloq61_english_stop_prepare(void *state);
+void reloq61_english_stop_watch(void *state);
 void reloq61_english_stop_release_begin(void *state,
     struct reloq61_english_release_guard *guard);
 void reloq61_english_stop_release_end(void *state,
