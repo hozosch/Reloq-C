@@ -1,4 +1,5 @@
 #include "reloq61_english_phonetics.h"
+#include "reloq61_acoustic_output.h"
 #include "reloq61_scalar_state.h"
 #include "reloq61_spr_output.h"
 
@@ -13,7 +14,8 @@ enum { PHONE_P=2, PHONE_T=4, PHONE_K=7, PHONE_S=14,
        PHONE_REDUCED_I=32, PHONE_REDUCED_BACK=37,
        PHONE_TRANSITION=8, TRANSITION_TO_VOICE=2,
        VOICE_STREAM=1034, ASPIRATION_STREAM=1038, FRICATION_STREAM=1042,
-       RELEASE_START=1152, RELEASE_END=1160, RELEASE_AH=2978 };
+       STOP_START=1144, RELEASE_START=1152, RELEASE_END=1160, RELEASE_AH=2978,
+       TRACT_FIRST=1, TRACT_FORMANT_LAST=5, TRACT_LAST=10 };
 
 static int16_t short_at(const unsigned char *p,unsigned off)
 {int16_t v;memcpy(&v,p+off,sizeof v);return v;}
@@ -99,6 +101,14 @@ void reloq61_english_stop_prepare(void *state)
     soft_stop=(struct reloq61_english_stop_scope){.state=state,.stop=current.node,
         .following=next.node,.anchor=begin/10000,.aspiration_begin=-1,
         .release_level=s_stop_release_level(d,phone,&next)};
+    int32_t start=long_at(p,STOP_START)/10000,span=soft_stop.anchor-start;
+    if(start>=0 && span>=2) {
+        int32_t cut=span/4;
+        if(cut<1)cut=1;
+        soft_stop.tract_start=start;
+        soft_stop.tract_earliest=soft_stop.anchor-cut;
+        soft_stop.tract_enabled=soft_stop.tract_earliest>start;
+    }
 }
 
 void reloq61_english_stop_release_begin(void *state,
@@ -142,12 +152,28 @@ void reloq61_english_stop_interval(void *state,int16_t stream,int16_t value,
     unsigned char *p=(unsigned char *)state+DG_BASE;
     int16_t voice=short_at(p,VOICE_STREAM),aspiration=short_at(p,ASPIRATION_STREAM);
     int16_t frication=short_at(p,FRICATION_STREAM);
+    int tract=stream>=TRACT_FIRST && stream<=TRACT_LAST;
     if(stream!=voice && stream!=aspiration &&
-       (stream<frication || stream>frication+6))return;
+       (stream<frication || stream>frication+6) && !tract)return;
     struct reloq61_spr_phone current;
     if(!reloq61_spr_phone_at(d,long_at(p,PHONE_START),&current))return;
     int32_t anchor=soft_stop.anchor;
     if(current.node==soft_stop.stop) {
+        if(tract) {
+            if(soft_stop.tract_enabled && !soft_stop.closure_valid) {
+                int terminal=stream<=TRACT_FORMANT_LAST?
+                    *begin==anchor && *end==anchor:
+                    *begin==soft_stop.tract_start && *end==anchor;
+                if(terminal) {
+                    if(stream<=TRACT_FORMANT_LAST)*begin=soft_stop.tract_earliest;
+                    *end=soft_stop.tract_earliest;
+                    unsigned bit=(unsigned)(stream-TRACT_FIRST);
+                    soft_stop.tract_values[bit]=value;
+                    soft_stop.tract_held|=(uint16_t)(1u<<bit);
+                }
+            }
+            return;
+        }
         if(stream>=frication && stream<=frication+6) {
             if(!soft_stop.closure_valid && value==0 && *begin<*end && *end<anchor) {
                 int32_t duration=*end-*begin;
@@ -155,6 +181,16 @@ void reloq61_english_stop_interval(void *state,int16_t stream,int16_t value,
                 soft_stop.closure_cut=duration>=2?duration/4:0;
                 if(duration>=2 && soft_stop.closure_cut==0)soft_stop.closure_cut=1;
                 soft_stop.closure_valid=1;
+                if(soft_stop.tract_enabled && soft_stop.tract_held) {
+                    /* Keep the stop's own release tract until the added H
+                     * begins. The following native targets then interpolate
+                     * through the H, as in the ordinary aspirated stop. */
+                    int32_t at=(anchor-soft_stop.closure_cut)*10000;
+                    for(unsigned i=0;i<TRACT_LAST;++i)
+                        if(soft_stop.tract_held & (1u<<i))
+                            reloq61_submit_interval(state,(int16_t)(TRACT_FIRST+i),
+                                soft_stop.tract_values[i],at,at);
+                }
             }
             int32_t cut=soft_stop.closure_cut;
             if(cut>0 && *begin==soft_stop.closure_begin && *end==soft_stop.closure_end)
@@ -182,11 +218,21 @@ void reloq61_english_stop_interval(void *state,int16_t stream,int16_t value,
         return;
     }
     if(current.node==soft_stop.following && soft_stop.aspiration_begin>=0) {
-        if(stream==frication && !soft_stop.frication_seen) {
+        if(tract && soft_stop.tract_enabled) {
+            unsigned bit=(unsigned)(stream-TRACT_FIRST);
+            if(!(soft_stop.tract_followed & (1u<<bit))) {
+                if(*begin>anchor)*begin=anchor;
+                if(*end<anchor)*end=anchor;
+                soft_stop.tract_followed|=(uint16_t)(1u<<bit);
+            }
+        } else if(stream>=frication && stream<=frication+6) {
             /* The shortened native burst fades while AH fills the freed
              * closure, ending at the original voicing boundary. */
-            if(value==0 && *begin>anchor)*begin=anchor;
-            soft_stop.frication_seen=1;
+            unsigned bit=(unsigned)(stream-frication);
+            if(!(soft_stop.frication_seen & (1u<<bit))) {
+                if(value==0 && *begin>anchor)*begin=anchor;
+                soft_stop.frication_seen|=(uint16_t)(1u<<bit);
+            }
         } else if(stream==aspiration && !soft_stop.blended && value>0 &&
                   value<soft_stop.release_level && *begin<=anchor+1 &&
                   *end>anchor && anchor<=INT32_MAX-10) {

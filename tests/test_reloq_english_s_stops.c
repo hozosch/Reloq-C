@@ -4,9 +4,11 @@
 #include <stdint.h>
 #include <stdio.h>
 
-struct sample { int16_t voice, aspiration, frication; };
+struct sample { int16_t voice, aspiration, frication, tract[5], a2f; };
 struct capture { struct sample samples[4096]; int count; };
-struct release { int silence, burst_to_voice, peak, aspiration_run, first_voice, after_voice; };
+struct release { int silence, burst_to_voice, peak, aspiration_run, first_voice, after_voice;
+    int16_t tract[5], mid_tract[5], a2f; };
+struct reference { int peak; int16_t tract[5], mid_tract[5]; };
 
 static int32_t value_at(const struct reloq61_curve *c,int32_t t)
 {
@@ -24,7 +26,10 @@ static int span(void *context,int32_t from,int32_t to,
         assert(capture->count<(int)(sizeof capture->samples/sizeof capture->samples[0]));
         capture->samples[capture->count++]=(struct sample){
             (int16_t)value_at(c+2,t),(int16_t)value_at(c+7,t),
-            (int16_t)value_at(c+8,t)};
+            (int16_t)value_at(c+8,t),
+            {(int16_t)value_at(c+9,t),(int16_t)value_at(c+13,t),
+             (int16_t)value_at(c+15,t),(int16_t)value_at(c+17,t),
+             (int16_t)value_at(c+19,t)},(int16_t)value_at(c+36,t)};
     }
     return 0;
 }
@@ -39,7 +44,7 @@ static struct release first_s_stop(int language,const char *text,int speed)
         .frame=frame,.span=span,.context=&capture,.output_rate=11025};
     struct reloq61_result result={0};
     assert(!reloq61_generate(&q,&result) && !result.error && !result.unsupported);
-    int s_end=-1,burst=-1,voice=-1,peak=0,run=0,longest=0;
+    int s_end=-1,burst=-1,voice=-1,peak=0,run=0,longest=0,aspiration_start=-1;
     for(int i=1;i<capture.count;++i) {
         const struct sample s=capture.samples[i];
         if(s_end<0 && s.frication==0)s_end=i;
@@ -47,18 +52,24 @@ static struct release first_s_stop(int language,const char *text,int speed)
         if(s.voice>10){voice=i;break;}
         if(s_end>=0) {
             if(s.aspiration>peak)peak=s.aspiration;
-            if(s.aspiration>=38){if(++run>longest)longest=run;}else run=0;
+            if(s.aspiration>=38){if(aspiration_start<0)aspiration_start=i;
+                if(++run>longest)longest=run;}else run=0;
         }
     }
     assert(s_end>=0 && burst>s_end && voice>burst && peak>=36);
     /* The H runs into voicing as the native burst falls away. */
     assert(capture.samples[voice].aspiration>0 && capture.samples[voice].frication<=5);
     int after=voice+8<capture.count?voice+8:voice;
-    return (struct release){burst-s_end,voice-burst,peak,longest,
-        capture.samples[voice].aspiration,capture.samples[after].aspiration};
+    int mid=(aspiration_start+voice)/2;
+    struct release out={.silence=burst-s_end,.burst_to_voice=voice-burst,.peak=peak,
+        .aspiration_run=longest,.first_voice=capture.samples[voice].aspiration,
+        .after_voice=capture.samples[after].aspiration,.a2f=capture.samples[voice].a2f};
+    for(int i=0;i<5;++i){out.tract[i]=capture.samples[voice].tract[i];
+        out.mid_tract[i]=capture.samples[mid].tract[i];}
+    return out;
 }
 
-static int reference_peak(int language,const char *text,int speed)
+static struct reference reference_release(int language,const char *text,int speed)
 {
     struct capture capture={0};
     struct reloq61_request q={.language=language,.annotations=1,
@@ -66,10 +77,17 @@ static int reference_peak(int language,const char *text,int speed)
         .frame=frame,.span=span,.context=&capture,.output_rate=11025};
     struct reloq61_result result={0};
     assert(!reloq61_generate(&q,&result) && !result.error && !result.unsupported);
-    int peak=0;
-    for(int i=0;i<capture.count && capture.samples[i].voice<=10;++i)
+    int peak=0,begin=-1,voice=-1;
+    for(int i=0;i<capture.count;++i) {
+        if(capture.samples[i].voice>10){voice=i;break;}
+        if(capture.samples[i].aspiration>=38 && begin<0)begin=i;
         if(capture.samples[i].aspiration>peak)peak=capture.samples[i].aspiration;
-    return peak;
+    }
+    assert(begin>=0 && voice>begin);
+    struct reference out={.peak=peak};int mid=(begin+voice)/2;
+    for(int i=0;i<5;++i){out.tract[i]=capture.samples[voice].tract[i];
+        out.mid_tract[i]=capture.samples[mid].tract[i];}
+    return out;
 }
 
 int main(void)
@@ -93,8 +111,20 @@ int main(void)
             assert(releases[1].peak<releases[0].peak);
             assert(releases[2].peak<releases[0].peak);
             assert(releases[0].peak<releases[3].peak);
-            assert(releases[4].peak==reference_peak(language,"cat",speeds[n]));
-            assert(releases[3].peak==reference_peak(language,"cry",speeds[n]));
+            struct reference cat=reference_release(language,"cat",speeds[n]);
+            struct reference cry=reference_release(language,"cry",speeds[n]);
+            assert(releases[4].peak==cat.peak && releases[3].peak==cry.peak);
+            for(int i=0;i<5;++i) {
+                int dc=releases[4].tract[i]-cat.tract[i];
+                int dr=releases[3].tract[i]-cry.tract[i];
+                assert(dc>=-10 && dc<=10 && dr>=-10 && dr<=10);
+                if(speeds[n]<=100) {
+                    dc=releases[4].mid_tract[i]-cat.mid_tract[i];
+                    dr=releases[3].mid_tract[i]-cry.mid_tract[i];
+                    assert(dc>=-150 && dc<=150 && dr>=-150 && dr<=150);
+                }
+            }
+            assert(releases[3].a2f<=5 && releases[4].a2f<=5);
         }
     printf("English s+stop: %u closure and connected-release checks\n",checks);
     return 0;

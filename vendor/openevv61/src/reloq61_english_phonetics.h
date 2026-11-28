@@ -14,7 +14,10 @@ struct reloq61_english_stop_scope {
     void *state;
     int32_t stop, following, anchor, aspiration_begin;
     int32_t closure_begin, closure_end, closure_cut;
-    int16_t release_level, blended, frication_seen, closure_valid;
+    int32_t tract_start, tract_earliest;
+    int16_t release_level, blended;
+    uint16_t frication_seen, closure_valid, tract_enabled, tract_held, tract_followed;
+    int16_t tract_values[10];
 };
 struct reloq61_english_stop_scope reloq61_english_stop_scope(
     struct reloq61_english_stop_scope next);
