@@ -201,12 +201,15 @@ void reloq61_english_stop_watch_tp(void *state)
     delta_state *d=state;
     if(!d || !d->vars || deltaErrorThrown(d))return;
     unsigned char *p=(unsigned char *)state+DG_BASE;
-    struct reloq61_spr_phone current,next;
+    struct reloq61_spr_phone current,next,following;
     if(!reloq61_spr_phone_at(d,long_at(p,PHONE_START),&current) ||
        reloq61_spr_feature(d,&current,0)!=PHONE_S ||
        !reloq61_spr_phone_at(d,current.after,&next))return;
     unsigned phone=reloq61_spr_feature(d,&next,0);
-    if(phone==PHONE_P || phone==PHONE_T)reloq61_english_stop_watch(state);
+    if((phone==PHONE_P || phone==PHONE_T) &&
+       reloq61_spr_feature(d,&next,PHONE_TRANSITION)==TRANSITION_TO_VOICE &&
+       reloq61_spr_phone_at(d,next.after,&following))
+        reloq61_english_stop_watch(state);
 }
 
 void reloq61_english_stop_prepare(void *state)
