@@ -2875,11 +2875,13 @@ static inline int32_t reloq_call_enus61_eng_ph_s(void *state, int32_t p0)
 int32_t reloq_enus61_eng_ph_s_dur(void *, int32_t);
 static inline int32_t reloq_call_enus61_eng_ph_s_dur(void *state, int32_t p0)
 {
+    int32_t result;
     if(delta_rule_trace) {
         const int32_t args[]={p0};
-        return delta_rule_called(DELTA_ENTRY_eng_ph_s_dur,args,1,1);
-    }
-    return reloq_enus61_eng_ph_s_dur(state, p0);
+        result=delta_rule_called(DELTA_ENTRY_eng_ph_s_dur,args,1,1);
+    } else result=reloq_enus61_eng_ph_s_dur(state,p0);
+    if(!result)reloq61_english_s_duration(state);
+    return result;
 }
 int32_t reloq_enus61_eng_ph_t(void *, int32_t);
 static inline int32_t reloq_call_enus61_eng_ph_t(void *state, int32_t p0)

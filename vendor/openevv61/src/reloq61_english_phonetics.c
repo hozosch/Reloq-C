@@ -9,6 +9,7 @@ enum { PHONE_START=712, NOISE_A2=2934, NOISE_A3=2938, NOISE_A4=2942,
        SCHWA_F3_LEFT=3106, SCHWA_F3_RIGHT=3110 };
 enum { PHONE_SH=16, PHONE_R=23, PHONE_W=26, PHONE_SCHWA=35 };
 enum { PHONE_P=2, PHONE_T=4, PHONE_K=7, PHONE_S=14,
+       PHONE_TRANSITION=8, TRANSITION_TO_VOICE=2, PHONE_DURATION=2172,
        VOICE_STREAM=1034, ASPIRATION_STREAM=1038,
        RELEASE_START=1152, RELEASE_END=1160, RELEASE_AH=2978 };
 
@@ -50,6 +51,27 @@ static int32_t previous_phone(delta_state *d,int32_t at)
         at=node;
     }
     return 0;
+}
+
+void reloq61_english_s_duration(void *state)
+{
+    delta_state *d=state;
+    if(!d || !d->vars || deltaErrorThrown(d))return;
+    unsigned char *p=(unsigned char *)state+DG_BASE;
+    struct reloq61_spr_phone current,next,after;
+    if(!reloq61_spr_phone_at(d,long_at(p,PHONE_START),&current) ||
+       reloq61_spr_feature(d,&current,0)!=PHONE_S ||
+       !reloq61_spr_phone_at(d,current.after,&next))return;
+    unsigned stop=reloq61_spr_feature(d,&next,0);
+    if((stop!=PHONE_P && stop!=PHONE_T && stop!=PHONE_K) ||
+       !reloq61_spr_phone_at(d,next.after,&after) ||
+       reloq61_spr_feature(d,&next,PHONE_TRANSITION)!=TRANSITION_TO_VOICE)return;
+    int32_t duration=long_at(p,PHONE_DURATION);
+    if(duration<160000)return;
+    /* Change the native duration before it is inserted. The release,
+     * following phones, pitch and indices are then rescheduled together;
+     * the shortened frication does not turn into extra closure silence. */
+    put_long(p,PHONE_DURATION,(int32_t)(((int64_t)duration*3)/4));
 }
 
 static _Thread_local struct reloq61_english_stop_scope soft_stop;

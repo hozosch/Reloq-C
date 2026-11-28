@@ -9,6 +9,9 @@ void reloq61_english_shr_noise(void *state);
 /* Give adjacent schwas next to /w/ their own neutral oral-tract target. */
 void reloq61_english_schwa_timbre(void *state);
 
+/* Shorten /s/ before a stop during native duration planning. */
+void reloq61_english_s_duration(void *state);
+
 /* Pending short aspiration and the native phone whose voice follows it.
  * Scoped to a synthesis transaction, including nested language donors. */
 struct reloq61_english_stop_scope {
