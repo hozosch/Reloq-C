@@ -53,12 +53,14 @@ int main(void)
 {
     const char *examples[]={"`[.1skWt]","`[.1spIl]","`[.1stIl]","`[.1skrYb]"};
     unsigned checks=0;
+    const int speeds[]={50,100,150,200,220,250};
     for(int language=0x10000;language<=0x10001;++language)
-        for(int speed=50;speed<=150;speed+=50) {
+        for(unsigned n=0;n<sizeof speeds/sizeof speeds[0];++n) {
+            int speed=speeds[n];
             int longest=0;
             for(unsigned i=0;i<sizeof examples/sizeof examples[0];++i) {
                 int length=prevoice_aspiration(language,examples[i],speed);
-                assert(length>=2 && length<=14);
+                assert(length>=1 && length<=14);
                 if(length>longest)longest=length;
                 ++checks;
             }

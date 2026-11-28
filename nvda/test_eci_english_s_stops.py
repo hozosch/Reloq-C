@@ -30,7 +30,7 @@ def main():
                 assert phonemes(current, text) == phonemes(before, text), (dialect, text)
                 checks += 1
             for rate in (1, 3, 6):
-                for speed in (50, 105):
+                for speed in (50, 105, 220, 250):
                     for item in (current, before):
                         item.set_parameter(SAMPLE_RATE, rate)
                         item.set_parameter(NATIVE_SPEED, speed)

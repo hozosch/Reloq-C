@@ -84,7 +84,7 @@ void reloq61_english_stop_release_begin(void *state,
     if(short_at(p,RELEASE_AH)!=0)return;
     int32_t begin=long_at(p,RELEASE_START),end=long_at(p,RELEASE_END);
     int64_t duration=(int64_t)end-begin;
-    if(duration<20000)return;
+    if(duration<10000)return;
     /* Use the core's ordinary release source at a lower level and limit the
      * extra voiceless interval to 12 ms inside its existing transition. */
     int32_t capped=duration>120000?begin+120000:end;
