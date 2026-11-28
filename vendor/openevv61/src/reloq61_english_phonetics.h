@@ -11,6 +11,13 @@ void reloq61_english_schwa_timbre(void *state);
 
 /* Keep the ordinary s/z noise colour before the native r transition. */
 void reloq61_english_s_z_r(void *state);
+struct reloq61_english_sr_scope {
+    void *state;
+    int32_t following_r;
+    uint16_t streams;
+};
+struct reloq61_english_sr_scope reloq61_english_sr_scope(
+    struct reloq61_english_sr_scope next);
 /* Shape post-s t/p releases from the corresponding ordinary stops. */
 void reloq61_english_tp_tract(void *state);
 

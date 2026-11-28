@@ -899,6 +899,8 @@ static int generate_core_impl(const struct reloq61_request *,struct reloq61_resu
 static int generate_core(const struct reloq61_request *q,struct reloq61_result *r,
     reloq61_phoneme_sink sink,void *context)
 {
+    struct reloq61_english_sr_scope saved_sr=
+        reloq61_english_sr_scope((struct reloq61_english_sr_scope){0});
     struct reloq61_english_stop_scope saved_stop=
         reloq61_english_stop_scope((struct reloq61_english_stop_scope){0});
     reloq61_interval_filter saved_filter=
@@ -907,6 +909,7 @@ static int generate_core(const struct reloq61_request *q,struct reloq61_result *
     int result=generate_core_impl(q,r,sink,context);
     reloq61_interval_filter_scope(saved_filter);
     reloq61_english_stop_scope(saved_stop);
+    reloq61_english_sr_scope(saved_sr);
     struct reloq61_german_final_a used=reloq61_german_final_scope(saved);
     if(used.failed){r->error=1;result=-1;}
     reloq61_german_final_dispose(used);

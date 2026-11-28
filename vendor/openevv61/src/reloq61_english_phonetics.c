@@ -57,6 +57,16 @@ static int32_t previous_phone(delta_state *d,int32_t at)
     return 0;
 }
 
+static _Thread_local struct reloq61_english_sr_scope soft_sr;
+
+struct reloq61_english_sr_scope reloq61_english_sr_scope(
+    struct reloq61_english_sr_scope next)
+{
+    struct reloq61_english_sr_scope previous=soft_sr;
+    soft_sr=next;
+    return previous;
+}
+
 void reloq61_english_s_z_r(void *state)
 {
     delta_state *d=state;
@@ -68,16 +78,45 @@ void reloq61_english_s_z_r(void *state)
     unsigned phone=reloq61_spr_feature(d,&current,0);
     if((phone!=PHONE_S && phone!=PHONE_Z) ||
        reloq61_spr_feature(d,&next,0)!=PHONE_R)return;
-    /* Restore the normal upper s/z resonances at the start, then retain the
-     * native end targets so the resonances move smoothly into the /r/. */
+    /* Keep the ordinary upper s/z resonances over the whole fricative.
+     * The first r endpoints join them to the native r in the interval filter. */
     const unsigned left[]={3114,3122},right[]={3118,3126};
     const int16_t target[]={4000,4300};
+    uint16_t changed=0;
     for(unsigned i=0;i<2;++i) {
         int16_t l=short_at(p,left[i]),r=short_at(p,right[i]);
-        if(l>0 && l<target[i] && (r==-1 || r>0)) {
-            if(r==-1)put_short(p,right[i],l);
-            put_short(p,left[i],target[i]);
+        if(l>0 && (r==-1 || r>0)) {
+            int16_t high=l<target[i]?target[i]:l;
+            int16_t original_end=r==-1?l:r;
+            if(l!=high || original_end!=high) {
+                put_short(p,left[i],high);put_short(p,right[i],high);
+                changed|=(uint16_t)(1u<<i);
+            }
         }
+    }
+    if(changed)
+        soft_sr=(struct reloq61_english_sr_scope){state,next.node,changed};
+    else if(soft_sr.state==state)soft_sr=(struct reloq61_english_sr_scope){0};
+}
+
+static void reloq61_english_sr_interval(void *state,int16_t stream,
+    int32_t *begin,int32_t *end)
+{
+    if(soft_sr.state!=state || stream<4 || stream>5)return;
+    unsigned bit=(unsigned)(stream-4);
+    if(!(soft_sr.streams & (1u<<bit)))return;
+    delta_state *d=state;
+    unsigned char *p=(unsigned char *)state+DG_BASE;
+    struct reloq61_spr_phone current;
+    if(!reloq61_spr_phone_at(d,long_at(p,PHONE_START),&current) ||
+       current.node!=soft_sr.following_r)return;
+    int32_t start=long_at(p,STOP_START)/10000;
+    int32_t finish=long_at(p,RELEASE_START)/10000;
+    if(start>=0 && finish>start && *begin==start && *end==start) {
+        int32_t span=finish-start;
+        if(span>10)span=10;
+        *begin=*end=start+span;
+        soft_sr.streams&=(uint16_t)~(1u<<bit);
     }
 }
 
@@ -233,7 +272,9 @@ void reloq61_english_stop_release_end(void *state,
 void reloq61_english_stop_interval(void *state,int16_t stream,int16_t value,
     int32_t *begin,int32_t *end)
 {
-    if(soft_stop.state!=state || !state || !begin || !end)return;
+    if(!state || !begin || !end)return;
+    reloq61_english_sr_interval(state,stream,begin,end);
+    if(soft_stop.state!=state)return;
     delta_state *d=state;
     unsigned char *p=(unsigned char *)state+DG_BASE;
     int16_t voice=short_at(p,VOICE_STREAM),aspiration=short_at(p,ASPIRATION_STREAM);
@@ -347,7 +388,21 @@ void reloq61_english_stop_interval(void *state,int16_t stream,int16_t value,
              * closure, ending at the original voicing boundary. */
             unsigned bit=(unsigned)(stream-frication);
             if(!(soft_stop.frication_seen & (1u<<bit))) {
-                if(value==0 && *begin>anchor)*begin=anchor;
+                if(value==0 && *begin>anchor) {
+                    struct reloq61_spr_phone stop={soft_stop.stop,0};
+                    unsigned phone=reloq61_spr_feature(d,&stop,0);
+                    int32_t tail=0;
+                    if(phone==PHONE_T) {
+                        tail=soft_stop.closure_cut/4;
+                        if(tail>6)tail=6;
+                    } else if(phone==PHONE_P) {
+                        tail=soft_stop.closure_cut/12;
+                        if(tail>3)tail=3;
+                    }
+                    /* Leave the native H continuous into the voice while
+                     * the stop's burst subsides a little earlier. */
+                    *begin=anchor-tail;
+                }
                 soft_stop.frication_seen|=(uint16_t)(1u<<bit);
             }
         }

@@ -4,11 +4,12 @@
 #include <stdint.h>
 #include <stdio.h>
 
-struct sample { int16_t voice, aspiration, frication, tract[5], a2f; };
+struct sample { int16_t voice, aspiration, frication, tract[5], a2f, a4f, a5f, ab; };
 struct capture { struct sample samples[4096]; int count; };
 struct release { int silence, burst_to_voice, peak, aspiration_run, first_voice, after_voice;
-    int16_t tract[5], mid_tract[5], a2f; };
-struct reference { int peak, first_voice, aspiration_run; int16_t tract[5], mid_tract[5]; };
+    int16_t tract[5], mid_tract[5], a2f, af10, a5f10, ab10, air10; };
+struct reference { int peak, first_voice, aspiration_run;
+    int16_t tract[5], mid_tract[5], af10, a5f10, ab10; };
 
 static int32_t value_at(const struct reloq61_curve *c,int32_t t)
 {
@@ -29,7 +30,9 @@ static int span(void *context,int32_t from,int32_t to,
             (int16_t)value_at(c+8,t),
             {(int16_t)value_at(c+9,t),(int16_t)value_at(c+13,t),
              (int16_t)value_at(c+15,t),(int16_t)value_at(c+17,t),
-             (int16_t)value_at(c+19,t)},(int16_t)value_at(c+36,t)};
+             (int16_t)value_at(c+19,t)},(int16_t)value_at(c+36,t),
+             (int16_t)value_at(c+38,t),(int16_t)value_at(c+39,t),
+             (int16_t)value_at(c+43,t)};
     }
     return 0;
 }
@@ -64,6 +67,14 @@ static struct release first_s_stop(int language,const char *text,int speed)
     struct release out={.silence=burst-s_end,.burst_to_voice=voice-burst,.peak=peak,
         .aspiration_run=longest,.first_voice=capture.samples[voice].aspiration,
         .after_voice=capture.samples[after].aspiration,.a2f=capture.samples[voice].a2f};
+    if(voice>=10) {
+        out.af10=capture.samples[voice-10].frication;
+        out.a5f10=capture.samples[voice-10].a5f;
+        out.ab10=capture.samples[voice-10].ab;
+        out.air10=1;
+        for(int i=voice-10;i<voice;++i)
+            if(capture.samples[i].aspiration<38)out.air10=0;
+    }
     for(int i=0;i<5;++i){out.tract[i]=capture.samples[voice].tract[i];
         out.mid_tract[i]=capture.samples[mid].tract[i];}
     return out;
@@ -86,10 +97,45 @@ static struct reference reference_release(int language,const char *text,int spee
     assert(begin>=0 && voice>begin);
     struct reference out={.peak=peak,.first_voice=capture.samples[voice].aspiration,
         .aspiration_run=voice-begin};
+    if(voice>=10) {
+        out.af10=capture.samples[voice-10].frication;
+        out.a5f10=capture.samples[voice-10].a5f;
+        out.ab10=capture.samples[voice-10].ab;
+    }
     int mid=(begin+voice)/2;
     for(int i=0;i<5;++i){out.tract[i]=capture.samples[voice].tract[i];
         out.mid_tract[i]=capture.samples[mid].tract[i];}
     return out;
+}
+
+static void capture_phrase(struct capture *capture,int language,const char *text)
+{
+    struct reloq61_request q={.language=language,.annotations=1,
+        .voice={0,50,65,30,0,0,50,100},.text=text,
+        .frame=frame,.span=span,.context=capture,.output_rate=11025};
+    struct reloq61_result result={0};
+    assert(!reloq61_generate(&q,&result) && !result.error && !result.unsupported);
+}
+
+static void check_normal_s_z_before_r(int language,const char *with_r,const char *ordinary)
+{
+    struct capture test={0},normal={0};
+    capture_phrase(&test,language,with_r);capture_phrase(&normal,language,ordinary);
+    int end=-1;
+    for(int i=1;i<test.count;++i)
+        if(test.samples[i].frication==0){end=i;break;}
+    assert(end>20 && end+10<test.count && end<normal.count);
+    for(int i=0;i<end;++i) {
+        assert(test.samples[i].frication==normal.samples[i].frication);
+        assert(test.samples[i].tract[3]==normal.samples[i].tract[3]);
+        assert(test.samples[i].tract[4]==normal.samples[i].tract[4]);
+        assert(test.samples[i].a4f==normal.samples[i].a4f);
+        assert(test.samples[i].a5f==normal.samples[i].a5f);
+    }
+    /* The transition completes within the opening of r, with no change to
+     * the duration of either phoneme. */
+    assert(test.samples[end+10].tract[3]==3300);
+    assert(test.samples[end+10].tract[4]==3600);
 }
 
 int main(void)
@@ -124,6 +170,13 @@ int main(void)
                  * transition toward the vowel rather than the s tract. */
                 assert(t_f2>=-40 && t_f2<=40);
                 assert(p_f2>=-50 && p_f2<=50);
+                int t_af=releases[2].af10-till.af10;
+                int t_noise=releases[2].a5f10-till.a5f10;
+                int p_af=releases[1].af10-pill.af10;
+                int p_noise=releases[1].ab10-pill.ab10;
+                assert(t_af>=-4 && t_af<=4 && t_noise>=-4 && t_noise<=4);
+                assert(p_af>=-4 && p_af<=4 && p_noise>=-4 && p_noise<=4);
+                assert(releases[1].air10 && releases[2].air10);
                 /* The release should be recognizably sustained, while using
                  * the existing s-stop time and retaining a real closure. */
                 assert(releases[4].aspiration_run>=cat.aspiration_run/3);
@@ -146,6 +199,10 @@ int main(void)
             }
             assert(releases[3].a2f<=5 && releases[4].a2f<=5);
         }
+    for(int language=0x10000;language<=0x10001;++language) {
+        check_normal_s_z_before_r(language,"`[.1sri]","`[.1si]");
+        check_normal_s_z_before_r(language,"`[.1zri]","`[.1zi]");
+    }
     printf("English s+stop: %u closure and connected-release checks\n",checks);
     return 0;
 }
