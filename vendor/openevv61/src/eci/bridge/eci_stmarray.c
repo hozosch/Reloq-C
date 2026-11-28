@@ -24,6 +24,7 @@
 #include "delta.h"
 #include "klatt_lang.h"
 #include "eci_tvqueue.h"
+#include "reloq61_acoustic_output.h"
 
 /* A moment too big for sixteen bits is written as this, then in full. */
 #define ESCAPE 0xffff
@@ -412,11 +413,21 @@ static int32_t value_of_cell(const int32_t *cell)
                                               : cell[1];
 }
 
+static _Thread_local reloq61_interval_filter interval_filter;
+reloq61_interval_filter reloq61_interval_filter_scope(reloq61_interval_filter next)
+{
+    reloq61_interval_filter previous=interval_filter;
+    interval_filter=next;
+    return previous;
+}
+
 int32_t addStreamArrayPtValC(void *d, const int16_t *stream,
                              const int16_t *when, const int32_t *value)
 {
+    int32_t at=value_of_cell(value),end=at;
+    if(interval_filter)interval_filter(d,stream[1],&at,&end);
     return sa_appendValue(&GEN_LIST(d)->streams[stream[1]],
-                          (uint32_t)value_of_cell(value), when[1]) == 0;
+                          (uint32_t)at, when[1]) == 0;
 }
 
 /* The same value into two streams at once. */
@@ -424,12 +435,14 @@ int32_t addStreamArraySsValC(void *d, const int16_t *stream,
                              const int16_t *when, const int32_t *first,
                              const int32_t *second)
 {
+    int32_t begin=value_of_cell(first),end=value_of_cell(second);
+    if(interval_filter)interval_filter(d,stream[1],&begin,&end);
     if (!sa_appendValue(&GEN_LIST(d)->streams[stream[1]],
-                        (uint32_t)value_of_cell(first), when[1]))
+                        (uint32_t)begin, when[1]))
         return 1;
 
     return sa_appendValue(&GEN_LIST(d)->streams[stream[1]],
-                          (uint32_t)value_of_cell(second), when[1]) == 0;
+                          (uint32_t)end, when[1]) == 0;
 }
 
 /* Typed acoustic-bank target insertion uses the same monotonic queues. */

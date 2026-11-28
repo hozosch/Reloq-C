@@ -5,6 +5,8 @@
 #include <string.h>
 #include "reloq61.h"
 #include "reloq61_english_plan.h"
+#include "reloq61_english_phonetics.h"
+#include "reloq61_acoustic_output.h"
 #include "reloq61_english_bank.h"
 #include "reloq61_parameter_names.h"
 #include "reloq_inline_tags.h"
@@ -897,8 +899,14 @@ static int generate_core_impl(const struct reloq61_request *,struct reloq61_resu
 static int generate_core(const struct reloq61_request *q,struct reloq61_result *r,
     reloq61_phoneme_sink sink,void *context)
 {
+    struct reloq61_english_stop_scope saved_stop=
+        reloq61_english_stop_scope((struct reloq61_english_stop_scope){0});
+    reloq61_interval_filter saved_filter=
+        reloq61_interval_filter_scope(reloq61_english_stop_interval);
     struct reloq61_german_final_a saved=reloq61_german_final_scope((struct reloq61_german_final_a){0});
     int result=generate_core_impl(q,r,sink,context);
+    reloq61_interval_filter_scope(saved_filter);
+    reloq61_english_stop_scope(saved_stop);
     struct reloq61_german_final_a used=reloq61_german_final_scope(saved);
     if(used.failed){r->error=1;result=-1;}
     reloq61_german_final_dispose(used);

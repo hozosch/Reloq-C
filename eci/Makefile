@@ -150,6 +150,9 @@ test_provider_licence_start: ../tests/test_provider_licence_start.c ../vendor/op
 test_reloq_native_rules: ../tests/test_reloq_native_rules.c $(OBJECTS) $(RULES61)
 	$(CC) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -I../vendor/openevv61/include $< $(OBJECTS) $(RULES61) -pthread -Wl,--gc-sections -lm -o $@
 
+test_reloq_english_s_stops: ../tests/test_reloq_english_s_stops.c $(OBJECTS) $(RULES61)
+	$(CC) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -I../vendor/openevv61/include $< $(OBJECTS) $(RULES61) -pthread -Wl,--gc-sections -lm -o $@
+
 test_reloq_wpm_native: ../tests/test_reloq_wpm_native.c $(OBJECTS) $(RULES61)
 	$(CC) $(filter-out -Werror,$(CFLAGS)) $(PROVIDER_LINK) -I../include $< $(OBJECTS) $(RULES61) -pthread -Wl,--gc-sections -lm -o $@
 
@@ -160,6 +163,9 @@ test_eci_stream_time: ../tests/test_eci_stream_time.c ../vendor/openevv61/src/ec
 	$(CC) -O2 -std=gnu11 -Wno-attributes -ffunction-sections -fdata-sections -I../vendor/openevv61/include -I../vendor/openevv61/src $(addprefix -I,$(wildcard ../vendor/openevv61/src/*/ ../vendor/openevv61/src/*/*/)) $^ -Wl,--gc-sections -o $@
 
 eci_native_rules_probe.exe: ../tests/test_reloq_native_rules.c ../src/reloq_german_lexicon.c ../src/reloq_german_spr.c reloq_eci_fixed_math.c $(RULES61_WIN)
+	$(WINDOWS_CC) $(filter-out -Werror,$(WINDOWS_CFLAGS)) $(PROVIDER_LINK) $(SECTIONS) -I../include -I../vendor/openevv61/include $^ $(WINDOWS_LDFLAGS) -Wl,--gc-sections -lm -o $@
+
+eci_english_s_stops_probe.exe: ../tests/test_reloq_english_s_stops.c ../src/reloq_german_lexicon.c ../src/reloq_german_spr.c reloq_eci_fixed_math.c $(RULES61_WIN)
 	$(WINDOWS_CC) $(filter-out -Werror,$(WINDOWS_CFLAGS)) $(PROVIDER_LINK) $(SECTIONS) -I../include -I../vendor/openevv61/include $^ $(WINDOWS_LDFLAGS) -Wl,--gc-sections -lm -o $@
 
 eci_rate_dispatch_probe.exe: ../tests/test_reloq_rate_dispatch.c ../src/reloq_rate_transfer.c $(HEADERS)
