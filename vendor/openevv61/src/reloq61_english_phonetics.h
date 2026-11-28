@@ -9,6 +9,11 @@ void reloq61_english_shr_noise(void *state);
 /* Give adjacent schwas next to /w/ their own neutral oral-tract target. */
 void reloq61_english_schwa_timbre(void *state);
 
+/* Keep the ordinary s/z noise colour before the native r transition. */
+void reloq61_english_s_z_r(void *state);
+/* Shape post-s t/p releases from the corresponding ordinary stops. */
+void reloq61_english_tp_tract(void *state);
+
 /* Pending English release, scoped to a synthesis transaction. */
 struct reloq61_english_stop_scope {
     void *state;

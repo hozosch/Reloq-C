@@ -46,18 +46,38 @@ def header(tag,specs):
         rows.append('int32_t '+function+'('+declaration(tag,name,n)+');')
         if name not in entries:continue
         rows.append('static inline int32_t '+call+'('+declaration(tag,name,n,True)+')\n{')
-        if tag in ('enus61', 'engb61') and name == 'modulate_noise':
+        english=tag in ('enus61','engb61')
+        if english and name=='do_release':
+            assert n==1
+            rows.extend(['    struct reloq61_english_release_guard guard;',
+                '    reloq61_english_stop_release_begin(state,&guard);',
+                '    int32_t result;',
+                '    if(delta_rule_trace) {',
+                '        const int32_t args[]={p0};',
+                '        result=delta_rule_called(DELTA_ENTRY_do_release,args,1,1);',
+                f'    }} else result={function}(state,p0);',
+                '    reloq61_english_stop_release_end(state,&guard,result);',
+                '    return result;\n}'])
+            continue
+        if english and name=='do_non_son_amps':
+            rows.append('    reloq61_english_stop_prepare(state);')
+        if english and name == 'modulate_noise':
             rows.append('    reloq61_english_shr_noise(state);')
+        fixes={'eng_ph_S':'reloq61_english_shr_noise',
+               'eng_ph_x':'reloq61_english_schwa_timbre',
+               'eng_alv_Fv':'reloq61_english_s_z_r',
+               'eng_ph_t':'reloq61_english_tp_tract',
+               'eng_ph_p':'reloq61_english_tp_tract'}
+        fix=fixes.get(name) if english else None
         rows.append('    if(delta_rule_trace) {')
         rows.append('        const int32_t args[]={'+', '.join('p'+str(i)for i in reversed(range(n)))+'};')
-        if tag in ('enus61', 'engb61') and name in ('eng_ph_S', 'eng_ph_x'):
-            fix='reloq61_english_shr_noise' if name == 'eng_ph_S' else 'reloq61_english_schwa_timbre'
+        if fix:
             rows.append(f'        int32_t result=delta_rule_called(DELTA_ENTRY_{name},args,{n},{n});')
             rows.append(f'        if(!result){fix}(state);\n        return result;\n    }}')
         else:
             rows.append(f'        return delta_rule_called(DELTA_ENTRY_{name},args,{n},{n});\n    }}')
-        if tag in ('enus61', 'engb61') and name in ('eng_ph_S', 'eng_ph_x'):
-            fix='reloq61_english_shr_noise' if name == 'eng_ph_S' else 'reloq61_english_schwa_timbre'
+        if english and name=='eng_ph_s_dur':fix='reloq61_english_stop_watch'
+        if fix:
             rows.append('    int32_t result='+function+'(state'+''.join(', p'+str(i)for i in range(n))+');')
             rows.append(f'    if(!result){fix}(state);\n    return result;\n}}')
         else:

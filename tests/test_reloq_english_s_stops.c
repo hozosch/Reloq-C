@@ -116,6 +116,14 @@ int main(void)
             struct reference cat=reference_release(language,"cat",speeds[n]);
             struct reference cry=reference_release(language,"cry",speeds[n]);
             if(speeds[n]==50) {
+                struct reference till=reference_release(language,"`[.1tIl]",speeds[n]);
+                struct reference pill=reference_release(language,"`[.1pIl]",speeds[n]);
+                int t_f2=releases[2].mid_tract[1]-till.mid_tract[1];
+                int p_f2=releases[1].mid_tract[1]-pill.mid_tract[1];
+                /* The softened post-s t and p carry their own native
+                 * transition toward the vowel rather than the s tract. */
+                assert(t_f2>=-40 && t_f2<=40);
+                assert(p_f2>=-50 && p_f2<=50);
                 /* The release should be recognizably sustained, while using
                  * the existing s-stop time and retaining a real closure. */
                 assert(releases[4].aspiration_run>=cat.aspiration_run/3);

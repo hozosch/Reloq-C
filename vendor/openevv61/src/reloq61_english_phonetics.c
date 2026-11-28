@@ -9,7 +9,7 @@ enum { PHONE_START=712, NOISE_A2=2934, NOISE_A3=2938, NOISE_A4=2942,
        SCHWA_F2_LEFT=3098, SCHWA_F2_RIGHT=3102,
        SCHWA_F3_LEFT=3106, SCHWA_F3_RIGHT=3110 };
 enum { PHONE_SH=16, PHONE_R=23, PHONE_W=26, PHONE_SCHWA=35 };
-enum { PHONE_P=2, PHONE_T=4, PHONE_K=7, PHONE_S=14,
+enum { PHONE_P=2, PHONE_T=4, PHONE_K=7, PHONE_Z=13, PHONE_S=14,
        PHONE_Y=25, PHONE_FRONT_I=27, PHONE_FRONT_A=31,
        PHONE_REDUCED_I=32, PHONE_REDUCED_BACK=37,
        PHONE_TRANSITION=8, TRANSITION_TO_VOICE=2,
@@ -55,6 +55,60 @@ static int32_t previous_phone(delta_state *d,int32_t at)
         at=node;
     }
     return 0;
+}
+
+void reloq61_english_s_z_r(void *state)
+{
+    delta_state *d=state;
+    if(!d || !d->vars || deltaErrorThrown(d))return;
+    unsigned char *p=(unsigned char *)state+DG_BASE;
+    struct reloq61_spr_phone current,next;
+    if(!reloq61_spr_phone_at(d,long_at(p,PHONE_START),&current) ||
+       !reloq61_spr_phone_at(d,current.after,&next))return;
+    unsigned phone=reloq61_spr_feature(d,&current,0);
+    if((phone!=PHONE_S && phone!=PHONE_Z) ||
+       reloq61_spr_feature(d,&next,0)!=PHONE_R)return;
+    /* Restore the normal upper s/z resonances at the start, then retain the
+     * native end targets so the resonances move smoothly into the /r/. */
+    const unsigned left[]={3114,3122},right[]={3118,3126};
+    const int16_t target[]={4000,4300};
+    for(unsigned i=0;i<2;++i) {
+        int16_t l=short_at(p,left[i]),r=short_at(p,right[i]);
+        if(l>0 && l<target[i] && (r==-1 || r>0)) {
+            if(r==-1)put_short(p,right[i],l);
+            put_short(p,left[i],target[i]);
+        }
+    }
+}
+
+void reloq61_english_tp_tract(void *state)
+{
+    delta_state *d=state;
+    if(!d || !d->vars || deltaErrorThrown(d))return;
+    unsigned char *p=(unsigned char *)state+DG_BASE;
+    int32_t at=long_at(p,PHONE_START);
+    struct reloq61_spr_phone current;
+    if(!reloq61_spr_phone_at(d,at,&current))return;
+    unsigned phone=reloq61_spr_feature(d,&current,0);
+    if((phone!=PHONE_T && phone!=PHONE_P) ||
+       reloq61_spr_feature(d,&current,PHONE_TRANSITION)!=TRANSITION_TO_VOICE ||
+       short_at(p,RELEASE_AH)!=0)return;
+    struct reloq61_spr_phone previous={previous_phone(d,at),0};
+    if(!previous.node || reloq61_spr_feature(d,&previous,0)!=PHONE_S)return;
+    /* The ordinary short initial t/p uses the midpoint of each native
+     * release target. After /s/, -2 can inherit the preceding fricative;
+     * resolve it to the ordinary stop's own left-hand target first. */
+    const unsigned left[]={3098,3106},right[]={3102,3110};
+    const int16_t defaults_t[]={1500,2550},defaults_p[]={1000,2200};
+    for(unsigned i=0;i<2;++i) {
+        int16_t a=short_at(p,left[i]),b=short_at(p,right[i]);
+        if(a==-2)a=phone==PHONE_T?defaults_t[i]:defaults_p[i];
+        if(b==-1)b=a;
+        if(a>0 && b>0) {
+            int16_t target=(int16_t)(((int32_t)a+b)/2);
+            put_short(p,left[i],target);put_short(p,right[i],target);
+        }
+    }
 }
 
 static int16_t s_stop_release_level(delta_state *d,unsigned phone,

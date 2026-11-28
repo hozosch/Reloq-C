@@ -2463,9 +2463,13 @@ static inline int32_t reloq_call_engb61_eng_alv_Fv(void *state, int32_t p0)
 {
     if(delta_rule_trace) {
         const int32_t args[]={p0};
-        return delta_rule_called(DELTA_ENTRY_eng_alv_Fv,args,1,1);
+        int32_t result=delta_rule_called(DELTA_ENTRY_eng_alv_Fv,args,1,1);
+        if(!result)reloq61_english_s_z_r(state);
+        return result;
     }
-    return reloq_engb61_eng_alv_Fv(state, p0);
+    int32_t result=reloq_engb61_eng_alv_Fv(state, p0);
+    if(!result)reloq61_english_s_z_r(state);
+    return result;
 }
 int32_t reloq_engb61_eng_bilab_Fv(void *, int32_t);
 static inline int32_t reloq_call_engb61_eng_bilab_Fv(void *state, int32_t p0)
@@ -3063,9 +3067,13 @@ static inline int32_t reloq_call_engb61_eng_ph_p(void *state, int32_t p0)
 {
     if(delta_rule_trace) {
         const int32_t args[]={p0};
-        return delta_rule_called(DELTA_ENTRY_eng_ph_p,args,1,1);
+        int32_t result=delta_rule_called(DELTA_ENTRY_eng_ph_p,args,1,1);
+        if(!result)reloq61_english_tp_tract(state);
+        return result;
     }
-    return reloq_engb61_eng_ph_p(state, p0);
+    int32_t result=reloq_engb61_eng_ph_p(state, p0);
+    if(!result)reloq61_english_tp_tract(state);
+    return result;
 }
 int32_t reloq_engb61_eng_ph_p_dur(void *, int32_t);
 static inline int32_t reloq_call_engb61_eng_ph_p_dur(void *state, int32_t p0)
@@ -3119,9 +3127,13 @@ static inline int32_t reloq_call_engb61_eng_ph_t(void *state, int32_t p0)
 {
     if(delta_rule_trace) {
         const int32_t args[]={p0};
-        return delta_rule_called(DELTA_ENTRY_eng_ph_t,args,1,1);
+        int32_t result=delta_rule_called(DELTA_ENTRY_eng_ph_t,args,1,1);
+        if(!result)reloq61_english_tp_tract(state);
+        return result;
     }
-    return reloq_engb61_eng_ph_t(state, p0);
+    int32_t result=reloq_engb61_eng_ph_t(state, p0);
+    if(!result)reloq61_english_tp_tract(state);
+    return result;
 }
 int32_t reloq_engb61_eng_ph_t_dur(void *, int32_t);
 static inline int32_t reloq_call_engb61_eng_ph_t_dur(void *state, int32_t p0)
