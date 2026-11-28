@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
-struct sample { int16_t voice, aspiration; };
+struct sample { int16_t voice, aspiration, frication; };
 struct capture { struct sample samples[4096]; int count; };
 
 static int32_t value_at(const struct reloq61_curve *c,int32_t t)
@@ -23,14 +23,15 @@ static int span(void *context,int32_t from,int32_t to,
     for(int32_t t=from;t<to;++t) {
         assert(capture->count<(int)(sizeof capture->samples/sizeof capture->samples[0]));
         capture->samples[capture->count++]=(struct sample){
-            (int16_t)value_at(c+2,t),(int16_t)value_at(c+7,t)};
+            (int16_t)value_at(c+2,t),(int16_t)value_at(c+7,t),
+            (int16_t)value_at(c+8,t)};
     }
     return 0;
 }
 static int frame(void *context,const int32_t c[62],int32_t volume)
 {(void)context;(void)c;(void)volume;assert(!"Expected sparse spans");return 1;}
 
-static int prevoice_aspiration(int language,const char *text,int speed)
+static int prevoice_aspiration(int language,const char *text,int speed,int *voice_delay)
 {
     struct capture capture={0};
     struct reloq61_request q={.language=language,.annotations=1,
@@ -46,6 +47,20 @@ static int prevoice_aspiration(int language,const char *text,int speed)
         } else run=0;
     }
     assert(first_voice>=0 && last_end>0 && first_voice-last_end<=2);
+    if(voice_delay) {
+        int s_started=0,closure=0,burst=-1,fade=-1;
+        for(int i=0;i<=first_voice && i<capture.count;++i) {
+            int frication=capture.samples[i].frication;
+            if(!s_started && frication>=35)s_started=1;
+            else if(s_started && !closure && frication==0)closure=1;
+            else if(closure && burst<0 && frication>=35)burst=i;
+            else if(burst>=0 && i>burst && frication<capture.samples[i-1].frication) {
+                fade=i;break;
+            }
+        }
+        assert(burst>=0 && fade>=0);
+        *voice_delay=first_voice-fade;
+    }
     return best;
 }
 
@@ -59,14 +74,18 @@ int main(void)
             int speed=speeds[n];
             int longest=0;
             for(unsigned i=0;i<sizeof examples/sizeof examples[0];++i) {
-                int length=prevoice_aspiration(language,examples[i],speed);
+                int delay=0;
+                int length=prevoice_aspiration(language,examples[i],speed,&delay);
                 assert(length>=1 && length<=14);
+                /* The /s/ stop's release flows into the following voice.
+                 * A separate appended H must not delay the vowel or /r/. */
+                assert(delay>=-1 && delay<=1);
                 if(length>longest)longest=length;
                 ++checks;
             }
             /* A deliberately aspirated phonetic tag remains the stronger
              * native gesture; it must not be shortened or doubled. */
-            assert(prevoice_aspiration(language,"`[.1skhWt]",speed)>longest);
+            assert(prevoice_aspiration(language,"`[.1skhWt]",speed,NULL)>longest);
             ++checks;
         }
     printf("English s+stop release: %u source/voice transition checks\n",checks);

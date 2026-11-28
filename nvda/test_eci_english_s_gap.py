@@ -41,7 +41,7 @@ def main():
     p.add_argument("--previous-dev4", type=Path)
     p.add_argument("--dictionary", type=Path)
     args = p.parse_args()
-    changed = ("ski", "scout", "school", "stop", "spill", "transcribe")
+    changed = ("ski", "scout", "school", "screen", "stop", "spill", "transcribe")
     unchanged = ("see", "say", "ask", "display", "rescue", "good dog",
                  "`[.1skhWt]", "`[.1trAnsh.2krIpt]")
     checks = 0
@@ -59,7 +59,7 @@ def main():
                     audio = render(current, [word + "."])[0]
                     old = render(before, [word + "."])[0]
                     assert len(audio) < len(old), (dialect, rate, word, len(audio), len(old))
-                    if word in ("ski", "scout", "school", "stop", "spill"):
+                    if word in ("ski", "scout", "school", "screen", "stop", "spill"):
                         end, release = s_and_release(audio)
                         old_end, old_release = s_and_release(old)
                         assert end + 3 <= old_end, (dialect, rate, word, end, old_end)

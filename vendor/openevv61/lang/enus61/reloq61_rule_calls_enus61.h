@@ -2064,6 +2064,7 @@ static inline int32_t reloq_call_enus61_do_h_amps(void *state, int32_t p0, int32
 int32_t reloq_enus61_do_non_son_amps(void *, int32_t);
 static inline int32_t reloq_call_enus61_do_non_son_amps(void *state, int32_t p0)
 {
+    reloq61_english_stop_prepare(state);
     if(delta_rule_trace) {
         const int32_t args[]={p0};
         return delta_rule_called(DELTA_ENTRY_do_non_son_amps,args,1,1);
