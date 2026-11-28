@@ -38,6 +38,7 @@ def main():
     args = p.parse_args()
     changed = ('ski', 'scout', 'school', 'sky', 'skew', 'screen', 'stop', 'spill')
     unchanged = ('see', 'say', 'ask', 'display', 'rescue', 'good dog',
+                 'strain', 'spring', 'split',
                  '`[.1skhWt]', '`[.1trAnsh.2krIpt]')
     checks = 0
     for dialect in (0x10000, 0x10001):
@@ -52,7 +53,10 @@ def main():
                     old = render(before, [word + '.'])[0]
                     end, release = s_and_release(audio)
                     old_end, old_release = s_and_release(old)
-                    assert abs(end-old_end)<=2, (dialect, rate, word, 's', end, old_end)
+                    shortening=old_end-end
+                    assert -2<=shortening<=14, (dialect, rate, word, 's', end, old_end)
+                    if rate==135:
+                        assert shortening>=1, (dialect, rate, word, 's not shortened', end, old_end)
                     assert release-end <= old_release-old_end+2, \
                         (dialect, rate, word, 'closure', end, release, old_end, old_release)
                     if rate == 135:

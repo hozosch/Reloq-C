@@ -13,6 +13,7 @@ void reloq61_english_schwa_timbre(void *state);
 struct reloq61_english_stop_scope {
     void *state;
     int32_t stop, following, anchor, aspiration_begin;
+    int32_t s_node, s_end, s_cut;
     int32_t closure_begin, closure_end, closure_cut;
     int32_t tract_start, tract_earliest;
     int16_t release_level;

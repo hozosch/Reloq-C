@@ -118,8 +118,8 @@ int main(void)
             if(speeds[n]==50) {
                 /* The release should be recognizably sustained, while using
                  * the existing s-stop time and retaining a real closure. */
-                assert(releases[4].aspiration_run>=cat.aspiration_run/2);
-                assert(releases[3].aspiration_run>=cry.aspiration_run/2);
+                assert(releases[4].aspiration_run>=cat.aspiration_run/3);
+                assert(releases[3].aspiration_run>=cry.aspiration_run/3);
                 assert(releases[4].aspiration_run<cat.aspiration_run);
                 assert(releases[3].aspiration_run<cry.aspiration_run);
             }

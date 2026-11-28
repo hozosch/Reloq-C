@@ -97,7 +97,7 @@ void reloq61_english_stop_watch(void *state)
        reloq61_spr_feature(d,&next,PHONE_TRANSITION)!=TRANSITION_TO_VOICE ||
        !reloq61_spr_phone_at(d,next.after,&following))return;
     soft_stop=(struct reloq61_english_stop_scope){.state=state,.stop=next.node,
-        .following=following.node,.anchor=-1,.aspiration_begin=-1};
+        .following=following.node,.anchor=-1,.aspiration_begin=-1,.s_node=current.node};
 }
 
 void reloq61_english_stop_prepare(void *state)
@@ -108,11 +108,15 @@ void reloq61_english_stop_prepare(void *state)
     int32_t at=long_at(p,PHONE_START);
     struct reloq61_spr_phone current,next;
     if(!reloq61_spr_phone_at(d,at,&current))return;
+    int32_t s_node=0,s_end=0,s_cut=0;
     if(soft_stop.state==state) {
         /* Preserve the watch through /s/ and the gathered tract targets
          * when do_non_son_amps is subsequently called for the same stop. */
         if(soft_stop.anchor<0 && current.node!=soft_stop.stop)return;
         if(soft_stop.anchor>=0 && current.node==soft_stop.stop)return;
+        if(soft_stop.anchor<0 && current.node==soft_stop.stop) {
+            s_node=soft_stop.s_node;s_end=soft_stop.s_end;s_cut=soft_stop.s_cut;
+        }
         soft_stop=(struct reloq61_english_stop_scope){0};
     }
     unsigned phone=reloq61_spr_feature(d,&current,0);
@@ -126,12 +130,12 @@ void reloq61_english_stop_prepare(void *state)
     if(begin<0 || (int64_t)end-begin<10000)return;
     soft_stop=(struct reloq61_english_stop_scope){.state=state,.stop=current.node,
         .following=next.node,.anchor=begin/10000,.aspiration_begin=-1,
+        .s_node=s_node,.s_end=s_end,.s_cut=s_cut,
         .release_level=s_stop_release_level(d,phone,&next)};
     int32_t start=long_at(p,STOP_START)/10000,span=soft_stop.anchor-start;
     if(start>=0 && span>=2) {
-        /* Make room for the real release before the voice starts. /k/ keeps
-         * more of its native aspiration; /p/ and /t/ remain more restrained. */
-        int32_t cut=(int32_t)((int64_t)span*(phone==PHONE_K?3:2)/4);
+        /* Give the native release a moderate part of the closure. */
+        int32_t cut=span/2;
         if(cut<1)cut=1;
         soft_stop.tract_start=start;
         soft_stop.tract_earliest=soft_stop.anchor-cut;
@@ -185,6 +189,21 @@ void reloq61_english_stop_interval(void *state,int16_t stream,int16_t value,
        (stream<frication || stream>frication+6) && !tract)return;
     struct reloq61_spr_phone current;
     if(!reloq61_spr_phone_at(d,long_at(p,PHONE_START),&current))return;
+    if(current.node==soft_stop.s_node && soft_stop.anchor<0) {
+        if(stream==frication && value>0) {
+            int32_t start=long_at(p,STOP_START)/10000;
+            int32_t end_s=long_at(p,RELEASE_START)/10000;
+            if(start>=0 && end_s>start && *begin==end_s && *end==end_s) {
+                int32_t cut=(end_s-start)/12;
+                if(cut>12)cut=12;
+                if(cut>0) {
+                    *begin-=cut;*end-=cut;
+                    soft_stop.s_end=end_s;soft_stop.s_cut=cut;
+                }
+            }
+        }
+        return;
+    }
     if(current.node==soft_stop.stop && soft_stop.anchor<0) {
         reloq61_english_stop_prepare(state);
         if(soft_stop.state!=state || soft_stop.anchor<0)return;
@@ -210,8 +229,7 @@ void reloq61_english_stop_interval(void *state,int16_t stream,int16_t value,
             if(!soft_stop.closure_valid && value==0 && *begin<*end && *end<anchor) {
                 int32_t duration=*end-*begin;
                 soft_stop.closure_begin=*begin;soft_stop.closure_end=*end;
-                unsigned phone=reloq61_spr_feature(d,&current,0);
-                int32_t cut=(int32_t)((int64_t)duration*(phone==PHONE_K?3:2)/4);
+                int32_t cut=duration/2;
                 /* Retain a short closure even at fast speech rates. */
                 int32_t reserve=duration/2;
                 if(reserve>5)reserve=5;
@@ -231,8 +249,15 @@ void reloq61_english_stop_interval(void *state,int16_t stream,int16_t value,
                 }
             }
             int32_t cut=soft_stop.closure_cut;
-            if(cut>0 && *begin==soft_stop.closure_begin && *end==soft_stop.closure_end)
+            if(cut>0 && *begin==soft_stop.closure_begin && *end==soft_stop.closure_end) {
                 *end-=cut;
+                if(stream==frication && soft_stop.s_cut>0) {
+                    /* Fade the shortened s to zero at its new endpoint and
+                     * hold that zero until the stop's existing release. */
+                    int32_t start=soft_stop.s_end-soft_stop.s_cut+1;
+                    if(start>=0 && start<*begin && start<=*end)*begin=start;
+                }
+            }
             else if(cut>0 && *begin==soft_stop.closure_end && *end==anchor) {
                 *begin-=cut;*end-=cut;
             }
