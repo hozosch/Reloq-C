@@ -13,7 +13,8 @@ enum { PHONE_P=2, PHONE_T=4, PHONE_K=7, PHONE_S=14,
        PHONE_REDUCED_I=32, PHONE_REDUCED_BACK=37,
        PHONE_TRANSITION=8, TRANSITION_TO_VOICE=2, PHONE_DURATION=2172,
        VOICE_STREAM=1034, ASPIRATION_STREAM=1038,
-       RELEASE_START=1152, RELEASE_END=1160, RELEASE_AH=2978 };
+       RELEASE_START=1152, RELEASE_END=1160, RELEASE_AH=2978,
+       RELEASE_FRICATION=3018 };
 
 static int16_t short_at(const unsigned char *p,unsigned off)
 {int16_t v;memcpy(&v,p+off,sizeof v);return v;}
@@ -78,6 +79,9 @@ void reloq61_english_s_duration(void *state)
 
 static _Thread_local struct reloq61_english_stop_scope soft_stop;
 
+static int is_reduced_phone(unsigned phone)
+{return phone==PHONE_REDUCED_I || phone==PHONE_SCHWA || phone==PHONE_REDUCED_BACK;}
+
 static int16_t native_s_stop_aspiration(delta_state *d,unsigned phone,
     const struct reloq61_spr_phone *following)
 {
@@ -87,9 +91,44 @@ static int16_t native_s_stop_aspiration(delta_state *d,unsigned phone,
     if(phone==PHONE_T)return 47;
     unsigned next=reloq61_spr_feature(d,following,0);
     if(next==PHONE_R)return 52;
-    if(next==PHONE_REDUCED_I || next==PHONE_SCHWA || next==PHONE_REDUCED_BACK)return 41;
+    if(is_reduced_phone(next))return 41;
     if(next==PHONE_Y || (next>=PHONE_FRONT_I && next<=PHONE_FRONT_A))return 42;
     return 45;
+}
+
+void reloq61_english_frication_begin(void *state,
+    struct reloq61_english_frication_guard *guard)
+{
+    *guard=(struct reloq61_english_frication_guard){0};
+    delta_state *d=state;
+    if(!d || !d->vars || deltaErrorThrown(d))return;
+    unsigned char *p=(unsigned char *)state+DG_BASE;
+    int32_t at=long_at(p,PHONE_START);
+    struct reloq61_spr_phone current,next;
+    if(!reloq61_spr_phone_at(d,at,&current) ||
+       !reloq61_spr_phone_at(d,current.after,&next) || short_at(p,RELEASE_AH)!=0)return;
+    unsigned phone=reloq61_spr_feature(d,&current,0);
+    if(phone!=PHONE_K && phone!=PHONE_T)return;
+    struct reloq61_spr_phone previous={previous_phone(d,at),0};
+    if(!previous.node || reloq61_spr_feature(d,&previous,0)!=PHONE_S)return;
+    int16_t old=short_at(p,RELEASE_FRICATION),level=old;
+    unsigned after=reloq61_spr_feature(d,&next,0);
+    /* The ordinary medial k before a reduced vowel has a 56 target, as in
+     * American; the normal t burst is 65. Keep all other native targets. */
+    if(phone==PHONE_K && is_reduced_phone(after) && old==60)level=56;
+    else if(phone==PHONE_T && old==60)level=65;
+    if(level==old)return;
+    *guard=(struct reloq61_english_frication_guard){old,level,1};
+    put_short(p,RELEASE_FRICATION,level);
+}
+
+void reloq61_english_frication_end(void *state,
+    const struct reloq61_english_frication_guard *guard)
+{
+    if(!guard->active)return;
+    unsigned char *p=(unsigned char *)state+DG_BASE;
+    if(short_at(p,RELEASE_FRICATION)==guard->substituted)
+        put_short(p,RELEASE_FRICATION,guard->original);
 }
 
 struct reloq61_english_stop_scope reloq61_english_stop_scope(

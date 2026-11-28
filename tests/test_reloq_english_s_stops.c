@@ -6,7 +6,7 @@
 
 struct sample { int16_t voice, aspiration, frication; };
 struct capture { struct sample samples[4096]; int count; };
-struct release { int duration, level; };
+struct release { int duration, level, frication_peak; };
 
 static int32_t value_at(const struct reloq61_curve *c,int32_t t)
 {
@@ -39,7 +39,7 @@ static struct release first_release(int language,const char *text,int speed)
         .frame=frame,.span=span,.context=&capture,.output_rate=11025};
     struct reloq61_result result={0};
     assert(!reloq61_generate(&q,&result) && !result.error && !result.unsupported);
-    int begin=-1,end=-1,level=0,voice=-1;
+    int begin=-1,end=-1,level=0,voice=-1,peak=0;
     for(int i=0;i<capture.count;++i) {
         const struct sample s=capture.samples[i];
         if(begin<0) {
@@ -50,18 +50,23 @@ static struct release first_release(int language,const char *text,int speed)
         if(s.aspiration>level)level=s.aspiration;
     }
     assert(begin>=0 && end>begin);
+    for(int i=begin;i>=0;--i) {
+        int frication=capture.samples[i].frication;
+        if(i<begin && frication==0)break;
+        if(frication>peak)peak=frication;
+    }
     for(int i=end;i<capture.count && i<=end+2;++i)
         if(capture.samples[i].voice>10){voice=i;break;}
     /* Native frication fades out with the H; voice follows immediately. */
     assert(voice>=0 && capture.samples[voice].frication<=5);
-    return (struct release){end-begin,level};
+    return (struct release){end-begin,level,peak};
 }
 
 int main(void)
 {
-    const struct { const char *normal,*after_s; } pairs[]={
-        {"American","`[.0skXn]"}, {"cat","scat"}, {"cry","scry"},
-        {"take","stake"}, {"pay","spay"}};
+    const struct { const char *normal,*after_s; int same_frication; } pairs[]={
+        {"American","`[.0skXn]",1}, {"cat","scat",1}, {"cry","scry",1},
+        {"take","stake",1}, {"opinion","`[.1spIl]",1}, {"pay","spay",0}};
     const int speeds[]={50,100,150,200,220,250};
     unsigned checks=0;
     for(int language=0x10000;language<=0x10001;++language)
@@ -70,6 +75,10 @@ int main(void)
                 struct release normal=first_release(language,pairs[i].normal,speeds[n]);
                 struct release after=first_release(language,pairs[i].after_s,speeds[n]);
                 assert(after.level==normal.level);
+                if(pairs[i].same_frication) {
+                    int difference=after.frication_peak-normal.frication_peak;
+                    assert(difference>=-5 && difference<=5);
+                }
                 assert(after.duration<=normal.duration);
                 if(normal.duration>=3)assert(after.duration<normal.duration);
                 ++checks;

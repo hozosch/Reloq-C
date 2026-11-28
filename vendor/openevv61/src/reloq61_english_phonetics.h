@@ -26,6 +26,14 @@ struct reloq61_english_release_guard {
     int16_t level;
     int active;
 };
+struct reloq61_english_frication_guard {
+    int16_t original, substituted;
+    int active;
+};
+void reloq61_english_frication_begin(void *state,
+    struct reloq61_english_frication_guard *guard);
+void reloq61_english_frication_end(void *state,
+    const struct reloq61_english_frication_guard *guard);
 void reloq61_english_stop_release_begin(void *state,
     struct reloq61_english_release_guard *guard);
 void reloq61_english_stop_release_end(void *state,

@@ -2064,11 +2064,15 @@ static inline int32_t reloq_call_enus61_do_h_amps(void *state, int32_t p0, int32
 int32_t reloq_enus61_do_non_son_amps(void *, int32_t);
 static inline int32_t reloq_call_enus61_do_non_son_amps(void *state, int32_t p0)
 {
+    struct reloq61_english_frication_guard guard;
+    reloq61_english_frication_begin(state,&guard);
+    int32_t result;
     if(delta_rule_trace) {
         const int32_t args[]={p0};
-        return delta_rule_called(DELTA_ENTRY_do_non_son_amps,args,1,1);
-    }
-    return reloq_enus61_do_non_son_amps(state, p0);
+        result=delta_rule_called(DELTA_ENTRY_do_non_son_amps,args,1,1);
+    } else result=reloq_enus61_do_non_son_amps(state,p0);
+    reloq61_english_frication_end(state,&guard);
+    return result;
 }
 int32_t reloq_enus61_do_pt_voicing(void *, int32_t);
 static inline int32_t reloq_call_enus61_do_pt_voicing(void *state, int32_t p0)
