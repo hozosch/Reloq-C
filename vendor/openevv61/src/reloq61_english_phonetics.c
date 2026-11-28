@@ -9,8 +9,11 @@ enum { PHONE_START=712, NOISE_A2=2934, NOISE_A3=2938, NOISE_A4=2942,
        SCHWA_F3_LEFT=3106, SCHWA_F3_RIGHT=3110 };
 enum { PHONE_SH=16, PHONE_R=23, PHONE_W=26, PHONE_SCHWA=35 };
 enum { PHONE_P=2, PHONE_T=4, PHONE_K=7, PHONE_S=14,
+       PHONE_TRANSITION=8, TRANSITION_TO_VOICE=2,
+       FIRST_FRICATION_STREAM=21, LAST_FRICATION_STREAM=27,
        VOICE_STREAM=1034, ASPIRATION_STREAM=1038,
-       RELEASE_START=1152, RELEASE_END=1160, RELEASE_AH=2978 };
+       PHONE_TIME_START=1144, RELEASE_START=1152, RELEASE_END=1160,
+       RELEASE_AH=2978 };
 
 static int16_t short_at(const unsigned char *p,unsigned off)
 {int16_t v;memcpy(&v,p+off,sizeof v);return v;}
@@ -53,6 +56,15 @@ static int32_t previous_phone(delta_state *d,int32_t at)
 }
 
 static _Thread_local struct reloq61_english_stop_scope soft_stop;
+static _Thread_local struct reloq61_english_s_scope short_s;
+
+struct reloq61_english_s_scope reloq61_english_s_scope(
+    struct reloq61_english_s_scope next)
+{
+    struct reloq61_english_s_scope previous=short_s;
+    short_s=next;
+    return previous;
+}
 
 struct reloq61_english_stop_scope reloq61_english_stop_scope(
     struct reloq61_english_stop_scope next)
@@ -108,11 +120,47 @@ void reloq61_english_stop_release_end(void *state,
 void reloq61_english_stop_interval(void *state,int16_t stream,
     int32_t *begin,int32_t *end)
 {
-    if(soft_stop.state!=state || !state || !begin || !end)return;
+    if(!state || !begin || !end)return;
     delta_state *d=state;
     unsigned char *p=(unsigned char *)state+DG_BASE;
-    if(stream!=short_at(p,VOICE_STREAM) && stream!=short_at(p,ASPIRATION_STREAM))return;
     struct reloq61_spr_phone current;
+    if(short_s.enabled && stream>=FIRST_FRICATION_STREAM &&
+       stream<=LAST_FRICATION_STREAM &&
+       reloq61_spr_phone_at(d,long_at(p,PHONE_START),&current)) {
+        struct reloq61_spr_phone next,after;
+        if(reloq61_spr_feature(d,&current,0)==PHONE_S &&
+           reloq61_spr_phone_at(d,current.after,&next) &&
+           (reloq61_spr_feature(d,&next,0)==PHONE_P ||
+            reloq61_spr_feature(d,&next,0)==PHONE_T ||
+            reloq61_spr_feature(d,&next,0)==PHONE_K) &&
+           reloq61_spr_phone_at(d,next.after,&after) &&
+           reloq61_spr_feature(d,&next,PHONE_TRANSITION)==TRANSITION_TO_VOICE) {
+            /* The native transition flag also protects explicit /h/ and
+             * stops that already have their own aspirated release. */
+            int32_t from=long_at(p,PHONE_TIME_START)/10000;
+            int32_t to=long_at(p,RELEASE_START)/10000;
+            int32_t stop=long_at(p,RELEASE_END)/10000;
+            int32_t duration=to-from;
+            if(from>=0 && duration>=16 && stop>to &&
+               *begin>=from && *end<=to) {
+                int32_t shortened=from+(duration*3)/4;
+                short_s.state=state;
+                short_s.next=next.node;
+                short_s.original_stop=stop;
+                short_s.shortened_stop=shortened+(stop-to);
+                *begin=from+((*begin-from)*3)/4;
+                *end=from+((*end-from)*3)/4;
+            }
+        } else if(short_s.state==state && short_s.next==current.node &&
+                  *begin==short_s.original_stop &&
+                  *end>=short_s.original_stop) {
+            /* Start the existing silent closure where the shorter /s/ ends.
+             * Keep the burst and all following targets at their old times. */
+            *begin=short_s.shortened_stop;
+        }
+    }
+    if(soft_stop.state!=state)return;
+    if(stream!=short_at(p,VOICE_STREAM) && stream!=short_at(p,ASPIRATION_STREAM))return;
     int32_t release_end=soft_stop.release_end/10000;
     if(!reloq61_spr_phone_at(d,long_at(p,PHONE_START),&current) ||
        current.node!=soft_stop.following || *begin>release_end)return;

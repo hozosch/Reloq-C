@@ -30,4 +30,14 @@ void reloq61_english_stop_release_end(void *state,
 void reloq61_english_stop_interval(void *state,int16_t stream,
     int32_t *begin,int32_t *end);
 
+/* Shorten the /s/ source before an unaspirated stop while retaining the
+ * native stop release and the surrounding utterance timing. */
+struct reloq61_english_s_scope {
+    void *state;
+    int32_t next, original_stop, shortened_stop;
+    int enabled;
+};
+struct reloq61_english_s_scope reloq61_english_s_scope(
+    struct reloq61_english_s_scope next);
+
 #endif
