@@ -8,7 +8,7 @@ struct sample { int16_t voice, aspiration, frication, tract[5], a2f; };
 struct capture { struct sample samples[4096]; int count; };
 struct release { int silence, burst_to_voice, peak, aspiration_run, first_voice, after_voice;
     int16_t tract[5], mid_tract[5], a2f; };
-struct reference { int peak, first_voice; int16_t tract[5], mid_tract[5]; };
+struct reference { int peak, first_voice, aspiration_run; int16_t tract[5], mid_tract[5]; };
 
 static int32_t value_at(const struct reloq61_curve *c,int32_t t)
 {
@@ -84,7 +84,8 @@ static struct reference reference_release(int language,const char *text,int spee
         if(capture.samples[i].aspiration>peak)peak=capture.samples[i].aspiration;
     }
     assert(begin>=0 && voice>begin);
-    struct reference out={.peak=peak,.first_voice=capture.samples[voice].aspiration};
+    struct reference out={.peak=peak,.first_voice=capture.samples[voice].aspiration,
+        .aspiration_run=voice-begin};
     int mid=(begin+voice)/2;
     for(int i=0;i<5;++i){out.tract[i]=capture.samples[voice].tract[i];
         out.mid_tract[i]=capture.samples[mid].tract[i];}
@@ -103,8 +104,8 @@ int main(void)
                 releases[i]=first_s_stop(language,examples[i],speeds[n]);
                 /* Slow speech keeps a closure and joins the following voice. */
                 if(speeds[n]==50) {
-                    assert(releases[i].silence>0 && releases[i].burst_to_voice<=45);
-                    assert(releases[i].aspiration_run>=8);
+                    assert(releases[i].silence>0 && releases[i].burst_to_voice<=90);
+                    assert(releases[i].aspiration_run>=20);
                     assert(releases[i].first_voice>=releases[i].after_voice);
                 }
                 ++checks;
@@ -114,6 +115,14 @@ int main(void)
             assert(releases[0].peak<releases[3].peak);
             struct reference cat=reference_release(language,"cat",speeds[n]);
             struct reference cry=reference_release(language,"cry",speeds[n]);
+            if(speeds[n]==50) {
+                /* The release should be recognizably sustained, while using
+                 * the existing s-stop time and retaining a real closure. */
+                assert(releases[4].aspiration_run>=cat.aspiration_run/2);
+                assert(releases[3].aspiration_run>=cry.aspiration_run/2);
+                assert(releases[4].aspiration_run<cat.aspiration_run);
+                assert(releases[3].aspiration_run<cry.aspiration_run);
+            }
             assert(releases[4].peak==cat.peak && releases[3].peak==cry.peak);
             assert(releases[4].first_voice==cat.first_voice);
             assert(releases[3].first_voice==cry.first_voice);

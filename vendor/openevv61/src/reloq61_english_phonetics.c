@@ -129,7 +129,9 @@ void reloq61_english_stop_prepare(void *state)
         .release_level=s_stop_release_level(d,phone,&next)};
     int32_t start=long_at(p,STOP_START)/10000,span=soft_stop.anchor-start;
     if(start>=0 && span>=2) {
-        int32_t cut=span/4;
+        /* Make room for the real release before the voice starts. /k/ keeps
+         * more of its native aspiration; /p/ and /t/ remain more restrained. */
+        int32_t cut=(int32_t)((int64_t)span*(phone==PHONE_K?3:2)/4);
         if(cut<1)cut=1;
         soft_stop.tract_start=start;
         soft_stop.tract_earliest=soft_stop.anchor-cut;
@@ -208,8 +210,14 @@ void reloq61_english_stop_interval(void *state,int16_t stream,int16_t value,
             if(!soft_stop.closure_valid && value==0 && *begin<*end && *end<anchor) {
                 int32_t duration=*end-*begin;
                 soft_stop.closure_begin=*begin;soft_stop.closure_end=*end;
-                soft_stop.closure_cut=duration>=2?duration/4:0;
-                if(duration>=2 && soft_stop.closure_cut==0)soft_stop.closure_cut=1;
+                unsigned phone=reloq61_spr_feature(d,&current,0);
+                int32_t cut=(int32_t)((int64_t)duration*(phone==PHONE_K?3:2)/4);
+                /* Retain a short closure even at fast speech rates. */
+                int32_t reserve=duration/2;
+                if(reserve>5)reserve=5;
+                if(reserve<1)reserve=1;
+                if(cut>duration-reserve)cut=duration-reserve;
+                soft_stop.closure_cut=duration>=2?(cut>0?cut:1):0;
                 soft_stop.closure_valid=1;
                 if(soft_stop.tract_enabled && soft_stop.tract_held) {
                     /* Keep the stop's own release tract until the added H
