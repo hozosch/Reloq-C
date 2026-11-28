@@ -38,10 +38,8 @@ def main():
                         actual = render(current, [text, EciIndex(7)])
                         old = render(before, [text, EciIndex(7)])
                         assert actual[0] != old[0], (hex(dialect), rate, speed, text)
-                        assert len(actual[0]) <= len(old[0]), (hex(dialect), rate, speed, text)
-                        assert [i for i, _ in actual[1]] == [i for i, _ in old[1]]
-                        assert actual[1][-1][1] == len(actual[0])
-                        assert all(new <= prior for (_, new), (_, prior) in zip(actual[1], old[1]))
+                        assert len(actual[0]) == len(old[0]) and actual[1] == old[1], \
+                            (hex(dialect), rate, speed, text)
                         checks += 1
                     for text in unchanged:
                         assert render(current, [text, EciIndex(7)]) == \

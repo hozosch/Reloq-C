@@ -66,9 +66,7 @@ def main():
                          'the scout, ', EciIndex(3), 'stop and spill.', EciIndex(4)]
                 new_audio, new_marks = render(current, parts)
                 old_audio, old_marks = render(before, parts)
-                assert len(new_audio) <= len(old_audio)
-                assert [mark for mark, _ in new_marks] == [mark for mark, _ in old_marks]
-                assert all(new <= old for (_, new), (_, old) in zip(new_marks, old_marks))
+                assert len(new_audio) == len(old_audio) and new_marks == old_marks
                 assert new_marks[-1][1] == len(new_audio)
                 checks += 1
         finally:
@@ -80,7 +78,9 @@ def main():
             for engine in (current, before):
                 engine.set_dictionary_path(args.dictionary.resolve())
             assert render(current, ['transcript']) == render(before, ['transcript'])
-            assert len(render(current, ['transcribe'])[0]) < len(render(before, ['transcribe'])[0])
+            new=render(current, ['transcribe'])[0]
+            old=render(before, ['transcribe'])[0]
+            assert len(new)==len(old) and new!=old
             checks += 2
         finally:
             current.close()

@@ -6,7 +6,7 @@
 
 struct sample { int16_t voice, aspiration, frication; };
 struct capture { struct sample samples[4096]; int count; };
-struct release { int silence, burst_to_voice, peak, first_voice, after_voice; };
+struct release { int silence, burst_to_voice, peak, aspiration_run, first_voice, after_voice; };
 
 static int32_t value_at(const struct reloq61_curve *c,int32_t t)
 {
@@ -39,35 +39,53 @@ static struct release first_s_stop(int language,const char *text,int speed)
         .frame=frame,.span=span,.context=&capture,.output_rate=11025};
     struct reloq61_result result={0};
     assert(!reloq61_generate(&q,&result) && !result.error && !result.unsupported);
-    int s_end=-1,burst=-1,voice=-1,peak=0;
+    int s_end=-1,burst=-1,voice=-1,peak=0,run=0,longest=0;
     for(int i=1;i<capture.count;++i) {
         const struct sample s=capture.samples[i];
         if(s_end<0 && s.frication==0)s_end=i;
         if(s_end>=0 && burst<0 && s.frication>=35)burst=i;
         if(s.voice>10){voice=i;break;}
-        if(s_end>=0 && s.aspiration>peak)peak=s.aspiration;
+        if(s_end>=0) {
+            if(s.aspiration>peak)peak=s.aspiration;
+            if(s.aspiration>=38){if(++run>longest)longest=run;}else run=0;
+        }
     }
     assert(s_end>=0 && burst>s_end && voice>burst && peak>=36);
-    /* The ordinary voice begins while the release noise is still present. */
-    assert(capture.samples[voice].aspiration>0);
+    /* The H runs into voicing as the native burst falls away. */
+    assert(capture.samples[voice].aspiration>0 && capture.samples[voice].frication<=5);
     int after=voice+8<capture.count?voice+8:voice;
-    return (struct release){burst-s_end,voice-burst,peak,
+    return (struct release){burst-s_end,voice-burst,peak,longest,
         capture.samples[voice].aspiration,capture.samples[after].aspiration};
+}
+
+static int reference_peak(int language,const char *text,int speed)
+{
+    struct capture capture={0};
+    struct reloq61_request q={.language=language,.annotations=1,
+        .voice={0,50,65,30,0,0,speed,100},.text=text,
+        .frame=frame,.span=span,.context=&capture,.output_rate=11025};
+    struct reloq61_result result={0};
+    assert(!reloq61_generate(&q,&result) && !result.error && !result.unsupported);
+    int peak=0;
+    for(int i=0;i<capture.count && capture.samples[i].voice<=10;++i)
+        if(capture.samples[i].aspiration>peak)peak=capture.samples[i].aspiration;
+    return peak;
 }
 
 int main(void)
 {
-    const char *examples[]={"`[.1skWt]","`[.1spIl]","`[.1stIl]","`[.1skrYb]"};
+    const char *examples[]={"`[.1skWt]","`[.1spIl]","`[.1stIl]","`[.1skrYb]","`[.1skAt]"};
     const int speeds[]={50,100,150,200,220,250};
     unsigned checks=0;
     for(int language=0x10000;language<=0x10001;++language)
         for(unsigned n=0;n<sizeof speeds/sizeof speeds[0];++n) {
-            struct release releases[4];
+            struct release releases[5];
             for(unsigned i=0;i<sizeof examples/sizeof examples[0];++i) {
                 releases[i]=first_s_stop(language,examples[i],speeds[n]);
                 /* Slow speech keeps a closure and joins the following voice. */
                 if(speeds[n]==50) {
-                    assert(releases[i].silence>0 && releases[i].burst_to_voice<=30);
+                    assert(releases[i].silence>0 && releases[i].burst_to_voice<=45);
+                    assert(releases[i].aspiration_run>=8);
                     assert(releases[i].first_voice>=releases[i].after_voice);
                 }
                 ++checks;
@@ -75,6 +93,8 @@ int main(void)
             assert(releases[1].peak<releases[0].peak);
             assert(releases[2].peak<releases[0].peak);
             assert(releases[0].peak<releases[3].peak);
+            assert(releases[4].peak==reference_peak(language,"cat",speeds[n]));
+            assert(releases[3].peak==reference_peak(language,"cry",speeds[n]));
         }
     printf("English s+stop: %u closure and connected-release checks\n",checks);
     return 0;

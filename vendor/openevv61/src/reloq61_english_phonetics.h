@@ -9,14 +9,12 @@ void reloq61_english_shr_noise(void *state);
 /* Give adjacent schwas next to /w/ their own neutral oral-tract target. */
 void reloq61_english_schwa_timbre(void *state);
 
-/* Shorten the native closure of /p t k/ following /s/, before insertion. */
-void reloq61_english_stop_duration(void *state);
-
 /* Pending English release, scoped to a synthesis transaction. */
 struct reloq61_english_stop_scope {
     void *state;
     int32_t stop, following, anchor, aspiration_begin;
-    int16_t release_level, blended;
+    int32_t closure_begin, closure_end, closure_cut;
+    int16_t release_level, blended, frication_seen, closure_valid;
 };
 struct reloq61_english_stop_scope reloq61_english_stop_scope(
     struct reloq61_english_stop_scope next);

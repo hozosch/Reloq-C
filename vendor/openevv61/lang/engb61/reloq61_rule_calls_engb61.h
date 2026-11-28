@@ -2998,13 +2998,11 @@ static inline int32_t reloq_call_engb61_eng_ph_k(void *state, int32_t p0)
 int32_t reloq_engb61_eng_ph_k_dur(void *, int32_t);
 static inline int32_t reloq_call_engb61_eng_ph_k_dur(void *state, int32_t p0)
 {
-    int32_t result;
     if(delta_rule_trace) {
         const int32_t args[]={p0};
-        result=delta_rule_called(DELTA_ENTRY_eng_ph_k_dur,args,1,1);
-    } else result=reloq_engb61_eng_ph_k_dur(state,p0);
-    if(!result)reloq61_english_stop_duration(state);
-    return result;
+        return delta_rule_called(DELTA_ENTRY_eng_ph_k_dur,args,1,1);
+    }
+    return reloq_engb61_eng_ph_k_dur(state, p0);
 }
 int32_t reloq_engb61_eng_ph_l(void *, int32_t);
 static inline int32_t reloq_call_engb61_eng_ph_l(void *state, int32_t p0)
@@ -3072,13 +3070,11 @@ static inline int32_t reloq_call_engb61_eng_ph_p(void *state, int32_t p0)
 int32_t reloq_engb61_eng_ph_p_dur(void *, int32_t);
 static inline int32_t reloq_call_engb61_eng_ph_p_dur(void *state, int32_t p0)
 {
-    int32_t result;
     if(delta_rule_trace) {
         const int32_t args[]={p0};
-        result=delta_rule_called(DELTA_ENTRY_eng_ph_p_dur,args,1,1);
-    } else result=reloq_engb61_eng_ph_p_dur(state,p0);
-    if(!result)reloq61_english_stop_duration(state);
-    return result;
+        return delta_rule_called(DELTA_ENTRY_eng_ph_p_dur,args,1,1);
+    }
+    return reloq_engb61_eng_ph_p_dur(state, p0);
 }
 int32_t reloq_engb61_eng_ph_r(void *, int32_t);
 static inline int32_t reloq_call_engb61_eng_ph_r(void *state, int32_t p0)
@@ -3128,13 +3124,11 @@ static inline int32_t reloq_call_engb61_eng_ph_t(void *state, int32_t p0)
 int32_t reloq_engb61_eng_ph_t_dur(void *, int32_t);
 static inline int32_t reloq_call_engb61_eng_ph_t_dur(void *state, int32_t p0)
 {
-    int32_t result;
     if(delta_rule_trace) {
         const int32_t args[]={p0};
-        result=delta_rule_called(DELTA_ENTRY_eng_ph_t_dur,args,1,1);
-    } else result=reloq_engb61_eng_ph_t_dur(state,p0);
-    if(!result)reloq61_english_stop_duration(state);
-    return result;
+        return delta_rule_called(DELTA_ENTRY_eng_ph_t_dur,args,1,1);
+    }
+    return reloq_engb61_eng_ph_t_dur(state, p0);
 }
 int32_t reloq_engb61_eng_ph_v(void *, int32_t);
 static inline int32_t reloq_call_engb61_eng_ph_v(void *state, int32_t p0)
