@@ -14,7 +14,10 @@ def s_and_release(pcm):
     size = 11  # approximately one millisecond at 11025 Hz
     powers = [sum(int(x) * int(x) for x in samples[i:i + size]) / size
               for i in range(0, min(len(samples), 2205) - size, size)]
-    threshold = max(100.0, max(powers[:100]) * 0.0004)
+    # The vowel can enter the first 100 ms after shortening, especially at high
+    # speed. Calibrate on the initial /s/ so that vowel energy does not hide a
+    # quieter /p/ release when comparing two timings.
+    threshold = max(100.0, max(powers[:30]) * 0.0004)
     end = next((i for i in range(15, len(powers) - 4)
                 if all(power < threshold for power in powers[i:i + 5])), None)
     assert end is not None, "no closure after the initial s"
