@@ -193,6 +193,22 @@ void reloq61_english_stop_watch(void *state)
         .following=following.node,.anchor=-1,.aspiration_begin=-1,.s_node=current.node};
 }
 
+/* Duration planning may visit another /s/ before the first /s/ is emitted.
+ * Re-arm /st/ and /sp/ at the acoustic rule for this /s/, before its
+ * intervals are queued. Keep /sk/ on its existing path. */
+void reloq61_english_stop_watch_tp(void *state)
+{
+    delta_state *d=state;
+    if(!d || !d->vars || deltaErrorThrown(d))return;
+    unsigned char *p=(unsigned char *)state+DG_BASE;
+    struct reloq61_spr_phone current,next;
+    if(!reloq61_spr_phone_at(d,long_at(p,PHONE_START),&current) ||
+       reloq61_spr_feature(d,&current,0)!=PHONE_S ||
+       !reloq61_spr_phone_at(d,current.after,&next))return;
+    unsigned phone=reloq61_spr_feature(d,&next,0);
+    if(phone==PHONE_P || phone==PHONE_T)reloq61_english_stop_watch(state);
+}
+
 void reloq61_english_stop_prepare(void *state)
 {
     delta_state *d=state;

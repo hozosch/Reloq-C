@@ -61,6 +61,8 @@ def header(tag,specs):
             continue
         if english and name=='do_non_son_amps':
             rows.append('    reloq61_english_stop_prepare(state);')
+        if english and name=='eng_ph_s':
+            rows.append('    reloq61_english_stop_watch_tp(state);')
         if english and name == 'modulate_noise':
             rows.append('    reloq61_english_shr_noise(state);')
         fixes={'eng_ph_S':'reloq61_english_shr_noise',

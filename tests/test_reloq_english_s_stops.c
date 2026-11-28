@@ -177,6 +177,18 @@ int main(void)
                 assert(t_af>=-4 && t_af<=4 && t_noise>=-4 && t_noise<=4);
                 assert(p_af>=-4 && p_af<=4 && p_noise>=-4 && p_noise<=4);
                 assert(releases[1].air10 && releases[2].air10);
+                /* A later /s/ must not discard the first stop's tract
+                 * transition: compare space/states to pace/tate. */
+                struct release space=first_s_stop(language,"`[.1spes]",speeds[n]);
+                struct release states=first_s_stop(language,"`[.1stets]",speeds[n]);
+                struct reference pace=reference_release(language,"`[.1pes]",speeds[n]);
+                struct reference tate=reference_release(language,"`[.1tet]",speeds[n]);
+                for(int formant=0;formant<3;++formant) {
+                    int dp=space.mid_tract[formant]-pace.mid_tract[formant];
+                    int dt=states.mid_tract[formant]-tate.mid_tract[formant];
+                    assert(dp>=-40 && dp<=40 && dt>=-40 && dt<=40);
+                }
+                assert(space.air10 && states.air10);
                 /* The release should be recognizably sustained, while using
                  * the existing s-stop time and retaining a real closure. */
                 assert(releases[4].aspiration_run>=cat.aspiration_run/3);

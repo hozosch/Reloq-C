@@ -2875,6 +2875,7 @@ static inline int32_t reloq_call_enus61_eng_ph_r_dur(void *state, int32_t p0)
 int32_t reloq_enus61_eng_ph_s(void *, int32_t);
 static inline int32_t reloq_call_enus61_eng_ph_s(void *state, int32_t p0)
 {
+    reloq61_english_stop_watch_tp(state);
     if(delta_rule_trace) {
         const int32_t args[]={p0};
         return delta_rule_called(DELTA_ENTRY_eng_ph_s,args,1,1);
