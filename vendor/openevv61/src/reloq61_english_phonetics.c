@@ -233,12 +233,6 @@ void reloq61_english_stop_interval(void *state,int16_t stream,int16_t value,
                 if(value==0 && *begin>anchor)*begin=anchor;
                 soft_stop.frication_seen|=(uint16_t)(1u<<bit);
             }
-        } else if(stream==aspiration && !soft_stop.blended && value>0 &&
-                  value<soft_stop.release_level && *begin<=anchor+1 &&
-                  *end>anchor && anchor<=INT32_MAX-10) {
-            int32_t target=anchor+10;
-            if(target>*end)target=*end;
-            if(target>*begin){*begin=target;soft_stop.blended=1;}
         }
     }
 }

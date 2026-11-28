@@ -8,7 +8,7 @@ struct sample { int16_t voice, aspiration, frication, tract[5], a2f; };
 struct capture { struct sample samples[4096]; int count; };
 struct release { int silence, burst_to_voice, peak, aspiration_run, first_voice, after_voice;
     int16_t tract[5], mid_tract[5], a2f; };
-struct reference { int peak; int16_t tract[5], mid_tract[5]; };
+struct reference { int peak, first_voice; int16_t tract[5], mid_tract[5]; };
 
 static int32_t value_at(const struct reloq61_curve *c,int32_t t)
 {
@@ -84,7 +84,8 @@ static struct reference reference_release(int language,const char *text,int spee
         if(capture.samples[i].aspiration>peak)peak=capture.samples[i].aspiration;
     }
     assert(begin>=0 && voice>begin);
-    struct reference out={.peak=peak};int mid=(begin+voice)/2;
+    struct reference out={.peak=peak,.first_voice=capture.samples[voice].aspiration};
+    int mid=(begin+voice)/2;
     for(int i=0;i<5;++i){out.tract[i]=capture.samples[voice].tract[i];
         out.mid_tract[i]=capture.samples[mid].tract[i];}
     return out;
@@ -114,6 +115,8 @@ int main(void)
             struct reference cat=reference_release(language,"cat",speeds[n]);
             struct reference cry=reference_release(language,"cry",speeds[n]);
             assert(releases[4].peak==cat.peak && releases[3].peak==cry.peak);
+            assert(releases[4].first_voice==cat.first_voice);
+            assert(releases[3].first_voice==cry.first_voice);
             for(int i=0;i<5;++i) {
                 int dc=releases[4].tract[i]-cat.tract[i];
                 int dr=releases[3].tract[i]-cry.tract[i];
