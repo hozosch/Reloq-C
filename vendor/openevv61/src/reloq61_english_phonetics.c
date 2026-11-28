@@ -9,6 +9,8 @@ enum { PHONE_START=712, NOISE_A2=2934, NOISE_A3=2938, NOISE_A4=2942,
        SCHWA_F3_LEFT=3106, SCHWA_F3_RIGHT=3110 };
 enum { PHONE_SH=16, PHONE_R=23, PHONE_W=26, PHONE_SCHWA=35 };
 enum { PHONE_P=2, PHONE_T=4, PHONE_K=7, PHONE_S=14,
+       PHONE_Y=25, PHONE_FRONT_I=27, PHONE_FRONT_A=31,
+       PHONE_REDUCED_I=32, PHONE_REDUCED_BACK=37,
        PHONE_TRANSITION=8, TRANSITION_TO_VOICE=2, PHONE_DURATION=2172,
        VOICE_STREAM=1034, ASPIRATION_STREAM=1038,
        RELEASE_START=1152, RELEASE_END=1160, RELEASE_AH=2978 };
@@ -76,6 +78,20 @@ void reloq61_english_s_duration(void *state)
 
 static _Thread_local struct reloq61_english_stop_scope soft_stop;
 
+static int16_t native_s_stop_aspiration(delta_state *d,unsigned phone,
+    const struct reloq61_spr_phone *following)
+{
+    /* Native English release levels. The k target follows the next phone,
+     * just as it does in the ordinary onset and medial rules. */
+    if(phone==PHONE_P)return 49;
+    if(phone==PHONE_T)return 47;
+    unsigned next=reloq61_spr_feature(d,following,0);
+    if(next==PHONE_R)return 52;
+    if(next==PHONE_REDUCED_I || next==PHONE_SCHWA || next==PHONE_REDUCED_BACK)return 41;
+    if(next==PHONE_Y || (next>=PHONE_FRONT_I && next<=PHONE_FRONT_A))return 42;
+    return 45;
+}
+
 struct reloq61_english_stop_scope reloq61_english_stop_scope(
     struct reloq61_english_stop_scope next)
 {
@@ -107,14 +123,12 @@ void reloq61_english_stop_release_begin(void *state,
     int32_t begin=long_at(p,RELEASE_START),end=long_at(p,RELEASE_END);
     int64_t duration=(int64_t)end-begin;
     if(duration<10000)return;
-    /* Use the core's ordinary release source at a lower level and limit the
-     * extra voiceless interval to 12 ms inside its existing transition. */
-    int32_t capped=duration>120000?begin+120000:end;
-    if(capped>INT32_MAX-10000)return;
+    /* Keep the native, already shortened stop transition. Its ordinary H
+     * and frication end together immediately before the following voice. */
+    if(end>INT32_MAX-10000)return;
     *guard=(struct reloq61_english_release_guard){end,0,1};
-    soft_stop=(struct reloq61_english_stop_scope){state,next.node,capped};
-    put_short(p,RELEASE_AH,40);
-    put_long(p,RELEASE_END,capped);
+    soft_stop=(struct reloq61_english_stop_scope){state,next.node,end};
+    put_short(p,RELEASE_AH,native_s_stop_aspiration(d,phone,&next));
 }
 
 void reloq61_english_stop_release_end(void *state,

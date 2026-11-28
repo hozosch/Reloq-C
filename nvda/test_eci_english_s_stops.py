@@ -21,7 +21,7 @@ def main():
     parser.add_argument('--shorter-s', action='store_true',
                         help='allow the experimental s duration to move later indices earlier')
     args = parser.parse_args()
-    changed = ('scout', 'skill', 'transcribe', 'spoon', 'spill', 'stop', 'still')
+    changed = ('scout', 'skill', 'screen', 'transcribe', 'spoon', 'spill', 'stop', 'still')
     unchanged = ('coat', 'paper', 'top', 'good dog', 'this car', 'ask',
                  '`[.1skhWt]', '`[.1trAnsh.2krIpt]')
     checks = 0
