@@ -15,7 +15,8 @@ void reloq61_english_s_duration(void *state);
 /* Pending English release, scoped to a synthesis transaction. */
 struct reloq61_english_stop_scope {
     void *state;
-    int32_t stop, following, anchor, aspiration_begin;
+    int32_t stop, following, anchor, aspiration_begin, frication_begin;
+    int16_t frication_level;
 };
 struct reloq61_english_stop_scope reloq61_english_stop_scope(
     struct reloq61_english_stop_scope next);

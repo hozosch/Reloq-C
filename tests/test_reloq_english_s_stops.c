@@ -60,6 +60,12 @@ static int prevoice_aspiration(int language,const char *text,int speed,int *voic
         }
         assert(burst>=0 && fade>=0);
         *voice_delay=first_voice-fade;
+        assert(capture.samples[first_voice].frication<=5);
+        int overlap=0;
+        for(int i=fade;i<first_voice;++i)
+            if(capture.samples[i].frication>0 && capture.samples[i].aspiration>=38)
+                ++overlap;
+        assert(overlap>0);
     }
     return best;
 }
@@ -77,9 +83,9 @@ int main(void)
                 int delay=0;
                 int length=prevoice_aspiration(language,examples[i],speed,&delay);
                 assert(length>=1 && length<=14);
-                /* The /s/ stop's release flows into the following voice.
-                 * A separate appended H must not delay the vowel or /r/. */
-                assert(delay>=-1 && delay<=1);
+                /* The native burst fades during a brief H and ends at the
+                 * following voice; no separate H delays the vowel or /r/. */
+                assert(delay>=0 && delay<=9);
                 if(length>longest)longest=length;
                 ++checks;
             }

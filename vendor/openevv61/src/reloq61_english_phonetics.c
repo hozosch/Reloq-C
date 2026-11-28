@@ -1,4 +1,5 @@
 #include "reloq61_english_phonetics.h"
+#include "reloq61_acoustic_output.h"
 #include "reloq61_scalar_state.h"
 #include "reloq61_spr_output.h"
 
@@ -10,7 +11,7 @@ enum { PHONE_START=712, NOISE_A2=2934, NOISE_A3=2938, NOISE_A4=2942,
 enum { PHONE_SH=16, PHONE_R=23, PHONE_W=26, PHONE_SCHWA=35 };
 enum { PHONE_P=2, PHONE_T=4, PHONE_K=7, PHONE_S=14,
        PHONE_TRANSITION=8, TRANSITION_TO_VOICE=2, PHONE_DURATION=2172,
-       VOICE_STREAM=1034, ASPIRATION_STREAM=1038,
+       VOICE_STREAM=1034, ASPIRATION_STREAM=1038, FRICATION_STREAM=1042,
        RELEASE_START=1152, RELEASE_END=1160, RELEASE_AH=2978 };
 
 static int16_t short_at(const unsigned char *p,unsigned off)
@@ -100,9 +101,11 @@ void reloq61_english_stop_prepare(void *state)
        !reloq61_spr_phone_at(d,current.after,&next) ||
        short_at(p,RELEASE_AH)!=0)return;
     int32_t begin=long_at(p,RELEASE_START),end=long_at(p,RELEASE_END);
-    if(begin<0 || (int64_t)end-begin<10000)return;
+    int64_t duration=(int64_t)end-begin;
+    int64_t capped=duration>120000?(int64_t)begin+120000:end;
+    if(begin<0 || duration<10000 || capped>INT32_MAX-10000)return;
     soft_stop=(struct reloq61_english_stop_scope){state,current.node,next.node,
-        begin/10000,-1};
+        begin/10000,-1,-1,0};
 }
 
 void reloq61_english_stop_release_begin(void *state,
@@ -113,9 +116,20 @@ void reloq61_english_stop_release_begin(void *state,
     if(!d || !d->vars || deltaErrorThrown(d))return;
     unsigned char *p=(unsigned char *)state+DG_BASE;
     struct reloq61_spr_phone current;
-    if(soft_stop.state!=state || soft_stop.aspiration_begin<0 ||
+    if(soft_stop.state!=state ||
        !reloq61_spr_phone_at(d,long_at(p,PHONE_START),&current) ||
        current.node!=soft_stop.stop || short_at(p,RELEASE_AH)!=0)return;
+    if(soft_stop.aspiration_begin<0) {
+        /* If this phone could not fit the normal short release envelope,
+         * restore its original frication hold and leave its H unchanged. */
+        if(soft_stop.frication_begin>=0) {
+            int32_t at=soft_stop.anchor*10000;
+            reloq61_submit_interval(state,short_at(p,FRICATION_STREAM),
+                soft_stop.frication_level,at,at);
+        }
+        soft_stop=(struct reloq61_english_stop_scope){0};
+        return;
+    }
     int32_t begin=long_at(p,RELEASE_START),end=long_at(p,RELEASE_END);
     int64_t duration=(int64_t)end-begin;
     if(duration<10000)return;
@@ -135,6 +149,13 @@ void reloq61_english_stop_release_end(void *state,
     unsigned char *p=(unsigned char *)state+DG_BASE;
     put_short(p,RELEASE_AH,guard->level);
     put_long(p,RELEASE_END,guard->end);
+    if(soft_stop.state==state && soft_stop.frication_begin>=0) {
+        /* As in a normal aspirated stop, the burst fades into the following
+         * voiced phone. Only its native level and time range are used. */
+        int32_t at=soft_stop.anchor*10000;
+        reloq61_submit_interval(state,short_at(p,FRICATION_STREAM),
+            result?soft_stop.frication_level:0,at,at);
+    }
     if(result)soft_stop=(struct reloq61_english_stop_scope){0};
 }
 
@@ -144,18 +165,25 @@ void reloq61_english_stop_interval(void *state,int16_t stream,int16_t value,
     if(soft_stop.state!=state || !state || !begin || !end)return;
     delta_state *d=state;
     unsigned char *p=(unsigned char *)state+DG_BASE;
-    if(stream!=short_at(p,VOICE_STREAM) && stream!=short_at(p,ASPIRATION_STREAM))return;
+    if(stream!=short_at(p,VOICE_STREAM) && stream!=short_at(p,ASPIRATION_STREAM) &&
+       stream!=short_at(p,FRICATION_STREAM))return;
     struct reloq61_spr_phone current;
     if(!reloq61_spr_phone_at(d,long_at(p,PHONE_START),&current) ||
        current.node!=soft_stop.stop)return;
     int32_t anchor=soft_stop.anchor;
-    if(stream==short_at(p,ASPIRATION_STREAM) && value==0 &&
-       soft_stop.aspiration_begin<0 && *end==anchor && *begin<anchor) {
-        /* Leave room in the ordered aspiration queue before the native
-         * voice onset, without moving the s, burst, or following phone. */
+    if(stream==short_at(p,FRICATION_STREAM) && value>0 &&
+       soft_stop.frication_begin<0 && *end==anchor && *begin<anchor-1) {
+        /* Keep the native burst's peak, then shorten its normal fade. */
         int32_t available=anchor-*begin;
-        int32_t cut=available>8?8:available;
+        int32_t cut=available>9?8:available-1;
         *end=anchor-cut;
+        soft_stop.frication_begin=*end;
+        soft_stop.frication_level=value;
+    } else if(stream==short_at(p,ASPIRATION_STREAM) && value==0 &&
+       soft_stop.frication_begin>=0 && soft_stop.aspiration_begin<0 &&
+       *end==anchor && *begin<=soft_stop.frication_begin) {
+        /* Place the weakened native H over that same short fade. */
+        *end=soft_stop.frication_begin;
         soft_stop.aspiration_begin=*end;
     } else if(soft_stop.aspiration_begin>=0 && *begin==anchor && *end>anchor) {
         if(stream==short_at(p,VOICE_STREAM) && value==0) {

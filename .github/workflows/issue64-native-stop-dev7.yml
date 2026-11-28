@@ -1,0 +1,148 @@
+name: English native-shaped short s-stop candidate
+on:
+  push:
+    branches: [codex/issue64-native-stop-dev7-20261128]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Record build time
+        run: echo "RELOQ_BUILD_EPOCH=$(date +%s)" >> "$GITHUB_ENV"
+      - uses: actions/download-artifact@v8
+        with:
+          name: dictionary-snapshot
+          run-id: 45919355377
+          github-token: ${{ github.token }}
+          path: data/community
+      - name: Install Windows compiler and translations
+        run: |
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
+          fi
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 update -qq
+          sudo apt-get -o Acquire::Retries=2 install -y --no-install-recommends gcc-mingw-w64-x86-64-posix gettext
+      - uses: actions/cache/restore@v6
+        id: rules
+        with:
+          path: vendor/openevv61/build
+          key: sapi-rules-ubuntu24-gcc13-v1-x64-0b7471da4899553f3cb52732730b29b58093ebaeb174a17b9da209f392f9f250
+      - name: Rebuild changed rule sources
+        if: steps.rules.outputs.cache-hit == 'true'
+        run: |
+          find vendor/openevv61/build -type f -exec touch {} +
+          sleep 1
+          git diff --name-only -z --diff-filter=ACMRT 5fabf2186f13516108751677a3415dc814d424ea "$GITHUB_SHA" -- \
+            vendor/openevv61 include src/reloq_voice_filter.c src/reloq_orthography.c \
+            src/reloq_german_word_edges.c src/reloq_english_word_edges.c | xargs -0 -r touch --
+      - name: Build and check the Windows x64 engine
+        run: |
+          make -C eci -j4 windows-x64 PROVIDER_LTO=-flto=2 WINDOWS_CC=x86_64-w64-mingw32-gcc-posix WINDOWS_OBJDUMP=x86_64-w64-mingw32-objdump
+          make -C eci -j4 eci_english_s_stops_probe.exe PROVIDER_LTO=-flto=2 WINDOWS_CC=x86_64-w64-mingw32-gcc-posix
+      - name: Package the add-on
+        run: |
+          python3 addon/test_release_translations.py
+          python3 - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0, 'addon')
+          from build_synth import build, DEFAULT_OUTPUT
+          build(DEFAULT_OUTPUT, Path('eci/eci.dll'), refresh_dictionaries=False)
+          PY
+          for language in en de; do
+            PYTHONPATH=addon:nvda python3 -B -c 'import pathlib,sys,test_synth; sys.argv=["test_synth.py",sys.argv[1]]; test_synth.main(package_path=pathlib.Path("dist/reloq-c-synth-x64-2.1.4-dev7.nvda-addon"))' "$language"
+          done
+      - uses: actions/upload-artifact@v7
+        with:
+          name: english-s-stop-nvda-dev7
+          path: dist/reloq-c-synth-x64-2.1.4-dev7.nvda-addon
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v7
+        with:
+          name: english-s-stop-native-probe-dev7
+          path: eci/eci_english_s_stops_probe.exe
+          if-no-files-found: error
+          retention-days: 14
+  windows:
+    needs: package
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: english-s-stop-nvda-dev7
+          path: candidate
+      - uses: actions/download-artifact@v8
+        with:
+          name: english-s-stop-native-probe-dev7
+          path: probe
+      - name: Download the released reference and extract both engines
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v2.1.3 --repo "$env:GITHUB_REPOSITORY" --pattern 'reloq-c-synth-x64-2.1.3.nvda-addon' --dir previous
+          if ($LASTEXITCODE -ne 0) { throw 'Released add-on download failed' }
+          python -c "import zipfile; files=[('candidate/reloq-c-synth-x64-2.1.4-dev7.nvda-addon','candidate/unpacked'),('previous/reloq-c-synth-x64-2.1.3.nvda-addon','previous/unpacked')]; [(lambda z,d: (z.testzip() is None or (_ for _ in ()).throw(ValueError('corrupt package')), z.extractall(d)))(zipfile.ZipFile(p),d) for p,d in files]"
+          if ($LASTEXITCODE -ne 0) { throw 'Could not extract add-ons' }
+      - uses: actions/download-artifact@v8
+        with:
+          name: english-s-stop-nvda-dev3
+          run-id: 46153067650
+          github-token: ${{ github.token }}
+          path: compare-dev3
+      - name: Extract the previous listening candidate
+        shell: pwsh
+        run: |
+          python -c "import zipfile; zipfile.ZipFile('compare-dev3/reloq-c-synth-x64-2.1.4-dev3.nvda-addon').extractall('compare-dev3/unpacked')"
+          if ($LASTEXITCODE -ne 0) { throw 'Could not extract dev3 reference' }
+      - uses: actions/download-artifact@v8
+        with:
+          name: english-s-stop-nvda-dev4
+          run-id: 46158551575
+          github-token: ${{ github.token }}
+          path: compare-dev4
+      - name: Extract the s-only listening candidate
+        shell: pwsh
+        run: |
+          python -c "import zipfile; zipfile.ZipFile('compare-dev4/reloq-c-synth-x64-2.1.4-dev4.nvda-addon').extractall('compare-dev4/unpacked')"
+          if ($LASTEXITCODE -ne 0) { throw 'Could not extract dev4 reference' }
+      - name: Check speech, existing fixes and NVDA transport
+        shell: pwsh
+        run: |
+          .\probe\eci_english_s_stops_probe.exe
+          if ($LASTEXITCODE -ne 0) { throw 'English release timing regression' }
+          $dll = (Get-Item candidate/unpacked/synthDrivers/reloqC/eci.dll).FullName
+          $reference = (Get-Item previous/unpacked/synthDrivers/reloqC/eci.dll).FullName
+          $dictionary = (Get-Item candidate/unpacked/synthDrivers/reloqC/communityDictionaries).FullName
+          $dev3 = (Get-Item compare-dev3/unpacked/synthDrivers/reloqC/eci.dll).FullName
+          $dev4 = (Get-Item compare-dev4/unpacked/synthDrivers/reloqC/eci.dll).FullName
+          python -B nvda/test_eci_english_s_gap.py --library $dll --reference $dev3 --previous-dev4 $dev4 --dictionary $dictionary
+          if ($LASTEXITCODE -ne 0) { throw 'English s-stop closure regression' }
+          python -B nvda/test_eci_english_s_stops.py --shorter-s --library $dll --reference $reference --dictionary $dictionary
+          if ($LASTEXITCODE -ne 0) { throw 'English s+stop regression' }
+          python -B nvda/test_eci_german_er_compounds.py --library $dll --reference $reference
+          if ($LASTEXITCODE -ne 0) { throw 'German compound regression' }
+          python -B nvda/test_eci_german_waechst.py --library $dll
+          if ($LASTEXITCODE -ne 0) { throw 'German wachsen pronunciation regression' }
+          foreach ($test in @('nvda/test_eci_f0_tag.py','nvda/test_eci_pitch_boundary.py','nvda/test_eci_camel_prominence.py')) {
+            python -B $test --library $dll
+            if ($LASTEXITCODE -ne 0) { throw "$test failed" }
+          }
+          python -B tools/test_nvda_upgrade.py --previous previous/reloq-c-synth-x64-2.1.3.nvda-addon --candidate candidate/reloq-c-synth-x64-2.1.4-dev7.nvda-addon
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA update identity failed' }
+          $env:PYTHONPATH = 'addon;nvda'
+          python -B addon/test_synth_native.py --library $dll --addon candidate/reloq-c-synth-x64-2.1.4-dev7.nvda-addon
+          if ($LASTEXITCODE -ne 0) { throw 'NVDA transport integration failed' }
