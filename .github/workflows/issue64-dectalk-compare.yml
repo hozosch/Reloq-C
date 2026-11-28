@@ -1,0 +1,45 @@
+name: Compare DECtalk and English s-stops
+on:
+  push:
+    branches: [codex/issue64-dectalk-comparison-20261128]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  compare:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: english-s-stop-nvda-dev3
+          run-id: 46153067650
+          github-token: ${{ github.token }}
+          path: compare-dev3
+      - name: Download the referenced NVDA driver and released ReLoq
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v0.1.2 --repo masonasons/DECTalkNVDA --pattern 'DECtalk-v0.1.2.nvda-addon' --dir compare-dectalk
+          if ($LASTEXITCODE -ne 0) { throw 'DECtalk add-on download failed' }
+          gh release download v2.1.3 --repo "$env:GITHUB_REPOSITORY" --pattern 'reloq-c-synth-x64-2.1.3.nvda-addon' --dir compare-stable
+          if ($LASTEXITCODE -ne 0) { throw 'ReLoq 2.1.3 add-on download failed' }
+          $hash = (Get-FileHash compare-dectalk/DECtalk-v0.1.2.nvda-addon -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($hash -ne '7e7de2fcb924c6a19dd6ed1fa2778a94fbd02d85d344c061225d746802189505') { throw 'Unexpected DECtalk release hash' }
+          python -c "import pathlib,zipfile; ds=['compare-dectalk','compare-dev3','compare-stable']; [(lambda fs,d: (len(fs)==1 or (_ for _ in ()).throw(ValueError((d,fs))),zipfile.ZipFile(fs[0]).extractall(pathlib.Path(d)/'unpacked')))(list(pathlib.Path(d).glob('*.nvda-addon')),d) for d in ds]"
+          if ($LASTEXITCODE -ne 0) { throw 'Add-on extraction failed' }
+      - name: Render matching words from the actual engines
+        shell: pwsh
+        run: |
+          python -B tools/issue64_dectalk_compare.py --dectalk-dir compare-dectalk/unpacked --candidate-dir compare-dev3/unpacked --reference-dir compare-stable/unpacked --out comparison-output
+          if ($LASTEXITCODE -ne 0) { throw 'Speech comparison failed' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue64-dectalk-pcm-comparison
+          path: comparison-output/
+          if-no-files-found: error
+          retention-days: 3
