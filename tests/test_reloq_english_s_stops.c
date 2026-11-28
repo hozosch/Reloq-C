@@ -1,4 +1,4 @@
-/* Compare each English s-stop release with the ordinary native stop. */
+/* Observe the English s-stop transition, including the following voice. */
 #include "reloq61.h"
 #include <assert.h>
 #include <stdint.h>
@@ -6,7 +6,7 @@
 
 struct sample { int16_t voice, aspiration, frication; };
 struct capture { struct sample samples[4096]; int count; };
-struct release { int duration, level, frication_peak; };
+struct release { int silence, burst_to_voice, peak, first_voice, after_voice; };
 
 static int32_t value_at(const struct reloq61_curve *c,int32_t t)
 {
@@ -31,7 +31,7 @@ static int span(void *context,int32_t from,int32_t to,
 static int frame(void *context,const int32_t c[62],int32_t volume)
 {(void)context;(void)c;(void)volume;assert(!"Expected sparse spans");return 1;}
 
-static struct release first_release(int language,const char *text,int speed)
+static struct release first_s_stop(int language,const char *text,int speed)
 {
     struct capture capture={0};
     struct reloq61_request q={.language=language,.annotations=1,
@@ -39,50 +39,43 @@ static struct release first_release(int language,const char *text,int speed)
         .frame=frame,.span=span,.context=&capture,.output_rate=11025};
     struct reloq61_result result={0};
     assert(!reloq61_generate(&q,&result) && !result.error && !result.unsupported);
-    int begin=-1,end=-1,level=0,voice=-1,peak=0;
-    for(int i=0;i<capture.count;++i) {
+    int s_end=-1,burst=-1,voice=-1,peak=0;
+    for(int i=1;i<capture.count;++i) {
         const struct sample s=capture.samples[i];
-        if(begin<0) {
-            if(s.voice<=10 && s.aspiration>=38)begin=i;
-            else continue;
-        }
-        if(s.voice>10 || s.aspiration<38) {end=i;break;}
-        if(s.aspiration>level)level=s.aspiration;
+        if(s_end<0 && s.frication==0)s_end=i;
+        if(s_end>=0 && burst<0 && s.frication>=35)burst=i;
+        if(s.voice>10){voice=i;break;}
+        if(s_end>=0 && s.aspiration>peak)peak=s.aspiration;
     }
-    assert(begin>=0 && end>begin);
-    for(int i=begin;i>=0;--i) {
-        int frication=capture.samples[i].frication;
-        if(i<begin && frication==0)break;
-        if(frication>peak)peak=frication;
-    }
-    for(int i=end;i<capture.count && i<=end+2;++i)
-        if(capture.samples[i].voice>10){voice=i;break;}
-    /* Native frication fades out with the H; voice follows immediately. */
-    assert(voice>=0 && capture.samples[voice].frication<=5);
-    return (struct release){end-begin,level,peak};
+    assert(s_end>=0 && burst>s_end && voice>burst && peak>=36);
+    /* The ordinary voice begins while the release noise is still present. */
+    assert(capture.samples[voice].aspiration>0);
+    int after=voice+8<capture.count?voice+8:voice;
+    return (struct release){burst-s_end,voice-burst,peak,
+        capture.samples[voice].aspiration,capture.samples[after].aspiration};
 }
 
 int main(void)
 {
-    const struct { const char *normal,*after_s; int same_frication; } pairs[]={
-        {"American","`[.0skXn]",1}, {"cat","scat",1}, {"cry","scry",1},
-        {"take","stake",1}, {"opinion","`[.1spIl]",1}, {"pay","spay",0}};
+    const char *examples[]={"`[.1skWt]","`[.1spIl]","`[.1stIl]","`[.1skrYb]"};
     const int speeds[]={50,100,150,200,220,250};
     unsigned checks=0;
     for(int language=0x10000;language<=0x10001;++language)
-        for(unsigned n=0;n<sizeof speeds/sizeof speeds[0];++n)
-            for(unsigned i=0;i<sizeof pairs/sizeof pairs[0];++i) {
-                struct release normal=first_release(language,pairs[i].normal,speeds[n]);
-                struct release after=first_release(language,pairs[i].after_s,speeds[n]);
-                assert(after.level==normal.level);
-                if(pairs[i].same_frication) {
-                    int difference=after.frication_peak-normal.frication_peak;
-                    assert(difference>=-5 && difference<=5);
+        for(unsigned n=0;n<sizeof speeds/sizeof speeds[0];++n) {
+            struct release releases[4];
+            for(unsigned i=0;i<sizeof examples/sizeof examples[0];++i) {
+                releases[i]=first_s_stop(language,examples[i],speeds[n]);
+                /* Slow speech keeps a closure and joins the following voice. */
+                if(speeds[n]==50) {
+                    assert(releases[i].silence>0 && releases[i].burst_to_voice<=30);
+                    assert(releases[i].first_voice>=releases[i].after_voice);
                 }
-                assert(after.duration<=normal.duration);
-                if(normal.duration>=3)assert(after.duration<normal.duration);
                 ++checks;
             }
-    printf("English s+stop: %u native-reference and connected-release checks\n",checks);
+            assert(releases[1].peak<releases[0].peak);
+            assert(releases[2].peak<releases[0].peak);
+            assert(releases[0].peak<releases[3].peak);
+        }
+    printf("English s+stop: %u closure and connected-release checks\n",checks);
     return 0;
 }

@@ -425,7 +425,7 @@ int32_t addStreamArrayPtValC(void *d, const int16_t *stream,
                              const int16_t *when, const int32_t *value)
 {
     int32_t at=value_of_cell(value),end=at;
-    if(interval_filter)interval_filter(d,stream[1],&at,&end);
+    if(interval_filter)interval_filter(d,stream[1],when[1],&at,&end);
     return sa_appendValue(&GEN_LIST(d)->streams[stream[1]],
                           (uint32_t)at, when[1]) == 0;
 }
@@ -436,7 +436,7 @@ int32_t addStreamArraySsValC(void *d, const int16_t *stream,
                              const int32_t *second)
 {
     int32_t begin=value_of_cell(first),end=value_of_cell(second);
-    if(interval_filter)interval_filter(d,stream[1],&begin,&end);
+    if(interval_filter)interval_filter(d,stream[1],when[1],&begin,&end);
     if (!sa_appendValue(&GEN_LIST(d)->streams[stream[1]],
                         (uint32_t)begin, when[1]))
         return 1;

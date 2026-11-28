@@ -13,8 +13,7 @@ enum { PHONE_P=2, PHONE_T=4, PHONE_K=7, PHONE_S=14,
        PHONE_REDUCED_I=32, PHONE_REDUCED_BACK=37,
        PHONE_TRANSITION=8, TRANSITION_TO_VOICE=2, PHONE_DURATION=2172,
        VOICE_STREAM=1034, ASPIRATION_STREAM=1038,
-       RELEASE_START=1152, RELEASE_END=1160, RELEASE_AH=2978,
-       RELEASE_FRICATION=3018 };
+       RELEASE_START=1152, RELEASE_END=1160, RELEASE_AH=2978 };
 
 static int16_t short_at(const unsigned char *p,unsigned off)
 {int16_t v;memcpy(&v,p+off,sizeof v);return v;}
@@ -56,80 +55,40 @@ static int32_t previous_phone(delta_state *d,int32_t at)
     return 0;
 }
 
-void reloq61_english_s_duration(void *state)
+void reloq61_english_stop_duration(void *state)
 {
-    delta_state *d=state;
-    if(!d || !d->vars || deltaErrorThrown(d))return;
-    unsigned char *p=(unsigned char *)state+DG_BASE;
-    struct reloq61_spr_phone current,next,after;
-    if(!reloq61_spr_phone_at(d,long_at(p,PHONE_START),&current) ||
-       reloq61_spr_feature(d,&current,0)!=PHONE_S ||
-       !reloq61_spr_phone_at(d,current.after,&next))return;
-    unsigned stop=reloq61_spr_feature(d,&next,0);
-    if((stop!=PHONE_P && stop!=PHONE_T && stop!=PHONE_K) ||
-       !reloq61_spr_phone_at(d,next.after,&after) ||
-       reloq61_spr_feature(d,&next,PHONE_TRANSITION)!=TRANSITION_TO_VOICE)return;
-    int32_t duration=long_at(p,PHONE_DURATION);
-    if(duration<160000)return;
-    /* Change the native duration before it is inserted. The release,
-     * following phones, pitch and indices are then rescheduled together;
-     * the shortened frication does not turn into extra closure silence. */
-    put_long(p,PHONE_DURATION,(int32_t)(((int64_t)duration*3)/4));
-}
-
-static _Thread_local struct reloq61_english_stop_scope soft_stop;
-
-static int is_reduced_phone(unsigned phone)
-{return phone==PHONE_REDUCED_I || phone==PHONE_SCHWA || phone==PHONE_REDUCED_BACK;}
-
-static int16_t native_s_stop_aspiration(delta_state *d,unsigned phone,
-    const struct reloq61_spr_phone *following)
-{
-    /* Native English release levels. The k target follows the next phone,
-     * just as it does in the ordinary onset and medial rules. */
-    if(phone==PHONE_P)return 49;
-    if(phone==PHONE_T)return 47;
-    unsigned next=reloq61_spr_feature(d,following,0);
-    if(next==PHONE_R)return 52;
-    if(is_reduced_phone(next))return 41;
-    if(next==PHONE_Y || (next>=PHONE_FRONT_I && next<=PHONE_FRONT_A))return 42;
-    return 45;
-}
-
-void reloq61_english_frication_begin(void *state,
-    struct reloq61_english_frication_guard *guard)
-{
-    *guard=(struct reloq61_english_frication_guard){0};
     delta_state *d=state;
     if(!d || !d->vars || deltaErrorThrown(d))return;
     unsigned char *p=(unsigned char *)state+DG_BASE;
     int32_t at=long_at(p,PHONE_START);
-    struct reloq61_spr_phone current,next;
-    if(!reloq61_spr_phone_at(d,at,&current) ||
-       !reloq61_spr_phone_at(d,current.after,&next) || short_at(p,RELEASE_AH)!=0)return;
+    struct reloq61_spr_phone current,next,previous={previous_phone(d,at),0};
+    if(!previous.node || !reloq61_spr_phone_at(d,at,&current) ||
+       reloq61_spr_feature(d,&previous,0)!=PHONE_S ||
+       !reloq61_spr_phone_at(d,current.after,&next) ||
+       reloq61_spr_feature(d,&current,PHONE_TRANSITION)!=TRANSITION_TO_VOICE)return;
     unsigned phone=reloq61_spr_feature(d,&current,0);
-    if(phone!=PHONE_K && phone!=PHONE_T)return;
-    struct reloq61_spr_phone previous={previous_phone(d,at),0};
-    if(!previous.node || reloq61_spr_feature(d,&previous,0)!=PHONE_S)return;
-    int16_t old=short_at(p,RELEASE_FRICATION),level=old;
-    unsigned after=reloq61_spr_feature(d,&next,0);
-    /* The ordinary medial k before a reduced vowel has a 56 target, as in
-     * American; the normal t burst is 65. Keep all other native targets. */
-    if(phone==PHONE_K && is_reduced_phone(after) && old==60)level=56;
-    else if(phone==PHONE_T && old==60)level=65;
-    if(level==old)return;
-    *guard=(struct reloq61_english_frication_guard){old,level,1};
-    put_short(p,RELEASE_FRICATION,level);
+    if(phone!=PHONE_P && phone!=PHONE_T && phone!=PHONE_K)return;
+    int32_t duration=long_at(p,PHONE_DURATION);
+    if(duration<160000)return;
+    /* Plan the shorter closure before scheduling following phones, so the
+     * s, the burst and the following voice retain their native shapes. */
+    put_long(p,PHONE_DURATION,(int32_t)(((int64_t)duration*3)/4));
 }
 
-void reloq61_english_frication_end(void *state,
-    const struct reloq61_english_frication_guard *guard)
+static int16_t s_stop_release_level(delta_state *d,unsigned phone,
+    const struct reloq61_spr_phone *following)
 {
-    if(!guard->active)return;
-    unsigned char *p=(unsigned char *)state+DG_BASE;
-    if(short_at(p,RELEASE_FRICATION)==guard->substituted)
-        put_short(p,RELEASE_FRICATION,guard->original);
+    /* The k levels follow the ordinary English releases, with a lighter
+     * setting before /r/. The p and t releases remain less aspirated. */
+    if(phone==PHONE_P || phone==PHONE_T)return 37;
+    unsigned next=reloq61_spr_feature(d,following,0);
+    if(next==PHONE_R)return 48;
+    if(next==PHONE_REDUCED_I || next==PHONE_SCHWA || next==PHONE_REDUCED_BACK ||
+       next==PHONE_Y || (next>=PHONE_FRONT_I && next<=PHONE_FRONT_A))return 38;
+    return 41;
 }
+
+static _Thread_local struct reloq61_english_stop_scope soft_stop;
 
 struct reloq61_english_stop_scope reloq61_english_stop_scope(
     struct reloq61_english_stop_scope next)
@@ -139,6 +98,28 @@ struct reloq61_english_stop_scope reloq61_english_stop_scope(
     return previous;
 }
 
+void reloq61_english_stop_prepare(void *state)
+{
+    delta_state *d=state;
+    if(soft_stop.state==state)soft_stop=(struct reloq61_english_stop_scope){0};
+    if(!d || !d->vars || deltaErrorThrown(d))return;
+    unsigned char *p=(unsigned char *)state+DG_BASE;
+    int32_t at=long_at(p,PHONE_START);
+    struct reloq61_spr_phone current,next;
+    if(!reloq61_spr_phone_at(d,at,&current))return;
+    unsigned phone=reloq61_spr_feature(d,&current,0);
+    if(phone!=PHONE_P && phone!=PHONE_T && phone!=PHONE_K)return;
+    struct reloq61_spr_phone previous={previous_phone(d,at),0};
+    if(!previous.node || reloq61_spr_feature(d,&previous,0)!=PHONE_S ||
+       !reloq61_spr_phone_at(d,current.after,&next) ||
+       reloq61_spr_feature(d,&current,PHONE_TRANSITION)!=TRANSITION_TO_VOICE ||
+       short_at(p,RELEASE_AH)!=0)return;
+    int32_t begin=long_at(p,RELEASE_START),end=long_at(p,RELEASE_END);
+    if(begin<0 || (int64_t)end-begin<10000)return;
+    soft_stop=(struct reloq61_english_stop_scope){state,current.node,next.node,
+        begin/10000,-1,s_stop_release_level(d,phone,&next),0};
+}
+
 void reloq61_english_stop_release_begin(void *state,
     struct reloq61_english_release_guard *guard)
 {
@@ -146,28 +127,20 @@ void reloq61_english_stop_release_begin(void *state,
     delta_state *d=state;
     if(!d || !d->vars || deltaErrorThrown(d))return;
     unsigned char *p=(unsigned char *)state+DG_BASE;
-    int32_t at=long_at(p,PHONE_START);
-    struct reloq61_spr_phone current,next;
-    if(!reloq61_spr_phone_at(d,at,&current))return;
-    /* The following phone's acoustic targets have already been emitted. */
-    if(soft_stop.state==state && soft_stop.following==current.node)
-        soft_stop=(struct reloq61_english_stop_scope){0};
-    unsigned phone=reloq61_spr_feature(d,&current,0);
-    if(phone!=PHONE_P && phone!=PHONE_T && phone!=PHONE_K)return;
-    struct reloq61_spr_phone previous={previous_phone(d,at),0};
-    if(!previous.node || reloq61_spr_feature(d,&previous,0)!=PHONE_S ||
-       !reloq61_spr_phone_at(d,current.after,&next))return;
-    /* Respect an existing native or dictionary-requested aspiration. */
-    if(short_at(p,RELEASE_AH)!=0)return;
+    struct reloq61_spr_phone current;
+    if(soft_stop.state!=state || soft_stop.aspiration_begin<0 ||
+       !reloq61_spr_phone_at(d,long_at(p,PHONE_START),&current) ||
+       current.node!=soft_stop.stop || short_at(p,RELEASE_AH)!=0)return;
     int32_t begin=long_at(p,RELEASE_START),end=long_at(p,RELEASE_END);
     int64_t duration=(int64_t)end-begin;
     if(duration<10000)return;
-    /* Keep the native, already shortened stop transition. Its ordinary H
-     * and frication end together immediately before the following voice. */
-    if(end>INT32_MAX-10000)return;
+    /* Use the core's ordinary release source at a lower level. The interval
+     * filter places it inside the existing burst, before the native voice. */
+    int32_t capped=duration>120000?begin+120000:end;
+    if(capped>INT32_MAX-10000)return;
     *guard=(struct reloq61_english_release_guard){end,0,1};
-    soft_stop=(struct reloq61_english_stop_scope){state,next.node,end};
-    put_short(p,RELEASE_AH,native_s_stop_aspiration(d,phone,&next));
+    put_short(p,RELEASE_AH,soft_stop.release_level);
+    put_long(p,RELEASE_END,capped);
 }
 
 void reloq61_english_stop_release_end(void *state,
@@ -180,7 +153,7 @@ void reloq61_english_stop_release_end(void *state,
     if(result)soft_stop=(struct reloq61_english_stop_scope){0};
 }
 
-void reloq61_english_stop_interval(void *state,int16_t stream,
+void reloq61_english_stop_interval(void *state,int16_t stream,int16_t value,
     int32_t *begin,int32_t *end)
 {
     if(soft_stop.state!=state || !state || !begin || !end)return;
@@ -188,13 +161,39 @@ void reloq61_english_stop_interval(void *state,int16_t stream,
     unsigned char *p=(unsigned char *)state+DG_BASE;
     if(stream!=short_at(p,VOICE_STREAM) && stream!=short_at(p,ASPIRATION_STREAM))return;
     struct reloq61_spr_phone current;
-    int32_t release_end=soft_stop.release_end/10000;
-    if(!reloq61_spr_phone_at(d,long_at(p,PHONE_START),&current) ||
-       current.node!=soft_stop.following || *begin>release_end)return;
-    /* The release has already queued silence and aspiration. Keep the
-     * following native target rather than losing it to the ordered queue. */
-    *begin=release_end+1;
-    if(*end<*begin)*end=*begin;
+    if(!reloq61_spr_phone_at(d,long_at(p,PHONE_START),&current))return;
+    int32_t anchor=soft_stop.anchor;
+    if(current.node==soft_stop.following) {
+        if(stream==short_at(p,ASPIRATION_STREAM) && !soft_stop.blended &&
+           soft_stop.aspiration_begin>=0 && value>0 && value<soft_stop.release_level &&
+           *begin<=anchor+1 && *end>anchor && anchor<=INT32_MAX-10) {
+            /* Let the release settle into the following phone's own AH,
+             * while preserving the native voicing and formant timings. */
+            int32_t target=anchor+10;
+            if(target>*end)target=*end;
+            if(target>*begin){*begin=target;soft_stop.blended=1;}
+        }
+        return;
+    }
+    if(current.node!=soft_stop.stop)return;
+    if(stream==short_at(p,ASPIRATION_STREAM) && value==0 &&
+       soft_stop.aspiration_begin<0 && *end==anchor && *begin<anchor) {
+        /* Leave room in the ordered aspiration queue before the native
+         * voice onset, without moving the s, burst, or following phone. */
+        int32_t available=anchor-*begin;
+        int32_t cut=available>8?8:available;
+        *end=anchor-cut;
+        soft_stop.aspiration_begin=*end;
+    } else if(soft_stop.aspiration_begin>=0 && *begin==anchor && *end>anchor) {
+        if(stream==short_at(p,VOICE_STREAM) && value==0) {
+            /* The release must not add silence after the native onset. */
+            *end=anchor;
+        } else if(stream==short_at(p,ASPIRATION_STREAM) &&
+                  value==soft_stop.release_level) {
+            *begin=soft_stop.aspiration_begin;
+            *end=anchor;
+        }
+    }
 }
 
 void reloq61_english_schwa_timbre(void *state)

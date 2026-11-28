@@ -18,11 +18,9 @@ def main():
     parser.add_argument('--library', type=Path, required=True)
     parser.add_argument('--reference', type=Path, required=True)
     parser.add_argument('--dictionary', type=Path)
-    parser.add_argument('--shorter-s', action='store_true',
-                        help='allow the experimental s duration to move later indices earlier')
     args = parser.parse_args()
-    changed = ('scout', 'skill', 'screen', 'transcribe', 'spoon', 'spill', 'stop', 'still')
-    unchanged = ('coat', 'paper', 'top', 'good dog', 'this car', 'ask',
+    changed = ('scout', 'skill', 'sky', 'skew', 'screen', 'transcribe', 'spoon', 'spill', 'stop', 'still')
+    unchanged = ('coat', 'paper', 'top', 'good dog', 'this car', 'ask', 'rescue',
                  '`[.1skhWt]', '`[.1trAnsh.2krIpt]')
     checks = 0
     for dialect in (0x10000, 0x10001):
@@ -40,13 +38,10 @@ def main():
                         actual = render(current, [text, EciIndex(7)])
                         old = render(before, [text, EciIndex(7)])
                         assert actual[0] != old[0], (hex(dialect), rate, speed, text)
-                        if args.shorter_s:
-                            assert len(actual[0]) <= len(old[0]), (hex(dialect), rate, speed, text)
-                            assert [i for i, _ in actual[1]] == [i for i, _ in old[1]]
-                            assert actual[1][-1][1] == len(actual[0])
-                        else:
-                            assert len(actual[0]) == len(old[0]) and actual[1] == old[1], \
-                                (hex(dialect), rate, speed, text)
+                        assert len(actual[0]) <= len(old[0]), (hex(dialect), rate, speed, text)
+                        assert [i for i, _ in actual[1]] == [i for i, _ in old[1]]
+                        assert actual[1][-1][1] == len(actual[0])
+                        assert all(new <= prior for (_, new), (_, prior) in zip(actual[1], old[1]))
                         checks += 1
                     for text in unchanged:
                         assert render(current, [text, EciIndex(7)]) == \
